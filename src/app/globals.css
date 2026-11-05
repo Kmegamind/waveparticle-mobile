@@ -15,8 +15,20 @@ body {
 }
 
 a {
+  align-items: center;
   color: var(--accent-text);
+  display: inline-flex;
   text-decoration: underline;
+}
+
+:where(button, a, input, select, textarea) {
+  min-height: var(--target);
+  min-width: var(--target);
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--control);
+  outline-offset: 2px;
 }
 
 .button-filled,
@@ -68,7 +80,7 @@ a {
 }
 
 .button-small {
-  min-height: 2.25rem;
+  min-height: var(--target);
   padding-inline: 1rem;
 }
 

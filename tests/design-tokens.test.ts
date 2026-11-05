@@ -227,6 +227,31 @@ describe("design tokens", () => {
     }
   });
 
+  it("keeps later-row text at 5:1 against the page background", async () => {
+    const blocks = themeBlocks(await readWorkspaceFile("src/app/tokens.css"));
+
+    for (const tokens of blocks.values()) {
+      expect(
+        contrastRatio(resolve(tokens, "var(--faint)"), resolve(tokens, "var(--bg)")),
+      ).toBeGreaterThanOrEqual(5);
+    }
+  });
+
+  it("gives every interactive control a 44px target and visible keyboard focus", async () => {
+    const css = await readWorkspaceFile("src/app/globals.css");
+
+    expect(css).toMatch(
+      /:where\([^}]*button[^}]*a[^}]*input[^}]*select[^}]*textarea[^}]*\)\s*\{[\s\S]*min-height:\s*var\(--target\)/,
+    );
+    expect(css).toMatch(
+      /:where\([^}]*button[^}]*a[^}]*input[^}]*select[^}]*textarea[^}]*\)\s*\{[\s\S]*min-width:\s*var\(--target\)/,
+    );
+    expect(css).toMatch(
+      /:where\([^}]*button[^}]*a[^}]*input[^}]*select[^}]*textarea[^}]*\):focus-visible/,
+    );
+    expect(css).toMatch(/\.button-small\s*\{[\s\S]*min-height:\s*var\(--target\)/);
+  });
+
   it("defines capsule buttons without paper-tag edges", async () => {
     const css = await readWorkspaceFile("src/app/globals.css");
     const rule = (name: string) =>
@@ -249,7 +274,7 @@ describe("design tokens", () => {
     expect(rule("button-gray")).toContain("1px solid var(--edge)");
     expect(rule("button-plain")).toContain("background: transparent");
     expect(rule("button-plain")).toContain("min-height: var(--target)");
-    expect(css).toMatch(/\.button-small\s*\{[^}]*min-height:\s*2\.25rem/);
+    expect(css).toMatch(/\.button-small\s*\{[^}]*min-height:\s*var\(--target\)/);
     expect(css).not.toContain("--shadow-tag");
   });
 });
