@@ -16,4 +16,4 @@ Node 26 is also a long-term-support line (released 2026-10-28), but the machine 
 Pin Node 24 in `.nvmrc` and in `engines` (>=24.0.0 <25).
 
 ## Consequences
-Revisit when Vercel confirms Node 26 builds; the move is a one-line change plus a CI run.
+Update 2026-11-05: Vercel offers Node 26 in its version list. Vercel is set to Node.js 24.x to match `.nvmrc`. A build on Node 26 has not been tried. Revisit later; the move is a one-line change plus a CI run.
