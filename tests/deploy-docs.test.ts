@@ -12,9 +12,10 @@ describe("deployment documentation", () => {
   it("records the verified Node 24 deployment requirement", async () => {
     const deploy = await readRootFile("docs/deploy.md");
 
-    expect(deploy).toContain("Node 24");
+    expect(deploy).toContain("Node.js 24.x");
     expect(deploy).toContain("Node 26");
     expect(deploy).toMatch(/Node 26[\s\S]*not\s+verified/);
+    expect(deploy).not.toMatch(/staging/i);
   });
 
   it("documents deployment environments and recovery steps", async () => {

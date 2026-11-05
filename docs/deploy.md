@@ -5,14 +5,14 @@ access. Agents do not run Vercel commands or deploy.
 
 ## Build runtime
 
-Node 24 remains the required build runtime. Node 26 builds on Vercel are not
-verified; keep the repository's Node constraint (`>=24.0.0 <25`) until Vercel
-support is confirmed.
+Vercel is set to Node.js 24.x, the same line as `.nvmrc` and the repository's Node
+constraint (`>=24.0.0 <25`). Vercel also offers Node 26 in its version list (checked
+on 2026-11-05), but a build on Node 26 has not been tried, so Node 26 is not
+verified. Moving to Node 26 is a later, separate change (`docs/decisions/0003`).
 
 | Environment | Where | Trigger |
 |---|---|---|
 | Preview | Vercel preview deployment | Each pull request |
-| Staging | Vercel project staging environment | Human-approved preview or staging workflow |
 | Production | Vercel production environment over HTTPS | Push to `main` after review |
 
 ## Human setup checklist
@@ -30,7 +30,8 @@ Real values live in the platform's environment settings or CI secrets. `.env.exa
 
 ## After each deploy
 - Smoke test: open the deployed home page and confirm the product name is
-  visible.
+  visible. To run the end-to-end test against a deployed address instead of a local
+  build: `E2E_BASE_URL=https://<the address> npm run test:e2e`.
 - Logs / monitoring: inspect the Vercel deployment logs and runtime errors for
   the deployment.
 - Rollback: use Vercel's deployment history to promote the last known-good
