@@ -1,3 +1,8 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+
+const read = (file: string) => readFileSync(path.join(__dirname, "..", file), "utf8");
 describe("CI container", () => {
   it("uses a Playwright image that matches the installed Playwright version", () => {
     const version = JSON.parse(read("package.json")).devDependencies["@playwright/test"];
