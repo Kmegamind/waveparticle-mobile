@@ -465,4 +465,4 @@ Resolved by version 7 and no longer conflicts: dark paper-tag outline, tab bar h
 8. Dark-theme outlines on the switch (off) and segmented control were not inspected one by one.
 9. Research limits: the references were read as text, not screenshots (except Monspeak); no documented shipped productivity tool with a hand-written feel was found. A designer should recheck.
 10. No full spacing scale; the popup menu visual style is missing.
-11. The old prototype and the code scaffold use the previous token names (section 3.11); `src/app/globals.css` still holds the default starter colours and has no design tokens yet.
+11. `src/app/tokens.css` (issue #126) implements the version 6 token names (`--accent`, `--fill`, `--on-fill`, `--fill-border`, `--r-control`) and the paper-tag button. It must be migrated to the names and control styles in sections 3 and 6 (see 3.11) in a separate issue; until then the code and this file disagree and this file wins.
