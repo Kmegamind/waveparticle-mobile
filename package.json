@@ -13,9 +13,12 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run && python3 -I tests/test_guardrails.py",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "check:supabase": "node --env-file=.env scripts/check-supabase.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.119.0",
     "next": "16.4.5",
     "react": "19.3.1",
     "react-dom": "19.3.1"
