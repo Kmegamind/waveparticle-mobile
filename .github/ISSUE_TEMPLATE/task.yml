@@ -1,0 +1,15 @@
+name: Task
+description: Technical work that isn't a user story (setup, refactor, CI, docs)
+labels: ["type:task"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What and why
+    validations: { required: true }
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: "- [ ] …"
+    validations: { required: true }

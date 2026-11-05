@@ -6,3 +6,8 @@ node_modules/
 !.env.example
 secrets/
 .claude/settings.local.json
+/coverage
+/playwright-report
+/test-results
+*.tsbuildinfo
+.vercel
