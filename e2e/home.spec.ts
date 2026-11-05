@@ -1,8 +1,7 @@
 import { expect, test } from "@playwright/test";
 
-test("a visitor opens the app and sees the Home title", async ({ page }) => {
+test("a signed-out visitor is sent to sign in", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Home" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "WaveParticle" })).toBeVisible();
-  await expect(page).toHaveTitle(/WaveParticle/);
+  await expect(page).toHaveURL(/\/auth\/sign-in$/);
+  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 });

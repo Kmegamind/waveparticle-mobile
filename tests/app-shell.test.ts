@@ -10,7 +10,7 @@ async function readWorkspaceFile(fileName: string): Promise<string> {
 
 describe("app shell", () => {
   it("defines the four top-level routes", async () => {
-    const routeFiles = await Promise.all(
+    const [home, ...routeFiles] = await Promise.all(
       [
         "src/app/page.tsx",
         "src/app/companions/page.tsx",
@@ -19,6 +19,7 @@ describe("app shell", () => {
       ].map(readWorkspaceFile),
     );
 
+    expect(`${home}\n${await readWorkspaceFile("src/app/protected-home.tsx")}`).toContain("<h1");
     for (const route of routeFiles) {
       expect(route).toContain("<h1");
     }
