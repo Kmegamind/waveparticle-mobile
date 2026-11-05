@@ -708,69 +708,42 @@ sessions(
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users,
   goal_id uuid not null references goals,
-  companion_id text, story_id text references stories,
+  companion_id text not null,                -- text key into the imported story dataset; no content-library foreign key
+  story_id text not null,                    -- text key; no content-library foreign key
   step_count integer not null,
   state text not null default 'open',        -- open, on_hold, completed, restarted
   seed text not null,
   started_at timestamptz, last_active_at timestamptz, completed_at timestamptz,
-  background_text text, background_source text,   -- the background card (generated or authored)
-  merged_key_moments integer[],              -- story_facts.seq of key moments without their own step
-  closing_line text, closing_source text,    -- generated or authored
-  closing_mode text,                         -- smooth or rough
-  closing_rejected_rules text[]
+  background_card text,
+  background_card_source text,               -- authored or generated; null when there is no background card
+  merged_key_moments jsonb,                  -- key moments that did not get their own step
+  closing_line text
 )
+-- one goal has at most one session with state = 'open' (partial unique index)
 
-session_steps(
+session_steps(                               -- decided for US-ACC-2
   id uuid primary key default gen_random_uuid(),
   session_id uuid not null references sessions on delete cascade,
-  step_id uuid not null references steps,
+  step_id uuid not null references steps on delete cascade,
   position integer not null,
-  fact_from integer, fact_to integer,        -- the stretch of the story the AI gave this step
-  key_moments integer[],                     -- key moments assigned to this step
-  card_count smallint not null check (card_count between 1 and 5),   -- n, chosen by the AI
-  interval_seconds integer not null check (interval_seconds >= 300), -- step minutes / n, at least 5 minutes
-  slice_from text, slice_to text,            -- authored fallback only
-  state text not null default 'waiting',     -- waiting, running, done
-  started_at timestamptz, done_at timestamptz,   -- done_at is cleared when Done is undone
-  foreground_seconds integer not null default 0,
+  opened_at timestamptz,
+  done_at timestamptz,                       -- null when Done is undone
   unique (session_id, position)
 )
 
-pauses(
+session_lines(                               -- decided for US-ACC-2; replaces pauses, return_events and cards_seen
   id uuid primary key default gen_random_uuid(),
-  session_step_id uuid not null references session_steps on delete cascade,
-  ordinal integer not null,                  -- pause number inside the step; passed to the prompt (F1)
-  started_at timestamptz not null, ended_at timestamptz,
-  snag_id text,                              -- authored snag used as fallback, if any
-  message_text text not null,                -- his message on the rest page
-  message_source text not null check (message_source in ('generated','authored')),
-  rejected_rules text[],
-  unique (session_step_id, ordinal)
+  session_id uuid not null references sessions on delete cascade,
+  session_step_id uuid references session_steps on delete cascade,  -- null for the background card
+  seq integer not null,
+  kind text not null,                        -- background, story_card, pause_message, return_popup, closing
+  card_id text,                              -- authored card id; null when the line was generated
+  source text not null,                      -- authored or generated
+  text text not null,                        -- story text, not text the user wrote
+  pause_number integer,                      -- set only when kind is pause_message
+  shown_at timestamptz not null default now()
 )
-
-return_events(
-  id uuid primary key default gen_random_uuid(),
-  session_step_id uuid not null references session_steps on delete cascade,
-  pause_id uuid references pauses,           -- set when the trigger is back_from_rest
-  trigger text not null check (trigger in ('back_from_rest','away_5min')),
-  away_seconds integer,
-  text text not null, source text not null check (source in ('generated','authored')),
-  rejected_rules text[],
-  shown_at timestamptz not null default now(),
-  started_at timestamptz                     -- the tap on the start button; the clock restarts here
-)
-
-cards_seen(
-  id uuid primary key default gen_random_uuid(),
-  session_step_id uuid not null references session_steps on delete cascade,
-  position smallint not null,                -- order in the stack
-  card_id text references cards,             -- set only for authored fallback cards
-  text text not null,                        -- snapshot, so a shown card never changes
-  source text not null check (source in ('generated','authored','generic')),
-  shown_at timestamptz not null default now(),
-  foreground_seconds_at_reveal integer,
-  unique (session_step_id, position)
-)
+-- insert and select policies only, so a shown line is not edited in place
 
 used_items(user_id uuid, companion_id text, item_id text, used_at timestamptz, primary key (user_id, companion_id, item_id))
    -- non-repeat across sessions: authored fallback snags and fallback lines
@@ -787,10 +760,11 @@ safety_events(
 
 Notes for the schema:
 
-- `cards_seen.text` is always filled so that rereading shows exactly what was shown, and so that generated cards survive. The background card is stored on `sessions`, because it is not one of the n cards. The Done-undo rule means `session_steps.done_at` must be nullable; an events table recording each Done and Undo is not proposed here.
+- `session_lines.text` is the line that was shown. A shown line is insert-only, so rereading does not regenerate it. The background card is also copied onto `sessions.background_card`. `session_steps.done_at` is cleared when Done is undone; there is no Done-event table.
+- Pause messages and return pop-ups are `session_lines` rows (`pause_message` and `return_popup`). There is no pause table and no return-event table.
 - The session record page (2.15) reads from `sessions`, `goals` and `session_steps`; it needs no table.
 - Rest chat messages are not given a table, and with no message limit (Decided, R2) whether to store them is not decided.
-- The story's chapter progress for a user and companion can be derived from `sessions` with state `completed`; a separate table is not proposed. All 26 stories are shown on the Life Path (Decided, D4).
+- Story progress for a Companion is the completed sessions grouped by `companion_id` and `story_id`. A `restarted` session does not count. There is no progress table. All 26 stories are shown on the Life Path (Decided, D4).
 - Content ids are text so that the JSON ids can be used unchanged.
 
 ## 9. What exists today and what is missing
