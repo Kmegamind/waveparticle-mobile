@@ -5,3 +5,4 @@ Interviews (Mom Test style), competitor scans, feasibility spikes. One file per 
 |---|---|---|
 | Mom Test interviews for the seven feature areas | 2026-10-28 | Kept in the planning folder (`PRDs_MomTest/`, outside this repo); AI-simulated |
 | Wireframe user test (issues B01 to B22) | 2026-11-04 | Decisions in `docs/DECISIONS.md`; the original list is not in this repo and may have been simulated |
+| Live-generation latency and cost benchmark | 2026-11-05 | `docs/research/2026-11-05-live-generation-benchmark.md`; provider choice and Decision A7b |
