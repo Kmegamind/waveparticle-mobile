@@ -228,14 +228,18 @@ describe("design tokens", () => {
 
   it("defines capsule buttons without paper-tag edges", async () => {
     const css = await readWorkspaceFile("src/app/globals.css");
-    const rule = (name: string) => css.match(new RegExp(`\\.${name}\\s*\\{([^}]*)\\}`))?.[1] ?? "";
+    const rule = (name: string) =>
+      css.match(new RegExp(`\\n\\n\\.${name}\\s*\\{([^}]*)\\}`))?.[1] ?? "";
 
     for (const name of ["button-filled", "button-tinted", "button-gray", "button-plain"]) {
       const body = rule(name);
       expect(body, `.${name} missing`).not.toBe("");
-      expect(body).toContain("border-radius: var(--r-capsule)");
       expect(body).not.toMatch(/box-shadow|2px/);
     }
+    const shared = css.match(/\.button-filled,[^{]*\{([^}]*)\}/)?.[1] ?? "";
+    expect(shared).toContain("border-radius: var(--r-capsule)");
+    expect(shared).toContain("min-height: 3.125rem");
+    expect(shared).not.toMatch(/box-shadow|2px/);
     expect(rule("button-filled")).toContain("background: var(--control)");
     expect(rule("button-filled")).toContain("color: var(--on-control)");
     expect(rule("button-tinted")).toContain("background: var(--tint)");

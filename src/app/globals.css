@@ -14,7 +14,94 @@ body {
 }
 
 a {
-  color: var(--accent);
+  color: var(--accent-text);
+  text-decoration: underline;
+}
+
+.button-filled,
+.button-tinted,
+.button-gray,
+.button-plain {
+  align-items: center;
+  border: 0;
+  border-radius: var(--r-capsule);
+  cursor: pointer;
+  display: inline-flex;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: var(--text-button-size);
+  font-weight: 600;
+  justify-content: center;
+  letter-spacing: -0.022em;
+  line-height: 1;
+  min-height: 3.125rem;
+  padding-inline: 1.5rem;
+  transition:
+    transform 120ms,
+    opacity 120ms;
+}
+
+.button-filled {
+  background: var(--control);
+  color: var(--on-control);
+}
+
+.button-tinted {
+  background: var(--tint);
+  border: 1px solid var(--control);
+  color: var(--accent-text);
+}
+
+.button-gray {
+  background: var(--gray);
+  border: 1px solid var(--edge);
+  color: var(--ink);
+}
+
+.button-plain {
+  background: transparent;
+  color: var(--accent-text);
+  min-height: var(--target);
+}
+
+.button-small {
+  min-height: 2.25rem;
+  padding-inline: 1rem;
+}
+
+.button-filled:active,
+.button-tinted:active,
+.button-gray:active,
+.button-plain:active {
+  opacity: 0.85;
+  transform: scale(0.97);
+}
+
+.button-filled:focus-visible,
+.button-tinted:focus-visible,
+.button-gray:focus-visible,
+.button-plain:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 3px;
+}
+
+.button-filled:disabled,
+.button-tinted:disabled,
+.button-gray:disabled,
+.button-plain:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button-filled:active,
+  .button-tinted:active,
+  .button-gray:active,
+  .button-plain:active {
+    transform: none;
+  }
 }
 
 .logo {
