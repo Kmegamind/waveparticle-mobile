@@ -120,14 +120,15 @@ describe("design tokens", () => {
   });
 
   it("wires a themed logo into the app header", async () => {
-    const [layout, css, globals] = await Promise.all([
+    const [layout, shell, css, globals] = await Promise.all([
       readWorkspaceFile("src/app/layout.tsx"),
+      readWorkspaceFile("src/app/shell.tsx"),
       readWorkspaceFile("src/app/tokens.css"),
       readWorkspaceFile("src/app/globals.css"),
     ]);
 
-    expect(layout).toContain('src="/logo.svg"');
-    expect(layout).toContain('aria-label="WaveParticle"');
+    expect(`${layout}\n${shell}`).toContain('src="/logo.svg"');
+    expect(`${layout}\n${shell}`).toContain('aria-label="WaveParticle"');
     expect(globals).toMatch(/\.logo[\s\S]*filter:\s*var\(--logo-filter\)/);
     expect(css).toContain(".theme-dark");
   });
