@@ -8,7 +8,7 @@ Browser (installed web app, mobile first)
         ├─ pages and components            exists: one page
         ├─ src/lib                          exists: clock formatting
         ├─ route handlers (AI and data)     planned
-        └─ Supabase (sign-in, Postgres)     exists: clients only (src/lib/supabase)
+        └─ Supabase (sign-in, Postgres)     exists: clients and first user-data schema
 ```
 
 ## Components
@@ -18,12 +18,23 @@ Browser (installed web app, mobile first)
 | Root layout | `src/app/layout.tsx` | Page shell and metadata |
 | Clock formatting | `src/lib/clock.ts` | Formats seconds as `MM:SS`, never below `00:00` |
 | Supabase clients | `src/lib/supabase/` | Browser client (public key), server client (reads request cookies), `getCurrentUser`, settings reader |
+| User-data schema | `supabase/migrations/20261106000000_create_user_data_schema.sql` | Profiles, account-owned Goals and Steps, and Sessions with row-level security |
 | Connection check | `scripts/check-supabase.mjs` | `npm run check:supabase` prints OK or FAIL without printing any value |
 | Unit tests | `tests/` | Vitest tests and the guardrail hook test |
 | End-to-end tests | `e2e/` | Playwright journeys at mobile size |
 
 ## Data model
-Planned: see `docs/CONTENT_MODEL.md` (entities and a proposed Supabase schema). Nothing is stored yet.
+The first migration implements the account-owned subset of the proposal in
+`docs/CONTENT_MODEL.md`: `profiles`, `goals`, `steps`, and `sessions`.
+
+Every user-data table has row-level security enabled. Policies use `auth.uid()`
+for direct ownership, and Steps inherit ownership through their Goal. The
+foreign keys from profiles, goals, and sessions to `auth.users` use
+`on delete cascade`; Steps cascade from their Goal. Deleting an account
+therefore removes all rows created by that account.
+
+Pause, card, return-event, history, and other later-feature tables remain out
+of scope until their feature issues add migrations.
 
 ## Interfaces
 See `docs/api/`.
