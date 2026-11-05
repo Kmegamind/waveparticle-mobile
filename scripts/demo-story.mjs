@@ -1,70 +1,47 @@
-// Generates the demo content for "The Canyon and the Mesa" with DeepSeek:
-// story cards for four steps, one stuck message, a short pause chat and a back-from-rest line.
+// Generates the demo content for "The Canyon and the Mesa" with DeepSeek, in four stages:
+//   1. story cards (background card, landing, why, now), 2. a second call that says how it feels,
+//   3. the pause (stuck message, roleplay chat with an opening action, resolved card), 4. the closing line.
 // Usage: node --env-file=.env scripts/demo-story.mjs
 // Demo only. The production path is the server-side model gateway (issue #132).
 import { readFile, writeFile } from "node:fs/promises";
-import { checkCard, checkChatReply, checkStuck, nextAttemptNeeded } from "./demo-checks.mjs";
+import { checkCard, checkChatReply, checkStuck } from "./demo-checks.mjs";
+import {
+  MOODS,
+  backgroundPrompt,
+  bannedAt,
+  chatSystem,
+  classifyTurn,
+  closingPrompt,
+  drawGestures,
+  feelingPrompt,
+  formatFor,
+  peopleMetBefore,
+  resolvePrompt,
+  storyCardsPrompt,
+  stuckPrompt,
+} from "./demo-prompts.mjs";
 
-const SOURCE = new URL("../docs/demo/site-search.source.json", import.meta.url);
-const OUT = new URL("../docs/demo/site-search.generated.json", import.meta.url);
-const CONFIG = new URL("./live-generation-benchmark.config.json", import.meta.url);
-const ENDPOINT = "https://api.deepseek.com/chat/completions";
-
-const story = JSON.parse(await readFile(SOURCE, "utf8"));
-const config = JSON.parse(await readFile(CONFIG, "utf8"));
+const read = async (name) => JSON.parse(await readFile(new URL(name, import.meta.url), "utf8"));
+const stage0 = await read("../docs/demo/site-search.stage0.json");
+const config = await read("./live-generation-benchmark.config.json");
 const provider = config.providers.find((p) => p.provider === "deepseek");
+const OUT = new URL("../docs/demo/site-search.generated.json", import.meta.url);
 const key = process.env.DEEPSEEK_API_KEY;
 if (!key) {
   console.error("DEEPSEEK_API_KEY is missing in .env");
   process.exit(1);
 }
 
-// The user's Goal split into four Steps; each Step matches one slice of his afternoon.
-const STEPS = [
-  {
-    task: "measure_jemez_springs",
-    title: "Measure the canyon floor",
-    intent: "Find out whether the flat land at Jemez Springs is wide enough for a town.",
-  },
-  {
-    task: "convince_dudley",
-    title: "Make the case against the canyon",
-    intent: "Persuade Colonel Dudley that the canyon is wrong for the laboratory.",
-  },
-  {
-    task: "offer_the_mesa",
-    title: "Offer another site",
-    intent: "Be ready with a different place if the General asks for one.",
-  },
-  {
-    task: "show_groves_the_mesa",
-    title: "Take the General to see it",
-    intent: "Drive the General out to look at the place I have in mind.",
-  },
-];
-// Words that belong to facts he cannot know yet at each step's entry.
-const BANNED_AT_ENTRY = [
-  ["groves", "mesa", "school", "this will never do"],
-  ["mesa", "school", "ranch"],
-  ["school", "ranch", "this is the place", "schoolboys"],
-  ["this is the place", "schoolboys", "drizzl", "snowfall", "plateau"],
-];
-const FALLBACK = [
-  "The ground here is not what I hoped for.",
-  "I keep turning the same few facts over.",
-  "There is wind, and not much else to hold on to.",
-];
-
 const usage = { calls: 0, inputTokens: 0, outputTokens: 0 };
+const prompts = {};
 
-async function chat(messages, maxTokens) {
-  const started = Date.now();
-  const response = await fetch(ENDPOINT, {
+async function chat(messages, { maxTokens = 2500, temperature = 0.8 } = {}) {
+  const response = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify({
       model: provider.model,
-      temperature: 0.7,
+      temperature,
       max_tokens: maxTokens,
       response_format: { type: "json_object" },
       messages,
@@ -75,185 +52,293 @@ async function chat(messages, maxTokens) {
   usage.calls += 1;
   usage.inputTokens += body.usage?.prompt_tokens ?? 0;
   usage.outputTokens += body.usage?.completion_tokens ?? 0;
-  // The served model reasons before it answers; reasoning tokens count toward max_tokens,
-  // so the budgets above are generous. An empty answer means the budget ran out.
+  // The served model reasons first and reasoning tokens count toward max_tokens.
   const text = body.choices?.[0]?.message?.content ?? "";
-  if (!text.trim())
-    throw new Error("DeepSeek returned an empty answer (token budget used by reasoning)");
-  return { json: JSON.parse(text), ms: Date.now() - started };
+  if (!text.trim()) throw new Error("empty answer (token budget used by reasoning)");
+  return JSON.parse(text);
 }
 
-const factsDone = (stepIndex) =>
-  STEPS.slice(0, stepIndex).flatMap((s) =>
-    story.facts.filter((f) => f.taskId === s.task).map((f) => `- ${f.text}`),
+const alwaysAllowed = stage0.scene.allowedWords;
+const allowedAt = (entry) => {
+  const met = peopleMetBefore(stage0, entry);
+  return alwaysAllowed.filter(
+    (w) =>
+      !["Groves", "Mesa", "Pajarito", "Plateau", "Los", "Alamos", "Ranch", "School"].includes(w) ||
+      (w === "Groves" && met.includes("Groves")),
   );
+};
+const baseCtx = (entry) => ({
+  forbidden: stage0.story.forbidTerms,
+  banned: bannedAt(stage0, entry),
+  allowedWords: allowedAt(entry),
+});
 
-const PERSONA = `You write as J. Robert Oppenheimer on ${story.date}. His goal today: ${story.goal}
-Always first person, plain and restrained, one concrete observation at a time. Use only the facts given. Never invent facts, names, places or numbers. Never explain the future.`;
-
-const STYLE = `Voice: he shows, he does not announce. Write what he sees, hears, remembers or says, in plain concrete words. Do not write "I am mulling", "my concern is" or "I keep returning to". Paraphrase the facts; never copy a distinctive phrase from them twice in the same step. Each card adds a different detail taken from the facts or the goal and uses different sentence shapes. Never add an object, an action by another person, a remark, a feeling about the body or a place that is not in the facts or the goal.`;
-
-const CARD_RULES = `${STYLE}
-Rules for each card: one or two sentences. First person. No question marks. Never use the word "you". No dashes. No clock times and no durations. End with a full stop. Each card must make sense alone and must not refer to another card. Do not state the outcome of the current step. Do not start two cards with the same three words.`;
-
-async function cardsForStep(index) {
-  const step = STEPS[index];
-  const done = factsDone(index);
-  const kinds = index === 0 ? ["opening", "state", "state"] : ["landing", "state", "state"];
-  const ask = [
-    PERSONA,
-    CARD_RULES,
-    `Facts that have happened so far:\n${done.length ? done.join("\n") : "(none yet; the day is just beginning)"}`,
-    `The step he is about to start: ${step.intent}`,
-    index === 0
-      ? `Card 1 (opening): where he stands as the day begins, from the goal.`
-      : `Card 1 (landing): what the last facts left him with, then what worries him about the next step, in two sentences.`,
-    `Cards 2 and 3 (state): what he is mulling at this moment. No new events.`,
-    `Reply with JSON only: {"cards": ["...", "...", "..."]}`,
-  ].join("\n\n");
-  const ctx = { forbidden: story.forbiddenTerms, banned: BANNED_AT_ENTRY[index] };
+/** Calls the model until every field passes its check (3 attempts), keeping the best attempt. */
+async function writeFields(prompt, fields, ctxFor, label) {
   let best = null;
-  for (let attempt = 1; ; attempt += 1) {
-    const { json, ms } = await chat([{ role: "user", content: ask }], 2000);
-    const texts = (Array.isArray(json.cards) ? json.cards : []).map(String).slice(0, 3);
-    const seen = [];
-    const cards = kinds.map((kind, i) => {
-      const text = texts[i] ?? "";
-      const result = checkCard(text, { ...ctx, seen });
-      seen.push(text);
-      return { kind, text, checks: result, fallback: false };
-    });
-    const failed = cards.filter((c) => !c.checks.ok).length;
-    if (!best || failed < best.failed) best = { cards, failed, attempt, ms };
-    if (failed === 0 || !nextAttemptNeeded({ ok: false }, attempt)) break;
-  }
-  const cards = best.cards.map((c, i) =>
-    c.checks.ok
-      ? c
-      : {
-          kind: c.kind,
-          text: FALLBACK[i],
-          checks: { ok: true, failures: [] },
-          fallback: true,
-          rejected: c.text,
-          rejectedFailures: c.checks.failures,
-        },
-  );
-  return {
-    n: index + 1,
-    title: step.title,
-    intent: step.intent,
-    attempts: best.attempt,
-    ms: best.ms,
-    cards,
-  };
-}
-
-const PAUSE_STEP = 1; // the user pauses during step 2
-
-async function stuckMessage() {
-  const ask = [
-    PERSONA,
-    `Facts that have happened so far:\n${factsDone(PAUSE_STEP).join("\n")}`,
-    `The user has paused. He writes them a short note about what he is stuck on right now: the problem in front of him (${STEPS[PAUSE_STEP].intent}). Two or three sentences, first person, honest and a little worn. No advice, no question, no comfort, nothing about their work, nothing that is not in the facts. Do not say what will happen. Do not end with a question. No dashes, no durations.`,
-    `Reply with JSON only: {"text": "..."}`,
-  ].join("\n\n");
-  const ctx = { forbidden: story.forbiddenTerms, banned: BANNED_AT_ENTRY[PAUSE_STEP], seen: [] };
-  let last;
-  for (let attempt = 1; ; attempt += 1) {
-    const { json } = await chat([{ role: "user", content: ask }], 1500);
-    const text = String(json.text ?? "");
-    const checks = checkStuck(text, ctx);
-    last = { text, checks, attempts: attempt };
-    if (checks.ok || !nextAttemptNeeded(checks, attempt)) break;
-  }
-  return last;
-}
-
-const USER_TURNS = [
-  { text: "What is the canyon like?", term: "" },
-  { text: "I can't start my essay. What should I do?", term: "essay" },
-  { text: "How do attention mechanisms work?", term: "attention" },
-  { text: "Are you tired?", term: "" },
-];
-
-const CHAT_SYSTEM = `${PERSONA}
-You are in the middle of step two of that afternoon: ${STEPS[PAUSE_STEP].intent} Facts so far:
-${factsDone(PAUSE_STEP).join("\n")}
-A person who is working on their own task has paused and is writing to you. You are not their coach and you do not know their world.
-- Name the topic of their message to yourself: your world, their task, general knowledge, you, or how they feel.
-- If it is their task or something you could not know in ${story.date.slice(0, 4)}, do not answer it and do not teach. Say, in one sentence, that it is not something you know or can help with from where you stand, then say one thing about your own side.
-- If it is about you or how they feel, answer with something small from your own side. No advice. No comfort method.
-- Vary your wording; never reuse a phrase you used earlier in this conversation or in your note. Do not quote the facts back word for word.
-- Add nothing that is not in the facts: no new objects, remarks, or bodily states except a plain "tired" if asked.
-- One to three sentences. No dashes. No durations. No question marks. Never mention being an AI.
-- Output one JSON object: {"scope": "his_world|task|knowledge|personal|meta|emotional|unknown", "reply": "..."}`;
-
-async function pauseChat(stuckText) {
-  const turns = [];
-  const said = [stuckText];
-  const history = [];
-  for (const turn of USER_TURNS) {
-    history.push({ role: "user", content: turn.text });
-    let last;
-    for (let attempt = 1; ; attempt += 1) {
-      const { json } = await chat([{ role: "system", content: CHAT_SYSTEM }, ...history], 1500);
-      const reply = { scope: String(json.scope ?? ""), reply: String(json.reply ?? "") };
-      const checks = checkChatReply(reply, {
-        forbidden: story.forbiddenTerms,
-        banned: BANNED_AT_ENTRY[PAUSE_STEP],
-        userTerm: turn.term,
-        seen: said,
-      });
-      last = { ...reply, checks, attempts: attempt };
-      if (checks.ok || !nextAttemptNeeded(checks, attempt)) break;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    let json;
+    try {
+      json = await chat([{ role: "user", content: prompt }]);
+    } catch (e) {
+      console.log(`  ${label}: ${e.message}`);
+      continue;
     }
-    said.push(last.reply);
-    history.push({
-      role: "assistant",
-      content: JSON.stringify({ scope: last.scope, reply: last.reply }),
-    });
-    turns.push({ user: turn.text, reply: last });
+    const seen = [];
+    const out = {};
+    for (const f of fields) {
+      const text = String(json[f] ?? "");
+      const checks = checkCard(text, { ...ctxFor(f), seen: [...seen] });
+      seen.push(text);
+      out[f] = { text, checks };
+    }
+    const failed = fields.filter((f) => !out[f].checks.ok).length;
+    if (!best || failed < best.failed) best = { out, failed, attempts: attempt };
+    if (failed === 0) break;
   }
-  return turns;
+  return best;
 }
 
-async function backLine() {
-  const ask = [
-    PERSONA,
-    `Facts that have happened so far:\n${factsDone(PAUSE_STEP).join("\n")}`,
-    `The user has come back from a pause. Write one card, one or two sentences, first person: he has steadied himself and is going back to the argument with Dudley. No new event, no action by anyone else, nothing that is not in the facts; one calm thought of his own. Do not state how it ends. ${CARD_RULES}`,
-    `Reply with JSON only: {"text": "..."}`,
-  ].join("\n\n");
-  const ctx = { forbidden: story.forbiddenTerms, banned: BANNED_AT_ENTRY[PAUSE_STEP], seen: [] };
-  let last;
-  for (let attempt = 1; ; attempt += 1) {
-    const { json } = await chat([{ role: "user", content: ask }], 1500);
-    const text = String(json.text ?? "");
-    const checks = checkCard(text, ctx);
-    last = { kind: "back", text, checks, attempts: attempt };
-    if (checks.ok || !nextAttemptNeeded(checks, attempt)) break;
-  }
-  return last;
-}
+const authored = (slice, role) =>
+  stage0.authoredCards.find((c) => c.slice === slice && c.role === role)?.text ?? null;
+const prevSlice = (entry) => stage0.slices[stage0.slices.findIndex((x) => x.id === entry) - 1]?.id;
 
+// ---- Stage 1 and 2: the cards of the four Steps ----
 const steps = [];
-for (let i = 0; i < STEPS.length; i += 1) {
-  steps.push(await cardsForStep(i));
-  console.log(`step ${i + 1}: ${steps[i].cards.filter((c) => c.fallback).length} fallback card(s)`);
+prompts.background = backgroundPrompt(stage0);
+const bg = await writeFields(
+  prompts.background,
+  ["card"],
+  () => ({ ...baseCtx("s1"), maxChars: 520 }),
+  "background",
+);
+console.log(
+  `background card: ${bg.out.card.checks.ok ? "OK" : "checks failed: " + bg.out.card.checks.failures.join(", ")}`,
+);
+
+for (const step of stage0.steps) {
+  const fields = step.n > 1 ? ["landing", "why", "now"] : ["why", "now"];
+  const p1 = storyCardsPrompt(stage0, step);
+  if (step.n <= 2) prompts[`story_step${step.n}`] = p1;
+  // Landing describes the finished Step, so only the later slices are banned for it.
+  const story = await writeFields(
+    p1,
+    fields,
+    () => baseCtx(step.entrySlice),
+    `step ${step.n} story`,
+  );
+  const cards = [];
+  if (step.n === 1)
+    cards.push({
+      kind: "opening",
+      stage: 1,
+      text: bg.out.card.text,
+      checks: bg.out.card.checks,
+      attempts: bg.attempts,
+      authored: authored("s1", "opening"),
+    });
+  if (step.n > 1)
+    cards.push({
+      kind: "landing",
+      stage: 1,
+      text: story.out.landing.text,
+      checks: story.out.landing.checks,
+      attempts: story.attempts,
+      authored: authored(prevSlice(step.entrySlice), "landing"),
+    });
+  cards.push({
+    kind: "why",
+    stage: 1,
+    text: story.out.why.text,
+    checks: story.out.why.checks,
+    attempts: story.attempts,
+    authored: authored(step.entrySlice, "why"),
+  });
+  cards.push({
+    kind: "now",
+    stage: 1,
+    text: story.out.now.text,
+    checks: story.out.now.checks,
+    attempts: story.attempts,
+    authored: authored(step.entrySlice, "now"),
+  });
+  // Stage 2: a second call reads the story the first call wrote and says how it feels.
+  const told = cards.map((c) => c.text);
+  const p2 = feelingPrompt(stage0, step, told);
+  if (step.n <= 2) prompts[`feeling_step${step.n}`] = p2;
+  const feel = await writeFields(
+    p2,
+    ["feeling"],
+    () => ({ ...baseCtx(step.entrySlice), seen: told }),
+    `step ${step.n} feeling`,
+  );
+  cards.push({
+    kind: "feeling",
+    stage: 2,
+    text: feel.out.feeling.text,
+    checks: feel.out.feeling.checks,
+    attempts: feel.attempts,
+    authored: authored(step.entrySlice, "worry"),
+  });
+  steps.push({
+    n: step.n,
+    title: step.title,
+    userSide: step.userSide,
+    entrySlice: step.entrySlice,
+    whereNow: stage0.whereNow[step.entrySlice],
+    cards,
+  });
+  console.log(
+    `step ${step.n}: ${cards.filter((c) => !c.checks.ok).length} card(s) with failed checks`,
+  );
 }
-const stuck = await stuckMessage();
+
+// ---- Stage 3: the pause during Step 2 ----
+const pauseStep = stage0.steps[1];
+const entry = pauseStep.entrySlice;
+const props = stage0.scene.props;
+const prop = props[props.indexOf("map")];
+prompts.stuck = stuckPrompt(stage0, pauseStep, prop);
+let stuck = null;
+for (let attempt = 1; attempt <= 3; attempt += 1) {
+  const json = await chat([{ role: "user", content: prompts.stuck }]);
+  const text = String(json.story ?? "");
+  const checks = checkStuck(text, { ...baseCtx(entry), maxChars: 300 });
+  stuck = { prop, text, why: String(json.why ?? ""), checks, attempts: attempt };
+  if (checks.ok) break;
+}
 console.log(
-  `stuck message: ${stuck.checks.ok ? "OK" : "FAILED checks: " + stuck.checks.failures.join(", ")}`,
+  `stuck message: ${stuck.checks.ok ? "OK" : "checks failed: " + stuck.checks.failures.join(", ")}`,
 );
-const chatTurns = await pauseChat(stuck.text);
+
+const whyHard = authored(entry, "worry");
+const peopleLines = stage0.scene.present.map((n) => stage0.people[n].line);
+const turns = [
+  "hey",
+  "I'm so tired I can't focus anymore",
+  "I'm stuck on a proof in my math homework",
+  "what are you doing right now?",
+  "wait, who's Dudley?",
+  "honestly I just want to quit",
+];
+let seed = 7;
+const rand = () => (seed = (seed * 1664525 + 1013904223) % 4294967296) / 4294967296;
+const history = [];
+const recentGestures = [];
+const recentActions = [];
+const said = [stuck.text];
+const chatTurns = [];
+for (let i = 0; i < turns.length; i += 1) {
+  const text = turns[i];
+  const cls = classifyTurn(text);
+  const fmt = formatFor(cls, i);
+  const gestures = fmt.action ? drawGestures(stage0.gestures, recentGestures, 2, rand) : [];
+  const system = chatSystem(stage0, {
+    entrySlice: entry,
+    whyHard,
+    mood: MOODS.pause,
+    stuck: stuck.text,
+    resolved: "",
+    kind: cls.kind,
+    state: cls.state,
+    actionOn: fmt.action,
+    gestures,
+    max: fmt.max,
+    history,
+    extraNames: [],
+    peopleLines,
+  });
+  if (i === 2) prompts.chat = system;
+  const ctx = {
+    ...baseCtx(entry),
+    actionAllowed: fmt.action,
+    actionRequired: fmt.action,
+    recentActions: [...recentActions],
+    maxSentences: fmt.max,
+    userTerm: "",
+    seen: [...said],
+  };
+  const attempts = await Promise.all(
+    [0, 1, 2].map(() =>
+      chat(
+        [
+          { role: "system", content: system },
+          { role: "user", content: text },
+        ],
+        { temperature: 1 },
+      )
+        .then((j) => ({
+          scope: String(j.scope ?? ""),
+          action: String(j.action ?? "")
+            .replace(/^\(|\)$/g, "")
+            .trim(),
+          reply: String(j.reply ?? ""),
+        }))
+        .catch(() => null),
+    ),
+  );
+  const scored = attempts.filter(Boolean).map((c) => ({ ...c, checks: checkChatReply(c, ctx) }));
+  scored.sort((a, b) => a.checks.failures.length - b.checks.failures.length);
+  const chosen = scored[0];
+  const others = scored.slice(1);
+  chatTurns.push({
+    user: text,
+    kind: cls.kind,
+    state: cls.state,
+    action: fmt.action,
+    policy: fmt.policy,
+    gestures,
+    chosen,
+    others,
+  });
+  history.push({ role: "user", text }, { role: "he", text: chosen.reply });
+  said.push(chosen.reply);
+  if (chosen.action) recentActions.push(chosen.action);
+  gestures.forEach((g) => recentGestures.push(g));
+  console.log(
+    `chat ${i + 1}: ${chosen.checks.ok ? "OK" : "failed: " + chosen.checks.failures.join(", ")}  [${scored.filter((c) => c.checks.ok).length}/${scored.length} candidates passed]`,
+  );
+}
+
+prompts.resolve = resolvePrompt(stage0, pauseStep, stuck);
+let back = null;
+for (let attempt = 1; attempt <= 3; attempt += 1) {
+  const json = await chat([{ role: "user", content: prompts.resolve }]);
+  const text = String(json.card ?? "");
+  const checks = checkCard(text, { ...baseCtx(entry), seen: [stuck.text] });
+  back = { kind: "back", text, checks, attempts: attempt };
+  if (checks.ok) break;
+}
 console.log(
-  `chat: ${chatTurns.filter((t) => t.reply.checks.ok).length}/${chatTurns.length} replies passed`,
+  `resolved card: ${back.checks.ok ? "OK" : "checks failed: " + back.checks.failures.join(", ")}`,
 );
-const back = await backLine();
-console.log(
-  `back line: ${back.checks.ok ? "OK" : "FAILED checks: " + back.checks.failures.join(", ")}`,
-);
+
+// ---- Stage 4: the closing line, smooth and rough ----
+const closing = {};
+for (const mode of ["smooth", "rough"]) {
+  const log = mode === "rough" ? [`${stuck.text} Resolved: ${back.text}`] : [];
+  const p = closingPrompt(stage0, mode, log);
+  if (mode === "rough") prompts.closing = p;
+  const ctx = {
+    forbidden: stage0.story.forbidTerms,
+    banned: [],
+    allowedWords: alwaysAllowed,
+    seen: [],
+  };
+  let best = null;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const json = await chat([{ role: "user", content: p }]);
+    const text = String(json.line ?? "");
+    const checks = checkCard(text, { ...ctx, maxChars: 360 });
+    if (!best || checks.failures.length < best.checks.failures.length)
+      best = { text, checks, attempts: attempt };
+    if (checks.ok) break;
+  }
+  closing[mode] = best;
+  console.log(
+    `closing (${mode}): ${best.checks.ok ? "OK" : "checks failed: " + best.checks.failures.join(", ")}`,
+  );
+}
 
 const costUsd =
   (usage.inputTokens * provider.inputPricePerMillion +
@@ -261,15 +346,18 @@ const costUsd =
   1e6;
 const output = {
   meta: {
-    story: { id: story.id, title: story.title, date: story.date, goal: story.goal },
+    story: { ...stage0.story },
+    who: stage0.who,
     model: provider.model,
     generatedAt: new Date().toISOString(),
-    pauseAtStep: PAUSE_STEP + 1,
-    note: "Draft content generated for a demo. The checks are a subset of docs/ai/AI_06. Not reviewed by a content owner.",
+    pauseAtStep: 2,
+    note: "Draft content generated for a demo from the story database, the NF3 scene data and the canvas prompt blocks. The checks are a subset of docs/ai/AI_06. Not reviewed by a content owner.",
     usage: { ...usage, costUsd: Number(costUsd.toFixed(4)) },
   },
+  prompts,
   steps,
   pause: { stuck, chat: chatTurns, back },
+  closing,
 };
 await writeFile(OUT, `${JSON.stringify(output, null, 2)}\n`);
 console.log(
