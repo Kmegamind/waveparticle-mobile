@@ -26,8 +26,9 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   const { data } = await supabase.auth.getUser();
   const pathname = request.nextUrl.pathname;
   const isAuthRoute = pathname.startsWith("/auth/");
+  const isSafetyRoute = pathname === "/safety" || pathname.startsWith("/safety/");
 
-  if (!data.user && !isAuthRoute) {
+  if (!data.user && !isAuthRoute && !isSafetyRoute) {
     return NextResponse.redirect(new URL("/auth/sign-in", request.url));
   }
 
