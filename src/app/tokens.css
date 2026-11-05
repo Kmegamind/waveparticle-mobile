@@ -42,6 +42,7 @@
   --target: 2.75rem;
   --logo-width: 3.375rem;
   --logo-height: 1.25rem;
+  --layout-phone-max: 26.875rem;
 
   --r-field: 0.875rem;
   --r-capsule: 999px;
