@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { getSafeNextPath } from "@/app/auth/callback/route";
 
 const workspaceRoot = fileURLToPath(new URL("..", import.meta.url));
 
@@ -43,6 +44,40 @@ describe("authentication flow", () => {
     expect(proxy).toContain("updateSession");
     expect(proxy).toContain("matcher");
     expect(session).toContain("getUser");
+  });
+
+  it("allows only same-site callback destinations", () => {
+    expect(getSafeNextPath("/auth/update-password")).toBe("/auth/update-password");
+    expect(getSafeNextPath("//evil.example")).toBe("/");
+    expect(getSafeNextPath("/\\evil.example")).toBe("/");
+    expect(getSafeNextPath("https://evil.example")).toBe("/");
+  });
+
+  it("handles failed callback exchanges with a sign-in error", async () => {
+    const callback = await readWorkspaceFile("src/app/auth/callback/route.ts");
+
+    expect(callback).toContain("exchangeCodeForSession(code)");
+    expect(callback).toContain("confirmation_failed");
+  });
+
+  it("uses the callback route for password reset links", async () => {
+    const auth = await readWorkspaceFile("src/app/auth/auth-form.tsx");
+
+    expect(auth).toContain("/auth/callback?next=/auth/update-password");
+  });
+
+  it("configures harmless Supabase placeholders for Playwright", async () => {
+    const config = await readWorkspaceFile("playwright.config.ts");
+
+    expect(config).toContain("playwright-placeholder");
+    expect(config).toContain("127.0.0.1:9");
+  });
+
+  it("returns a clear proxy configuration error", async () => {
+    const proxy = await readWorkspaceFile("src/proxy.ts");
+
+    expect(proxy).toContain("NextResponse.json");
+    expect(proxy).toContain("Supabase configuration is missing.");
   });
 
   it("protects the product route without adding application storage", async () => {

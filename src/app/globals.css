@@ -215,15 +215,10 @@ a {
 .auth-page input {
   background: var(--raised);
   border: 1.5px solid var(--edge);
-  border-radius: var(--r-control);
+  border-radius: var(--r-field);
   color: var(--ink);
 }
 
-.auth-page button {
-  background: var(--fill);
-  border: 1.5px solid var(--fill-border);
-  border-radius: var(--r-control);
-  box-shadow: var(--shadow-tag);
-  color: var(--on-fill);
-  font-weight: 700;
+.auth-page .button-filled {
+  border-radius: var(--r-capsule);
 }

@@ -1,5 +1,17 @@
 import { AuthForm } from "../auth-form";
 
-export default function SignInPage() {
-  return <AuthForm mode="sign-in" />;
+export const instant = false;
+
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
+  return (
+    <AuthForm
+      mode="sign-in"
+      notice={error === "confirmation_failed" ? "This link is invalid or expired." : undefined}
+    />
+  );
 }

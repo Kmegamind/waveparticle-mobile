@@ -1,8 +1,13 @@
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "./lib/supabase/session";
 
 export async function proxy(request: NextRequest) {
-  return updateSession(request);
+  try {
+    return await updateSession(request);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Supabase configuration is missing.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export const config = {

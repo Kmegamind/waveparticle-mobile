@@ -14,12 +14,12 @@ const copy: Record<AuthMode, { title: string; submit: string }> = {
   "update-password": { title: "Choose a new password", submit: "Update password" },
 };
 
-export function AuthForm({ mode }: { mode: AuthMode }) {
+export function AuthForm({ mode, notice = "" }: { mode: AuthMode; notice?: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(notice);
   const [pending, setPending] = useState(false);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -44,7 +44,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         setMessage("Check your email to confirm your account before signing in.");
       } else if (mode === "forgot-password") {
         const { error: authError } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth/update-password`,
+          redirectTo: `${window.location.origin}/auth/callback?next=/auth/update-password`,
         });
         if (authError) throw authError;
         setMessage("Check your email for a password reset link.");
@@ -89,7 +89,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
             />
           </label>
         )}
-        <button disabled={pending} type="submit">
+        <button className="button-filled" disabled={pending} type="submit">
           {copy[mode].submit}
         </button>
       </form>
@@ -130,7 +130,7 @@ export function SignOutButton() {
   }
 
   return (
-    <button onClick={signOut} type="button">
+    <button className="button-filled" onClick={signOut} type="button">
       Sign out
     </button>
   );
