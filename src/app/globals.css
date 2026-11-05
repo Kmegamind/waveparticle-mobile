@@ -255,3 +255,74 @@ a {
 .auth-page .button-filled {
   border-radius: var(--r-capsule);
 }
+
+.crisis-page {
+  display: grid;
+  font-family: var(--type-shell);
+  gap: var(--space-control-gap);
+  min-height: calc(100svh - var(--target));
+  min-width: 0;
+  padding: var(--space-screen-top) calc(var(--space-screen-inline) + env(safe-area-inset-right)) 0
+    calc(var(--space-screen-inline) + env(safe-area-inset-left));
+}
+
+.crisis-page h1,
+.crisis-page p {
+  font-family: var(--type-shell);
+  margin: 0;
+}
+
+.crisis-page h1 {
+  font-size: var(--text-display-size);
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  line-height: var(--text-display-leading);
+}
+
+.crisis-page p {
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-leading);
+}
+
+.crisis-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-control-gap);
+}
+
+.crisis-actions .button-filled {
+  flex: 62 1 auto;
+  text-decoration: none;
+}
+
+.crisis-actions .button-tinted {
+  flex: 38 1 auto;
+}
+
+.step-screen form,
+.step-screen label {
+  display: grid;
+  gap: var(--space-small-gap);
+}
+
+.step-screen form {
+  gap: var(--space-control-gap);
+  margin-top: var(--space-control-gap);
+}
+
+.step-screen textarea {
+  background: var(--raised);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-field);
+  color: var(--ink);
+  font-family: var(--type-sans);
+  font-size: var(--text-body-size);
+  min-height: 3.125rem;
+  padding: var(--space-small-gap);
+  width: 100%;
+}
+
+.step-screen textarea:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 3px;
+}
