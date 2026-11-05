@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { checkCard, checkChatReply, nextAttemptNeeded } from "../scripts/demo-checks.mjs";
+import {
+  checkAction,
+  checkCard,
+  checkChatReply,
+  nextAttemptNeeded,
+  unknownNames,
+} from "../scripts/demo-checks.mjs";
 
 const ctx = { forbidden: ["Manhattan Project"], banned: ["mesa"], seen: [] as string[] };
 
@@ -64,5 +70,52 @@ describe("nextAttemptNeeded", () => {
     expect(nextAttemptNeeded({ ok: false }, 1)).toBe(true);
     expect(nextAttemptNeeded({ ok: false }, 3)).toBe(false);
     expect(nextAttemptNeeded({ ok: true }, 1)).toBe(false);
+  });
+});
+
+describe("names gate", () => {
+  it("finds a capitalised word that is not allowed", () => {
+    expect(unknownNames("I told Dudley about Fermi.", ["Dudley"])).toEqual(["Fermi"]);
+    expect(unknownNames("Dudley waits.", [])).toEqual([]);
+  });
+  it("fails a card that brings in an unknown person", () => {
+    const c = { ...ctx, allowedWords: ["Dudley"] };
+    expect(checkCard("I turn to Fermi and wait.", c).ok).toBe(false);
+    expect(checkCard("I turn to Dudley and wait.", c).ok).toBe(true);
+  });
+});
+
+describe("opening action", () => {
+  it("requires or forbids the action as the format says", () => {
+    expect(checkAction("", { actionRequired: true })).toContain("action missing");
+    expect(checkAction("blowing on cold hands", { actionAllowed: false })).toContain(
+      "action where none is wanted",
+    );
+  });
+  it("rejects pronouns, mentions of the user, bad length and repeats", () => {
+    expect(checkAction("rubbing my eye", {})).toContain("action uses a pronoun");
+    expect(checkAction("handing you the map", {})).toContain("action mentions the user");
+    expect(checkAction("nodding", {})).toContain("action length");
+    expect(
+      checkAction("blowing on cold hands", { recentActions: ["Blowing on cold fingers"] }),
+    ).toContain("action repeats a recent one");
+  });
+  it("accepts a short impersonal action", () => {
+    expect(checkAction("smoothing a folded map against a knee", {})).toEqual([]);
+  });
+});
+
+describe("chat comfort phrases", () => {
+  it("rejects comfort methods and a final question", () => {
+    const base = { ...ctx, userTerm: "" };
+    expect(
+      checkChatReply({ scope: "emotional", action: "", reply: "Give it some time." }, base).ok,
+    ).toBe(false);
+    expect(
+      checkChatReply(
+        { scope: "his_world", action: "", reply: "It is cold here. Are you cold?" },
+        base,
+      ).ok,
+    ).toBe(false);
   });
 });
