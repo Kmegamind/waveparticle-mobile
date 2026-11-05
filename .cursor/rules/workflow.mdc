@@ -1,0 +1,18 @@
+---
+description: Issue-to-PR workflow and hard limits for Cursor sessions
+alwaysApply: true
+---
+Cursor has no pre-commit or pre-PR hook in this repository, so follow these steps yourself.
+
+1. Work only on one GitHub issue that is labelled `ready`. Claim it: assign yourself, add `in-progress`, comment "Working on this."
+2. Work in a separate git worktree on a branch `feat/<issue#>-<slug>` (or `fix/`, `docs/`, `chore/`) cut from up-to-date `origin/main`: `git worktree add ../wt-<issue#> -b <branch> origin/main`. Never commit to `main` and never switch the branch of the main checkout.
+3. Write the failing test first. Never weaken or delete a test to make it pass.
+4. Before every commit run all four, and fix failures instead of skipping them: `npm test`, `npm run test:e2e`, `npm run lint`, `npm run format:check`.
+5. Open a pull request whose body contains `Closes #<issue#>`. Comment the PR link on the issue.
+
+Hard limits:
+- Never merge a pull request, never push to `main`, never run deploy commands (`vercel`, production deploys).
+- Never read, print or paste `.env*` files, `secrets/`, or any key value. Real values live only in the local `.env` and in Vercel environment settings.
+- Never put the Supabase service-role key or any model API key in app code or in a `NEXT_PUBLIC_` variable.
+- Changes to colors, spacing or controls must follow `DESIGN.md`.
+- Do not edit `.claude/`, `AGENTS.md` or rule files unless the issue asks for it.
