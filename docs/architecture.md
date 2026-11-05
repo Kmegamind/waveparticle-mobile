@@ -6,7 +6,7 @@ What exists today comes from the code. Planned parts are labeled "planned".
 Browser (installed web app, mobile first)
    └─ Next.js App Router  (src/app)
         ├─ pages and components            exists: one page
-        ├─ src/lib                          exists: clock formatting
+        ├─ src/lib                          exists: clock formatting, story start
         ├─ route handlers (AI and data)     planned
         └─ Supabase (sign-in, Postgres)     exists: clients and first user-data schema
 ```
@@ -18,6 +18,7 @@ Browser (installed web app, mobile first)
 | Root layout | `src/app/layout.tsx` | Page shell, install metadata and the phone viewport |
 | Web app manifest | `src/app/manifest.ts` | Install name, icons and standalone display |
 | Clock formatting | `src/lib/clock.ts` | Formats seconds as `MM:SS`, never below `00:00` |
+| Story start | `src/lib/story/start.ts` | Divides a story across the plan's steps when Start is pressed. Key slices are must-use facts. No model call |
 | Supabase clients | `src/lib/supabase/` | Browser client (public key), server client (reads request cookies), `getCurrentUser`, settings reader |
 | User-data schema | `supabase/migrations/20261106000000_create_user_data_schema.sql` | Profiles, account-owned Goals and Steps, and Sessions with row-level security |
 | Server progress | `supabase/migrations/20261106120000_save_server_progress.sql` and `src/lib/progress/` | Story binding on a session, step positions, and shown lines. Home, Goals and the Life Path read this account state |
