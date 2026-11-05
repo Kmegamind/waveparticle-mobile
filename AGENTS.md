@@ -48,6 +48,7 @@ WaveParticle Mobile: A mobile-first web app where you do a real task while a his
 
 ## UI
 - All UI MUST use @DESIGN.md tokens. No hard-coded colors, fonts or spacing.
+- Controls (buttons, fields, switches, tab bar) follow `DESIGN.md` section 6. If code and `DESIGN.md` disagree, `DESIGN.md` wins; fix the code or raise it with a human.
 
 ## Detailed guides (read only when relevant)
 - Architecture: @docs/architecture.md · API: @docs/api/ · Testing: @docs/testing.md · Deploy: @docs/deploy.md
