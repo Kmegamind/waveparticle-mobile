@@ -1,0 +1,235 @@
+{
+  "meta": {
+    "story": {
+      "id": "site-search",
+      "title": "The Canyon and the Mesa",
+      "date": "1942-11-16",
+      "goal": "Get the new weapons laboratory put somewhere my people can actually live, before the Army settles for a canyon too small to hold it."
+    },
+    "model": "deepseek-flash",
+    "generatedAt": "2026-11-05T16:08:53.953Z",
+    "pauseAtStep": 2,
+    "note": "Draft content generated for a demo. The checks are a subset of docs/ai/AI_06. Not reviewed by a content owner.",
+    "usage": {
+      "calls": 13,
+      "inputTokens": 6556,
+      "outputTokens": 7977,
+      "costUsd": 0.0058
+    }
+  },
+  "steps": [
+    {
+      "n": 1,
+      "title": "Measure the canyon floor",
+      "intent": "Find out whether the flat land at Jemez Springs is wide enough for a town.",
+      "attempts": 1,
+      "ms": 6704,
+      "cards": [
+        {
+          "kind": "opening",
+          "text": "I stand on the flat land at Jemez Springs as the day begins, to judge whether it is wide enough for a town.",
+          "checks": {
+            "ok": true,
+            "failures": []
+          },
+          "fallback": false
+        },
+        {
+          "kind": "state",
+          "text": "I must keep the Army from settling on a canyon too small for the laboratory.",
+          "checks": {
+            "ok": true,
+            "failures": []
+          },
+          "fallback": false
+        },
+        {
+          "kind": "state",
+          "text": "I see that the people at the laboratory need flat ground with room for a town.",
+          "checks": {
+            "ok": true,
+            "failures": []
+          },
+          "fallback": false
+        }
+      ]
+    },
+    {
+      "n": 2,
+      "title": "Make the case against the canyon",
+      "intent": "Persuade Colonel Dudley that the canyon is wrong for the laboratory.",
+      "attempts": 2,
+      "ms": 9179,
+      "cards": [
+        {
+          "kind": "landing",
+          "text": "Standing in Jemez Springs left me with a narrow strip of flat land at the bottom. I need Colonel Dudley to see the canyon's limits before the Army settles.",
+          "checks": {
+            "ok": true,
+            "failures": []
+          },
+          "fallback": false
+        },
+        {
+          "kind": "state",
+          "text": "The flat ground at the bottom is a thin snake of ground, and a laboratory needs space for people to live.",
+          "checks": {
+            "ok": true,
+            "failures": []
+          },
+          "fallback": false
+        },
+        {
+          "kind": "state",
+          "text": "The canyon at Jemez Springs cannot hold the laboratory and the people who must live near it.",
+          "checks": {
+            "ok": true,
+            "failures": []
+          },
+          "fallback": false
+        }
+      ]
+    },
+    {
+      "n": 3,
+      "title": "Offer another site",
+      "intent": "Be ready with a different place if the General asks for one.",
+      "attempts": 1,
+      "ms": 8844,
+      "cards": [
+        {
+          "kind": "landing",
+          "text": "Dudley, McMillan and I were still arguing at Jemez Springs when General Groves appeared. If he asks for a different place, I must have one ready to name.",
+          "checks": {
+            "ok": true,
+            "failures": []
+          },
+          "fallback": false
+        },
+        {
+          "kind": "state",
+          "text": "I remember the flat land at the bottom as a thin snake of ground, and the town we described would not sit on it.",
+          "checks": {
+            "ok": true,
+            "failures": []
+          },
+          "fallback": false
+        },
+        {
+          "kind": "state",
+          "text": "I found no view of the mountains from the canyon floor, and I judged the steep sides nearly impossible to fence in.",
+          "checks": {
+            "ok": true,
+            "failures": []
+          },
+          "fallback": false
+        }
+      ]
+    },
+    {
+      "n": 4,
+      "title": "Take the General to see it",
+      "intent": "Drive the General out to look at the place I have in mind.",
+      "attempts": 1,
+      "ms": 10161,
+      "cards": [
+        {
+          "kind": "landing",
+          "text": "Groves said Jemez Springs would never do and asked for another place, and I pointed him up the canyon to the mesa and the boys' school. The flat ground at the bottom was a thin snake, and the Army may still settle for a canyon too small to hold the town we need.",
+          "checks": {
+            "ok": true,
+            "failures": []
+          },
+          "fallback": false
+        },
+        {
+          "kind": "state",
+          "text": "McMillan and I argued with Dudley that the canyon floor was too narrow for the town we had in mind.",
+          "checks": {
+            "ok": true,
+            "failures": []
+          },
+          "fallback": false
+        },
+        {
+          "kind": "state",
+          "text": "There was no view of the mountains from the floor, and the steep canyons would be nearly impossible to fence in.",
+          "checks": {
+            "ok": true,
+            "failures": []
+          },
+          "fallback": false
+        }
+      ]
+    }
+  ],
+  "pause": {
+    "stuck": {
+      "text": "I am trying to persuade Colonel Dudley that Jemez Springs is wrong for the laboratory, and I have not yet found the way to say it plainly enough. Standing in it, the flat land at the bottom was a thin snake of ground, and that is the observation I keep returning to.",
+      "checks": {
+        "ok": true,
+        "failures": []
+      },
+      "attempts": 1
+    },
+    "chat": [
+      {
+        "user": "What is the canyon like?",
+        "reply": {
+          "scope": "his_world",
+          "reply": "Standing in it, I found the level ground at the bottom to be only a narrow ribbon. That is not enough room for the laboratory we have in mind.",
+          "checks": {
+            "ok": true,
+            "failures": []
+          },
+          "attempts": 1
+        }
+      },
+      {
+        "user": "I can't start my essay. What should I do?",
+        "reply": {
+          "scope": "task",
+          "reply": "That is not something I can help with from where I stand. My own afternoon is spent arguing that the ground in this canyon is too narrow for what we mean to put there.",
+          "checks": {
+            "ok": true,
+            "failures": []
+          },
+          "attempts": 2
+        }
+      },
+      {
+        "user": "How do attention mechanisms work?",
+        "reply": {
+          "scope": "knowledge",
+          "reply": "That is not a thing I know or could help with. My mind today is on whether this canyon floor offers room enough for the laboratory.",
+          "checks": {
+            "ok": true,
+            "failures": []
+          },
+          "attempts": 2
+        }
+      },
+      {
+        "user": "Are you tired?",
+        "reply": {
+          "scope": "personal",
+          "reply": "I am tired. It has been a long day of walking the ground here and pressing the case for a better site.",
+          "checks": {
+            "ok": true,
+            "failures": []
+          },
+          "attempts": 1
+        }
+      }
+    ],
+    "back": {
+      "kind": "back",
+      "text": "I fixed in my mind how thin that strip of flat ground runs at the bottom, because that is where the argument must start. I turned back to Dudley with it.",
+      "checks": {
+        "ok": true,
+        "failures": []
+      },
+      "attempts": 1
+    }
+  }
+}

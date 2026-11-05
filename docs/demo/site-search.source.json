@@ -1,0 +1,103 @@
+{
+  "id": "site-search",
+  "sequence": 8,
+  "title": "The Canyon and the Mesa",
+  "date": "1942-11-16",
+  "goal": "Get the new weapons laboratory put somewhere my people can actually live, before the Army settles for a canyon too small to hold it.",
+  "facts": [
+    {
+      "id": "measure_jemez_springs.happened-1",
+      "taskId": "measure_jemez_springs",
+      "text": "Dudley, McMillan and I drove out to Jemez Springs on November 16."
+    },
+    {
+      "id": "measure_jemez_springs.happened-2",
+      "taskId": "measure_jemez_springs",
+      "text": "Once we were standing in it, the flat land at the bottom turned out to be a thin snake of ground."
+    },
+    {
+      "id": "convince_dudley.happened-1",
+      "taskId": "convince_dudley",
+      "text": "McMillan and I argued with Dudley that the canyon floor was too narrow for the town we envisioned."
+    },
+    {
+      "id": "convince_dudley.happened-2",
+      "taskId": "convince_dudley",
+      "text": "I complained that there was no view of the mountains and that the steep canyons would be nearly impossible to fence in."
+    },
+    {
+      "id": "convince_dudley.happened-3",
+      "taskId": "convince_dudley",
+      "text": "We were still arguing when General Groves showed up."
+    },
+    {
+      "id": "offer_the_mesa.happened-1",
+      "taskId": "offer_the_mesa",
+      "text": "Groves took one look at Jemez Springs and said, \"This will never do.\""
+    },
+    {
+      "id": "offer_the_mesa.happened-2",
+      "taskId": "offer_the_mesa",
+      "text": "He turned to me and asked if there was something else around with prospects."
+    },
+    {
+      "id": "offer_the_mesa.happened-3",
+      "taskId": "offer_the_mesa",
+      "text": "I told him, \"If you go on up the canyon, you come out on top of the mesa and there's a boys' school there which might be a usable site.\" McMillan said afterward that I proposed it as though it was a brand new idea."
+    },
+    {
+      "id": "show_groves_the_mesa.happened-1",
+      "taskId": "show_groves_the_mesa",
+      "text": "We got back into the cars, reluctantly, and drove about thirty miles across the Pajarito Plateau."
+    },
+    {
+      "id": "show_groves_the_mesa.happened-2",
+      "taskId": "show_groves_the_mesa",
+      "text": "It was late afternoon when we pulled up to the Los Alamos Ranch School, in a drizzly snowfall, and there were schoolboys running around a playing field in shorts."
+    },
+    {
+      "id": "show_groves_the_mesa.happened-3",
+      "taskId": "show_groves_the_mesa",
+      "text": "By one account, Groves surveyed the scene and suddenly announced, \"This is the place.\""
+    }
+  ],
+  "forbiddenTerms": [
+    "Groves approved",
+    "the mesa was chosen",
+    "Manhattan Project",
+    "Project Y",
+    "Site Y",
+    "Trinity test",
+    "Hiroshima",
+    "Nagasaki",
+    "Fat Man",
+    "Little Boy"
+  ],
+  "keySlices": [
+    {
+      "id": "offer_the_mesa",
+      "factIds": [
+        "offer_the_mesa.happened-1",
+        "offer_the_mesa.happened-2",
+        "offer_the_mesa.happened-3"
+      ],
+      "keyLine": "I've told Groves about the mesa and the boys' school above the canyon",
+      "confirmed": true
+    },
+    {
+      "id": "show_groves_the_mesa",
+      "factIds": [
+        "show_groves_the_mesa.happened-1",
+        "show_groves_the_mesa.happened-2",
+        "show_groves_the_mesa.happened-3"
+      ],
+      "keyLine": "Groves has stood on the school grounds and looked out from the mesa",
+      "confirmed": true
+    }
+  ],
+  "provenance": {
+    "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/site-search.plan.json",
+    "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+    "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+  }
+}
