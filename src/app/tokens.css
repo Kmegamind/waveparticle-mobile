@@ -1,0 +1,123 @@
+:root {
+  --bg: #eae9e7;
+  --surface: #f3f2f1;
+  --raised: #ffffff;
+  --ink: #1b1a19;
+  --ink-2: #434240;
+  --faint: #646361;
+  --edge: #81807d;
+  --hairline: #d3d1cd;
+  --accent: #426f4c;
+  --mark: #62906b;
+  --fill: #c3e0c8;
+  --on-fill: #050b06;
+  --fill-border: #517e5a;
+  --glow-1: #cfe7d3;
+  --glow-2: #e7e2da;
+  --logo-filter: none;
+
+  --type-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --type-sans: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --type-mono: "Atkinson Hyperlegible Mono", ui-monospace, monospace;
+  --type-voice: Newsreader, Georgia, serif;
+  --type-hand: "Shantell Sans", "Patrick Hand", system-ui, sans-serif;
+
+  --text-display-size: 2rem;
+  --text-display-leading: 1.08;
+  --text-body-size: 1.0625rem;
+  --text-body-leading: 1.5;
+  --text-button-size: 1.0625rem;
+  --text-caption-size: 0.84375rem;
+  --text-overline-size: 0.8125rem;
+  --text-tab-size: 0.8125rem;
+  --text-timer-size: 4.875rem;
+
+  --space-screen-top: 1.625rem;
+  --space-screen-inline: 1.375rem;
+  --space-screen-bottom: 1rem;
+  --space-control-gap: 0.625rem;
+  --space-small-gap: 0.5rem;
+  --target: 2.75rem;
+  --logo-width: 3.375rem;
+  --logo-height: 1.25rem;
+
+  --r-control: 0.875rem;
+  --r-card: 1.5rem;
+  --r-note: 0.75rem;
+  --r-chip: 0.75rem;
+  --r-sheet: 1.75rem;
+  --r-toast: 0.75rem;
+
+  --shadow-paper: 0 0.625rem 1.25rem -0.875rem color-mix(in srgb, var(--ink) 45%, transparent);
+  --shadow-tag: 0 0.125rem 0 var(--fill-border);
+}
+
+.theme-dark {
+  --bg: #110f0d;
+  --surface: #1a1815;
+  --raised: #262421;
+  --ink: #efeeed;
+  --ink-2: #cbcac8;
+  --faint: #a5a4a2;
+  --edge: #7c7a77;
+  --hairline: #2d2b28;
+  --accent: #89b992;
+  --mark: #719f7a;
+  --fill: #a1caa8;
+  --on-fill: #050b06;
+  --fill-border: #6e9876;
+  --glow-1: #102515;
+  --glow-2: #1a1814;
+  --logo-filter: invert(1);
+}
+
+.skin-opp {
+  --bg: #140d12;
+  --surface: #1d161b;
+  --raised: #292127;
+  --ink: #f1edf0;
+  --ink-2: #cec9cc;
+  --faint: #a8a3a6;
+  --edge: #7f787d;
+  --hairline: #31282e;
+  --accent: #89b992;
+  --mark: #719f7a;
+  --fill: #a1caa8;
+  --on-fill: #050b06;
+  --fill-border: #6e9876;
+  --glow-1: #12261a;
+  --glow-2: #1f141d;
+  --logo-filter: invert(1);
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-shell:not(.theme-light) {
+    --bg: #110f0d;
+    --surface: #1a1815;
+    --raised: #262421;
+    --ink: #efeeed;
+    --ink-2: #cbcac8;
+    --faint: #a5a4a2;
+    --edge: #7c7a77;
+    --hairline: #2d2b28;
+    --accent: #89b992;
+    --mark: #719f7a;
+    --fill: #a1caa8;
+    --on-fill: #050b06;
+    --fill-border: #6e9876;
+    --glow-1: #102515;
+    --glow-2: #1a1814;
+    --logo-filter: invert(1);
+  }
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-foreground: var(--ink);
+  --color-accent: var(--accent);
+  --font-display: var(--type-display);
+  --font-sans: var(--type-sans);
+  --font-mono: var(--type-mono);
+}
