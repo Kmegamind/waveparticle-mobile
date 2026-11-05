@@ -30,7 +30,9 @@ Words used with a fixed meaning:
 | Return pop-up | The modal in which the character says what he did while the user was away, with one start button (2.9). |
 | Foreground minutes | Minutes the app has been on screen. The clock is frozen while the user is away unless the setting "Keep the clock running when I leave" is on (Decided, F2). |
 
-Content files used as the real data (all in the planning folder under `1_Projects/Newfeatures/NF3_content/` unless stated): `site_search_cards_2026-10-29.json`, `trinity_chains_2026-10-29.json`, `trinity_leakmap_2026-10-29.json`, `dialogue_pools_2026-10-29.json`, `story_openers_2026-10-29.json`, `snag_sample_trinity_s4_2026-11-04.json`, `nf5_records_2026-10-29.json`, plus the story database under `2_Areas/Product/oppenheimer-stories/en/database/` (index, `entries/*.plan.json`, `personas.json`).
+Content files used as the real data (all in the planning folder under `1_Projects/Newfeatures/NF3_content/` unless stated): `site_search_cards_2026-10-29.json`, `trinity_chains_2026-10-29.json`, `trinity_leakmap_2026-10-29.json`, `dialogue_pools_2026-10-29.json`, `story_openers_2026-10-29.json`, `snag_sample_trinity_s4_2026-11-04.json`, `nf5_records_2026-10-29.json`, plus the story database under `2_Areas/Product/oppenheimer-stories/en/database/` (index, `entries/*.plan.json`, `personas.json`). The repository import is `src/content/oppenheimer/stories.json`, exposed through `src/content/oppenheimer/index.ts`.
+
+The repository import contains the 26 story goals, ordered facts, forbidden terms, and provenance. Key slices are represented by task-level cut points: content-owner `added_later` markers are preferred, and the first two task cut points are used when a story has fewer than two markers. Each imported key slice is marked `confirmed` and records the fact ids it covers. This selection is data, not a limit on the number of user Steps.
 
 No person has read any of the authored lines for voice. They were written from the story database entries and passed by script only.
 
