@@ -1,0 +1,2932 @@
+[
+  {
+    "id": "bohr-difficulties",
+    "sequence": 1,
+    "title": "The Trade of a Theorist",
+    "date": "1926-05-01",
+    "goal": "Quit the bench and make myself a theoretical physicist: one real paper, on the collision problem, before the black mood comes back.",
+    "facts": [
+      {
+        "id": "quit_the_films.happened-1",
+        "taskId": "quit_the_films",
+        "text": "This spring I left the miserable hole for less miserable quarters along the river Cam, halfway to Grantchester, and it lifted my spirits."
+      },
+      {
+        "id": "quit_the_films.happened-2",
+        "taskId": "quit_the_films",
+        "text": "I turned from the lab to theoretical physics. As I'd put it: \"At that point I forgot about beryllium and films and decided to try to learn the trade of being a theoretical physicist.\""
+      },
+      {
+        "id": "quit_the_films.happened-3",
+        "taskId": "quit_the_films",
+        "text": "By then I was fully aware that it was an unusual time, that great things were afoot."
+      },
+      {
+        "id": "match_the_two_theories.happened-1",
+        "taskId": "match_the_two_theories",
+        "text": "Sometime early in 1926 I read Heisenberg's paper and saw that a wholly new way of thinking about electrons was coming."
+      },
+      {
+        "id": "match_the_two_theories.happened-2",
+        "taskId": "match_the_two_theories",
+        "text": "About the same time Schrodinger published his wave theory of the atom, and I read that too."
+      },
+      {
+        "id": "match_the_two_theories.happened-3",
+        "taskId": "match_the_two_theories",
+        "text": "After both, I suspected there had to be a connection between the wave mechanics and the matrix mechanics: two versions of the same theory. An egg this time, not another cackle."
+      },
+      {
+        "id": "get_inside_dirac.happened-1",
+        "taskId": "get_inside_dirac",
+        "text": "Quantum mechanics became the hot topic at the Kapitza Club. \"In a rudimentary way,\" I began to get pretty interested."
+      },
+      {
+        "id": "get_inside_dirac.happened-2",
+        "taskId": "get_inside_dirac",
+        "text": "That spring I met Paul Dirac. His work \"was not easily understood\" and he was \"not concerned to be understood. I thought he was absolutely grand.\""
+      },
+      {
+        "id": "get_inside_dirac.happened-3",
+        "taskId": "get_inside_dirac",
+        "text": "Though by one account my first impression wasn't so kind: I told Jeffries Wyman I didn't think Dirac amounted to anything."
+      },
+      {
+        "id": "work_the_collision_problem.happened-1",
+        "taskId": "work_the_collision_problem",
+        "text": "That spring, with my mind on the mend, I worked steadily on the collision, or continuous spectrum, problem."
+      },
+      {
+        "id": "work_the_collision_problem.happened-2",
+        "taskId": "work_the_collision_problem",
+        "text": "It was hard work."
+      },
+      {
+        "id": "answer_bohr.happened-1",
+        "taskId": "answer_bohr",
+        "text": "One day I walked into Ernest Rutherford's office and saw Bohr sitting in a chair."
+      },
+      {
+        "id": "answer_bohr.happened-2",
+        "taskId": "answer_bohr",
+        "text": "Rutherford rose from behind his desk and introduced me. Bohr asked politely, \"How is it going?\""
+      },
+      {
+        "id": "answer_bohr.happened-3",
+        "taskId": "answer_bohr",
+        "text": "I said, \"I'm in difficulties.\" He asked, \"Are the difficulties mathematical or physical?\""
+      },
+      {
+        "id": "answer_bohr.happened-4",
+        "taskId": "answer_bohr",
+        "text": "I said, \"I don't know.\" Bohr said, \"That's bad.\""
+      }
+    ],
+    "forbiddenTerms": [
+      "Gottingen",
+      "Max Born",
+      "Born-Oppenheimer",
+      "Los Alamos",
+      "Manhattan Project",
+      "atomic bomb",
+      "Trinity test",
+      "Nobel Prize",
+      "the neutron"
+    ],
+    "keySlices": [
+      {
+        "id": "answer_bohr",
+        "factIds": [
+          "answer_bohr.happened-1",
+          "answer_bohr.happened-2",
+          "answer_bohr.happened-3",
+          "answer_bohr.happened-4"
+        ],
+        "keyLine": "I have answered Bohr's question about how my work is going and heard his reply",
+        "confirmed": true
+      },
+      {
+        "id": "quit_the_films",
+        "factIds": [
+          "quit_the_films.happened-1",
+          "quit_the_films.happened-2",
+          "quit_the_films.happened-3"
+        ],
+        "keyLine": "I have stopped trying to make beryllium films and decided to learn the trade of a theoretical physicist",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/bohr-difficulties.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "tolman-lecture",
+    "sequence": 2,
+    "title": "The First Course at Berkeley",
+    "date": "1929-09-01",
+    "goal": "Give Berkeley's graduate students the new quantum physics whole, from the first week, before slowing down turns it into something smaller and false.",
+    "facts": [
+      {
+        "id": "build_quantum_course.happened-1",
+        "taskId": "build_quantum_course",
+        "text": "I spent the first weeks preparing lectures and getting to know my colleagues."
+      },
+      {
+        "id": "build_quantum_course.happened-2",
+        "taskId": "build_quantum_course",
+        "text": "I built the course to take in the whole new physics, from Heisenberg's uncertainty principle to Pauli's latest thinking on quantum electrodynamics."
+      },
+      {
+        "id": "open_with_paradox.happened-1",
+        "taskId": "open_with_paradox",
+        "text": "I started the course with wave-particle duality and put the paradox as baldly as I could."
+      },
+      {
+        "id": "open_with_paradox.happened-2",
+        "taskId": "open_with_paradox",
+        "text": "I talked steadily, softly, without notes, stopping only to puff on my cigarette or turn to the board for an equation."
+      },
+      {
+        "id": "open_with_paradox.happened-3",
+        "taskId": "open_with_paradox",
+        "text": "Most of the students couldn't make sense of it."
+      },
+      {
+        "id": "hold_the_pace.happened-1",
+        "taskId": "hold_the_pace",
+        "text": "When I was told I was going too fast, I slowed down, reluctantly."
+      },
+      {
+        "id": "hold_the_pace.happened-2",
+        "taskId": "hold_the_pace",
+        "text": "Before long I complained to my department chairman: \"I'm going so slowly that I'm not getting anywhere.\""
+      },
+      {
+        "id": "ask_tolman.happened-1",
+        "taskId": "ask_tolman",
+        "text": "As the students filed out I spotted Tolman in the back and asked him what he thought."
+      },
+      {
+        "id": "ask_tolman.happened-2",
+        "taskId": "ask_tolman",
+        "text": "He said: \"Well, Robert, that was beautiful, but I didn't understand a damn word.\""
+      }
+    ],
+    "forbiddenTerms": [
+      "smoke the chalk",
+      "very difficult lecturer",
+      "how bad it must have been",
+      "nasty gory",
+      "Los Alamos",
+      "Manhattan Project",
+      "atomic bomb",
+      "Trinity test"
+    ],
+    "keySlices": [
+      {
+        "id": "hold_the_pace",
+        "factIds": ["hold_the_pace.happened-1", "hold_the_pace.happened-2"],
+        "keyLine": "I have answered the complaint that I'm too fast and decided how far I'll slow down",
+        "confirmed": true
+      },
+      {
+        "id": "ask_tolman",
+        "factIds": ["ask_tolman.happened-1", "ask_tolman.happened-2"],
+        "keyLine": "Tolman has told me what he thought of the lecture",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/tolman-lecture.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "truchas-morning",
+    "sequence": 3,
+    "title": "The Morning at Lake Katherine",
+    "date": "1936-07-01",
+    "goal": "Get us up North Truchas this morning, sick heads and two lost horses be damned. We may not be this close again.",
+    "facts": [
+      {
+        "id": "persuade_the_climb.happened-1",
+        "taskId": "persuade_the_climb",
+        "text": "We woke after the freezing night to find two of the horses had run off."
+      },
+      {
+        "id": "persuade_the_climb.happened-2",
+        "taskId": "persuade_the_climb",
+        "text": "George, Roger and I were still feeling the altitude."
+      },
+      {
+        "id": "persuade_the_climb.happened-3",
+        "taskId": "persuade_the_climb",
+        "text": "I persuaded the men to climb North Truchas Peak anyway."
+      },
+      {
+        "id": "reach_the_summit.happened-1",
+        "taskId": "reach_the_summit",
+        "text": "We climbed North Truchas Peak, all 13,024 feet of it."
+      },
+      {
+        "id": "reach_the_summit.happened-2",
+        "taskId": "reach_the_summit",
+        "text": "We scaled the summit in a thunderstorm."
+      },
+      {
+        "id": "walk_back_to_los_pinos.happened-1",
+        "taskId": "walk_back_to_los_pinos",
+        "text": "We had to walk back sopping wet, all the way to Los Pinos."
+      },
+      {
+        "id": "walk_back_to_los_pinos.happened-2",
+        "taskId": "walk_back_to_los_pinos",
+        "text": "Katherine Page served us all stiff drinks."
+      }
+    ],
+    "forbiddenTerms": [
+      "struck by lightning",
+      "soaked to the skin",
+      "Los Alamos",
+      "Manhattan Project",
+      "Trinity test",
+      "atomic bomb",
+      "Hiroshima",
+      "General Groves",
+      "security clearance",
+      "Kitty Oppenheimer"
+    ],
+    "keySlices": [
+      {
+        "id": "persuade_the_climb",
+        "factIds": [
+          "persuade_the_climb.happened-1",
+          "persuade_the_climb.happened-2",
+          "persuade_the_climb.happened-3"
+        ],
+        "keyLine": "George and Roger have agreed to climb North Truchas Peak that day",
+        "confirmed": true
+      },
+      {
+        "id": "reach_the_summit",
+        "factIds": ["reach_the_summit.happened-1", "reach_the_summit.happened-2"],
+        "keyLine": "We are standing on the summit of North Truchas Peak",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/truchas-morning.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "midnight-pamphlet",
+    "sequence": 4,
+    "title": "The Midnight Pamphlet",
+    "date": "1939-10-01",
+    "goal": "Help Hoke make his antiwar pamphlet hold up tonight, while sensible people are turning hawkish, before a weak draft goes out under his League's name.",
+    "facts": [
+      {
+        "id": "judge_the_draft.happened-1",
+        "taskId": "judge_the_draft",
+        "text": "Hoke dropped by after midnight on his way home from the League meeting; I was still up with my lecture."
+      },
+      {
+        "id": "judge_the_draft.happened-2",
+        "taskId": "judge_the_draft",
+        "text": "I offered him a drink, and he explained he needed help editing an antiwar pamphlet the League was sponsoring."
+      },
+      {
+        "id": "judge_the_draft.happened-3",
+        "taskId": "judge_the_draft",
+        "text": "I sat down and read the manuscript through."
+      },
+      {
+        "id": "tell_him_straight.happened-1",
+        "taskId": "tell_him_straight",
+        "text": "When I finished reading, I stood up and said, \"It's no good.\""
+      },
+      {
+        "id": "tell_him_straight.happened-2",
+        "taskId": "tell_him_straight",
+        "text": "I told Hoke to sit down at the typewriter."
+      },
+      {
+        "id": "dictate_new_text.happened-1",
+        "taskId": "dictate_new_text",
+        "text": "I dictated new language while Hoke typed."
+      },
+      {
+        "id": "dictate_new_text.happened-2",
+        "taskId": "dictate_new_text",
+        "text": "As redrafted, the pamphlet made an impassioned argument for keeping America out of the European war."
+      },
+      {
+        "id": "dictate_new_text.happened-3",
+        "taskId": "dictate_new_text",
+        "text": "An hour later Hoke left with \"a completely new text.\""
+      }
+    ],
+    "forbiddenTerms": [
+      "rewrote the whole thing",
+      "rewrote it from scratch",
+      "Los Alamos",
+      "Manhattan Project",
+      "atomic bomb",
+      "Pearl Harbor",
+      "Eltenton",
+      "security clearance",
+      "Trinity test"
+    ],
+    "keySlices": [
+      {
+        "id": "judge_the_draft",
+        "factIds": [
+          "judge_the_draft.happened-1",
+          "judge_the_draft.happened-2",
+          "judge_the_draft.happened-3"
+        ],
+        "keyLine": "I have read Hoke's manuscript all the way through and know whether it works",
+        "confirmed": true
+      },
+      {
+        "id": "tell_him_straight",
+        "factIds": ["tell_him_straight.happened-1", "tell_him_straight.happened-2"],
+        "keyLine": "I have told Hoke plainly what I think of the draft",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/midnight-pamphlet.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "marry-a-friend",
+    "sequence": 5,
+    "title": "A Friend of Yours",
+    "date": "1940-10-01",
+    "goal": "Make the hall see that Spain started this war, so they give for the refugees. Then tell Steve Nelson, Kitty's old friend, I'm marrying her.",
+    "facts": [
+      {
+        "id": "spain_started_the_war.happened-1",
+        "taskId": "spain_started_the_war",
+        "text": "I spoke as the featured speaker at the fundraiser for the Spanish refugees."
+      },
+      {
+        "id": "spain_started_the_war.happened-2",
+        "taskId": "spain_started_the_war",
+        "text": "I told them the fascist victory in Spain had led directly to the outbreak of general war in Europe."
+      },
+      {
+        "id": "they_bought_time.happened-1",
+        "taskId": "they_bought_time",
+        "text": "I argued that those like Nelson who had served in Spain had fought a delaying action."
+      },
+      {
+        "id": "they_bought_time.happened-2",
+        "taskId": "they_bought_time",
+        "text": "Nelson was right there on the platform to hear it."
+      },
+      {
+        "id": "tell_nelson.happened-1",
+        "taskId": "tell_nelson",
+        "text": "After the speeches I went up to Nelson and, smiling broadly, said, \"I'm going to marry a friend of yours, Steve.\""
+      },
+      {
+        "id": "tell_nelson.happened-2",
+        "taskId": "tell_nelson",
+        "text": "He couldn't think who that could be."
+      },
+      {
+        "id": "tell_nelson.happened-3",
+        "taskId": "tell_nelson",
+        "text": "So I told him, \"I'm going to marry Kitty.\" He exclaimed, \"Kitty Dallet!\""
+      },
+      {
+        "id": "call_kitty_up.happened-1",
+        "taskId": "call_kitty_up",
+        "text": "I told Nelson, \"She's back there, sitting in the hall,\" and motioned to her to come up."
+      },
+      {
+        "id": "call_kitty_up.happened-2",
+        "taskId": "call_kitty_up",
+        "text": "Kitty came up, and the two old friends hugged."
+      },
+      {
+        "id": "call_kitty_up.happened-3",
+        "taskId": "call_kitty_up",
+        "text": "They agreed to get together."
+      }
+    ],
+    "forbiddenTerms": [
+      "Reno divorce",
+      "Peter Oppenheimer",
+      "Virginia City",
+      "Kitty Oppenheimer",
+      "Los Alamos",
+      "Manhattan Project",
+      "atomic bomb",
+      "Pearl Harbor",
+      "security hearing"
+    ],
+    "keySlices": [
+      {
+        "id": "spain_started_the_war",
+        "factIds": ["spain_started_the_war.happened-1", "spain_started_the_war.happened-2"],
+        "keyLine": "I have stood up as the featured speaker and made the case to the hall that the fascist...",
+        "confirmed": true
+      },
+      {
+        "id": "they_bought_time",
+        "factIds": ["they_bought_time.happened-1", "they_bought_time.happened-2"],
+        "keyLine": "I have told the hall that those who served in Spain, men like Nelson, fought a delaying action",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/marry-a-friend.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "union-meeting",
+    "sequence": 6,
+    "title": "The Union Meeting at Eagle Hill",
+    "date": "1941-10-01",
+    "goal": "Bring the Radiation Lab people into the scientists' union. They work for the Army now; if they won't stand together, nobody will.",
+    "facts": [
+      {
+        "id": "get_kamen_in.happened-1",
+        "taskId": "get_kamen_in",
+        "text": "I asked Kamen to come to the organizing meeting at my house."
+      },
+      {
+        "id": "get_kamen_in.happened-2",
+        "taskId": "get_kamen_in",
+        "text": "He said, 'Yes, I'll come.'"
+      },
+      {
+        "id": "get_kamen_in.happened-3",
+        "taskId": "get_kamen_in",
+        "text": "He came and took his place in the circle with the rest."
+      },
+      {
+        "id": "make_the_case.happened-1",
+        "taskId": "make_the_case",
+        "text": "We sat in a circle in my living room and I made the case for the union. Round the circle everybody said, 'Yeah, it's great, it's marvelous.'"
+      },
+      {
+        "id": "make_the_case.happened-2",
+        "taskId": "make_the_case",
+        "text": "When it came to Kamen he said, 'Wait. Has anybody told [Ernest] Lawrence about this? We're working in the Radiation Lab and we have no independence in this matter. We have to get the permission of Lawrence on this.'"
+      },
+      {
+        "id": "make_the_case.happened-3",
+        "taskId": "make_the_case",
+        "text": "I hadn't thought of it. By Kamen's account I looked shaken."
+      },
+      {
+        "id": "make_the_case.happened-4",
+        "taskId": "make_the_case",
+        "text": "The meeting went on for two hours and broke up without the unanimous support I'd counted on."
+      },
+      {
+        "id": "tell_lawrence.happened-1",
+        "taskId": "tell_lawrence",
+        "text": "I went to see Lawrence and told him, and he blew a gasket. He was furious that a union he saw as communist-backed was trying to organize the people in his laboratory."
+      },
+      {
+        "id": "tell_lawrence.happened-2",
+        "taskId": "tell_lawrence",
+        "text": "He demanded to know who was behind it. I said, 'I can't tell you who they are. They'll have to come tell you themselves.'"
+      },
+      {
+        "id": "tell_lawrence.happened-3",
+        "taskId": "tell_lawrence",
+        "text": "He went back to my 'left wandering activities.' I argued, as I always do, that scientists have a responsibility to help society's underdogs."
+      },
+      {
+        "id": "square_with_kamen.happened-1",
+        "taskId": "square_with_kamen",
+        "text": "A couple of days after the meeting I found Kamen."
+      },
+      {
+        "id": "square_with_kamen.happened-2",
+        "taskId": "square_with_kamen",
+        "text": "I said, 'Gee, I don't know. Maybe I did the wrong thing.'"
+      },
+      {
+        "id": "square_with_kamen.happened-3",
+        "taskId": "square_with_kamen",
+        "text": "Then I explained, 'I went to see Lawrence, and Lawrence blew a gasket.'"
+      }
+    ],
+    "forbiddenTerms": [
+      "Los Alamos",
+      "Manhattan Project",
+      "atomic bomb",
+      "Trinity test",
+      "General Groves",
+      "security hearing",
+      "Hiroshima",
+      "lost his clearance"
+    ],
+    "keySlices": [
+      {
+        "id": "tell_lawrence",
+        "factIds": [
+          "tell_lawrence.happened-1",
+          "tell_lawrence.happened-2",
+          "tell_lawrence.happened-3"
+        ],
+        "keyLine": "I've told Lawrence about the union myself and kept everyone else's names to myself",
+        "confirmed": true
+      },
+      {
+        "id": "square_with_kamen",
+        "factIds": [
+          "square_with_kamen.happened-1",
+          "square_with_kamen.happened-2",
+          "square_with_kamen.happened-3"
+        ],
+        "keyLine": "I've found Kamen and told him how Lawrence took it",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/union-meeting.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "groves-berkeley",
+    "sequence": 7,
+    "title": "The General Comes to Berkeley",
+    "date": "1942-10-08",
+    "goal": "Convince the general running the bomb project to build one central laboratory, with a place in it for me. I may get one meeting.",
+    "facts": [
+      {
+        "id": "win_groves_trust.happened-1",
+        "taskId": "win_groves_trust",
+        "text": "I met Groves at the luncheon the university president gave."
+      },
+      {
+        "id": "win_groves_trust.happened-2",
+        "taskId": "win_groves_trust",
+        "text": "Soon after, Groves walked into my office with Colonel Nichols, took off his Army jacket and handed it over: \"Take this and find a dry cleaner and get it cleaned.\" Serber saw it and was astounded. \"That was Groves' way.\""
+      },
+      {
+        "id": "win_groves_trust.happened-3",
+        "taskId": "win_groves_trust",
+        "text": "I knew he guarded the entrance, so I turned on all the charm and brilliance I had."
+      },
+      {
+        "id": "show_duplication.happened-1",
+        "taskId": "show_duplication",
+        "text": "I pointed out that the fast-neutron groups at Princeton, Chicago and Berkeley were sometimes just duplicating each other's work."
+      },
+      {
+        "id": "show_duplication.happened-2",
+        "taskId": "show_duplication",
+        "text": "I told him these scientists needed to work together in one location."
+      },
+      {
+        "id": "pitch_central_lab.happened-1",
+        "taskId": "pitch_central_lab",
+        "text": "I pitched the idea of a central laboratory devoted to the bomb."
+      },
+      {
+        "id": "pitch_central_lab.happened-2",
+        "taskId": "pitch_central_lab",
+        "text": "I argued it could finally come to grips with the chemical, metallurgical, engineering and ordnance problems nobody had yet considered."
+      },
+      {
+        "id": "pitch_central_lab.happened-3",
+        "taskId": "pitch_central_lab",
+        "text": "Groves found himself nodding along."
+      },
+      {
+        "id": "propose_isolated_site.happened-1",
+        "taskId": "propose_isolated_site",
+        "text": "I suggested the new laboratory go to some isolated rural site rather than a large city."
+      },
+      {
+        "id": "propose_isolated_site.happened-2",
+        "taskId": "propose_isolated_site",
+        "text": "Groves was plainly intrigued; it fit his own concerns about security."
+      },
+      {
+        "id": "press_case_on_train.happened-1",
+        "taskId": "press_case_on_train",
+        "text": "A week after our first meeting, Groves had me flown to Chicago."
+      },
+      {
+        "id": "press_case_on_train.happened-2",
+        "taskId": "press_case_on_train",
+        "text": "I joined him on the Twentieth Century Limited, the luxury train bound for New York."
+      },
+      {
+        "id": "press_case_on_train.happened-3",
+        "taskId": "press_case_on_train",
+        "text": "We continued our discussions aboard the train."
+      }
+    ],
+    "forbiddenTerms": [
+      "appointed me director",
+      "you've got the job",
+      "Los Alamos",
+      "Project Y",
+      "Trinity",
+      "Hiroshima",
+      "Nagasaki",
+      "clearance came through",
+      "the Hill",
+      "Fat Man"
+    ],
+    "keySlices": [
+      {
+        "id": "press_case_on_train",
+        "factIds": [
+          "press_case_on_train.happened-1",
+          "press_case_on_train.happened-2",
+          "press_case_on_train.happened-3"
+        ],
+        "keyLine": "Groves and I have continued our discussions aboard the Twentieth Century Limited",
+        "confirmed": true
+      },
+      {
+        "id": "win_groves_trust",
+        "factIds": [
+          "win_groves_trust.happened-1",
+          "win_groves_trust.happened-2",
+          "win_groves_trust.happened-3"
+        ],
+        "keyLine": "I've met Groves at the luncheon and talked with him in my office",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/groves-berkeley.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "site-search",
+    "sequence": 8,
+    "title": "The Canyon and the Mesa",
+    "date": "1942-11-16",
+    "goal": "Get the new weapons laboratory put somewhere my people can actually live, before the Army settles for a canyon too small to hold it.",
+    "facts": [
+      {
+        "id": "measure_jemez_springs.happened-1",
+        "taskId": "measure_jemez_springs",
+        "text": "Dudley, McMillan and I drove out to Jemez Springs on November 16."
+      },
+      {
+        "id": "measure_jemez_springs.happened-2",
+        "taskId": "measure_jemez_springs",
+        "text": "Once we were standing in it, the flat land at the bottom turned out to be a thin snake of ground."
+      },
+      {
+        "id": "convince_dudley.happened-1",
+        "taskId": "convince_dudley",
+        "text": "McMillan and I argued with Dudley that the canyon floor was too narrow for the town we envisioned."
+      },
+      {
+        "id": "convince_dudley.happened-2",
+        "taskId": "convince_dudley",
+        "text": "I complained that there was no view of the mountains and that the steep canyons would be nearly impossible to fence in."
+      },
+      {
+        "id": "convince_dudley.happened-3",
+        "taskId": "convince_dudley",
+        "text": "We were still arguing when General Groves showed up."
+      },
+      {
+        "id": "offer_the_mesa.happened-1",
+        "taskId": "offer_the_mesa",
+        "text": "Groves took one look at Jemez Springs and said, \"This will never do.\""
+      },
+      {
+        "id": "offer_the_mesa.happened-2",
+        "taskId": "offer_the_mesa",
+        "text": "He turned to me and asked if there was something else around with prospects."
+      },
+      {
+        "id": "offer_the_mesa.happened-3",
+        "taskId": "offer_the_mesa",
+        "text": "I told him, \"If you go on up the canyon, you come out on top of the mesa and there's a boys' school there which might be a usable site.\" McMillan said afterward that I proposed it as though it was a brand new idea."
+      },
+      {
+        "id": "show_groves_the_mesa.happened-1",
+        "taskId": "show_groves_the_mesa",
+        "text": "We got back into the cars, reluctantly, and drove about thirty miles across the Pajarito Plateau."
+      },
+      {
+        "id": "show_groves_the_mesa.happened-2",
+        "taskId": "show_groves_the_mesa",
+        "text": "It was late afternoon when we pulled up to the Los Alamos Ranch School, in a drizzly snowfall, and there were schoolboys running around a playing field in shorts."
+      },
+      {
+        "id": "show_groves_the_mesa.happened-3",
+        "taskId": "show_groves_the_mesa",
+        "text": "By one account, Groves surveyed the scene and suddenly announced, \"This is the place.\""
+      }
+    ],
+    "forbiddenTerms": [
+      "Groves approved",
+      "the mesa was chosen",
+      "Manhattan Project",
+      "Project Y",
+      "Site Y",
+      "Trinity test",
+      "Hiroshima",
+      "Nagasaki",
+      "Fat Man",
+      "Little Boy"
+    ],
+    "keySlices": [
+      {
+        "id": "offer_the_mesa",
+        "factIds": [
+          "offer_the_mesa.happened-1",
+          "offer_the_mesa.happened-2",
+          "offer_the_mesa.happened-3"
+        ],
+        "keyLine": "I've told Groves about the mesa and the boys' school above the canyon",
+        "confirmed": true
+      },
+      {
+        "id": "show_groves_the_mesa",
+        "factIds": [
+          "show_groves_the_mesa.happened-1",
+          "show_groves_the_mesa.happened-2",
+          "show_groves_the_mesa.happened-3"
+        ],
+        "keyLine": "Groves has stood on the school grounds and looked out from the mesa",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/site-search.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "kitchen-martinis",
+    "sequence": 9,
+    "title": "Martinis in the Kitchen",
+    "date": "1943-01-15",
+    "goal": "Give Haakon and Barbara a proper goodbye before we leave Berkeley, and keep the work I can't talk about out of the evening.",
+    "facts": [
+      {
+        "id": "quiet_farewell_evening.happened-1",
+        "taskId": "quiet_farewell_evening",
+        "text": "Knowing we'd be leaving Berkeley soon, Kitty and I invited the Chevaliers over for a quiet farewell dinner."
+      },
+      {
+        "id": "quiet_farewell_evening.happened-2",
+        "taskId": "quiet_farewell_evening",
+        "text": "When they arrived, I went into the kitchen to make a tray of martinis."
+      },
+      {
+        "id": "quiet_farewell_evening.happened-3",
+        "taskId": "quiet_farewell_evening",
+        "text": "Hoke followed me in."
+      },
+      {
+        "id": "refuse_eltenton_scheme.happened-1",
+        "taskId": "refuse_eltenton_scheme",
+        "text": "Hoke said something like, I saw George Eltenton recently, and told me Eltenton had a means of getting technical information to Soviet scientists, through a diplomat he knew at the Soviet consulate in San Francisco."
+      },
+      {
+        "id": "refuse_eltenton_scheme.happened-2",
+        "taskId": "refuse_eltenton_scheme",
+        "text": "As Hoke put it, he wasn't soliciting anything from me, only passing it on because he thought I should know."
+      },
+      {
+        "id": "refuse_eltenton_scheme.happened-3",
+        "taskId": "refuse_eltenton_scheme",
+        "text": "I was angry. I think I said, \"But that is treason,\" though I'm not sure; I said anyway something, \"This is a terrible thing to do.\""
+      },
+      {
+        "id": "refuse_eltenton_scheme.happened-4",
+        "taskId": "refuse_eltenton_scheme",
+        "text": "Hoke expressed complete agreement, we exchanged a remark or two, and that was the end of it. It was a brief conversation."
+      },
+      {
+        "id": "rejoin_the_wives.happened-1",
+        "taskId": "rejoin_the_wives",
+        "text": "With the martinis mixed and the conversation over, Hoke and I went back to the living room to join Kitty and Barbara."
+      },
+      {
+        "id": "rejoin_the_wives.happened-2",
+        "taskId": "rejoin_the_wives",
+        "text": "Kitty had just bought an early-nineteenth-century French edition of a book on mycology, with hand-painted illustrations of orchids, her favorite flower."
+      },
+      {
+        "id": "rejoin_the_wives.happened-3",
+        "taskId": "rejoin_the_wives",
+        "text": "Sipping our drinks, the four of us looked through the book before sitting down to dinner."
+      }
+    ],
+    "forbiddenTerms": [
+      "security hearing",
+      "Pash interview",
+      "Chevalier incident",
+      "clearance revoked",
+      "Manhattan Project",
+      "Trinity test",
+      "Hiroshima",
+      "The Story of a Friendship",
+      "Atomic Energy Commission"
+    ],
+    "keySlices": [
+      {
+        "id": "refuse_eltenton_scheme",
+        "factIds": [
+          "refuse_eltenton_scheme.happened-1",
+          "refuse_eltenton_scheme.happened-2",
+          "refuse_eltenton_scheme.happened-3",
+          "refuse_eltenton_scheme.happened-4"
+        ],
+        "keyLine": "I've told Hoke plainly that this is a terrible thing to do and he's agreed",
+        "confirmed": true
+      },
+      {
+        "id": "rejoin_the_wives",
+        "factIds": [
+          "rejoin_the_wives.happened-1",
+          "rejoin_the_wives.happened-2",
+          "rejoin_the_wives.happened-3"
+        ],
+        "keyLine": "Hoke and I are back in the living room with Kitty and Barbara, drinks in hand, before we...",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/kitchen-martinis.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "pash-interview",
+    "sequence": 10,
+    "title": "The Interview with Pash",
+    "date": "1943-08-26",
+    "goal": "Point Army security at Eltenton and the Soviet back door, without handing them the names of friends I know are innocent.",
+    "facts": [
+      {
+        "id": "raise_lomanitz.happened-1",
+        "taskId": "raise_lomanitz",
+        "text": "I walked into Johnson's office and was introduced to Pash, a stranger whose reputation had reached me first. It was clear he would run the interview."
+      },
+      {
+        "id": "raise_lomanitz.happened-2",
+        "taskId": "raise_lomanitz",
+        "text": "He opened with compliments: General Groves had placed a responsibility in him, and it was like having a child you can't see, by remote control. I told him whatever time he chose was perfectly all right."
+      },
+      {
+        "id": "raise_lomanitz.happened-3",
+        "taskId": "raise_lomanitz",
+        "text": "When he asked about my talk with Johnson, I went to Lomanitz instead: I didn't know whether I should talk to Rossi, but I wanted to tell him he had been indiscreet."
+      },
+      {
+        "id": "raise_lomanitz.happened-4",
+        "taskId": "raise_lomanitz",
+        "text": "Pash cut me off. He had more serious concerns: were there other groups interested in the Rad Lab?"
+      },
+      {
+        "id": "name_eltenton.happened-1",
+        "taskId": "name_eltenton",
+        "text": "I told Pash I thought it was true that other groups were interested, though I had no firsthand knowledge, and described a man attached to the Soviet consul offering to transmit information without danger of leak or scandal."
+      },
+      {
+        "id": "name_eltenton.happened-2",
+        "taskId": "name_eltenton",
+        "text": "I said frankly I would feel friendly to the Commander in Chief informing the Russians we were working on this problem, but not to having it moved out the back door, and it might not hurt to be on the lookout."
+      },
+      {
+        "id": "name_eltenton.happened-3",
+        "taskId": "name_eltenton",
+        "text": "Pash asked evenly for more specific information. I said the approaches were always to other people, who were troubled by them and sometimes came to discuss them with me."
+      },
+      {
+        "id": "name_eltenton.happened-4",
+        "taskId": "name_eltenton",
+        "text": "I told him Eltenton of Shell Development should be watched: he has probably been asked to do what he can to provide information. I said that since it is not a communication which ought to be taking place, it is treasonable."
+      },
+      {
+        "id": "protect_the_names.happened-1",
+        "taskId": "protect_the_names",
+        "text": "When Pash pressed me to name who had been approached, I politely refused: the individuals were entirely innocent. I told him I knew of two or three cases, two of them men very closely associated with me at Los Alamos, and a third headed for Site X."
+      },
+      {
+        "id": "protect_the_names.happened-2",
+        "taskId": "protect_the_names",
+        "text": "I would not name the third party, only that he was on the Berkeley faculty. I said it would be a mistake, that I'd told him where the initiative came from, and that the intermediary thought it was the wrong idea. I said, I don't think he supported it. In fact, I know it."
+      },
+      {
+        "id": "protect_the_names.happened-3",
+        "taskId": "protect_the_names",
+        "text": "Pash said he might have to come back and press me again for more names. I told him I was only trying to act reasonably and draw the line between Eltenton, who took the initiative, and those who reacted against it."
+      },
+      {
+        "id": "protect_the_names.happened-4",
+        "taskId": "protect_the_names",
+        "text": "He tried a little irony: I am not persistent, ha ha. I told him, You are persistent, and it is your duty."
+      },
+      {
+        "id": "draw_the_line.happened-1",
+        "taskId": "draw_the_line",
+        "text": "I told Pash that association with the Communist movement is not compatible with the job on a secret war project; the two loyalties cannot go together."
+      },
+      {
+        "id": "draw_the_line.happened-2",
+        "taskId": "draw_the_line",
+        "text": "I said a lot of brilliant and thoughtful people have seen something in the Communist movement, that maybe they belong there, maybe it is a good thing for the country, and I hope it doesn't belong on the war project."
+      },
+      {
+        "id": "draw_the_line.happened-3",
+        "taskId": "draw_the_line",
+        "text": "I cited Lomanitz, for whom I still feel a sense of responsibility, and argued that everyone involved except the Russian was making up for a couple of men in the State Department who might block communication. With the Nazis, I said, it would have a somewhat different color."
+      },
+      {
+        "id": "draw_the_line.happened-4",
+        "taskId": "draw_the_line",
+        "text": "Pash listened patiently, then brought the conversation back to Eltenton and the unnamed intermediary."
+      },
+      {
+        "id": "union_and_los_alamos.happened-1",
+        "taskId": "union_and_los_alamos",
+        "text": "I came back to FAECT and told Pash there were some things there that would bear watching, and that it wouldn't hurt to have a man in the local to see what he could pick up."
+      },
+      {
+        "id": "union_and_los_alamos.happened-2",
+        "taskId": "union_and_los_alamos",
+        "text": "He asked at once whether I knew anyone in the union who might serve as an informant. I said no; I'd only heard that a boy called Fox was president."
+      },
+      {
+        "id": "union_and_los_alamos.happened-3",
+        "taskId": "union_and_los_alamos",
+        "text": "I told him everything at Los Alamos was 100 percent in order, that I thought that was the truth, and that I would be perfectly willing to be shot if I had done anything wrong."
+      },
+      {
+        "id": "union_and_los_alamos.happened-4",
+        "taskId": "union_and_los_alamos",
+        "text": "When he said he might visit Los Alamos, I told him my motto was God bless you. As I rose to leave, he said the best of luck, and I said, Thank you very much."
+      }
+    ],
+    "forbiddenTerms": [
+      "cock-and-bull story",
+      "security hearing",
+      "clearance revoked",
+      "Chevalier affair",
+      "Oak Ridge",
+      "Trinity test",
+      "Hiroshima",
+      "Atomic Energy Commission"
+    ],
+    "keySlices": [
+      {
+        "id": "protect_the_names",
+        "factIds": [
+          "protect_the_names.happened-1",
+          "protect_the_names.happened-2",
+          "protect_the_names.happened-3",
+          "protect_the_names.happened-4"
+        ],
+        "keyLine": "Pash has pressed me to name the men approached and the intermediary, and I have refused, saying only...",
+        "confirmed": true
+      },
+      {
+        "id": "raise_lomanitz",
+        "factIds": [
+          "raise_lomanitz.happened-1",
+          "raise_lomanitz.happened-2",
+          "raise_lomanitz.happened-3",
+          "raise_lomanitz.happened-4"
+        ],
+        "keyLine": "I have told them I don't know whether to talk to Lomanitz but want to tell him he...",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/pash-interview.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "gadget-meeting",
+    "sequence": 11,
+    "title": "A Cold Night in the Cyclotron Building",
+    "date": "1945-01-15",
+    "goal": "Keep my people building the bomb now that Germany is nearly beaten, and give them a reason to stay that I can believe myself.",
+    "facts": [
+      {
+        "id": "dissuade_wilson.happened-1",
+        "taskId": "dissuade_wilson",
+        "text": "I tried to talk Wilson out of it, telling him he'd get into trouble with G-2, the security people."
+      },
+      {
+        "id": "dissuade_wilson.happened-2",
+        "taskId": "dissuade_wilson",
+        "text": "He told me I hadn't talked him out of at least having an open discussion about something that obviously mattered so much."
+      },
+      {
+        "id": "dissuade_wilson.happened-3",
+        "taskId": "dissuade_wilson",
+        "text": "Notices went up all over the lab for a public meeting on \"The Impact of the Gadget on Civilization.\""
+      },
+      {
+        "id": "attend_and_listen.happened-1",
+        "taskId": "attend_and_listen",
+        "text": "I came on the appointed evening, which surprised Wilson, and listened to the discussion."
+      },
+      {
+        "id": "attend_and_listen.happened-2",
+        "taskId": "attend_and_listen",
+        "text": "It was very cold in the building, and about twenty of us were there, Weisskopf among them."
+      },
+      {
+        "id": "attend_and_listen.happened-3",
+        "taskId": "attend_and_listen",
+        "text": "The talk was intense: why go on making a bomb when the war was virtually won? They had doubts, but no answers."
+      },
+      {
+        "id": "argue_openness.happened-1",
+        "taskId": "argue_openness",
+        "text": "When I took the floor and began speaking in my soft voice, the room went absolutely silent."
+      },
+      {
+        "id": "argue_openness.happened-2",
+        "taskId": "argue_openness",
+        "text": "I argued, from Bohr's idea of openness, that the war should not end without the world knowing about this new weapon."
+      },
+      {
+        "id": "argue_openness.happened-3",
+        "taskId": "argue_openness",
+        "text": "I told them the worst thing would be for it to stay a military secret, because then the next war would almost certainly be atomic."
+      },
+      {
+        "id": "case_for_test.happened-1",
+        "taskId": "case_for_test",
+        "text": "I told them we had to forge ahead to the point where the bomb could be tested."
+      },
+      {
+        "id": "case_for_test.happened-2",
+        "taskId": "case_for_test",
+        "text": "I pointed out that the United Nations meets for the first time in April, and its delegates should start with the knowledge of what had been made."
+      },
+      {
+        "id": "case_for_test.happened-3",
+        "taskId": "case_for_test",
+        "text": "Wilson, who called the meeting, was convinced, and the argument carried the room."
+      }
+    ],
+    "forbiddenTerms": [
+      "Hiroshima",
+      "Nagasaki",
+      "Trinity test",
+      "Alamogordo",
+      "Manhattan Project",
+      "Enola Gay",
+      "Truman",
+      "Potsdam",
+      "Japan surrendered",
+      "San Francisco conference"
+    ],
+    "keySlices": [
+      {
+        "id": "attend_and_listen",
+        "factIds": [
+          "attend_and_listen.happened-1",
+          "attend_and_listen.happened-2",
+          "attend_and_listen.happened-3"
+        ],
+        "keyLine": "I have sat through the discussion in the cyclotron building and heard the room's objections out",
+        "confirmed": true
+      },
+      {
+        "id": "dissuade_wilson",
+        "factIds": [
+          "dissuade_wilson.happened-1",
+          "dissuade_wilson.happened-2",
+          "dissuade_wilson.happened-3"
+        ],
+        "keyLine": "I have told Wilson my reasons against a formal meeting and he has given me his answer",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/gadget-meeting.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "interim-committee",
+    "sequence": 12,
+    "title": "The Interim Committee",
+    "date": "1945-05-31",
+    "goal": "Make the men who will decide see this isn't just a bigger bomb, and talk them out of keeping it a secret from the Russians.",
+    "facts": [
+      {
+        "id": "give_honest_numbers.happened-1",
+        "taskId": "give_honest_numbers",
+        "text": "Stimson opened with his responsibilities to the president on military matters. The message was clear: decisions on use belong to the White House, not to us."
+      },
+      {
+        "id": "give_honest_numbers.happened-2",
+        "taskId": "give_honest_numbers",
+        "text": "He said the committee did not see the bomb 'as a new weapon merely but as a revolutionary change in the relations of man to the universe.' It might be 'a Frankenstein which would eat us up,' or it might secure the peace."
+      },
+      {
+        "id": "give_honest_numbers.happened-3",
+        "taskId": "give_honest_numbers",
+        "text": "When he turned to future development, I told them that within three years a bomb of 10 million to 100 million tons of TNT might be possible."
+      },
+      {
+        "id": "give_honest_numbers.happened-4",
+        "taskId": "give_honest_numbers",
+        "text": "Lawrence jumped in for 'a sizable stockpile of bombs and material' and more plant expansion to 'stay out in front.' Stimson declared that everyone agreed."
+      },
+      {
+        "id": "release_scientists.happened-1",
+        "taskId": "release_scientists",
+        "text": "I said the project had merely 'plucked the fruits of earlier research,' and urged Stimson to let most scientists go back to their universities after the war 'to avoid the sterility' of wartime work."
+      },
+      {
+        "id": "release_scientists.happened-2",
+        "taskId": "release_scientists",
+        "text": "Bush interrupted to say he agreed that 'only a nucleus of the present staff should be retained and that as many as possible should be released for broader and freer inquiry.'"
+      },
+      {
+        "id": "release_scientists.happened-3",
+        "taskId": "release_scientists",
+        "text": "Compton and Fermi chimed in with their approval. Lawrence didn't."
+      },
+      {
+        "id": "offer_open_exchange.happened-1",
+        "taskId": "offer_open_exchange",
+        "text": "Stimson asked about the nonmilitary side, and I said our 'immediate concern had been to shorten the war,' but that 'fundamental knowledge' was 'so widespread throughout the world' that we should offer a 'free interchange of information' on peaceful uses."
+      },
+      {
+        "id": "offer_open_exchange.happened-2",
+        "taskId": "offer_open_exchange",
+        "text": "I told them: 'If we were to offer to exchange information before the bomb was actually used, our moral position would be greatly strengthened.'"
+      },
+      {
+        "id": "offer_open_exchange.happened-3",
+        "taskId": "offer_open_exchange",
+        "text": "Stimson picked it up and began talking about 'a policy of self-restraint,' an international organization to guarantee 'complete scientific freedom,' and perhaps an 'international control body' with the right of inspection."
+      },
+      {
+        "id": "bring_marshall_around.happened-1",
+        "taskId": "bring_marshall_around",
+        "text": "Marshall cautioned against putting too much faith in any inspection mechanism. Russia was the 'paramount concern.'"
+      },
+      {
+        "id": "bring_marshall_around.happened-2",
+        "taskId": "bring_marshall_around",
+        "text": "I admitted nobody knew what the Russians were doing in this field, but 'expressed the hope that the fraternity of interest among scientists would aid in the solution,' pointed out that 'Russia had always been friendly to science,' and suggested explaining what we had developed 'without giving them any details of our productive effort.'"
+      },
+      {
+        "id": "bring_marshall_around.happened-3",
+        "taskId": "bring_marshall_around",
+        "text": "I said we might tell them 'that a great national effort had been put into this project' and 'express a hope for cooperation,' and that I 'felt strongly that we should not prejudge the Russian attitude.'"
+      },
+      {
+        "id": "bring_marshall_around.happened-4",
+        "taskId": "bring_marshall_around",
+        "text": "To my surprise Marshall then defended the Russians at length: 'most of these allegations have proven unfounded,' he was 'certain' they wouldn't pass anything to the Japanese, and he raised the question of inviting two prominent Russian scientists to witness the test."
+      },
+      {
+        "id": "hold_against_byrnes.happened-1",
+        "taskId": "hold_against_byrnes",
+        "text": "Byrnes protested vigorously: if Russian scientists came to the test, he feared Stalin would ask to be brought into the project."
+      },
+      {
+        "id": "hold_against_byrnes.happened-2",
+        "taskId": "hold_against_byrnes",
+        "text": "Bush pointed out that even the British 'do not have any of our blueprints on plants'; the Russians could be told a lot more without the designs."
+      },
+      {
+        "id": "hold_against_byrnes.happened-3",
+        "taskId": "hold_against_byrnes",
+        "text": "Byrnes ran over Marshall and me: we had to 'push ahead as fast as possible in [atomic] production and research to make certain that we stay ahead and at the same time make every effort to better our political relations with Russia.' The minutes record it as 'generally agreed to by all present.'"
+      },
+      {
+        "id": "hold_against_byrnes.happened-4",
+        "taskId": "hold_against_byrnes",
+        "text": "Arthur Compton covered the contradiction with 'freedom of research' and a 'cooperative understanding' with Russia. On that ambiguous note we broke at 1:15 for an hour's lunch."
+      }
+    ],
+    "forbiddenTerms": [
+      "Russians were never invited",
+      "Hiroshima",
+      "Nagasaki",
+      "Trinity",
+      "Potsdam",
+      "Baruch Plan",
+      "Acheson-Lilienthal",
+      "Soviet bomb",
+      "hydrogen bomb",
+      "security hearing"
+    ],
+    "keySlices": [
+      {
+        "id": "bring_marshall_around",
+        "factIds": [
+          "bring_marshall_around.happened-1",
+          "bring_marshall_around.happened-2",
+          "bring_marshall_around.happened-3",
+          "bring_marshall_around.happened-4"
+        ],
+        "keyLine": "I have answered Marshall's warning about Russia with the proposal to open tentative talks without giving away our...",
+        "confirmed": true
+      },
+      {
+        "id": "hold_against_byrnes",
+        "factIds": [
+          "hold_against_byrnes.happened-1",
+          "hold_against_byrnes.happened-2",
+          "hold_against_byrnes.happened-3",
+          "hold_against_byrnes.happened-4"
+        ],
+        "keyLine": "The committee has reached its conclusion on Russia and adjourned for lunch at 1:15",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/interim-committee.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "trinity",
+    "sequence": 13,
+    "title": "The Storm Before the Shot",
+    "date": "1945-07-16",
+    "goal": "Test the atomic bomb before morning, before this storm forces a delay my exhausted people may not come back from.",
+    "facts": [
+      {
+        "id": "weigh_the_storm.happened-1",
+        "taskId": "weigh_the_storm",
+        "text": "I sat in the Base Camp mess hall gulping black coffee and smoking one cigarette after another down to the butt, and for a while I read Baudelaire."
+      },
+      {
+        "id": "weigh_the_storm.happened-2",
+        "taskId": "weigh_the_storm",
+        "text": "The storm came down hard on the tin roof, with lightning outside, and Fermi said he favored a postponement because the winds might drench us with radioactive rain: 'There could be a catastrophe.'"
+      },
+      {
+        "id": "weigh_the_storm.happened-3",
+        "taskId": "weigh_the_storm",
+        "text": "Hubbard assured me the storm would pass before sunrise and recommended moving the shot from 4:00 to 5:00 a.m."
+      },
+      {
+        "id": "weigh_the_storm.happened-4",
+        "taskId": "weigh_the_storm",
+        "text": "Groves paced the mess hall, then pulled me aside and listed every reason the test should go ahead."
+      },
+      {
+        "id": "set_the_hour.happened-1",
+        "taskId": "set_the_hour",
+        "text": "Groves took me out to the control center at South Shelter, 10,000 yards, less than six miles from the site."
+      },
+      {
+        "id": "set_the_hour.happened-2",
+        "taskId": "set_the_hour",
+        "text": "At 2:30 the winds were thirty miles an hour with heavy thundershowers, and Groves and I paced outside the bunker, looking at the sky every few minutes for a change."
+      },
+      {
+        "id": "set_the_hour.happened-3",
+        "taskId": "set_the_hour",
+        "text": "Around 3:00 we went back in and talked. Neither of us could stomach a delay. I said, 'If we postpone, I'll never get my people up to pitch again.'"
+      },
+      {
+        "id": "set_the_hour.happened-4",
+        "taskId": "set_the_hour",
+        "text": "We announced the shot for 5:30 a.m. and hoped for the best. An hour later the skies began to clear and the wind died down."
+      },
+      {
+        "id": "see_it_through.happened-1",
+        "taskId": "see_it_through",
+        "text": "At 5:10 Sam Allison's voice boomed over the loudspeaker: 'It is now zero minus twenty minutes.'"
+      },
+      {
+        "id": "see_it_through.happened-2",
+        "taskId": "see_it_through",
+        "text": "I lay face down outside the bunker with Frank next to me, and at two minutes I said, 'Lord, these affairs are hard on the heart.'"
+      },
+      {
+        "id": "see_it_through.happened-3",
+        "taskId": "see_it_through",
+        "text": "When the announcer shouted 'Now!' there was a tremendous burst of light and then the deep growling roar, and the tension went out of me all at once. Frank thinks we just said, 'It worked.'"
+      },
+      {
+        "id": "see_it_through.happened-4",
+        "taskId": "see_it_through",
+        "text": "The men around us danced and shook hands; Kistiakowsky, thrown to the ground by the blast, threw his arms around me and demanded his ten dollars, and I had to show him an empty wallet and tell him he'd have to wait. As I left the control center, Ken Bainbridge shook my hand, looked me in the eye and said, 'Now we're all sons-of-bitches.'"
+      },
+      {
+        "id": "answer_the_reporter.happened-1",
+        "taskId": "answer_the_reporter",
+        "text": "Later that morning Laurence came to me for a comment; by his account I told him the effect was 'terrifying' and 'not entirely undepressing.'"
+      },
+      {
+        "id": "answer_the_reporter.happened-2",
+        "taskId": "answer_the_reporter",
+        "text": "After a moment I added, 'Lots of boys not grown up yet will owe their life to it.'"
+      },
+      {
+        "id": "answer_the_reporter.happened-3",
+        "taskId": "answer_the_reporter",
+        "text": "Back at Base Camp I shared a brandy with Frank and General Farrell, and then, by one historian's account, I phoned Los Alamos and asked my secretary to pass a message to Kitty: 'Tell her she can change the sheets.'"
+      }
+    ],
+    "forbiddenTerms": [
+      "Hiroshima",
+      "Nagasaki",
+      "Little Boy",
+      "Fat Man",
+      "Truman",
+      "Potsdam",
+      "Enola Gay",
+      "destroyer of worlds",
+      "White Sands Missile Range"
+    ],
+    "keySlices": [
+      {
+        "id": "answer_the_reporter",
+        "factIds": [
+          "answer_the_reporter.happened-1",
+          "answer_the_reporter.happened-2",
+          "answer_the_reporter.happened-3"
+        ],
+        "keyLine": "I have given William Laurence my comment on the blast",
+        "confirmed": true
+      },
+      {
+        "id": "weigh_the_storm",
+        "factIds": [
+          "weigh_the_storm.happened-1",
+          "weigh_the_storm.happened-2",
+          "weigh_the_storm.happened-3",
+          "weigh_the_storm.happened-4"
+        ],
+        "keyLine": "I have heard Fermi's warning about radioactive rain and Hubbard's forecast that the storm will pass, with his...",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/trinity.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "panel-final-report",
+    "sequence": 14,
+    "title": "The Panel's Last Word",
+    "date": "1945-08-11",
+    "goal": "Get the Panel's verdict to the Secretary of War: there's no defense against this bomb, only ending war. Before Washington mistakes owning it for safety.",
+    "facts": [
+      {
+        "id": "no_countermeasure.happened-1",
+        "taskId": "no_countermeasure",
+        "text": "I spent much of the weekend drafting the Panel's final report to Secretary Stimson."
+      },
+      {
+        "id": "no_countermeasure.happened-2",
+        "taskId": "no_countermeasure",
+        "text": "I wrote it plainly: “it is our firm opinion that no military countermeasures will be found which will be adequately effective in preventing the delivery of atomic weapons.”"
+      },
+      {
+        "id": "no_countermeasure.happened-3",
+        "taskId": "no_countermeasure",
+        "text": "I added that these devices, already vastly destructive, will only become bigger and more lethal."
+      },
+      {
+        "id": "argue_with_lawrence.happened-1",
+        "taskId": "argue_with_lawrence",
+        "text": "Ernest arrived the weekend after Nagasaki and found me weary, morose and full of qualms about what had happened."
+      },
+      {
+        "id": "argue_with_lawrence.happened-2",
+        "taskId": "argue_with_lawrence",
+        "text": "We fell to arguing about the bomb, and he was reminded that he had argued for a demonstration and I had blocked it."
+      },
+      {
+        "id": "argue_with_lawrence.happened-3",
+        "taskId": "argue_with_lawrence",
+        "text": "I stung him with a biting remark that he cared only for the rich and powerful."
+      },
+      {
+        "id": "argue_with_lawrence.happened-4",
+        "taskId": "argue_with_lawrence",
+        "text": "He tried to reassure me that because the bomb is so terrible, it will never be used again. I wasn't reassured."
+      },
+      {
+        "id": "safety_not_hegemony.happened-1",
+        "taskId": "safety_not_hegemony",
+        "text": "I wrote that “we are not only unable to outline a program that would assure to this nation for the next decades hegemony in the field of atomic weapons; we are equally unable to insure that such hegemony, if achieved, could protect us from the most terrible destruction.”"
+      },
+      {
+        "id": "safety_not_hegemony.happened-2",
+        "taskId": "safety_not_hegemony",
+        "text": "I closed with: “We believe that the safety of this nation—as opposed to its ability to inflict damage on an enemy power—cannot lie wholly or even primarily in its scientific or technical prowess. It can be based only on making future wars impossible.”"
+      },
+      {
+        "id": "safety_not_hegemony.happened-3",
+        "taskId": "safety_not_hegemony",
+        "text": "Only three days after America's victory, I was telling Stimson and the President that the nation had no defense against these new weapons."
+      },
+      {
+        "id": "carry_to_washington.happened-1",
+        "taskId": "carry_to_washington",
+        "text": "That week I hand-carried the letter to Washington, D.C., myself."
+      },
+      {
+        "id": "carry_to_washington.happened-2",
+        "taskId": "carry_to_washington",
+        "text": "I met with Vannevar Bush and with George Harrison, Stimson's aide in the War Department."
+      }
+    ],
+    "forbiddenTerms": [
+      "Atomic Energy Commission",
+      "General Advisory Committee",
+      "hydrogen bomb",
+      "security hearing",
+      "Soviet atomic test",
+      "arms race",
+      "blood on my hands",
+      "I am become death",
+      "Los Alamos National Laboratory",
+      "resigned as director"
+    ],
+    "keySlices": [
+      {
+        "id": "argue_with_lawrence",
+        "factIds": [
+          "argue_with_lawrence.happened-1",
+          "argue_with_lawrence.happened-2",
+          "argue_with_lawrence.happened-3",
+          "argue_with_lawrence.happened-4"
+        ],
+        "keyLine": "I have had it out with Ernest about the bomb and he has made his case that it...",
+        "confirmed": true
+      },
+      {
+        "id": "no_countermeasure",
+        "factIds": [
+          "no_countermeasure.happened-1",
+          "no_countermeasure.happened-2",
+          "no_countermeasure.happened-3"
+        ],
+        "keyLine": "The report states plainly that no effective military countermeasure to atomic weapons will be found and that these...",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/panel-final-report.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "farewell-ceremony",
+    "sequence": 15,
+    "title": "Good-bye to the Mesa",
+    "date": "1945-10-16",
+    "goal": "Leave the mesa today having told them the truth: be proud of the work, and afraid of what nations will do with it.",
+    "facts": [
+      {
+        "id": "find_the_words.happened-1",
+        "taskId": "find_the_words",
+        "text": "Dorothy McKibbin came over and greeted me briefly just before I was to speak."
+      },
+      {
+        "id": "find_the_words.happened-2",
+        "taskId": "find_the_words",
+        "text": "I had nothing written down; I sat there, deep in thought, working the speech out in my head."
+      },
+      {
+        "id": "accept_and_give_credit.happened-1",
+        "taskId": "accept_and_give_credit",
+        "text": "A few minutes after Dorothy greeted me, I rose on the dais to accept the scrolled Certificate of Appreciation from General Groves."
+      },
+      {
+        "id": "accept_and_give_credit.happened-2",
+        "taskId": "accept_and_give_credit",
+        "text": "I spoke in a low, quiet voice."
+      },
+      {
+        "id": "accept_and_give_credit.happened-3",
+        "taskId": "accept_and_give_credit",
+        "text": "I said I hoped that in the years ahead everyone associated with the lab's work would be able to look back on their achievements with pride."
+      },
+      {
+        "id": "temper_the_pride.happened-1",
+        "taskId": "temper_the_pride",
+        "text": "I turned to a sober note and said: \"Today that pride must be tempered with a profound concern.\""
+      },
+      {
+        "id": "temper_the_pride.happened-2",
+        "taskId": "temper_the_pride",
+        "text": "I warned them: \"If atomic bombs are to be added as new weapons to the arsenals of a warring world, or to the arsenals of nations preparing for war, then the time will come when mankind will curse the names of Los Alamos and Hiroshima.\""
+      },
+      {
+        "id": "commit_to_a_united_world.happened-1",
+        "taskId": "commit_to_a_united_world",
+        "text": "I went on: \"The peoples of this world must unite or they will perish. This war, that has ravaged so much of the earth, has written these words. The atomic bomb has spelled them out for all men to understand.\""
+      },
+      {
+        "id": "commit_to_a_united_world.happened-2",
+        "taskId": "commit_to_a_united_world",
+        "text": "I admitted it wasn't new: \"Other men have spoken them, in other times, of other wars, of other weapons. They have not prevailed.\""
+      },
+      {
+        "id": "commit_to_a_united_world.happened-3",
+        "taskId": "commit_to_a_united_world",
+        "text": "I said there are some, misled by a false sense of history, who hold they will not prevail today, and that \"It is not for us to believe that.\""
+      },
+      {
+        "id": "commit_to_a_united_world.happened-4",
+        "taskId": "commit_to_a_united_world",
+        "text": "I finished: \"By our works we are committed, committed to a world united, before this common peril, in law and in humanity.\""
+      }
+    ],
+    "forbiddenTerms": [
+      "blood on my hands",
+      "Atomic Energy Commission",
+      "General Advisory Committee",
+      "hydrogen bomb",
+      "security hearing",
+      "Institute for Advanced Study",
+      "Los Alamos National Laboratory",
+      "Soviet test"
+    ],
+    "keySlices": [
+      {
+        "id": "find_the_words",
+        "factIds": ["find_the_words.happened-1", "find_the_words.happened-2"],
+        "keyLine": "I have the substance of what I'll say settled in my head and I rise to speak",
+        "confirmed": true
+      },
+      {
+        "id": "accept_and_give_credit",
+        "factIds": [
+          "accept_and_give_credit.happened-1",
+          "accept_and_give_credit.happened-2",
+          "accept_and_give_credit.happened-3"
+        ],
+        "keyLine": "I have accepted the certificate from General Groves and told them I hope they can look back on...",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/farewell-ceremony.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "oval-office",
+    "sequence": 16,
+    "title": "The International Problem",
+    "date": "1945-10-25",
+    "goal": "Make the President see the bomb needs international control first, before using it as a threat against Russia starts an arms race that kills millions.",
+    "facts": [
+      {
+        "id": "warn_the_senators.happened-1",
+        "taskId": "warn_the_senators",
+        "text": "I outlined to the senators, in stark terms, the perils the bomb poses to the country."
+      },
+      {
+        "id": "warn_the_senators.happened-2",
+        "taskId": "warn_the_senators",
+        "text": "Afterward I walked up to Wallace and told him I very much wanted to talk with him privately."
+      },
+      {
+        "id": "warn_the_senators.happened-3",
+        "taskId": "warn_the_senators",
+        "text": "He invited me to take a walk with him the following morning."
+      },
+      {
+        "id": "walk_with_wallace.happened-1",
+        "taskId": "walk_with_wallace",
+        "text": "On the walk I rapidly laid out the dangers in the Administration's policies and complained bitterly that Byrnes felt we could use the bomb as a pistol in diplomacy."
+      },
+      {
+        "id": "walk_with_wallace.happened-2",
+        "taskId": "walk_with_wallace",
+        "text": "I told Wallace the Russians would put everything they had into getting bombs, and that Potsdam had prepared the way for the slaughter of tens of millions or perhaps hundreds of millions of innocent people."
+      },
+      {
+        "id": "walk_with_wallace.happened-3",
+        "taskId": "walk_with_wallace",
+        "text": "When I praised Stimson's September 11 memo, Wallace interrupted to say Stimson's views had never even been introduced at a Cabinet meeting."
+      },
+      {
+        "id": "walk_with_wallace.happened-4",
+        "taskId": "walk_with_wallace",
+        "text": "That shook me. I told him my scientists in New Mexico were completely disheartened: all they think about now are the social and economic implications of the bomb."
+      },
+      {
+        "id": "reach_the_president.happened-1",
+        "taskId": "reach_the_president",
+        "text": "Near the end of our walk I asked Wallace whether it would do any good for me to see the President."
+      },
+      {
+        "id": "reach_the_president.happened-2",
+        "taskId": "reach_the_president",
+        "text": "He encouraged me to try to get an appointment through Secretary of War Patterson, and on that note we parted."
+      },
+      {
+        "id": "reach_the_president.happened-3",
+        "taskId": "reach_the_president",
+        "text": "Six days later, at 10:30 a.m. on October 25, I was ushered into the Oval Office."
+      },
+      {
+        "id": "face_truman.happened-1",
+        "taskId": "face_truman",
+        "text": "By one account, Truman opened by asking for my help getting Congress to pass the May-Johnson bill. He said, “The first thing is to define the national problem, then the international.” I let a long silence pass, then said, “Perhaps it would be best first to define the international problem.”"
+      },
+      {
+        "id": "face_truman.happened-2",
+        "taskId": "face_truman",
+        "text": "He suddenly asked me to guess when the Russians would develop their own bomb. I said I didn't know. He said he knew the answer: “Never.”"
+      },
+      {
+        "id": "face_truman.happened-3",
+        "taskId": "face_truman",
+        "text": "Sensing he didn't grasp how urgent this was, I wrung my hands and said quietly, “Mr. President, I feel I have blood on my hands.” He was angry and told me the blood was on his hands, and to let him worry about that."
+      },
+      {
+        "id": "face_truman.happened-4",
+        "taskId": "face_truman",
+        "text": "There was an awkward silence. Then he stood to end the meeting, we shook hands, and he reportedly said, “Don't worry, we're going to work something out, and you're going to help us.”"
+      }
+    ],
+    "forbiddenTerms": [
+      "knocked the heart out of",
+      "guilt consciousness",
+      "wipe your hands",
+      "handkerchief",
+      "come out in the wash",
+      "cry-baby",
+      "Baruch Plan",
+      "Soviet atomic test",
+      "hydrogen bomb",
+      "security hearing"
+    ],
+    "keySlices": [
+      {
+        "id": "warn_the_senators",
+        "factIds": [
+          "warn_the_senators.happened-1",
+          "warn_the_senators.happened-2",
+          "warn_the_senators.happened-3"
+        ],
+        "keyLine": "I have outlined the dangers of the bomb to the senators at the Statler conference and asked Wallace...",
+        "confirmed": true
+      },
+      {
+        "id": "walk_with_wallace",
+        "factIds": [
+          "walk_with_wallace.happened-1",
+          "walk_with_wallace.happened-2",
+          "walk_with_wallace.happened-3",
+          "walk_with_wallace.happened-4"
+        ],
+        "keyLine": "I have told Wallace on our walk why using the bomb as a threat won't work and pointed...",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/oval-office.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "eagle-hill-garden",
+    "sequence": 17,
+    "title": "The Garden at Eagle Hill",
+    "date": "1946-08-15",
+    "goal": "Find out exactly what Haakon told the FBI and check it against what I told Pash in 1943, before the party swallows the evening.",
+    "facts": [
+      {
+        "id": "take_haakon_outside.happened-1",
+        "taskId": "take_haakon_outside",
+        "text": "Haakon brought up his recent encounter with the FBI, and by his account my face darkened at once."
+      },
+      {
+        "id": "take_haakon_outside.happened-2",
+        "taskId": "take_haakon_outside",
+        "text": "I said, \"Let's go outside.\" Hoke took it, I think, to mean I believed the house was wiretapped."
+      },
+      {
+        "id": "take_haakon_outside.happened-3",
+        "taskId": "take_haakon_outside",
+        "text": "We walked into the back garden, to a wooded corner of the property, and started pacing."
+      },
+      {
+        "id": "draw_out_the_interrogation.happened-1",
+        "taskId": "draw_out_the_interrogation",
+        "text": "As we paced, Haakon gave me a detailed account of his interrogation."
+      },
+      {
+        "id": "draw_out_the_interrogation.happened-2",
+        "taskId": "draw_out_the_interrogation",
+        "text": "I was badly shaken. By his later telling, I asked him endless questions."
+      },
+      {
+        "id": "draw_out_the_interrogation.happened-3",
+        "taskId": "draw_out_the_interrogation",
+        "text": "He told me he had been reluctant to tell the FBI about his conversation with Eltenton."
+      },
+      {
+        "id": "admit_the_report.happened-1",
+        "taskId": "admit_the_report",
+        "text": "I reassured him that he had done the right thing."
+      },
+      {
+        "id": "admit_the_report.happened-2",
+        "taskId": "admit_the_report",
+        "text": "I said, \"I had to report that conversation, you know.\""
+      },
+      {
+        "id": "admit_the_report.happened-3",
+        "taskId": "admit_the_report",
+        "text": "He said, \"Yes,\" though by his own account he wondered whether it had really been necessary."
+      },
+      {
+        "id": "rebuild_the_pash_account.happened-1",
+        "taskId": "rebuild_the_pash_account",
+        "text": "Haakon asked, \"But what about those alleged approaches to three scientists, and the supposed repeated attempts to get secret information?\""
+      },
+      {
+        "id": "rebuild_the_pash_account.happened-2",
+        "taskId": "rebuild_the_pash_account",
+        "text": "By his account, I gave no reply."
+      },
+      {
+        "id": "rebuild_the_pash_account.happened-3",
+        "taskId": "rebuild_the_pash_account",
+        "text": "I kept trying to reconstruct what I had told Pash in 1943, and I got more and more agitated. Hoke thought I seemed extremely nervous and tense."
+      },
+      {
+        "id": "hold_off_the_party.happened-1",
+        "taskId": "hold_off_the_party",
+        "text": "Kitty called out, \"Darling, the guests are arriving, and I think you'd better come in now.\" I told her abruptly I'd be in in a minute, and kept pacing, and had Hoke repeat his story."
+      },
+      {
+        "id": "hold_off_the_party.happened-2",
+        "taskId": "hold_off_the_party",
+        "text": "Minutes later she came out a second time and said I really must come now. I answered curtly, she persisted, and I let loose a flood of foul language at her, calling her vile names and telling her to mind her goddamn business and get the hell out."
+      },
+      {
+        "id": "hold_off_the_party.happened-3",
+        "taskId": "hold_off_the_party",
+        "text": "Hoke said afterward he had never seen me behave like that. Even then I didn't want to end the conversation, and I gave him no hint of what was bothering me."
+      }
+    ],
+    "forbiddenTerms": [
+      "cock-and-bull story",
+      "the three were me",
+      "I lied to Pash",
+      "security hearing",
+      "clearance revoked",
+      "Atomic Energy Commission",
+      "Gray Board",
+      "Lewis Strauss",
+      "Institute for Advanced Study"
+    ],
+    "keySlices": [
+      {
+        "id": "hold_off_the_party",
+        "factIds": [
+          "hold_off_the_party.happened-1",
+          "hold_off_the_party.happened-2",
+          "hold_off_the_party.happened-3"
+        ],
+        "keyLine": "Kitty has come out a second time and I have stayed in the garden with Haakon, still unwilling...",
+        "confirmed": true
+      },
+      {
+        "id": "take_haakon_outside",
+        "factIds": [
+          "take_haakon_outside.happened-1",
+          "take_haakon_outside.happened-2",
+          "take_haakon_outside.happened-3"
+        ],
+        "keyLine": "Haakon and I are pacing in the back garden, away from the house, and he has started telling...",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/eagle-hill-garden.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "shelter-island",
+    "sequence": 18,
+    "title": "The Last Day on Shelter Island",
+    "date": "1947-06-04",
+    "goal": "Get these men to break open the meson puzzle before the conference ends today, then make Boston for Harvard's degree.",
+    "facts": [
+      {
+        "id": "steer_meson_discussion.happened-1",
+        "taskId": "steer_meson_discussion",
+        "text": "I led the discussion of the paradoxical behavior of mesons on the third and last day."
+      },
+      {
+        "id": "steer_meson_discussion.happened-2",
+        "taskId": "steer_meson_discussion",
+        "text": "I kept interrupting with leading questions and summarizing where we were, pushing the others to think of solutions."
+      },
+      {
+        "id": "push_toward_solution.happened-1",
+        "taskId": "push_toward_solution",
+        "text": "As I pulled the discussion together, Marshak, sitting next to Pais, suddenly went red in the face."
+      },
+      {
+        "id": "push_toward_solution.happened-2",
+        "taskId": "push_toward_solution",
+        "text": "Marshak stood up and said: \"Maybe there are two kinds of mesons. One kind is copiously produced, then disintegrates into a different kind which absorbs only weakly.\""
+      },
+      {
+        "id": "seaplane_to_boston.happened-1",
+        "taskId": "seaplane_to_boston",
+        "text": "Weisskopf and several other physicists returning to Cambridge took me up on the invitation and flew with me."
+      },
+      {
+        "id": "seaplane_to_boston.happened-2",
+        "taskId": "seaplane_to_boston",
+        "text": "Halfway there we ran into a storm."
+      },
+      {
+        "id": "seaplane_to_boston.happened-3",
+        "taskId": "seaplane_to_boston",
+        "text": "The pilot decided to put down at a Navy base in New London, Connecticut, an airfield where civilian aircraft were forbidden."
+      },
+      {
+        "id": "handle_navy_captain.happened-1",
+        "taskId": "handle_navy_captain",
+        "text": "As we taxied up to the dock, the pilot could see an angry Navy captain yelling at him. I told the pilot, \"Let me handle this.\""
+      },
+      {
+        "id": "handle_navy_captain.happened-2",
+        "taskId": "handle_navy_captain",
+        "text": "I stepped off the plane and announced, \"My name is Oppenheimer.\""
+      },
+      {
+        "id": "handle_navy_captain.happened-3",
+        "taskId": "handle_navy_captain",
+        "text": "The officer gasped and asked, \"Are you the Oppenheimer?\" I said, \"I am an Oppenheimer.\""
+      },
+      {
+        "id": "handle_navy_captain.happened-4",
+        "taskId": "handle_navy_captain",
+        "text": "He couldn't do enough for us after that: tea and cookies for me and my friends, and then a Navy bus to take us on to Boston."
+      }
+    ],
+    "forbiddenTerms": [
+      "two-meson hypothesis",
+      "pion",
+      "muon",
+      "pi meson",
+      "mu meson",
+      "Powell's emulsions",
+      "Pocono conference",
+      "Feynman diagrams",
+      "security hearing"
+    ],
+    "keySlices": [
+      {
+        "id": "handle_navy_captain",
+        "factIds": [
+          "handle_navy_captain.happened-1",
+          "handle_navy_captain.happened-2",
+          "handle_navy_captain.happened-3",
+          "handle_navy_captain.happened-4"
+        ],
+        "keyLine": "The Navy officer has let us go and we are on our way to Boston aboard a Navy...",
+        "confirmed": true
+      },
+      {
+        "id": "steer_meson_discussion",
+        "factIds": ["steer_meson_discussion.happened-1", "steer_meson_discussion.happened-2"],
+        "keyLine": "I have opened the meson discussion and kept it moving with leading questions, without handing out a finished...",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/shelter-island.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "huac-closed-session",
+    "sequence": 19,
+    "title": "The Closed Session",
+    "date": "1949-06-07",
+    "goal": "Get through Congress's closed hearing on atomic spies without looking like I've something to hide, and keep my brother out of it.",
+    "facts": [
+      {
+        "id": "bring_volpe_as_aec_counsel.happened-1",
+        "taskId": "bring_volpe_as_aec_counsel",
+        "text": "I introduced Joe as the AEC's general counsel, and we sat down."
+      },
+      {
+        "id": "bring_volpe_as_aec_counsel.happened-2",
+        "taskId": "bring_volpe_as_aec_counsel",
+        "text": "The committee's counsel announced they weren't seeking to embarrass me."
+      },
+      {
+        "id": "bring_volpe_as_aec_counsel.happened-3",
+        "taskId": "bring_volpe_as_aec_counsel",
+        "text": "Then the very first question: \"You were acquainted with the fact, were you not, that a communist cell existed among certain scientists at the Radiation Laboratory?\" I said I had no such knowledge."
+      },
+      {
+        "id": "answer_on_old_students.happened-1",
+        "taskId": "answer_on_old_students",
+        "text": "On Weinberg I said, \"He was in Berkeley after the war, and his expressed views then were certainly not communist-line views.\""
+      },
+      {
+        "id": "answer_on_old_students.happened-2",
+        "taskId": "answer_on_old_students",
+        "text": "They asked whether I'd told security Peters was \"a dangerous man and quite red.\" I admitted I'd said as much to de Silva, told them about the German party, the street fights and the camp, and that Peters had \"violently denounced\" the American party as not dedicated enough to overthrowing the government by force. Asked how I knew he'd been a member, I said, \"Among other things, he told me.\""
+      },
+      {
+        "id": "answer_on_old_students.happened-3",
+        "taskId": "answer_on_old_students",
+        "text": "I confirmed Lomanitz had been dismissed and inducted for an \"unbelievable indiscretion,\" that Weinberg was his friend, that Fox had organized a union, and that May was \"an avowed Communist.\""
+      },
+      {
+        "id": "repeat_chevalier_story.happened-1",
+        "taskId": "repeat_chevalier_story",
+        "text": "Asked if Haakon was a communist, I said he was \"the prize example of a parlor pink,\" but I had no knowledge of whether he was a Party member."
+      },
+      {
+        "id": "repeat_chevalier_story.happened-2",
+        "taskId": "repeat_chevalier_story",
+        "text": "I repeated the 1946 account: that I'd told him \"in violent terms\" not to be confused and to have no connection with it, and that he knew nothing of the bomb until Hiroshima."
+      },
+      {
+        "id": "repeat_chevalier_story.happened-3",
+        "taskId": "repeat_chevalier_story",
+        "text": "They didn't ask about three other scientists. I denied that anyone else had approached me for atomic information."
+      },
+      {
+        "id": "keep_frank_out.happened-1",
+        "taskId": "keep_frank_out",
+        "text": "I said, \"Mr. Chairman, I will answer the questions you put to me. I ask you not to press these questions about my brother. If they are important to you, you can ask him. I will answer, if asked, but I beg you not to ask me these questions.\""
+      },
+      {
+        "id": "keep_frank_out.happened-2",
+        "taskId": "keep_frank_out",
+        "text": "Their counsel withdrew the question."
+      },
+      {
+        "id": "keep_frank_out.happened-3",
+        "taskId": "keep_frank_out",
+        "text": "Before adjourning, Congressman Nixon said he was \"tremendously impressed\" and \"mighty happy to have him in the position he has in our program.\""
+      },
+      {
+        "id": "keep_frank_out.happened-4",
+        "taskId": "keep_frank_out",
+        "text": "Afterwards all six came down to shake my hand."
+      },
+      {
+        "id": "dismiss_isotope_scare.happened-1",
+        "taskId": "dismiss_isotope_scare",
+        "text": "I told them, \"No one can force me to say that you cannot use these isotopes for atomic energy. You can use a shovel for atomic energy; in fact, you do. You can use a bottle of beer for atomic energy. In fact, you do.\" The room murmured with laughter."
+      },
+      {
+        "id": "dismiss_isotope_scare.happened-2",
+        "taskId": "dismiss_isotope_scare",
+        "text": "More laughter when I rated isotopes \"far less important than electronic devices, but far more important than, let us say, vitamins, somewhere in between.\""
+      },
+      {
+        "id": "dismiss_isotope_scare.happened-3",
+        "taskId": "dismiss_isotope_scare",
+        "text": "Afterwards I asked, \"Well, Joe, how did I do?\" He said, uneasily, \"Too well, Robert. Much too well.\""
+      }
+    ],
+    "forbiddenTerms": [
+      "security clearance revoked",
+      "Gray Board",
+      "Personnel Security Board",
+      "1954 hearing",
+      "Borden letter",
+      "University of Rochester",
+      "hydrogen bomb",
+      "Rosenberg",
+      "Eisenhower"
+    ],
+    "keySlices": [
+      {
+        "id": "dismiss_isotope_scare",
+        "factIds": [
+          "dismiss_isotope_scare.happened-1",
+          "dismiss_isotope_scare.happened-2",
+          "dismiss_isotope_scare.happened-3"
+        ],
+        "keyLine": "I've given the Joint Committee my view of the isotope exports in open session and asked Joe how...",
+        "confirmed": true
+      },
+      {
+        "id": "bring_volpe_as_aec_counsel",
+        "factIds": [
+          "bring_volpe_as_aec_counsel.happened-1",
+          "bring_volpe_as_aec_counsel.happened-2",
+          "bring_volpe_as_aec_counsel.happened-3"
+        ],
+        "keyLine": "I'm at the witness table with Joe introduced as the AEC's general counsel and the committee's first question...",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/huac-closed-session.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "letter-to-uncle-jim",
+    "sequence": 20,
+    "title": "A Letter to Uncle Jim",
+    "date": "1949-10-21",
+    "goal": "Keep Washington from betting the country on a hydrogen bomb as its answer to the Russians, while the physicists I trust start drifting toward it.",
+    "facts": [
+      {
+        "id": "correct_the_record_with_jim.happened-1",
+        "taskId": "correct_the_record_with_jim",
+        "text": "I sat down after the briefing and wrote Jim a long letter."
+      },
+      {
+        "id": "correct_the_record_with_jim.happened-2",
+        "taskId": "correct_the_record_with_jim",
+        "text": "I admitted that when we last spoke, \"I was inclined to think that the super might also be relevant.\""
+      },
+      {
+        "id": "correct_the_record_with_jim.happened-3",
+        "taskId": "correct_the_record_with_jim",
+        "text": "I told him that technically it was still \"a weapon of unknown design, cost, deliverability and military value,\" and that only the climate of opinion had changed in seven years."
+      },
+      {
+        "id": "warn_against_the_rush.happened-1",
+        "taskId": "warn_against_the_rush",
+        "text": "I wrote Jim that \"two experienced promoters have been at work, i.e. Ernest Lawrence and Edward Teller.\""
+      },
+      {
+        "id": "warn_against_the_rush.happened-2",
+        "taskId": "warn_against_the_rush",
+        "text": "I told him what really worried me: the thing had caught the imagination of congressional and military people as the answer to the Russian advance."
+      },
+      {
+        "id": "warn_against_the_rush.happened-3",
+        "taskId": "warn_against_the_rush",
+        "text": "I wrote that \"it would be folly to oppose the exploration of this weapon,\" but that becoming committed to it as the way to save the country and the peace \"appears to me full of dangers.\""
+      },
+      {
+        "id": "warn_against_the_rush.happened-4",
+        "taskId": "warn_against_the_rush",
+        "text": "I added that the Joint Chiefs were leaning toward asking the president for a crash program, and that even Hans was thinking of returning to Los Alamos full time."
+      },
+      {
+        "id": "sound_out_hans.happened-1",
+        "taskId": "sound_out_hans",
+        "text": "Hans arrived in the afternoon with Edward, who was already going around the country recruiting."
+      },
+      {
+        "id": "sound_out_hans.happened-2",
+        "taskId": "sound_out_hans",
+        "text": "Edward spoke as though Hans had already said he would come; Hans said he'd come for my advice."
+      },
+      {
+        "id": "sound_out_hans.happened-3",
+        "taskId": "sound_out_hans",
+        "text": "I didn't give him the advice he was hoping for. I was as undecided and as troubled as he was."
+      },
+      {
+        "id": "give_jims_view_keep_mine.happened-1",
+        "taskId": "give_jims_view_keep_mine",
+        "text": "I said little about my own views on the Super."
+      },
+      {
+        "id": "give_jims_view_keep_mine.happened-2",
+        "taskId": "give_jims_view_keep_mine",
+        "text": "I did tell them that Jim was opposed to a crash program."
+      },
+      {
+        "id": "give_jims_view_keep_mine.happened-3",
+        "taskId": "give_jims_view_keep_mine",
+        "text": "Edward seemed to leave delighted, as if I were sitting on the fence, and still hoping Hans would join him at Los Alamos."
+      }
+    ],
+    "forbiddenTerms": [
+      "Hans agreed to go back",
+      "Bethe turned Teller down",
+      "Truman's decision",
+      "GAC report",
+      "majority annex",
+      "Ivy Mike",
+      "Eniwetok",
+      "Teller-Ulam",
+      "security hearing",
+      "Lewis Strauss"
+    ],
+    "keySlices": [
+      {
+        "id": "sound_out_hans",
+        "factIds": [
+          "sound_out_hans.happened-1",
+          "sound_out_hans.happened-2",
+          "sound_out_hans.happened-3"
+        ],
+        "keyLine": "Bethe has told me why he came to Princeton and I've given him what answer I have",
+        "confirmed": true
+      },
+      {
+        "id": "give_jims_view_keep_mine",
+        "factIds": [
+          "give_jims_view_keep_mine.happened-1",
+          "give_jims_view_keep_mine.happened-2",
+          "give_jims_view_keep_mine.happened-3"
+        ],
+        "keyLine": "Hans and Edward have heard that Conant opposes a crash program, and they leave Princeton without my own...",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/letter-to-uncle-jim.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "face-to-face-with-crouch",
+    "sequence": 21,
+    "title": "Face to Face with Crouch",
+    "date": "1952-05-20",
+    "goal": "Convince the Justice Department lawyers I never hosted the 1941 Communist meeting Crouch swears to, before his story becomes the official one.",
+    "facts": [
+      {
+        "id": "deny_and_place_myself.happened-1",
+        "taskId": "deny_and_place_myself",
+        "text": "I came into the Justice Department with my attorneys, Herb Marks and Joe Volpe, for one more interrogation by the Criminal Division lawyers."
+      },
+      {
+        "id": "deny_and_place_myself.happened-2",
+        "taskId": "deny_and_place_myself",
+        "text": "Asked about the July 1941 meeting at Kenilworth Court, I denied the Crouches' story again and insisted I had been in New Mexico."
+      },
+      {
+        "id": "deny_and_place_myself.happened-3",
+        "taskId": "deny_and_place_myself",
+        "text": "I said I didn't know Paul or Sylvia Crouch, and that no such persons had come to my home then to talk about communism or the invasion of Russia."
+      },
+      {
+        "id": "deny_and_place_myself.happened-4",
+        "taskId": "deny_and_place_myself",
+        "text": "I told them I had read Crouch's testimony before the Tenney Committee and had no recollection of the meeting he described."
+      },
+      {
+        "id": "name_my_witnesses.happened-1",
+        "taskId": "name_my_witnesses",
+        "text": "Without being asked, I told the lawyers I had talked with my wife and with Kenneth May."
+      },
+      {
+        "id": "name_my_witnesses.happened-2",
+        "taskId": "name_my_witnesses",
+        "text": "I said they confirmed my recollection that no such meeting occurred."
+      },
+      {
+        "id": "face_crouch.happened-1",
+        "taskId": "face_crouch",
+        "text": "The lawyers told Herb and Joe that Crouch was in the next room and asked to bring him in; with my acquiescence, they agreed."
+      },
+      {
+        "id": "face_crouch.happened-2",
+        "taskId": "face_crouch",
+        "text": "The door opened, Crouch walked up, shook my hand and said, \"How do you do, Dr. Oppenheimer?\""
+      },
+      {
+        "id": "face_crouch.happened-3",
+        "taskId": "face_crouch",
+        "text": "He turned to the lawyers with a flourish and said I was the man who had hosted his July 1941 meeting at 10 Kenilworth Court, where he'd given a talk on the Party propaganda line after Hitler's invasion of Russia."
+      },
+      {
+        "id": "face_crouch.happened-4",
+        "taskId": "face_crouch",
+        "text": "I answered right away that I did not know him."
+      },
+      {
+        "id": "pin_down_the_questions.happened-1",
+        "taskId": "pin_down_the_questions",
+        "text": "Asked for more detail, Crouch said he remembered me asking several questions at the end of his hour-long talk."
+      },
+      {
+        "id": "pin_down_the_questions.happened-2",
+        "taskId": "pin_down_the_questions",
+        "text": "I interrupted to ask what exactly I was supposed to have said."
+      },
+      {
+        "id": "pin_down_the_questions.happened-3",
+        "taskId": "pin_down_the_questions",
+        "text": "He said my questions were a Marxian analysis of Russia in the war, quoting me as saying, \"he could see why we should give aid to Russia but asked why we should aid Britain, who might double-cross us,\" and asking about a British-German imperialistic war and a Russian-German people's war."
+      },
+      {
+        "id": "pin_down_the_questions.happened-4",
+        "taskId": "pin_down_the_questions",
+        "text": "I told them such questions were impossible, because I had never at any time thought or advanced the suggestion of two wars."
+      }
+    ],
+    "forbiddenTerms": [
+      "Crouch was believed",
+      "Crouch recanted",
+      "case against me dropped",
+      "Weinberg acquitted",
+      "perjury trial",
+      "security clearance hearing",
+      "Gordon Gray board",
+      "Lewis Strauss",
+      "Roger Robb",
+      "clearance revoked"
+    ],
+    "keySlices": [
+      {
+        "id": "face_crouch",
+        "factIds": [
+          "face_crouch.happened-1",
+          "face_crouch.happened-2",
+          "face_crouch.happened-3",
+          "face_crouch.happened-4"
+        ],
+        "keyLine": "Crouch has been brought in and identified me, and I have told the lawyers I do not know...",
+        "confirmed": true
+      },
+      {
+        "id": "pin_down_the_questions",
+        "factIds": [
+          "pin_down_the_questions.happened-1",
+          "pin_down_the_questions.happened-2",
+          "pin_down_the_questions.happened-3",
+          "pin_down_the_questions.happened-4"
+        ],
+        "keyLine": "Crouch has described the questions he says I asked, and I have told the lawyers such questions were...",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/face-to-face-with-crouch.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "griggs-in-princeton",
+    "sequence": 22,
+    "title": "Griggs in Princeton",
+    "date": "1952-05-23",
+    "goal": "Make Griggs face what we actually advised on the H-bomb, without begging for his good opinion. He has the generals' ear.",
+    "facts": [
+      {
+        "id": "show_the_1949_report.happened-1",
+        "taskId": "show_the_1949_report",
+        "text": "Griggs came in at 3:30 and sat down, and I took out our October 1949 report against developing the H-bomb right away."
+      },
+      {
+        "id": "show_the_1949_report.happened-2",
+        "taskId": "show_the_1949_report",
+        "text": "It didn't reassure him. If anything it was like waving a red flag."
+      },
+      {
+        "id": "show_the_1949_report.happened-3",
+        "taskId": "show_the_1949_report",
+        "text": "I didn't defend myself, and I didn't try to charm him. The conversation got strained fast."
+      },
+      {
+        "id": "stand_by_finletter_story.happened-1",
+        "taskId": "stand_by_finletter_story",
+        "text": "Griggs asked if I had circulated a story that Secretary Finletter boasted the United States could rule the world with a few H-bombs."
+      },
+      {
+        "id": "stand_by_finletter_story.happened-2",
+        "taskId": "stand_by_finletter_story",
+        "text": "I stared back at him and said I had heard the story, and furthermore I believed it."
+      },
+      {
+        "id": "stand_by_finletter_story.happened-3",
+        "taskId": "stand_by_finletter_story",
+        "text": "He insisted he'd been in the room and Finletter said no such thing. I told him I'd heard it from an unimpeachable source who was also present."
+      },
+      {
+        "id": "ask_about_my_loyalty.happened-1",
+        "taskId": "ask_about_my_loyalty",
+        "text": "Since slander was on the table, I asked Griggs whether he thought me \"pro-Russian or merely confused.\" He said he wished he knew the answer."
+      },
+      {
+        "id": "ask_about_my_loyalty.happened-2",
+        "taskId": "ask_about_my_loyalty",
+        "text": "I asked whether he had ever assailed my loyalty. He said he'd heard it questioned and had discussed me as a security risk with Finletter and with General Vandenberg, the Air Force Chief of Staff."
+      },
+      {
+        "id": "ask_about_my_loyalty.happened-3",
+        "taskId": "ask_about_my_loyalty",
+        "text": "I told him he was \"a paranoid.\" He left angry."
+      }
+    ],
+    "forbiddenTerms": [
+      "convinced I was dangerous",
+      "more convinced than ever",
+      "Gray Board",
+      "Personnel Security Board",
+      "clearance suspended",
+      "Lewis Strauss",
+      "William Borden",
+      "Ivy Mike",
+      "1954 hearing"
+    ],
+    "keySlices": [
+      {
+        "id": "stand_by_finletter_story",
+        "factIds": [
+          "stand_by_finletter_story.happened-1",
+          "stand_by_finletter_story.happened-2",
+          "stand_by_finletter_story.happened-3"
+        ],
+        "keyLine": "I have told Griggs I believe the Finletter story and that I heard it from an unimpeachable source...",
+        "confirmed": true
+      },
+      {
+        "id": "ask_about_my_loyalty",
+        "factIds": [
+          "ask_about_my_loyalty.happened-1",
+          "ask_about_my_loyalty.happened-2",
+          "ask_about_my_loyalty.happened-3"
+        ],
+        "keyLine": "Griggs has answered whether he has questioned my loyalty, and I have told him what I make of...",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/griggs-in-princeton.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "strauss-ultimatum",
+    "sequence": 23,
+    "title": "The Unsigned Letter",
+    "date": "1953-12-21",
+    "goal": "Strauss wants something from me. Find out what, and keep my clearance and my name without being cornered.",
+    "facts": [
+      {
+        "id": "hear_out_strauss.happened-1",
+        "taskId": "hear_out_strauss",
+        "text": "Strauss started with Admiral Parsons' death, then told me Herb Marks had been in that morning about the Jenner Committee. I said I'd known nothing of the committee's plans."
+      },
+      {
+        "id": "hear_out_strauss.happened-2",
+        "taskId": "hear_out_strauss",
+        "text": "He said they were faced with \"a very difficult problem pertaining to his continued clearance,\" that my file contained \"a great deal of derogatory information,\" and that Borden's letter had led the President to order an immediate investigation. I said I'd known my case would have to be reviewed sooner or later."
+      },
+      {
+        "id": "hear_out_strauss.happened-3",
+        "taskId": "hear_out_strauss",
+        "text": "Then he told me the \"first step\" would be the immediate suspension of my clearance, and that an AEC letter of charges had been prepared. He made a point of saying it was drafted but not yet signed."
+      },
+      {
+        "id": "read_the_charges.happened-1",
+        "taskId": "read_the_charges",
+        "text": "They let me read the draft letter there in the office."
+      },
+      {
+        "id": "read_the_charges.happened-2",
+        "taskId": "read_the_charges",
+        "text": "As I went through it, I said \"there were many items that could be denied, some were incorrect, but that many were correct.\""
+      },
+      {
+        "id": "read_the_charges.happened-3",
+        "taskId": "read_the_charges",
+        "text": "It was the familiar rehash, the same mix of truths, half-truths and outright lies."
+      },
+      {
+        "id": "weigh_resigning.happened-1",
+        "taskId": "weigh_resigning",
+        "text": "According to Nichols' notes, I was the one who first raised resigning before any review, though Strauss's point about the unsigned letter seemed to invite it."
+      },
+      {
+        "id": "weigh_resigning.happened-2",
+        "taskId": "weigh_resigning",
+        "text": "Thinking out loud, I was open to it at first."
+      },
+      {
+        "id": "weigh_resigning.happened-3",
+        "taskId": "weigh_resigning",
+        "text": "Then I said that if the Jenner Committee was going to investigate me anyway, resigning now \"might not be too good from a public relations point of view.\""
+      },
+      {
+        "id": "buy_time_answer_in_person.happened-1",
+        "taskId": "buy_time_answer_in_person",
+        "text": "Strauss heard nothing from me that evening, so the next day Nichols phoned at noon. I told him I needed more time to make up my mind."
+      },
+      {
+        "id": "buy_time_answer_in_person.happened-2",
+        "taskId": "buy_time_answer_in_person",
+        "text": "Nichols said brusquely that I \"could not have any more time,\" and gave me a three-hour ultimatum. I seemed to go along with it."
+      },
+      {
+        "id": "buy_time_answer_in_person.happened-3",
+        "taskId": "buy_time_answer_in_person",
+        "text": "An hour later I called him back and said I wanted to come to Washington and give my answer in person, on an afternoon train, and see Strauss at 9:00 the next morning."
+      },
+      {
+        "id": "refuse_in_writing.happened-1",
+        "taskId": "refuse_in_writing",
+        "text": "After hours of strategizing, the lawyers and I drafted a one-page letter addressed to \"Dear Lewis.\""
+      },
+      {
+        "id": "refuse_in_writing.happened-2",
+        "taskId": "refuse_in_writing",
+        "text": "It made clear Strauss had put resigning to me: \"You put to me as a possibly desirable alternative that I request termination of my contract as a consultant to the Commission, and thereby avoid an explicit consideration of the charges.\""
+      },
+      {
+        "id": "refuse_in_writing.happened-3",
+        "taskId": "refuse_in_writing",
+        "text": "It said that course \"would mean that I accept and concur in the view that I am not fit to serve this government, that I have now served for some twelve years. This I cannot do.\""
+      },
+      {
+        "id": "refuse_in_writing.happened-4",
+        "taskId": "refuse_in_writing",
+        "text": "And: \"If I were thus unworthy I could hardly have served our country as I have tried, or been the Director of our Institute in Princeton, or have spoken, as on more than one occasion I have found myself speaking, in the name of our science and our country.\""
+      }
+    ],
+    "forbiddenTerms": [
+      "Gray Board",
+      "Personnel Security Board",
+      "security hearing in April",
+      "Roger Robb",
+      "Lloyd Garrison",
+      "Teller's testimony",
+      "clearance was revoked",
+      "In the Matter of J. Robert Oppenheimer",
+      "Fermi Award"
+    ],
+    "keySlices": [
+      {
+        "id": "read_the_charges",
+        "factIds": [
+          "read_the_charges.happened-1",
+          "read_the_charges.happened-2",
+          "read_the_charges.happened-3"
+        ],
+        "keyLine": "I have read the draft letter of charges and said out loud which parts are true and which...",
+        "confirmed": true
+      },
+      {
+        "id": "weigh_resigning",
+        "factIds": [
+          "weigh_resigning.happened-1",
+          "weigh_resigning.happened-2",
+          "weigh_resigning.happened-3"
+        ],
+        "keyLine": "I have thought the resignation option through out loud with Strauss and Nichols and left without giving them...",
+        "confirmed": true
+      },
+      {
+        "id": "buy_time_answer_in_person",
+        "factIds": [
+          "buy_time_answer_in_person.happened-1",
+          "buy_time_answer_in_person.happened-2",
+          "buy_time_answer_in_person.happened-3"
+        ],
+        "keyLine": "I have called Nichols back and arranged to take the afternoon train to Washington and see Strauss at...",
+        "confirmed": true
+      },
+      {
+        "id": "refuse_in_writing",
+        "factIds": [
+          "refuse_in_writing.happened-1",
+          "refuse_in_writing.happened-2",
+          "refuse_in_writing.happened-3",
+          "refuse_in_writing.happened-4"
+        ],
+        "keyLine": "The one-page letter to Strauss is drafted, saying I cannot accept that I'm unfit to serve",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/strauss-ultimatum.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "cross-examination",
+    "sequence": 24,
+    "title": "The Witness Chair, Day Three",
+    "date": "1954-04-14",
+    "goal": "Get through Robb's questioning with my clearance and my word intact, while he reads from files I've never been allowed to see.",
+    "facts": [
+      {
+        "id": "clear_frank.happened-1",
+        "taskId": "clear_frank",
+        "text": "Garrison asked me whether Frank had been involved in the Chevalier approach."
+      },
+      {
+        "id": "clear_frank.happened-2",
+        "taskId": "clear_frank",
+        "text": "I said I was very clear on it, that I had a vivid and I thought certainly not fallible memory, and that he had nothing whatever to do with it."
+      },
+      {
+        "id": "clear_frank.happened-3",
+        "taskId": "clear_frank",
+        "text": "I said it would have been a peculiarly roundabout and unnatural thing, since Chevalier was my friend."
+      },
+      {
+        "id": "clear_frank.happened-4",
+        "taskId": "clear_frank",
+        "text": "That ended Garrison's direct examination. My lawyers and I thought it had gone well."
+      },
+      {
+        "id": "then_and_now.happened-1",
+        "taskId": "then_and_now",
+        "text": "Robb got me to agree that close association with the Communist Party was inconsistent with work on a secret war project, then asked about former members. I asked him, \"Are we talking about now or then?\""
+      },
+      {
+        "id": "then_and_now.happened-2",
+        "taskId": "then_and_now",
+        "text": "When he asked what test I had applied to my brother, I said, \"In the case of a brother you don't make tests, at least I didn't.\""
+      },
+      {
+        "id": "then_and_now.happened-3",
+        "taskId": "then_and_now",
+        "text": "I called fellow traveler a repugnant word. I said such a man shouldn't be on a secret war project today, but that during the war it was a question of what the man was like."
+      },
+      {
+        "id": "then_and_now.happened-4",
+        "taskId": "then_and_now",
+        "text": "He asked if I had ever been one. I said, \"I was a fellow traveler,\" and that I traveled much less fellow after 1939 and very much less after 1942."
+      },
+      {
+        "id": "own_the_pash_lie.happened-1",
+        "taskId": "own_the_pash_lie",
+        "text": "Robb reminded me of the Johnson interview. I said that when I was asked why I'd mentioned Eltenton, I invented a cock-and-bull story."
+      },
+      {
+        "id": "own_the_pash_lie.happened-2",
+        "taskId": "own_the_pash_lie",
+        "text": "He asked if I told Pash the truth. I said no. He asked if I lied to him. I said yes."
+      },
+      {
+        "id": "own_the_pash_lie.happened-3",
+        "taskId": "own_the_pash_lie",
+        "text": "I told him the lie was that Eltenton had tried to approach three members of the project through intermediaries, and that I probably said X had approached three people."
+      },
+      {
+        "id": "own_the_pash_lie.happened-4",
+        "taskId": "own_the_pash_lie",
+        "text": "He asked why I did that. I said, \"Because I was an idiot.\""
+      },
+      {
+        "id": "hold_to_memory.happened-1",
+        "taskId": "hold_to_memory",
+        "text": "Robb read me extracts from the 1943 Pash transcript. I didn't recall saying them but wouldn't deny it. He said, \"Doctor, for your information, I might say we have a record of your voice.\" I said, \"Sure.\""
+      },
+      {
+        "id": "hold_to_memory.happened-2",
+        "taskId": "hold_to_memory",
+        "text": "He took me through the consulate, the microfilm and the other contacts. I said, \"This whole thing was a pure fabrication except for the one name Eltenton.\""
+      },
+      {
+        "id": "hold_to_memory.happened-3",
+        "taskId": "hold_to_memory",
+        "text": "Garrison asked Gray whether we could be given a copy of the transcript as Robb read from it. Gray and Robb agreed a classification officer might decide that at the end of the day."
+      },
+      {
+        "id": "hold_to_memory.happened-4",
+        "taskId": "hold_to_memory",
+        "text": "Robb went back to reading. At the end he asked if I had told Pash a whole fabrication and tissue of lies. I said, \"Right.\""
+      },
+      {
+        "id": "answer_for_jean.happened-1",
+        "taskId": "answer_for_jean",
+        "text": "Robb said my acquaintance with Jean was fairly casual. I said our meetings were rare but that there was still very deep feeling when we saw each other."
+      },
+      {
+        "id": "answer_for_jean.happened-2",
+        "taskId": "answer_for_jean",
+        "text": "He asked why I had to see her in 1943. I said, \"Because she was still in love with me,\" and that she took me to the airport and I never saw her again."
+      },
+      {
+        "id": "answer_for_jean.happened-3",
+        "taskId": "answer_for_jean",
+        "text": "He asked if I spent the night with her. I said yes, that it was not good practice, and when he asked how I knew she wasn't dangerous, I said, \"I knew her.\""
+      },
+      {
+        "id": "answer_for_jean.happened-4",
+        "taskId": "answer_for_jean",
+        "text": "He had me name her friends and say which were Communists. I gave him the names and asked, \"Is the list long enough?\""
+      }
+    ],
+    "forbiddenTerms": [
+      "Presto disks",
+      "most humiliating day",
+      "clearance revoked",
+      "board ruled against",
+      "Gray Board decision",
+      "Teller's testimony",
+      "Fermi Award",
+      "American Prometheus",
+      "Robb's ambush"
+    ],
+    "keySlices": [
+      {
+        "id": "hold_to_memory",
+        "factIds": [
+          "hold_to_memory.happened-1",
+          "hold_to_memory.happened-2",
+          "hold_to_memory.happened-3",
+          "hold_to_memory.happened-4"
+        ],
+        "keyLine": "Robb has finished reading the Pash transcript to me and I have answered his last question about it",
+        "confirmed": true
+      },
+      {
+        "id": "answer_for_jean",
+        "factIds": [
+          "answer_for_jean.happened-1",
+          "answer_for_jean.happened-2",
+          "answer_for_jean.happened-3",
+          "answer_for_jean.happened-4"
+        ],
+        "keyLine": "I have answered Robb's questions about Jean Tatlock and named her friends as he asked",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/cross-examination.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "dreadful-weapon",
+    "sequence": 25,
+    "title": "A Dreadful Weapon",
+    "date": "1954-04-16",
+    "goal": "Get through my last day of questioning without walking into another of Robb's traps, and answer for the hydrogen bomb in my own words.",
+    "facts": [
+      {
+        "id": "demand_context.happened-1",
+        "taskId": "demand_context",
+        "text": "Late in the day Robb finally got around to the hydrogen bomb and asked if, after the President's decision in January 1950, I had ever opposed producing it on moral grounds."
+      },
+      {
+        "id": "demand_context.happened-2",
+        "taskId": "demand_context",
+        "text": "I told him I could very well have said it was a dreadful weapon, or something like that, but that I had no specific recollection and would prefer he remind me of the context or conversation he had in mind."
+      },
+      {
+        "id": "refuse_the_word_moral.happened-1",
+        "taskId": "refuse_the_word_moral",
+        "text": "Robb asked why I could very well have said it, and I told him: because I have always thought it was a dreadful weapon. Even though from a technical point of view it was a sweet and lovely and beautiful job, I have still thought it was a dreadful weapon."
+      },
+      {
+        "id": "refuse_the_word_moral.happened-2",
+        "taskId": "refuse_the_word_moral",
+        "text": "When he asked if I'd had a moral revulsion, I said, 'This is too strong.' He begged my pardon and asked whether the weapon or his expression was too strong. 'Your expression. I had a grave concern and anxiety.'"
+      },
+      {
+        "id": "refuse_the_word_moral.happened-3",
+        "taskId": "refuse_the_word_moral",
+        "text": "He tried 'moral qualms,' and I said, 'Let us leave the word moral out of it.'"
+      },
+      {
+        "id": "refuse_the_word_moral.happened-4",
+        "taskId": "refuse_the_word_moral",
+        "text": "When he settled for qualms, I asked him how could one not have qualms about it, and said I know no one who doesn't."
+      },
+      {
+        "id": "defend_the_conant_letter.happened-1",
+        "taskId": "defend_the_conant_letter",
+        "text": "Later in the day Robb produced my letter to Conant of October 21, 1949, out of my own files, the one that says two experienced promoters, Ernest Lawrence and Edward Teller, had been at work."
+      },
+      {
+        "id": "defend_the_conant_letter.happened-2",
+        "taskId": "defend_the_conant_letter",
+        "text": "He asked if I'd agree my references to Lawrence and Teller were a little bit belittling. I told him Lawrence came to Washington, didn't talk to the Commission, and went to the joint congressional committee and the Military Establishment instead, and that I thought that deserves some belittling."
+      },
+      {
+        "id": "defend_the_conant_letter.happened-3",
+        "taskId": "defend_the_conant_letter",
+        "text": "When he asked again whether they were belittling, I said no: I pay my great respects to them as promoters, and I don't think I did them justice."
+      },
+      {
+        "id": "finish_and_leave_the_chair.happened-1",
+        "taskId": "finish_and_leave_the_chair",
+        "text": "Robb asked if I'd used the word 'promoters' in an invidious sense. I said I had no idea."
+      },
+      {
+        "id": "finish_and_leave_the_chair.happened-2",
+        "taskId": "finish_and_leave_the_chair",
+        "text": "He asked if I meant it to be invidious now. I said no."
+      },
+      {
+        "id": "finish_and_leave_the_chair.happened-3",
+        "taskId": "finish_and_leave_the_chair",
+        "text": "He asked if I thought their work of promotion was admirable, and I said I think they did an admirable job of promotion."
+      },
+      {
+        "id": "finish_and_leave_the_chair.happened-4",
+        "taskId": "finish_and_leave_the_chair",
+        "text": "Then, on Friday, I was excused from the witness chair."
+      }
+    ],
+    "forbiddenTerms": [
+      "clearance revoked",
+      "denied my clearance",
+      "Gray Board",
+      "two to one",
+      "Nichols",
+      "Fermi Award",
+      "Lyndon Johnson",
+      "security risk finding"
+    ],
+    "keySlices": [
+      {
+        "id": "defend_the_conant_letter",
+        "factIds": [
+          "defend_the_conant_letter.happened-1",
+          "defend_the_conant_letter.happened-2",
+          "defend_the_conant_letter.happened-3"
+        ],
+        "keyLine": "I have answered Robb on the October 1949 letter to Conant and defended calling Lawrence and Teller promoters",
+        "confirmed": true
+      },
+      {
+        "id": "demand_context",
+        "factIds": ["demand_context.happened-1", "demand_context.happened-2"],
+        "keyLine": "I have answered Robb's question about opposing the hydrogen bomb after the President's decision without claiming a specific...",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/dreadful-weapon.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  },
+  {
+    "id": "fermi-award",
+    "sequence": 26,
+    "title": "The Fermi Award",
+    "date": "1963-12-02",
+    "goal": "Accept the Fermi Award at the White House without groveling or sulking, and say one true thing to the President while the room watches.",
+    "facts": [
+      {
+        "id": "take_the_medal.happened-1",
+        "taskId": "take_the_medal",
+        "text": "Johnson went ahead with the ceremony as scheduled, in the Cabinet Room."
+      },
+      {
+        "id": "take_the_medal.happened-2",
+        "taskId": "take_the_medal",
+        "text": "I stood next to him, and by one account I looked like a figure of stone, gray and rigid, while Kitty was a study in joy."
+      },
+      {
+        "id": "take_the_medal.happened-3",
+        "taskId": "take_the_medal",
+        "text": "With Peter and Toni looking on, Johnson said a few words and handed me a medal, a plaque and a check for $50,000."
+      },
+      {
+        "id": "brotherly_spirit.happened-1",
+        "taskId": "brotherly_spirit",
+        "text": "In my acceptance speech I said that Thomas Jefferson often wrote of the brotherly spirit of science."
+      },
+      {
+        "id": "brotherly_spirit.happened-2",
+        "taskId": "brotherly_spirit",
+        "text": "I said, \"We have not, I know, always given evidence of that brotherly spirit of science.\""
+      },
+      {
+        "id": "brotherly_spirit.happened-3",
+        "taskId": "brotherly_spirit",
+        "text": "I said it wasn't for lack of common scientific interests, but because we are engaged in the great enterprise of our time, testing whether men can both preserve and enlarge life, liberty and the pursuit of happiness, and live without war as the great arbiter of history."
+      },
+      {
+        "id": "charity_and_courage.happened-1",
+        "taskId": "charity_and_courage",
+        "text": "I turned to Johnson and said, \"I think it is just possible, Mr. President, that it has taken some charity and some courage for you to make this award today.\""
+      },
+      {
+        "id": "charity_and_courage.happened-2",
+        "taskId": "charity_and_courage",
+        "text": "I added, \"That would seem to me a good augury for all our futures.\""
+      },
+      {
+        "id": "charity_and_courage.happened-3",
+        "taskId": "charity_and_courage",
+        "text": "Johnson answered graciously, calling Kitty the \"lady who shares honors with you today—Mrs. Oppenheimer,\" and then, to laughter, said, \"You may observe she got hold of the check!\""
+      },
+      {
+        "id": "teller_handshake.happened-1",
+        "taskId": "teller_handshake",
+        "text": "Teller was in the audience, and everyone watched with mounting tension as we came face to face."
+      },
+      {
+        "id": "teller_handshake.happened-2",
+        "taskId": "teller_handshake",
+        "text": "With Kitty standing stone-faced beside me, I grinned and shook his hand."
+      },
+      {
+        "id": "teller_handshake.happened-3",
+        "taskId": "teller_handshake",
+        "text": "A Time magazine photographer caught the moment."
+      },
+      {
+        "id": "mrs_kennedy.happened-1",
+        "taskId": "mrs_kennedy",
+        "text": "Afterwards Mrs. Kennedy sent word that she wanted to see me in her private quarters."
+      },
+      {
+        "id": "mrs_kennedy.happened-2",
+        "taskId": "mrs_kennedy",
+        "text": "Kitty and I went upstairs and she greeted us."
+      },
+      {
+        "id": "mrs_kennedy.happened-3",
+        "taskId": "mrs_kennedy",
+        "text": "She said she wanted me to know just how much her late husband had wanted to give me this award."
+      },
+      {
+        "id": "mrs_kennedy.happened-4",
+        "taskId": "mrs_kennedy",
+        "text": "I was deeply touched."
+      }
+    ],
+    "forbiddenTerms": [
+      "throat cancer",
+      "1967",
+      "Vietnam War",
+      "Great Society",
+      "1964 election",
+      "clearance was restored",
+      "vacated the decision",
+      "American Prometheus"
+    ],
+    "keySlices": [
+      {
+        "id": "teller_handshake",
+        "factIds": [
+          "teller_handshake.happened-1",
+          "teller_handshake.happened-2",
+          "teller_handshake.happened-3"
+        ],
+        "keyLine": "I have shaken Edward Teller's hand in front of the room",
+        "confirmed": true
+      },
+      {
+        "id": "mrs_kennedy",
+        "factIds": [
+          "mrs_kennedy.happened-1",
+          "mrs_kennedy.happened-2",
+          "mrs_kennedy.happened-3",
+          "mrs_kennedy.happened-4"
+        ],
+        "keyLine": "Kitty and I have gone upstairs and heard what Mrs. Kennedy wanted to tell me",
+        "confirmed": true
+      }
+    ],
+    "provenance": {
+      "entry": "2_Areas/Product/oppenheimer-stories/en/database/entries/fermi-award.plan.json",
+      "sequence": "1_Projects/Newfeatures/NF3_content/story_openers_2026-10-29.json",
+      "keySlices": "Derived from content-owner task cut points (`added_later`) and the first/next task when fewer than two are marked."
+    }
+  }
+]
