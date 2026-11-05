@@ -11,9 +11,9 @@ npm run dev
 npm test
 ```
 Configuration: copy `.env.example` to `.env` and fill in values (never commit `.env`). Then `npm run check:supabase` tells you whether your Supabase project answers (it prints OK or FAIL, never the values).
-Live URL: TODO(human): not deployed yet.
+Live URL: TODO(human): add after the Vercel production deployment.
 
-Stack: Next.js (App Router) · React · TypeScript · Tailwind CSS · Supabase (planned) · Vercel (planned). Versions: [docs/TECH_STACK.md](docs/TECH_STACK.md).
+Stack: Next.js (App Router) · React · TypeScript · Tailwind CSS · Supabase (planned) · Vercel (target; setup pending). Versions: [docs/TECH_STACK.md](docs/TECH_STACK.md).
 
 ## Where to find things
 | If you want to… | Read |
