@@ -20,6 +20,7 @@ Browser (installed web app, mobile first)
 | Clock formatting | `src/lib/clock.ts` | Formats seconds as `MM:SS`, never below `00:00` |
 | Supabase clients | `src/lib/supabase/` | Browser client (public key), server client (reads request cookies), `getCurrentUser`, settings reader |
 | User-data schema | `supabase/migrations/20261106000000_create_user_data_schema.sql` | Profiles, account-owned Goals and Steps, and Sessions with row-level security |
+| Server progress | `supabase/migrations/20261106120000_save_server_progress.sql` and `src/lib/progress/` | Story binding on a session, step positions, and shown lines. Home, Goals and the Life Path read this account state |
 | Connection check | `scripts/check-supabase.mjs` | `npm run check:supabase` prints OK or FAIL without printing any value |
 | Unit tests | `tests/` | Vitest tests and the guardrail hook test |
 | End-to-end tests | `e2e/` | Playwright journeys at mobile size |
@@ -27,15 +28,24 @@ Browser (installed web app, mobile first)
 ## Data model
 The first migration implements the account-owned subset of the proposal in
 `docs/CONTENT_MODEL.md`: `profiles`, `goals`, `steps`, and `sessions`.
+The progress migration adds the story binding on `sessions`, `session_steps`,
+and `session_lines`.
 
 Every user-data table has row-level security enabled. Policies use `auth.uid()`
-for direct ownership, and Steps inherit ownership through their Goal. The
-foreign keys from profiles, goals, and sessions to `auth.users` use
-`on delete cascade`; Steps cascade from their Goal. Deleting an account
-therefore removes all rows created by that account.
+for direct ownership. Steps inherit ownership through their Goal. Session steps
+and lines inherit ownership through `sessions.user_id`. Shown lines can be
+inserted and read; there is no update policy on `session_lines`.
 
-Pause, card, return-event, history, and other later-feature tables remain out
-of scope until their feature issues add migrations.
+The foreign keys from profiles, goals, and sessions to `auth.users` use
+`on delete cascade`. Steps cascade from their Goal. Session steps cascade from
+the session and the step. Lines cascade from the session and, when set, the
+session step. Deleting an account therefore removes that account's Goals,
+Steps, sessions and shown lines.
+
+A Plan is the Goal's Steps. Story progress for a Companion is the completed
+sessions grouped by `companion_id` and `story_id`. A restarted session does
+not count. Pause messages and return pop-ups are `session_lines` rows. There
+is no plan table, progress table, or separate event table.
 
 ## Interfaces
 See `docs/api/`.
