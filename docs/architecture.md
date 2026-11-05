@@ -8,7 +8,7 @@ Browser (installed web app, mobile first)
         ├─ pages and components            exists: one page
         ├─ src/lib                          exists: clock formatting
         ├─ route handlers (AI and data)     planned
-        └─ Supabase (sign-in, Postgres)     planned
+        └─ Supabase (sign-in, Postgres)     exists: clients only (src/lib/supabase)
 ```
 
 ## Components
@@ -17,6 +17,8 @@ Browser (installed web app, mobile first)
 | Home page | `src/app/page.tsx` | Placeholder page with the product name |
 | Root layout | `src/app/layout.tsx` | Page shell and metadata |
 | Clock formatting | `src/lib/clock.ts` | Formats seconds as `MM:SS`, never below `00:00` |
+| Supabase clients | `src/lib/supabase/` | Browser client (public key), server client (reads request cookies), `getCurrentUser`, settings reader |
+| Connection check | `scripts/check-supabase.mjs` | `npm run check:supabase` prints OK or FAIL without printing any value |
 | Unit tests | `tests/` | Vitest tests and the guardrail hook test |
 | End-to-end tests | `e2e/` | Playwright journeys at mobile size |
 

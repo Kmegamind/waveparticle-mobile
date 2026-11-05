@@ -12,6 +12,7 @@ Decider: Yue (product owner). Dates are the day the decision was given.
 |---|---|---|---|
 | S1 | 2026-11-04 | Release 1 contains everything in the current wireframes: Home, companion browsing, Life Path, goal dialogue, Goals and Me, focus page with story cards, rest conversation, summary. | This is larger than the recommended vertical slice. The backlog is split into milestones so that a testable core loop comes first. |
 | S3, G5 | 2026-11-04 | The text a user writes (goal names, step names, step descriptions) is stored on our server, tied to the account (Supabase). | History works across devices. A clear privacy notice and account deletion are required. |
+| S2 | 2026-11-05 | **Partially resolved:** mobile web background timers are not reliable, so the clock must use timestamps. iOS/iPadOS Home Screen web apps support Web Push from 16.4 onward, but notifications still require permission, a service worker and an installed eligible web app. Vibration is optional and is not promised across phones. Physical iPhone and Android installation tests remain open. | Keep haptics and lock-screen notifications capability-gated and opt-in. Do not use a page timer for elapsed time. See [`docs/research/2026-11-05-phone-features.md`](research/2026-11-05-phone-features.md). |
 
 ### Focus page and rest conversation
 
