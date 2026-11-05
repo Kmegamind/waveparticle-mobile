@@ -16,6 +16,8 @@ jobs:
           cache: npm
       - name: Install
         run: npm ci
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
       - name: Install browser for end-to-end tests
         run: npx playwright install --with-deps webkit
       - name: Format check
@@ -26,6 +28,13 @@ jobs:
         run: npm test
       - name: End-to-end tests
         run: npm run test:e2e
+      - name: Upload Playwright report
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report
+          path: playwright-report
+          if-no-files-found: warn
 
   pr-closes-issue:
     if: github.event_name == 'pull_request'
