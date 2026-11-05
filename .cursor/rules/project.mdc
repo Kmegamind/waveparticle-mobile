@@ -3,4 +3,5 @@ description: Project rules
 alwaysApply: true
 ---
 Follow `AGENTS.md` in the repository root. It is the single source of shared rules.
+For any UI work, follow `DESIGN.md` (see the UI section of `AGENTS.md`).
 Cursor has no pre-PR hook here: run the test, lint and format commands from `AGENTS.md` before proposing a commit.
