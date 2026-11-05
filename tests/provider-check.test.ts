@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-// @ts-expect-error The script is plain JavaScript.
 import { checkProvider } from "../scripts/provider-check.mjs";
 
-const answer = (status: number) => async () => ({ ok: status >= 200 && status < 300, status });
+const fake = (fn: () => Promise<unknown>) => fn as unknown as typeof fetch;
+const answer = (status: number) =>
+  fake(async () => ({ ok: status >= 200 && status < 300, status }));
 
 describe("checkProvider", () => {
   it("is OK when the provider accepts the key", async () => {
@@ -12,10 +13,14 @@ describe("checkProvider", () => {
 
   it("explains a missing key without calling the network", async () => {
     let called = false;
-    const result = await checkProvider("gemini", {}, async () => {
-      called = true;
-      return { ok: true, status: 200 };
-    });
+    const result = await checkProvider(
+      "gemini",
+      {},
+      fake(async () => {
+        called = true;
+        return { ok: true, status: 200 };
+      }),
+    );
     expect(result.ok).toBe(false);
     expect(result.reason).toMatch(/GEMINI_API_KEY is missing/);
     expect(called).toBe(false);
@@ -33,9 +38,13 @@ describe("checkProvider", () => {
   });
 
   it("reports an unreachable provider", async () => {
-    const result = await checkProvider("gemini", { GEMINI_API_KEY: "k" }, async () => {
-      throw new Error("offline");
-    });
+    const result = await checkProvider(
+      "gemini",
+      { GEMINI_API_KEY: "k" },
+      fake(async () => {
+        throw new Error("offline");
+      }),
+    );
     expect(result.ok).toBe(false);
     expect(result.reason).toMatch(/could not reach/);
   });
