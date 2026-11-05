@@ -41,7 +41,8 @@ jobs:
 
   pr-closes-issue:
     timeout-minutes: 5
-    if: github.event_name == 'pull_request'
+    # Bots (Dependabot) do not close issues, so they are exempt.
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: PR body must close an issue
