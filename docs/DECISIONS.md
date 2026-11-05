@@ -103,6 +103,13 @@ Yue replied "use the defaults" to the following list.
 | D1f | 2026-11-05 | A vague goal gets no follow-up question. The planning prompt handles vague goals by turning them into concrete first steps, and the user can edit them. The goal dialogue has three turns: goal, time, split question. | Removes FR-START-5's follow-up and the follow-up line slot. |
 | T10 | 2026-11-05 | Return details settled by default: with "Keep the clock running when I leave" on, leaving the app does not stop the clock, so there is no return pop-up for that case (the pop-up still appears after Back from the rest conversation); system back on the return pop-up goes to Home and the step stays paused. The Back button on the rest page is named "Back to step" (not "Back to task"), to follow the vocabulary Companion, Goal, Step. | |
 
+### Sign-in and model provider (2026-11-05)
+
+| Id | Date | Decision | Consequences |
+|---|---|---|---|
+| LOGIN | 2026-11-05 | Users sign in with an email address and a password. | Not magic links: a link in an email opens in the browser, not in the app installed to the Home Screen, which gives a session in one place and not the other. The sign-in issues (US-ACC-1, US-ACC-2) need a password reset by email and the rules for a valid password; whether the email address must be confirmed is decided in those issues. Supabase email sign-in is switched on. |
+| PROV | 2026-11-05 | DeepSeek is the first model provider to benchmark in issue #130. | The benchmark needs a DeepSeek key in the local  (name in ); issue #130 asks for at least two providers, so one comparison provider is still to be named. Open, and not settled by this choice: the provider's data-retention terms (A7b) and where user text is processed. User goals, steps and chat text would be sent to DeepSeek's servers, so the privacy notice (US-ACC-4) and a legal review must cover that before real users are invited. The safety classifier (A5) and the checks on generated text stay in our code, not with the provider. |
+
 ### Card limits (2026-11-05)
 
 | Id | Date | Decision | Consequences |
