@@ -1,0 +1,42 @@
+name: User story
+description: A PRD user story
+labels: ["type:story"]
+body:
+  - type: input
+    id: story
+    attributes:
+      label: Story
+      placeholder: As a <persona>, I want <goal>, so that <benefit>.
+    validations: { required: true }
+  - type: input
+    id: prd
+    attributes:
+      label: PRD ref
+      placeholder: US-1
+    validations: { required: true }
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Given / When / Then. Each line becomes a test.
+      placeholder: "- [ ] Given …, when …, then …"
+    validations: { required: true }
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes for the agent
+      placeholder: |
+        - Files likely involved:
+        - Out of scope:
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority (MoSCoW)
+      options: [Must, Should, Could]
+    validations: { required: true }
+  - type: dropdown
+    id: size
+    attributes:
+      label: Size
+      options: ["S (≤ half day)", "M (~1 day)", "L (split it)"]
+    validations: { required: true }
