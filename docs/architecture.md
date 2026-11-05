@@ -15,7 +15,8 @@ Browser (installed web app, mobile first)
 | Component | Path | Responsibility |
 |---|---|---|
 | Home page | `src/app/page.tsx` | Placeholder page with the product name |
-| Root layout | `src/app/layout.tsx` | Page shell and metadata |
+| Root layout | `src/app/layout.tsx` | Page shell, install metadata and the phone viewport |
+| Web app manifest | `src/app/manifest.ts` | Install name, icons and standalone display |
 | Clock formatting | `src/lib/clock.ts` | Formats seconds as `MM:SS`, never below `00:00` |
 | Supabase clients | `src/lib/supabase/` | Browser client (public key), server client (reads request cookies), `getCurrentUser`, settings reader |
 | User-data schema | `supabase/migrations/20261106000000_create_user_data_schema.sql` | Profiles, account-owned Goals and Steps, and Sessions with row-level security |
