@@ -23,3 +23,50 @@ a {
   object-fit: contain;
   width: var(--logo-width);
 }
+
+.auth-page {
+  display: grid;
+  gap: var(--space-small-gap);
+  margin: 0 auto;
+  max-width: 28rem;
+  padding: var(--space-screen-top) var(--space-screen-inline);
+}
+
+.auth-page h1 {
+  font-family: var(--type-display);
+  font-size: var(--text-display-size);
+  line-height: var(--text-display-leading);
+  margin: 0;
+}
+
+.auth-page form,
+.auth-page label {
+  display: grid;
+  gap: var(--space-small-gap);
+}
+
+.auth-page form {
+  gap: var(--space-control-gap);
+}
+
+.auth-page input,
+.auth-page button {
+  min-height: 3.5rem;
+  padding: 0 var(--space-small-gap);
+}
+
+.auth-page input {
+  background: var(--raised);
+  border: 1.5px solid var(--edge);
+  border-radius: var(--r-control);
+  color: var(--ink);
+}
+
+.auth-page button {
+  background: var(--fill);
+  border: 1.5px solid var(--fill-border);
+  border-radius: var(--r-control);
+  box-shadow: var(--shadow-tag);
+  color: var(--on-fill);
+  font-weight: 700;
+}
