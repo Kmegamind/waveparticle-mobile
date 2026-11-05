@@ -28,9 +28,9 @@ describe("deployment documentation", () => {
     expect(deploy).toMatch(/rollback/i);
   });
 
-  it("labels the live URL as pending human deployment", async () => {
+  it("gives the live URL", async () => {
     const readme = await readRootFile("README.md");
 
-    expect(readme).toContain("Live URL: TODO(human): add after the Vercel production deployment.");
+    expect(readme).toContain("Live URL: https://waveparticle-mobile.vercel.app");
   });
 });
