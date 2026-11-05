@@ -10,7 +10,7 @@ nvm use && npm ci
 npm run dev
 npm test
 ```
-Configuration: copy `.env.example` to `.env` and fill in values (never commit `.env`). Then `npm run check:supabase` tells you whether your Supabase project answers (it prints OK or FAIL, never the values).
+Configuration: copy `.env.example` to `.env` and fill in values (never commit `.env`). Then `npm run check:supabase` tells you whether your Supabase project answers (it prints OK or FAIL, never the values). `npm run check:providers` does the same for the DeepSeek and Gemini keys.
 Live URL: https://waveparticle-mobile.vercel.app
 
 Stack: Next.js (App Router) · React · TypeScript · Tailwind CSS · Supabase (planned) · Vercel. Versions: [docs/TECH_STACK.md](docs/TECH_STACK.md).
