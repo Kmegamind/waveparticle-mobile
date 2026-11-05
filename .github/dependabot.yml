@@ -8,6 +8,13 @@ updates:
       all-npm-dependencies:
         patterns:
           - "*"
+    ignore:
+      # TypeScript 7 breaks typescript-eslint (docs/decisions/0004).
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # Node type definitions must match the Node line in .nvmrc (docs/decisions/0003).
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:

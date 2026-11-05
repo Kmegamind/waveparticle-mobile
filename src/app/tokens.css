@@ -7,11 +7,13 @@
   --faint: #646361;
   --edge: #81807d;
   --hairline: #d3d1cd;
-  --accent: #426f4c;
+  --control: #426f4c;
+  --on-control: #ffffff;
+  --accent-text: #37613f;
+  --tint: color-mix(in srgb, var(--control) 14%, var(--bg));
+  --gray: color-mix(in srgb, #3c3a37 12%, var(--bg));
   --mark: #62906b;
-  --fill: #c3e0c8;
-  --on-fill: #050b06;
-  --fill-border: #517e5a;
+  --fill-soft: #c3e0c8;
   --glow-1: #cfe7d3;
   --glow-2: #e7e2da;
   --logo-filter: none;
@@ -41,7 +43,8 @@
   --logo-width: 3.375rem;
   --logo-height: 1.25rem;
 
-  --r-control: 0.875rem;
+  --r-field: 0.875rem;
+  --r-capsule: 999px;
   --r-card: 1.5rem;
   --r-note: 0.75rem;
   --r-chip: 0.75rem;
@@ -49,7 +52,6 @@
   --r-toast: 0.75rem;
 
   --shadow-paper: 0 0.625rem 1.25rem -0.875rem color-mix(in srgb, var(--ink) 45%, transparent);
-  --shadow-tag: 0 0.125rem 0 var(--fill-border);
 }
 
 .theme-dark {
@@ -61,11 +63,13 @@
   --faint: #a5a4a2;
   --edge: #7c7a77;
   --hairline: #2d2b28;
-  --accent: #89b992;
+  --control: #a1caa8;
+  --on-control: #050b06;
+  --accent-text: #a1caa8;
+  --tint: color-mix(in srgb, var(--control) 18%, var(--bg));
+  --gray: color-mix(in srgb, #ebebf5 14%, var(--bg));
   --mark: #719f7a;
-  --fill: #a1caa8;
-  --on-fill: #050b06;
-  --fill-border: #6e9876;
+  --fill-soft: #2c4a33;
   --glow-1: #102515;
   --glow-2: #1a1814;
   --logo-filter: invert(1);
@@ -80,11 +84,13 @@
   --faint: #a8a3a6;
   --edge: #7f787d;
   --hairline: #31282e;
-  --accent: #89b992;
+  --control: #a1caa8;
+  --on-control: #050b06;
+  --accent-text: #a1caa8;
+  --tint: color-mix(in srgb, var(--control) 18%, var(--bg));
+  --gray: color-mix(in srgb, #ebebf5 14%, var(--bg));
   --mark: #719f7a;
-  --fill: #a1caa8;
-  --on-fill: #050b06;
-  --fill-border: #6e9876;
+  --fill-soft: #2c4a33;
   --glow-1: #12261a;
   --glow-2: #1f141d;
   --logo-filter: invert(1);
@@ -100,11 +106,13 @@
     --faint: #a5a4a2;
     --edge: #7c7a77;
     --hairline: #2d2b28;
-    --accent: #89b992;
+    --control: #a1caa8;
+    --on-control: #050b06;
+    --accent-text: #a1caa8;
+    --tint: color-mix(in srgb, var(--control) 18%, var(--bg));
+    --gray: color-mix(in srgb, #ebebf5 14%, var(--bg));
     --mark: #719f7a;
-    --fill: #a1caa8;
-    --on-fill: #050b06;
-    --fill-border: #6e9876;
+    --fill-soft: #2c4a33;
     --glow-1: #102515;
     --glow-2: #1a1814;
     --logo-filter: invert(1);
@@ -116,8 +124,16 @@
   --color-surface: var(--surface);
   --color-raised: var(--raised);
   --color-foreground: var(--ink);
-  --color-accent: var(--accent);
+  --color-accent: var(--control);
   --font-display: var(--type-display);
   --font-sans: var(--type-sans);
   --font-mono: var(--type-mono);
 }
+
+/*
+ * Alternative accent: mauve (DESIGN.md 3.3). Not active; the choice is open.
+ * Light: --control #874e6a, --on-control #ffffff, --accent-text #6e3d55,
+ *        --mark #ad718d, --fill-soft #f3cadc, --glow-1 #f7d5e4
+ * Dark:  --control #e3abc4, --on-control #10060a, --accent-text #e3abc4,
+ *        --mark #ba7d99, --fill-soft #4a2a3a, --glow-1 #2f1522
+ */

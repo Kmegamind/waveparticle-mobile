@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "reviewedAt": "2026-11-05",
+  "sessionsPerProvider": 20,
+  "surfaces": [
+    "first_story_card",
+    "later_story_card",
+    "stuck_story",
+    "return_popup",
+    "rest_chat",
+    "closing_line"
+  ],
+  "maxInputTokensPerCall": 1200,
+  "maxOutputTokensPerCall": 120,
+  "costCapUsd": 2,
+  "providers": [
+    {
+      "provider": "deepseek",
+      "model": "deepseek-flash",
+      "servedModel": "DeepSeek-V4.1-Flash-1017",
+      "inputPricePerMillion": 0.15,
+      "outputPricePerMillion": 0.6,
+      "pricingBasis": "uncached input, off-peak output",
+      "sourceUrls": [
+        "https://api-docs.deepseek.com/guides/models",
+        "https://api-docs.deepseek.com/quick_start/pricing"
+      ]
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3.8-flash",
+      "inputPricePerMillion": 0.75,
+      "outputPricePerMillion": 3.75,
+      "pricingBasis": "paid tier standard, through 2026-12-31",
+      "sourceUrls": [
+        "https://ai.google.dev/gemini-api/docs/models",
+        "https://ai.google.dev/gemini-api/docs/pricing"
+      ]
+    }
+  ]
+}

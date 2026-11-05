@@ -8,6 +8,11 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The image already holds the browsers and their system libraries. Keep its tag equal to
+    # the Playwright version in package.json (a test checks this).
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -18,8 +23,6 @@ jobs:
         run: npm ci
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
-      - name: Install browser for end-to-end tests
-        run: npx playwright install --with-deps webkit
       - name: Format check
         run: npm run format:check
       - name: Lint
@@ -37,7 +40,9 @@ jobs:
           if-no-files-found: warn
 
   pr-closes-issue:
-    if: github.event_name == 'pull_request'
+    timeout-minutes: 5
+    # Bots (Dependabot) do not close issues, so they are exempt.
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: PR body must close an issue

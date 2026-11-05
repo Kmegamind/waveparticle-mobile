@@ -15,6 +15,10 @@ export default defineConfig({
     : {
         command: `npm run build && npx next start --port ${port}`,
         url: `http://127.0.0.1:${port}`,
+        env: {
+          NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:9",
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "playwright-placeholder",
+        },
         reuseExistingServer: !process.env.CI,
         timeout: 240_000,
       },

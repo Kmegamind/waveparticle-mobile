@@ -7,6 +7,7 @@ body {
   font-family: var(--type-sans);
   font-size: var(--text-body-size);
   line-height: var(--text-body-leading);
+  margin: 0;
 }
 
 * {
@@ -14,7 +15,163 @@ body {
 }
 
 a {
-  color: var(--accent);
+  color: var(--accent-text);
+  text-decoration: underline;
+}
+
+.button-filled,
+.button-tinted,
+.button-gray,
+.button-plain {
+  align-items: center;
+  border: 0;
+  border-radius: var(--r-capsule);
+  cursor: pointer;
+  display: inline-flex;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: var(--text-button-size);
+  font-weight: 600;
+  justify-content: center;
+  letter-spacing: -0.022em;
+  line-height: 1;
+  min-height: 3.125rem;
+  padding-inline: 1.5rem;
+  transition:
+    transform 120ms,
+    opacity 120ms;
+}
+
+.button-filled {
+  background: var(--control);
+  color: var(--on-control);
+}
+
+.button-tinted {
+  background: var(--tint);
+  border: 1px solid var(--control);
+  color: var(--accent-text);
+}
+
+.button-gray {
+  background: var(--gray);
+  border: 1px solid var(--edge);
+  color: var(--ink);
+}
+
+.button-plain {
+  background: transparent;
+  color: var(--accent-text);
+  min-height: var(--target);
+}
+
+.button-small {
+  min-height: 2.25rem;
+  padding-inline: 1rem;
+}
+
+.button-filled:active,
+.button-tinted:active,
+.button-gray:active,
+.button-plain:active {
+  opacity: 0.85;
+  transform: scale(0.97);
+}
+
+.button-filled:focus-visible,
+.button-tinted:focus-visible,
+.button-gray:focus-visible,
+.button-plain:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 3px;
+}
+
+.button-filled:disabled,
+.button-tinted:disabled,
+.button-gray:disabled,
+.button-plain:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button-filled:active,
+  .button-tinted:active,
+  .button-gray:active,
+  .button-plain:active {
+    transform: none;
+  }
+}
+
+.app-shell {
+  min-height: 100svh;
+}
+
+.app-header {
+  align-items: center;
+  display: flex;
+  min-height: var(--target);
+  padding: calc(var(--space-small-gap) + env(safe-area-inset-top)) var(--space-screen-inline)
+    var(--space-small-gap);
+}
+
+.app-logo {
+  color: var(--ink);
+  font-family: var(--type-display);
+  font-size: var(--text-button-size);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.app-content {
+  min-height: calc(100svh - var(--target));
+  padding-bottom: calc(var(--target) + var(--space-screen-bottom) + env(safe-area-inset-bottom));
+}
+
+.app-screen {
+  min-height: calc(100svh - var(--target));
+  padding: var(--space-screen-top) var(--space-screen-inline);
+}
+
+.app-screen h1 {
+  font-family: var(--type-display);
+  font-size: var(--text-display-size);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: var(--text-display-leading);
+  margin: 0;
+}
+
+.app-tab-bar {
+  align-items: stretch;
+  background: var(--surface);
+  border-top: 1px solid var(--hairline);
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  left: 0;
+  padding: var(--space-small-gap) var(--space-small-gap)
+    calc(var(--space-small-gap) + env(safe-area-inset-bottom));
+  position: fixed;
+  right: 0;
+  z-index: 1;
+}
+
+.app-tab {
+  align-items: center;
+  color: var(--ink-2);
+  display: flex;
+  justify-content: center;
+  min-height: var(--target);
+  padding: 0 var(--space-small-gap);
+  text-decoration: none;
+}
+
+.app-tab[aria-current="page"] {
+  color: var(--control);
+  font-weight: 700;
 }
 
 .logo {
@@ -22,4 +179,46 @@ a {
   height: var(--logo-height);
   object-fit: contain;
   width: var(--logo-width);
+}
+
+.auth-page {
+  display: grid;
+  gap: var(--space-small-gap);
+  margin: 0 auto;
+  max-width: 28rem;
+  padding: var(--space-screen-top) var(--space-screen-inline);
+}
+
+.auth-page h1 {
+  font-family: var(--type-display);
+  font-size: var(--text-display-size);
+  line-height: var(--text-display-leading);
+  margin: 0;
+}
+
+.auth-page form,
+.auth-page label {
+  display: grid;
+  gap: var(--space-small-gap);
+}
+
+.auth-page form {
+  gap: var(--space-control-gap);
+}
+
+.auth-page input,
+.auth-page button {
+  min-height: 3.5rem;
+  padding: 0 var(--space-small-gap);
+}
+
+.auth-page input {
+  background: var(--raised);
+  border: 1.5px solid var(--edge);
+  border-radius: var(--r-field);
+  color: var(--ink);
+}
+
+.auth-page .button-filled {
+  border-radius: var(--r-capsule);
 }

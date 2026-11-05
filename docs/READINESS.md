@@ -28,7 +28,7 @@ Development of the repository setup (Sprint 1) can start now. Feature work shoul
 | Item | State | Blocks |
 |---|---|---|
 | High-fidelity screens | **Not started** | Blocks the look of the product, not the build: build to a theme file of design tokens |
-| Design tokens | Proposed | Twelve conflicts between `design.md` and the prototype are listed in `DESIGN.md` section 11; resolve them before the theme file is written |
+| Design tokens | Proposed | Eight conflicts between `design.md`, the old prototype and this repo are listed in `DESIGN.md` section 11 (version 7); resolve them before the theme file is written |
 | Logo | Available | Use as described in `DESIGN.md` |
 | Art bible for scene images and portraits | Missing | Blocks real images, not the build |
 
