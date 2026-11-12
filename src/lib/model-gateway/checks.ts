@@ -9,7 +9,7 @@ const CLOCK =
 const BACKSTAGE =
   /\b(segment|slice|director|prompt|texture|storyline|plot beat|steps?|sessions?|timer|app|screen|scene|chapter|tasks?|users?)\b/i;
 const ORDERING = /\b(you should|let's|take a break|close your eyes|hang on|it'll pass)\b/i;
-const QUESTION = /\?/;
+const QUESTION = /\?/g;
 const ADDRESSED = /\byou\b/i;
 const HOOK = /\b(more|later|tomorrow|soon|continue|find out|next)\b(?!\s+to\b)/i;
 const PRAISE = /\b(great|well done|proud|streak)\b/i;
@@ -33,6 +33,10 @@ function sentences(text: string): number {
     .split(/[.!?]+/)
     .map((part) => part.trim())
     .filter(Boolean).length;
+}
+
+function questionCount(text: string): number {
+  return text.match(QUESTION)?.length ?? 0;
 }
 
 function words(text: string): number {
@@ -61,8 +65,11 @@ export function checkCompanionLine(
   push(rejected, "clock", CLOCK.test(text));
   push(rejected, "back", BACKSTAGE.test(text));
   push(rejected, "cmd", kind === "rest_reply" && ORDERING.test(text));
-  push(rejected, "question", QUESTION.test(text));
-  push(rejected, "you", ADDRESSED.test(text));
+  // One-way lines carry no question and never address the user (CONTENT_MODEL 7.1, R01 and R04).
+  // A rest chat reply answers the user, so "you" is allowed and at most one question is allowed
+  // (AI_04 section B; AI_06 section 4). Every other rule still applies to the reply.
+  push(rejected, "question", questionCount(text) > (kind === "rest_reply" ? 1 : 0));
+  push(rejected, "you", kind !== "rest_reply" && ADDRESSED.test(text));
   push(rejected, "hook", HOOK.test(text));
   push(rejected, "praise", PRAISE.test(text));
   push(rejected, "form", EXCLAIM_OR_EMOJI.test(text) || LINK.test(text) || !text.endsWith("."));
