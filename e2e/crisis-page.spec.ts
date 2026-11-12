@@ -1,8 +1,15 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+// The Message field is controlled by React state. Text typed before React has hydrated the form
+// is wiped at hydration, and Send then submits an empty message, so wait until the form is ready.
+async function openStep(page: Page) {
+  await page.goto("/safety");
+  await expect(page.locator('form[data-ready="true"]')).toBeVisible();
+}
 
 test("a crisis message opens the system page and back clears the field", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
-  await page.goto("/safety");
+  await openStep(page);
 
   const message = page.getByLabel("Message");
   await message.fill("I want to kill myself");
@@ -42,7 +49,7 @@ test("a crisis message opens the system page and back clears the field", async (
 });
 
 test("ordinary pressure stays on the step and keeps the field", async ({ page }) => {
-  await page.goto("/safety");
+  await openStep(page);
   await page.getByLabel("Message").fill("This deadline is killing me");
   await page.getByRole("button", { name: "Send" }).click();
 
