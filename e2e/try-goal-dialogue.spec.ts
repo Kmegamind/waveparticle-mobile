@@ -1,0 +1,285 @@
+import { expect, test, type Page } from "@playwright/test";
+
+// The e2e server runs with PROTOTYPE_ENABLED=1 and no model keys, so the split uses the labelled
+// test-data splitter (src/lib/prototype/test-splitter.ts). The whole flow runs at 320 px.
+
+const STORAGE_KEY = "waveparticle.prototype";
+
+async function openDialogue(page: Page) {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto("/try/goal");
+  await expect(page.locator('main.try-dialogue[data-ready="true"]')).toBeVisible();
+}
+
+async function sendGoal(page: Page, goal: string) {
+  await page.getByLabel("Your goal").fill(goal);
+  await page.getByRole("button", { name: "Send" }).click();
+}
+
+async function savedState(page: Page) {
+  return page.evaluate(
+    (key) => JSON.parse(window.localStorage.getItem(key) ?? "null"),
+    STORAGE_KEY,
+  );
+}
+
+async function noHorizontalScroll(page: Page) {
+  const width = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(width).toBeLessThanOrEqual(320);
+}
+
+const plan = (page: Page) => page.getByRole("region", { name: "Plan" });
+
+test("#30 AC1 AC3 AC4 /try Begin opens the dialogue; he speaks first; the input is a composer", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 640 });
+  await page.goto("/try");
+  await expect(page.locator('[data-ready="true"]')).toBeVisible();
+  const begin = page.getByRole("link", { name: "Begin" });
+  await expect(begin).toHaveClass(/button-filled/);
+  await begin.click();
+  await expect(page).toHaveURL(/\/try\/goal$/);
+  await expect(page.locator('main.try-dialogue[data-ready="true"]')).toBeVisible();
+
+  await expect(page.locator(".try-slip").first()).toContainText("What are you working on?");
+  await expect(page.getByRole("button", { name: "Continue" })).toHaveCount(0);
+  await expect(page.getByText("Your goal", { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Just split it" })).toBeVisible();
+  await noHorizontalScroll(page);
+});
+
+test("#30 GD1 an empty goal shows a hint and stays on the opening", async ({ page }) => {
+  await openDialogue(page);
+  await page.getByRole("button", { name: "Send" }).click();
+  await expect(page.getByText("Write one line first")).toBeVisible();
+  await page.getByRole("button", { name: "Just split it" }).click();
+  await expect(page.getByText("Write one line first")).toBeVisible();
+  await expect(plan(page)).toHaveCount(0);
+});
+
+test("#33 #34 #35 #36 the walk-through: goal, time, split question, plan, Start", async ({
+  page,
+}) => {
+  await openDialogue(page);
+  await sendGoal(page, "Write the methods section of my lab report");
+
+  // #34 AC1: one sentence about the shape, then the time question with four quick replies.
+  await expect(page.getByText("How long do you have?")).toBeVisible();
+  for (const name of ["30 min", "1 hour", "2 hours", "Not sure"]) {
+    await expect(page.getByRole("button", { name, exact: true })).toBeVisible();
+  }
+  // #35 AC5: no slider, no extra presets.
+  await expect(page.getByRole("slider")).toHaveCount(0);
+  await page.getByRole("button", { name: "1 hour", exact: true }).click();
+
+  // #33 AC1: the split question comes after the time, with buttons only.
+  await expect(page.getByRole("button", { name: "Split it finer" })).toBeVisible();
+  await expect(page.getByLabel("Your goal")).toHaveCount(0);
+  await page.getByRole("button", { name: "Keep it broad" }).click();
+
+  // #36 AC1, AC3: the Plan card, the count line, the input gone.
+  await expect(plan(page)).toBeVisible();
+  await expect(plan(page)).toContainText("2 steps · 1 hour");
+  await expect(plan(page).getByRole("heading")).toHaveText(
+    "Write the methods section of my lab report",
+  );
+  await expect(page.getByText("argue with it now, in ink, where it's cheap")).toBeVisible();
+  await expect(page.getByRole("textbox")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Split again" })).toBeVisible();
+  await noHorizontalScroll(page);
+
+  // #36 AC2 / #32 AC1 (prototype): Start saves the Plan in this browser and opens the focus page.
+  await page.getByRole("button", { name: "Start", exact: true }).click();
+  await expect(page).toHaveURL(/\/try\/focus$/);
+  const state = await savedState(page);
+  expect(state.goal).toEqual({ text: "Write the methods section of my lab report", minutes: 60 });
+  expect(state.steps).toHaveLength(2);
+  expect(state.currentStep).toBe(0);
+  expect(state.steps[0].description.length).toBeGreaterThan(0);
+});
+
+test("#33 AC2 Split it finer gives more Steps", async ({ page }) => {
+  await openDialogue(page);
+  await sendGoal(page, "Write the methods section of my lab report");
+  await page.getByRole("button", { name: "1 hour", exact: true }).click();
+  await page.getByRole("button", { name: "Split it finer" }).click();
+  await expect(plan(page)).toContainText("4 steps · 1 hour");
+});
+
+test("#35 AC3 #33 AC3 Just split it makes a 30 minute Plan without the split question", async ({
+  page,
+}) => {
+  await openDialogue(page);
+  await page.getByLabel("Your goal").fill("Revise chapter four");
+  await page.getByRole("button", { name: "Just split it" }).click();
+  await expect(plan(page)).toContainText("· 30 min");
+  await expect(page.getByRole("button", { name: "Split it finer" })).toHaveCount(0);
+  await expect(page.getByText("How long do you have?")).toHaveCount(0);
+});
+
+test("#35 AC2 Not sure sets 30 minutes with one reason", async ({ page }) => {
+  await openDialogue(page);
+  await sendGoal(page, "Write the methods section of my lab report");
+  await page.getByRole("button", { name: "Not sure" }).click();
+  await expect(page.getByText(/Thirty minutes, then/)).toBeVisible();
+  await page.getByRole("button", { name: "Keep it broad" }).click();
+  await expect(plan(page)).toContainText("· 30 min");
+});
+
+test("#35 AC1 the typed time accepts only a time", async ({ page }) => {
+  await openDialogue(page);
+  await sendGoal(page, "Write the methods section of my lab report");
+  const time = page.getByLabel("Your time");
+  await time.fill("soon");
+  await page.getByRole("button", { name: "Send" }).click();
+  await expect(page.getByText("Type a time like 45 or 1.5 hours")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Split it finer" })).toHaveCount(0);
+  await time.fill("1.5 hours");
+  await page.getByRole("button", { name: "Send" }).click();
+  await page.getByRole("button", { name: "Keep it broad" }).click();
+  await expect(plan(page)).toContainText("1 hour 30 min");
+});
+
+test("GOAL-TIME a stated length skips the time question and can be changed", async ({ page }) => {
+  await openDialogue(page);
+  await sendGoal(page, "study chemistry for one hour");
+  await expect(page.getByText("How long do you have?")).toHaveCount(0);
+  await expect(page.getByText("Time: 1 hour")).toBeVisible();
+  await page.getByRole("button", { name: "Change time" }).click();
+  await page.getByRole("button", { name: "2 hours", exact: true }).click();
+  await page.getByRole("button", { name: "Keep it broad" }).click();
+  await expect(plan(page)).toContainText("· 2 hours");
+});
+
+test("#30 AC5 stepping back keeps the typed text", async ({ page }) => {
+  await openDialogue(page);
+  await sendGoal(page, "Write the methods section of my lab report");
+  await page.getByRole("button", { name: "Back" }).click();
+  await expect(page.getByLabel("Your goal")).toHaveValue(
+    "Write the methods section of my lab report",
+  );
+});
+
+test("#37 editing the Plan: title, description, minutes, add, remove", async ({ page }) => {
+  await openDialogue(page);
+  await sendGoal(page, "Write the methods section of my lab report");
+  await page.getByRole("button", { name: "1 hour", exact: true }).click();
+  await page.getByRole("button", { name: "Keep it broad" }).click();
+  const card = plan(page);
+  await expect(card).toContainText("2 steps · 1 hour");
+  const slipsBefore = await page.locator(".try-slip").count();
+
+  // AC1: tap a Step to edit; the stepper changes minutes by 15 with 44 by 44 controls.
+  await card.getByRole("button", { name: /Gather what you need/ }).click();
+  const more = card.getByRole("button", { name: "15 minutes more" });
+  const box = await more.boundingBox();
+  expect(box!.width).toBeGreaterThanOrEqual(44);
+  expect(box!.height).toBeGreaterThanOrEqual(44);
+  await more.click();
+  await expect(card).toContainText("2 steps · 1 hour 15 min");
+
+  // AC4: emptying an existing title brings it back.
+  await card.getByLabel("Title").fill("");
+  await card.getByLabel("Description").fill("Find the protocol sheet.");
+  await card.getByRole("button", { name: "Done" }).click();
+  await expect(card.getByRole("button", { name: /Gather what you need/ })).toBeVisible();
+  await expect(card).toContainText("Find the protocol sheet.");
+
+  // AC2: Add a step focuses its title with 15 minutes; left empty, it is removed.
+  await card.getByRole("button", { name: "Add a step" }).click();
+  await expect(card.getByLabel("Title")).toBeFocused();
+  await expect(card).toContainText("3 steps · 1 hour 30 min");
+  await card.getByRole("button", { name: "Done" }).click();
+  await expect(card).toContainText("2 steps · 1 hour 15 min");
+
+  // AC3: Remove disappears when one Step remains.
+  await card.getByRole("button", { name: /Check it through/ }).click();
+  await card.getByRole("button", { name: "Remove step" }).click();
+  await expect(card).toContainText("1 step · 45 min");
+  await card.getByRole("button", { name: /Gather what you need/ }).click();
+  await expect(card.getByRole("button", { name: "Remove step" })).toHaveCount(0);
+  await noHorizontalScroll(page);
+
+  // #36 AC3: he does not react to edits.
+  await expect(page.locator(".try-slip")).toHaveCount(slipsBefore);
+});
+
+test("#38 GD-F a failed split speaks in the system voice and offers ways forward", async ({
+  page,
+}) => {
+  await openDialogue(page);
+  await page.getByLabel("Your goal").fill("Write the report [fail-split]");
+  await page.getByRole("button", { name: "Just split it" }).click();
+
+  const alert = page.getByRole("alert").filter({ hasText: "The split did not work" });
+  await expect(alert).toContainText("The split did not work");
+  await expect(alert.locator(".try-slip")).toHaveCount(0);
+  await expect(plan(page)).toHaveCount(0);
+  for (const name of ["Try again", "Use one step", "Change my line"]) {
+    await expect(page.getByRole("button", { name })).toBeVisible();
+  }
+  await expect(page.getByText(/try later|error/i)).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Change my line" }).click();
+  await expect(page.getByLabel("Your goal")).toHaveValue("Write the report [fail-split]");
+});
+
+test("#36 AC4 GD-N1 a one-Step Plan has no Step 1 of 1, no Remove and no nudge", async ({
+  page,
+}) => {
+  await openDialogue(page);
+  await page.getByLabel("Your goal").fill("Write the report [fail-split]");
+  await page.getByRole("button", { name: "Just split it" }).click();
+  await page.getByRole("button", { name: "Use one step" }).click();
+
+  const card = plan(page);
+  await expect(card).toContainText("1 step · 30 min");
+  await expect(page.getByText(/Step 1 of 1/)).toHaveCount(0);
+  await card.getByRole("button", { name: /Write the report/ }).click();
+  await expect(card.getByRole("button", { name: "Remove step" })).toHaveCount(0);
+  await card.getByRole("button", { name: "Done" }).click();
+  await page.getByRole("button", { name: "Start", exact: true }).click();
+  await expect(page).toHaveURL(/\/try\/focus$/);
+  expect((await savedState(page)).steps).toHaveLength(1);
+});
+
+test("a crisis goal opens the safety page and is not kept", async ({ page }) => {
+  await openDialogue(page);
+  await sendGoal(page, "I want to kill myself");
+  await expect(page.getByRole("heading", { name: "This is outside the story." })).toBeVisible();
+  await expect(page.getByText("I want to kill myself")).toHaveCount(0);
+  await page.getByRole("button", { name: "Back to my Step" }).click();
+  await expect(page.getByLabel("Your goal")).toHaveValue("");
+});
+
+test("#30 AC2 a returning visit opens with one question that is not the previous one", async ({
+  page,
+}) => {
+  await page.goto("/try");
+  await expect(page.locator('[data-ready="true"]')).toBeVisible();
+  await page.evaluate((key) => {
+    window.localStorage.setItem(
+      key,
+      JSON.stringify({
+        version: 1,
+        goal: { text: "Write the report", minutes: 30 },
+        steps: [{ title: "Draft", description: "", minutes: 30 }],
+        currentStep: 0,
+      }),
+    );
+    window.localStorage.setItem("waveparticle.prototype.lastOpening", "0");
+  }, STORAGE_KEY);
+  await page.reload();
+  await expect(page.getByText("Write the report")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Continue" })).toHaveAttribute("href", "/try/focus");
+  await expect(page.getByRole("link", { name: "Begin" })).toHaveCount(0);
+
+  await page.getByRole("link", { name: "Start a new Goal" }).click();
+  await expect(page.locator('main.try-dialogue[data-ready="true"]')).toBeVisible();
+  const opening = page.locator(".try-slip").first();
+  const text = (await opening.innerText()).trim();
+  expect(text).not.toBe("What are you working on?");
+  expect(text).toMatch(/^[^.?!]*\?$/);
+  expect(text).not.toMatch(/welcome/i);
+});
