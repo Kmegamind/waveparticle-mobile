@@ -88,14 +88,18 @@ describe("model gateway", () => {
       facts: "He is at a table.",
     });
     const stuck = await gateway.writeStuckStory({
-      stepTitle: "Read",
+      pauseNumber: 1,
       facts: "He is at a table.",
     });
     const reply = await gateway.writeRestReply({
       userMessage,
       facts: "He is at a table.",
     });
-    const popup = await gateway.writeReturnPopup({ facts: "He is at a table.", awayMinutes: 12 });
+    const popup = await gateway.writeReturnPopup({
+      trigger: "rest",
+      facts: "He is at a table.",
+      awayMinutes: 12,
+    });
 
     expect(cards).toEqual({ source: "generated", cards: [card, card] });
     expect(stuck.source).toBe("generated");
@@ -151,7 +155,11 @@ describe("model gateway", () => {
       },
     });
     const started = Date.now();
-    const popup = await gateway.writeReturnPopup({ facts: "A quiet room.", awayMinutes: 8 });
+    const popup = await gateway.writeReturnPopup({
+      trigger: "absence",
+      facts: "A quiet room.",
+      awayMinutes: 8,
+    });
     expect(Date.now() - started).toBeLessThan(500);
     expect(calls).toBe(2);
     expect(popup.source).toBe("authored");
@@ -327,6 +335,101 @@ describe("model gateway", () => {
       });
       const reply = await gateway.writeRestReply({ userMessage, facts: "A quiet room." });
       expect(reply).toEqual({ source: "generated", text: chatWithQuestion });
+    });
+  });
+
+  describe("pause number and return trigger in the prompts (#202)", () => {
+    const stepName = "SECRET_STEP_NAME";
+    const goalText = "SECRET_GOAL_NAME";
+    const worry = /worried he may fail/i;
+    const noOrder = /never (?:tell|give) the person (?:what to do|an instruction)/i;
+    const noStopAsk = /never ask the person to stop pausing/i;
+
+    async function stuckPromptFor(pauseNumber: number): Promise<string> {
+      const fake = provider(async () => stuckJson);
+      const gateway = createModelGateway({ provider: fake.impl });
+      await gateway.writeStuckStory({ pauseNumber, facts: "He is at a table." });
+      return fake.calls[0] ?? "";
+    }
+
+    async function returnPromptFor(trigger: "rest" | "absence"): Promise<string> {
+      const fake = provider(async () => returnJson);
+      const gateway = createModelGateway({ provider: fake.impl });
+      await gateway.writeReturnPopup({ trigger, facts: "He is at a table.", awayMinutes: 12 });
+      return fake.calls[0] ?? "";
+    }
+
+    it("test_202_ac1_stuck_prompt_carries_the_pause_number", async () => {
+      for (const pauseNumber of [1, 2, 3, 4]) {
+        expect(await stuckPromptFor(pauseNumber)).toContain(`Pause number: ${pauseNumber}`);
+      }
+    });
+
+    it("test_202_ac1_first_and_second_pause_get_the_ordinary_snag", async () => {
+      for (const pauseNumber of [1, 2]) {
+        const prompt = await stuckPromptFor(pauseNumber);
+        expect(prompt).not.toMatch(worry);
+        expect(prompt).toMatch(noOrder);
+        expect(prompt).toMatch(noStopAsk);
+      }
+    });
+
+    it("test_202_ac1_from_the_third_pause_the_snag_is_much_harder_and_he_is_worried", async () => {
+      for (const pauseNumber of [3, 4, 9]) {
+        const prompt = await stuckPromptFor(pauseNumber);
+        expect(prompt).toMatch(/much harder/i);
+        expect(prompt).toMatch(/remembers the earlier setbacks/i);
+        expect(prompt).toMatch(worry);
+        expect(prompt).toMatch(noOrder);
+        expect(prompt).toMatch(noStopAsk);
+      }
+    });
+
+    it("test_202_ac1_an_invalid_pause_number_is_read_as_the_first_pause", async () => {
+      for (const pauseNumber of [0, -2, 2.5, Number.NaN]) {
+        const prompt = await stuckPromptFor(pauseNumber);
+        expect(prompt).toContain("Pause number: 1");
+        expect(prompt).not.toMatch(worry);
+      }
+    });
+
+    it("test_202_ac2_return_prompt_carries_the_trigger_and_differs_by_trigger", async () => {
+      const rest = await returnPromptFor("rest");
+      const absence = await returnPromptFor("absence");
+      expect(rest).toContain("Return trigger: rest");
+      expect(absence).toContain("Return trigger: absence");
+      expect(rest).toMatch(/rest conversation/i);
+      expect(absence).toMatch(/away from the app/i);
+      expect(rest).not.toBe(absence);
+    });
+
+    it("test_202_ac2_return_prompt_allows_time_words_but_no_clock_numbers", async () => {
+      for (const trigger of ["rest", "absence"] as const) {
+        const prompt = await returnPromptFor(trigger);
+        expect(prompt).toMatch(/how the time felt in his own words/i);
+        expect(prompt).toMatch(/no clock times? and no numbers/i);
+      }
+    });
+
+    it("test_202_ac3_stuck_and_return_prompts_carry_no_goal_or_step_text", async () => {
+      const fake = provider(async (attempt) => (attempt === 1 ? stuckJson : returnJson));
+      const gateway = createModelGateway({ provider: fake.impl });
+      await gateway.writeStuckStory({
+        pauseNumber: 3,
+        facts: "He is at a table.",
+        forbidTerms: [stepName, goalText],
+      });
+      await gateway.writeReturnPopup({
+        trigger: "absence",
+        facts: "He is at a table.",
+        awayMinutes: 90,
+        forbidTerms: [stepName, goalText],
+      });
+      expect(fake.calls).toHaveLength(2);
+      for (const prompt of fake.calls) {
+        expect(prompt).not.toContain(stepName);
+        expect(prompt).not.toContain(goalText);
+      }
     });
   });
 });

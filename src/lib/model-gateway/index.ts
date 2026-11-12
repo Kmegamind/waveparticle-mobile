@@ -11,6 +11,7 @@ export type {
   PlanStep,
   RestReplyInput,
   ReturnPopupInput,
+  ReturnTrigger,
   StepCardsInput,
   StepCardsResult,
   StuckStoryInput,

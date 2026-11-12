@@ -16,6 +16,7 @@ import type {
   PlanSplitResult,
   RestReplyInput,
   ReturnPopupInput,
+  ReturnTrigger,
   StepCardsInput,
   StepCardsResult,
   StuckStoryInput,
@@ -226,11 +227,29 @@ function stepCardPrompt(input: StepCardsInput): string {
   ].join("\n");
 }
 
+const HARDER_PAUSE = 3;
+
+/** A Pause number that is not a whole number of at least 1 is read as the first Pause. */
+function normalPauseNumber(value: number): number {
+  return Number.isInteger(value) && value >= 1 ? value : 1;
+}
+
 function stuckPrompt(input: StuckStoryInput): string {
+  const pauseNumber = normalPauseNumber(input.pauseNumber);
+  const situation =
+    pauseNumber >= HARDER_PAUSE
+      ? [
+          "Every pause has stalled his own work, and he remembers the earlier setbacks.",
+          "So this new stuck situation is much harder than the earlier ones.",
+          "He says he is worried he may fail.",
+        ]
+      : ["A new small snag that holds up his own work, and how he feels about it."];
   return [
     'Return JSON only: {"story":"..."}',
-    "One or two short first-person sentences about a small snag in his own work.",
-    `Step: ${input.stepTitle}`,
+    "One or two short first-person sentences about where his own work is stuck.",
+    ...situation,
+    "Never tell the person what to do and never ask the person to stop pausing.",
+    `Pause number: ${pauseNumber}`,
     `Facts already known: ${input.facts}`,
   ].join("\n");
 }
@@ -244,11 +263,20 @@ function restPrompt(input: RestReplyInput): string {
   ].join("\n");
 }
 
+const RETURN_SITUATION: Record<ReturnTrigger, string> = {
+  rest: "The person is coming back from the rest conversation with him.",
+  absence: "The person is coming back after being away from the app.",
+};
+
 function returnPrompt(input: ReturnPopupInput): string {
   return [
     'Return JSON only: {"returnLine":"..."}',
-    "One to three first-person sentences about the work still in front of him.",
+    "One to three first-person sentences: what he did in that time and how he felt.",
+    RETURN_SITUATION[input.trigger],
+    "He may say how the time felt in his own words, such as a while or very long.",
+    "No clock times and no numbers.",
+    `Return trigger: ${input.trigger}`,
     `Facts already known: ${input.facts}`,
-    `Minutes away: ${input.awayMinutes}`,
+    `Minutes away, for context only and never written out: ${input.awayMinutes}`,
   ].join("\n");
 }

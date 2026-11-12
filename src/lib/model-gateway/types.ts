@@ -44,7 +44,8 @@ export type StepCardsResult = {
 };
 
 export type StuckStoryInput = {
-  stepTitle: string;
+  /** 1-based number of this Pause in the current Step. From 3 the snag is much harder (F1, PAUSE-3). */
+  pauseNumber: number;
   facts: string;
   forbidTerms?: string[];
 };
@@ -54,7 +55,11 @@ export type RestReplyInput = {
   facts: string;
 };
 
+/** Why the return pop-up opens: Back from the rest conversation, or back after an absence (R1). */
+export type ReturnTrigger = "rest" | "absence";
+
 export type ReturnPopupInput = {
+  trigger: ReturnTrigger;
   facts: string;
   awayMinutes: number;
   forbidTerms?: string[];
