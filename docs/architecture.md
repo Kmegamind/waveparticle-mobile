@@ -6,7 +6,7 @@ What exists today comes from the code. Planned parts are labeled "planned".
 Browser (installed web app, mobile first)
    └─ Next.js App Router  (src/app)
         ├─ pages and components            exists: one page
-        ├─ src/lib                          exists: clock formatting, story start
+        ├─ src/lib                          exists: clock formatting, story start, model gateway
         ├─ route handlers (AI and data)     planned
         └─ Supabase (sign-in, Postgres)     exists: clients and first user-data schema
 ```
@@ -19,6 +19,7 @@ Browser (installed web app, mobile first)
 | Web app manifest | `src/app/manifest.ts` | Install name, icons and standalone display |
 | Clock formatting | `src/lib/clock.ts` | Formats seconds as `MM:SS`, never below `00:00` |
 | Story start | `src/lib/story/start.ts` | Divides a story across the plan's steps when Start is pressed. Key slices are must-use facts. No model call |
+| Model gateway | `src/lib/model-gateway/` | Server-only calls for the plan split, step cards, the stuck story, the rest reply and the return pop-up. Each call times out, retries once, checks the line, then uses an authored fallback |
 | Supabase clients | `src/lib/supabase/` | Browser client (public key), server client (reads request cookies), `getCurrentUser`, settings reader |
 | User-data schema | `supabase/migrations/20261106000000_create_user_data_schema.sql` | Profiles, account-owned Goals and Steps, and Sessions with row-level security |
 | Server progress | `supabase/migrations/20261106120000_save_server_progress.sql` and `src/lib/progress/` | Story binding on a session, step positions, and shown lines. Home, Goals and the Life Path read this account state |
@@ -55,6 +56,7 @@ See `docs/api/`.
 - The clock must use timestamps, not page timers, because browsers pause timers in the background (planned; see `docs/TECH_STACK.md`).
 - Task text is stored on our server and sent to a language model (decision S3 in `docs/DECISIONS.md`); a privacy notice and account deletion are required.
 - Generated story text must pass the checks in `docs/CONTENT_MODEL.md` before it is shown.
+- Model keys stay on the server. The gateway reads `MODEL_API_KEY`, `MODEL_API_URL` and `MODEL_NAME`, and its log records rule ids and timing only.
 
 ## Quality gates
 | Gate | Where | Blocks |
