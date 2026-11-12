@@ -335,7 +335,11 @@ describe("split server logic", () => {
   });
 
   it("#38 AC3 treats a stored fallback plan as a failure", async () => {
-    const gateway = fakeGateway(async () => ({ ...generated, source: "authored" }));
+    // A stored fallback is no longer in the gateway's types (#219), but the answer is untyped
+    // at runtime, so an unexpected source must still count as a failure.
+    const gateway = fakeGateway(
+      async () => ({ ...generated, source: "authored" }) as unknown as PlanSplitResult,
+    );
     const result = await splitGoal(input, deps({ env: keys, createGateway: () => gateway }));
     expect(result).toEqual({ status: "failed" });
   });
