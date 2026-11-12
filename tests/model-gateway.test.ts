@@ -293,6 +293,25 @@ describe("model gateway", () => {
       expect(checked).toEqual({ ok: false, rejectedRules: ["question"] });
     });
 
+    it("test_215_ac1_rest_reply_may_end_on_its_question", () => {
+      const text = "I keep my notes dry under my coat. Do you see the wind on the mesa?";
+      expect(checkCompanionLine(text, "rest_reply")).toEqual({ ok: true, text });
+    });
+
+    it("test_215_ac2_rest_reply_without_a_full_stop_or_question_mark_is_rejected", () => {
+      const checked = checkCompanionLine("I keep my notes dry under my coat", "rest_reply");
+      expect(checked.ok).toBe(false);
+      if (!checked.ok) expect(checked.rejectedRules).toContain("form");
+    });
+
+    it("test_215_ac3_one_way_lines_ending_on_a_question_are_still_rejected", () => {
+      for (const kind of oneWayKinds) {
+        const checked = checkCompanionLine("I keep my notes dry. Is the wind on the mesa?", kind);
+        expect(checked.ok, kind).toBe(false);
+        if (!checked.ok) expect(checked.rejectedRules, kind).toContain("form");
+      }
+    });
+
     it("test_201_ac1_rest_reply_still_applies_the_other_rules", () => {
       const cases: [string, string][] = [
         ["Do you see it? I wait for the 5:30 signal.", "clock"],
