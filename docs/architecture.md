@@ -6,7 +6,7 @@ What exists today comes from the code. Planned parts are labeled "planned".
 Browser (installed web app, mobile first)
    └─ Next.js App Router  (src/app)
         ├─ pages and components            exists: one page
-        ├─ src/lib                          exists: clock formatting, model gateway
+        ├─ src/lib                          exists: clock formatting, story start, model gateway
         ├─ route handlers (AI and data)     planned
         └─ Supabase (sign-in, Postgres)     exists: clients and first user-data schema
 ```
@@ -18,6 +18,7 @@ Browser (installed web app, mobile first)
 | Root layout | `src/app/layout.tsx` | Page shell, install metadata and the phone viewport |
 | Web app manifest | `src/app/manifest.ts` | Install name, icons and standalone display |
 | Clock formatting | `src/lib/clock.ts` | Formats seconds as `MM:SS`, never below `00:00` |
+| Story start | `src/lib/story/start.ts` | Divides a story across the plan's steps when Start is pressed. Key slices are must-use facts. No model call |
 | Model gateway | `src/lib/model-gateway/` | Server-only calls for the plan split, step cards, the stuck story, the rest reply and the return pop-up. Each call times out, retries once, checks the line, then uses an authored fallback |
 | Supabase clients | `src/lib/supabase/` | Browser client (public key), server client (reads request cookies), `getCurrentUser`, settings reader |
 | User-data schema | `supabase/migrations/20261106000000_create_user_data_schema.sql` | Profiles, account-owned Goals and Steps, and Sessions with row-level security |

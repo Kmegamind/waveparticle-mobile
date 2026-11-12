@@ -6,6 +6,7 @@ Planned: Next.js route handlers for goal planning, story card generation, the re
 The public code interfaces today are:
 
 - `src/lib/clock.ts`: `formatClock(totalSeconds)` returns `MM:SS` and never goes below `00:00`.
+- `src/lib/story/start.ts`: `startStory(story, plan)` builds the brief for pressing Start. `plan` is a list of `{ minutes }`. The result carries the whole story, the step count taken from the plan, an instruction that the story is divided into that many steps and that the key slices are facts the writer must use, the facts for each step, and `mergedKeyMoments`. That list is empty when every key slice ended its own step. One step has `hasNextStepCards: false` and continues to the summary. No model is called.
 - `src/lib/safety/keyword.ts`: `checkSafetyText(text)` returns `{ tier, flagged }` and does not return the text. Reused by the crisis page; do not copy its patterns.
 - `src/lib/safety/crisis.ts`: `gateFreeText(text)` returns `{ action: "crisis-page", modelRequest: null }` when the keyword layer reports `crisis`, and `{ action: "continue" }` otherwise. The result never includes the text. `submitStepDraft` clears the draft on that path. `backToStep` returns an empty draft. Legal body text and the regional resource are placeholders until `docs/DECISIONS.md` or `docs/CONTENT_MODEL.md` states them.
 - `src/lib/model-gateway/`: server-only `createModelGateway` and `createServerModelGateway`. The five calls are `splitPlan`, `writeStepCards`, `writeStuckStory`, `writeRestReply` and `writeReturnPopup`. There is no HTTP route for them yet.
