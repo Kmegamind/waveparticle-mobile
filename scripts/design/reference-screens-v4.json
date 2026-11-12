@@ -1,0 +1,816 @@
+{
+  "url": "http://127.0.0.1:3200/wp-prototype_2026-11-12_v4_live-ai.html",
+  "outDir": "docs/design/prototype/reference-screenshots",
+  "viewport": {
+    "width": 1280,
+    "height": 1000
+  },
+  "clip": "#phone",
+  "screens": [
+    {
+      "name": "auth-in-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='AUTH-IN';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "auth-in-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='AUTH-IN';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "auth-up-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='AUTH-UP';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "auth-up-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='AUTH-UP';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "auth-confirm-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='AUTH-CONFIRM';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "auth-confirm-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='AUTH-CONFIRM';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "auth-reset-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='AUTH-RESET';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "auth-reset-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='AUTH-RESET';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "auth-new-password-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='AUTH-NEW-PASSWORD';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "auth-new-password-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='AUTH-NEW-PASSWORD';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "home-0-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='HOME-0';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "home-0-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='HOME-0';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "home-1-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='HOME-1';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "home-1-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='HOME-1';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "home-3-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='HOME-3';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "home-3-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='HOME-3';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "home-3b-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='HOME-3B';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "home-3b-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='HOME-3B';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "home-menu-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='HOME-MENU';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "home-menu-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='HOME-MENU';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "home-none-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='HOME-NONE';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "home-none-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='HOME-NONE';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "comp-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='COMP';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "comp-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='COMP';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "cpage-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='CPAGE';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "cpage-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='CPAGE';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "cpage-m-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='CPAGE-M';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "cpage-m-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='CPAGE-M';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "cpage-s-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='CPAGE-S';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "cpage-s-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='CPAGE-S';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "gd1",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='GD1';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "gd2",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='GD2';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "gd3",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='GD3';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "gd4",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='GD4';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "gd-f",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='GD-F';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "gd-n1",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='GD-N1';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "f1",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='F1';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "f1s",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='F1S';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "f1-e",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='F1-E';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "f1-you",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='F1-YOU';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "f1-c",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='F1-C';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "f1-n",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='F1-N';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "f2",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='F2';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "f3",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='F3';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "f3-x",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='F3-X';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "f-ret",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='F-RET';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "r1",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='R1';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "r1-c",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='R1-C';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "r-off",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='R-OFF';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "s1",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='S1';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "end",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='END';document.body.append(a);a.click();a.remove();})()",
+          "wait": 900
+        }
+      ]
+    },
+    {
+      "name": "me-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='ME';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "me-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='ME';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "account-delete-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='ACCOUNT-DELETE';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "account-delete-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='ACCOUNT-DELETE';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "sig-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='SIG';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "sig-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='SIG';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "me-cal-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='ME-CAL';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "me-cal-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='ME-CAL';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "me-rec-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='ME-REC';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "me-rec-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='ME-REC';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "g1-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='G1';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "g1-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='G1';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "g3-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='G3';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "g3-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='G3';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "g4-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='G4';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "g4-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='G4';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "g4-n-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='G4-N';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "g4-n-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='G4-N';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "g4-h-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='G4-H';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "g4-h-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='G4-H';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "g5-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='G5';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "g5-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='G5';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "g5-d-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='G5-D';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "g5-d-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='G5-D';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "g6-day",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='G6';document.body.append(a);a.click();a.remove();})()",
+          "wait": 700
+        }
+      ]
+    },
+    {
+      "name": "g6-night",
+      "steps": [
+        {
+          "eval": "(()=>{const a=document.createElement('a');a.dataset.jump='G6';document.body.append(a);a.click();a.remove();})()",
+          "wait": 500
+        },
+        {
+          "eval": "(()=>{const b=document.createElement('button');b.dataset.a='theme:night';document.body.append(b);b.click();b.remove();})()",
+          "wait": 700
+        }
+      ]
+    }
+  ]
+}
