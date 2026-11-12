@@ -163,6 +163,8 @@ Yue answered the questions raised by the three audits (AI specifications, produc
 
 | Id | Date | Decision | Consequences |
 |---|---|---|---|
+| CHAT-QUESTION-END | 2026-11-12 | In the rest conversation, his reply may end on its one question. One-way lines (step cards, stuck story, return pop-up) still end with a full stop. | The line check accepts a rest reply ending in "?" (issue #215). |
+| CHAT-NO-RUN-LIST | 2026-11-12 | Rest chat replies are not checked against the per-run list of earlier one-way lines (exact repeat, same three-word opening, similarity). | They answer the user and are not one-way lines. Recorded in issue #215. |
 | PAUSE-3 | 2026-11-12 | Every Pause means the character's own story is blocked, and the AI generates a new stuck story each time. From the third Pause the stuck situation is much harder, and because he remembers the earlier setbacks he says he is worried he may fail. The message is never an instruction to the user and never asks the user to stop pausing. | Replaces the wording in F1 that had him ask the user not to pause again. The pause prompt receives the pause number. |
 | TIME-WORDS | 2026-11-12 | In the return pop-up the character may describe how the time felt in any words he would use ("a while", "it felt very long"). It is not limited to one phrase. | Applies to R1 and T6. Open: whether exact clock numbers are allowed; until decided they stay out. |
 | ERA-ANSWER | 2026-11-12 | When the user asks something the character could not know, he answers exactly as a person of his own time would: he says what he knows, says plainly when he does not know, and may guess. | Resolves the open part of A3. A list of later-knowledge words stays as a check. |

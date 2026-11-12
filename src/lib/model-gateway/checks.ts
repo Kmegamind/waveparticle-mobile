@@ -1,4 +1,4 @@
-import type { CompanionKind, PlanSplitResult } from "./types";
+import type { CompanionKind, GeneratedPlan } from "./types";
 
 const FAILURE_WORDING = /\b(error|failed|failure|timeout|exception|undefined)\b/i;
 const CJK = /[\u3400-\u9fff]/;
@@ -72,7 +72,9 @@ export function checkCompanionLine(
   push(rejected, "you", kind !== "rest_reply" && ADDRESSED.test(text));
   push(rejected, "hook", HOOK.test(text));
   push(rejected, "praise", PRAISE.test(text));
-  push(rejected, "form", EXCLAIM_OR_EMOJI.test(text) || LINK.test(text) || !text.endsWith("."));
+  // A rest reply may end on its one question (CHAT-QUESTION-END); every other line ends with a full stop.
+  const endsWell = text.endsWith(".") || (kind === "rest_reply" && text.endsWith("?"));
+  push(rejected, "form", EXCLAIM_OR_EMOJI.test(text) || LINK.test(text) || !endsWell);
   push(rejected, "name", OWN_NAME.test(text));
   push(rejected, "first_person", !FIRST_PERSON.test(text));
   push(rejected, "blame", kind === "return_popup" && BLAME.test(text));
@@ -97,7 +99,7 @@ function lengthFails(kind: CompanionKind, sentenceCount: number, wordCount: numb
 export function checkPlan(
   value: unknown,
   totalMinutes: number,
-): { ok: true; plan: PlanSplitResult } | { ok: false; rejectedRules: string[] } {
+): { ok: true; plan: GeneratedPlan } | { ok: false; rejectedRules: string[] } {
   const rejected: string[] = [];
   const record = isRecord(value) ? value : null;
   const title = typeof record?.title === "string" ? cleanLine(record.title) : "";

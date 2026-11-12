@@ -517,7 +517,7 @@ These apply to every line the companion shows, whether authored or model-written
 | Not addressed to the user | No "you" (R04), except in the goal conversation and the rest chat reply, which answers the user (`docs/ai/AI_06_check-and-fallback.md` section 4). |
 | No hooks | None of: more, later, tomorrow, soon, continue, find out, next (R06; "next to" is allowed). |
 | No praise, no talk about absence, no source notes, no behind-the-scenes words | R07 to R10. The return pop-up is exempt from the absence rule, because he says what he did during the time away (Decided, T6). |
-| Form | No dashes, no exclamation marks or emoji, no links, ends with a full stop, never names himself (R11 to R15). |
+| Form | No dashes, no exclamation marks or emoji, no links, ends with a full stop (a rest chat reply may end on its question instead, decision CHAT-QUESTION-END), never names himself (R11 to R15). |
 | Warnings only | "we" and "us" (R05 is a warning for cards because he talks about himself and the people around him), words about other people's pronouns (R20), time-of-day words (R22). These are waived card by card in the current data. |
 
 ### 7.2 Length limits
