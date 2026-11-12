@@ -326,3 +326,54 @@ a {
   outline: 3px solid var(--control);
   outline-offset: 3px;
 }
+
+/* Sign-in-free test path, issue 208. */
+.try-shell {
+  margin-inline: auto;
+  max-width: var(--layout-phone-max);
+  min-height: 100svh;
+  overflow-x: clip;
+  width: 100%;
+}
+
+.try-header {
+  align-items: center;
+  display: flex;
+  min-height: var(--target);
+  padding: calc(var(--space-small-gap) + env(safe-area-inset-top))
+    calc(var(--space-screen-inline) + env(safe-area-inset-right)) var(--space-small-gap)
+    calc(var(--space-screen-inline) + env(safe-area-inset-left));
+}
+
+.try-badge {
+  border: 1px solid var(--edge);
+  border-radius: var(--r-capsule);
+  color: var(--ink-2);
+  font-family: var(--type-shell);
+  font-size: var(--text-caption-size);
+  font-weight: 600;
+  padding: 0 var(--space-small-gap);
+}
+
+.try-screen {
+  display: grid;
+  gap: var(--space-control-gap);
+  align-content: start;
+}
+
+.try-caption {
+  color: var(--ink-2);
+  font-size: var(--text-caption-size);
+  margin: 0;
+}
+
+.try-card {
+  background: var(--raised);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-paper);
+  padding: var(--space-screen-inline);
+}
+
+.try-card p {
+  margin: 0;
+}

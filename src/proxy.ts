@@ -1,7 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isPrototypeEnabled, tryPathIsHidden } from "./lib/prototype/config";
 import { updateSession } from "./lib/supabase/session";
 
 export async function proxy(request: NextRequest) {
+  // The sign-in-free test path exists only when PROTOTYPE_ENABLED is 1 (#208).
+  if (tryPathIsHidden(request.nextUrl.pathname, isPrototypeEnabled())) {
+    return new NextResponse("Not found", { status: 404 });
+  }
   try {
     return await updateSession(request);
   } catch (error) {
