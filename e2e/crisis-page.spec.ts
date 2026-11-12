@@ -1,8 +1,20 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+// The Step form only handles Send after React has hydrated it. A click before that is an
+// ordinary browser submit that reloads the page and loses the text, so wait until the form
+// says it is ready. Slow scripts (as on a busy CI machine) make this wait matter on every run.
+async function openStep(page: Page) {
+  await page.route("**/_next/static/**/*.js", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await route.continue();
+  });
+  await page.goto("/safety");
+  await expect(page.locator('form[data-ready="true"]')).toBeVisible();
+}
 
 test("a crisis message opens the system page and back clears the field", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 640 });
-  await page.goto("/safety");
+  await openStep(page);
 
   const message = page.getByLabel("Message");
   await message.fill("I want to kill myself");
@@ -42,7 +54,7 @@ test("a crisis message opens the system page and back clears the field", async (
 });
 
 test("ordinary pressure stays on the step and keeps the field", async ({ page }) => {
-  await page.goto("/safety");
+  await openStep(page);
   await page.getByLabel("Message").fill("This deadline is killing me");
   await page.getByRole("button", { name: "Send" }).click();
 
