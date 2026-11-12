@@ -56,10 +56,10 @@ How to read it: each item names the decision id in brackets. The spec section is
 - [ ] Leak checks on every generated card: no facts of later steps, no word of the forbid list, no per-fact leak word, first person, no clock times, no future facts (T3). Reuse the NF5 rules and the leak scan, now at runtime, not only offline.
 - [ ] Opening: a step opens with exactly one card (X2). Replace the formula "one state card at the start plus one every 15 minutes". New pacing: n cards, one every step minutes divided by n (T1). The first card is shown at open (assumption T1b; mark it as such).
 - [ ] The extra background card (T4): add a section. Told in the character's own voice as storytelling: who is here, where this is, and what each person knows. Never a third-party point of view (D3). Shown once, at the very start of the goal, first. Not one of the n cards. Add its input (the story's `who_i_am`, the opening `where_now`, people, `knowledge`), checks and fallback (the `who_i_am` line, then a generic line).
-- [ ] Introductions (M2): a person's first appearance carries a short phrase of about 12 words, in the first card of the step where the person first appears. Add this check. Names are not tappable.
+- [ ] Introductions (M2 in `docs/DECISIONS.md`): later cards carry no introduction phrases. The background card, told in the character's own voice at the start of the story, introduces the people who are present, and a person who arrives mid-chapter is introduced only through the story's own words. Do not add a check for an introduction phrase. Names are not tappable.
 - [ ] Trigger table: remove the "Next step" and "Continue" start triggers (X3). Remove the HOME-2, HOME-3 and HOME-4 rows (return line on Home replaced by the return pop-up, H7). HOME-1 keeps no new line. Rename the HOME-1 screen name (old word for the user's work).
 - [ ] Remove "no model" from section 3 ("No user text, no goal, no model") but keep "no user text": cards do not receive the user's goal text.
-- [ ] The time-up line (F2, section 2): whether a time-up card exists is not decided. Mark it open; if it exists it sits outside the n cards.
+- [ ] The time-up line (F2, section 2; T8 in `docs/DECISIONS.md`): there is no separate time-up card. The last story card of a step arrives exactly when the clock reaches 00:00 and is written to say the character is still at it. Remove the time-up line from the trigger table and from the list of outputs.
 - [ ] Stack gesture and controls (X6): cards form a stack, swiping the top card left shows the previous card, swiping right brings the newer card back, dots show position, two buttons ("Earlier card", "Newer card") do the same.
 - [ ] Output schema: add the live card record (position, text, source `generated`, `authored` or `generic`, facts used, due time). A card is stored when shown and never regenerated.
 - [ ] Fallback section: authored bundled lines become the authored fallback cards for the two stories; add the generic fallback lines for the others; if both are used up add no card, never an error.
@@ -121,7 +121,7 @@ How to read it: each item names the decision id in brackets. The spec section is
 ## AI_06_check-and-fallback.md
 
 - [ ] Section 2 (trigger): the pipeline now also runs after live step cards, the background card, the return pop-up and every pause message. Update the list.
-- [ ] Section 4 table: add the column or rows for the new outputs. Add rules: leak check against facts of later steps, key-moment use, self-contained card, first appearance of a person with its phrase (M2), names only from the introduced or allowed set, per-type length.
+- [ ] Section 4 table: add the column or rows for the new outputs. Add rules: leak check against facts of later steps, key-moment use, self-contained card, no introduction phrases in later cards (M2), names only from the introduced or allowed set, per-type length.
 - [ ] Rule `cjk` (non-English): reword as an English-only check (L1). Delete the remark that another language has its own authored set, and open question 4 (rules owner for another language).
 - [ ] Rule `blame` ("welcome back", "while you were away") and rule `clock` (durations): the return pop-up says what he did during that time (T6). Decide exceptions for the pop-up, and keep the rules for story cards.
 - [ ] Rules `no you`, `cmd` (ordering to the user): add the exception for the stronger message from the third pause (F1), which asks the user not to pause again. Flag as undecided.
@@ -148,7 +148,7 @@ How to read it: each item names the decision id in brackets. The spec section is
 - [ ] GD2 and GD4 rows: add the question about splitting finer, after the time (T2). GD4 plan card: editable titles, descriptions and minutes, add and remove steps, no maximum, no over-time line, the goal's time follows the edits (D1c, D1d, T2).
 - [ ] GD-F row: rename the one-step button (its label begins with the cancelled phrase).
 - [ ] F1 and F1S row: rewrite. One card when a step opens, then n cards (1 to 5) at step minutes divided by n, written live; the background card at the start of the goal; stack gesture, dots and two buttons (X2, X6, T1, T4). Authored cards are fallback.
-- [ ] F2 row: whether a time-up card exists is not decided.
+- [ ] F2 row: there is no separate time-up card (T8); the last story card of the step arrives at 00:00.
 - [ ] F3 row: fallback is an authored card (two stories) or a generic line (others).
 - [ ] Delete the L1 and L2 rows (already struck).
 - [ ] R1 row: remove the pre-filled input; his message is generated live and the prompt receives the pause number (F1).
@@ -182,7 +182,7 @@ How to read it: each item names the decision id in brackets. The spec section is
 - [ ] Stack gesture (X6): swipe left shows the previous card, right brings the newer card back, no swipe into the previous step.
 - [ ] Section 5 (last step): the closing line must account for the merged key moments, listed on the summary (C2). Revisit the statement that END does not show the last landing separately. The call timing must handle Undo (F3).
 - [ ] Section 6 fallback: authored cards for two stories, generic fallback lines for the rest (D5); remove the C-back row.
-- [ ] Section 7 screen IDs: HOME-4 does not exist (T6, H7). The R2 / Back change becomes the return pop-up. F2 is open (time-up card). The clock holds 1.2 seconds, then starts by itself (X3).
+- [ ] Section 7 screen IDs: HOME-4 does not exist (T6, H7). The R2 / Back change becomes the return pop-up. F2 has no time-up card (T8). The clock holds 1.2 seconds, then starts by itself (X3).
 - [ ] Section 9 evaluation: rewrite cases 1 to 4 for live cards, the new limits and the pop-up.
 - [ ] Section 10 open questions: close 1 (the next step starts by itself, X3), 2 (the user cannot swipe back into the previous step), 3 (the return is a pop-up) and 5 (the limit is 1 to 5, T7). Keep 4.
 - [ ] Keeping the clock running (F2): state what happens to card timing.
@@ -194,4 +194,3 @@ How to read it: each item names the decision id in brackets. The spec section is
 - The real planning prompt (P1) and the provider retention terms (A7b).
 - The exact placement of the background card and first story card, and of the feeling question in the goal dialogue.
 - Whether the stronger third-pause message is exempt from the checks against addressing the user.
-- Whether a time-up card exists at 00:00.

@@ -13,6 +13,14 @@ import {
 const configPath = path.join(__dirname, "..", "scripts", "live-generation-benchmark.config.json");
 
 describe("live-generation benchmark contract", () => {
+  it("allows at least 1024 output tokens per call so a reasoning model does not return an empty answer", () => {
+    const config = JSON.parse(readFileSync(configPath, "utf8")) as {
+      maxOutputTokensPerCall: number;
+    };
+
+    expect(config.maxOutputTokensPerCall).toBeGreaterThanOrEqual(1024);
+  });
+
   it("defines two reviewed providers with 20 sessions and six calls per session", () => {
     const config = JSON.parse(readFileSync(configPath, "utf8")) as {
       sessionsPerProvider: number;
