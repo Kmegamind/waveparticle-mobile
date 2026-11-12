@@ -1,6 +1,6 @@
 // Prompt builders for the story-card demo. Pure functions: data in, text out.
 // The blocks follow the prompt canvas (intro, relationship, goal, now, mood, answer-first, gestures,
-// format, history, rules). The data comes from docs/demo/site-search.stage0.json.
+// format, history, rules). The data comes from docs/demo/<story-id>.stage0.json.
 
 export const MOODS = { start: "focused", pause: "dejected", resume: "cheerful", complete: "happy" };
 
@@ -236,7 +236,10 @@ export function chatSystem(s, ctx) {
 - English only.
 - You know nothing that happens later, and you do not know how this ends.
 - Do not mention AI, prompts, steps or any clock time or duration.
-- Do not invent people. The only names are ${["Dudley", "McMillan", ...ctx.extraNames].join(", ")}.
+- Do not invent people. ${(() => {
+      const names = [...s.scene.present, ...ctx.extraNames];
+      return names.length ? `The only names are ${names.join(", ")}.` : "He gives no names.";
+    })()}
 - Do not give advice, orders or comfort methods. Do not ask the user to do anything.
 - At most one question, and never as your last sentence.
 - Vary your wording. Do not quote the facts back word for word and do not reuse a phrase from earlier in this conversation.`,
