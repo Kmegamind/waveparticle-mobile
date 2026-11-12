@@ -9,7 +9,8 @@ export function createServerModelGateway(
   options: {
     env?: Record<string, string | undefined>;
     fetchImpl?: typeof fetch;
-    timeoutMs?: number;
+    timeLimitMs?: number;
+    maxAttempts?: number;
     log?: (event: GatewayLog) => void;
   } = {},
 ): ModelGateway {
@@ -20,7 +21,8 @@ export function createServerModelGateway(
   const configured = apiKey.length > 0 && apiUrl.length > 0 && model.length > 0;
 
   return createModelGateway({
-    timeoutMs: options.timeoutMs,
+    timeLimitMs: options.timeLimitMs,
+    maxAttempts: options.maxAttempts,
     log: options.log,
     provider: configured
       ? createHttpModelProvider({

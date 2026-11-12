@@ -1,13 +1,9 @@
 import { checkCompanionLine, checkPlan } from "./checks";
-import {
-  fallbackPlan,
-  fallbackReply,
-  fallbackReturn,
-  fallbackStepCards,
-  fallbackStuck,
-} from "./fallbacks";
+import { checkRunList, reusesCardNouns } from "./run-list";
 import type {
   GatewayCall,
+  GatewayFailure,
+  GatewayFailureReason,
   GatewayLog,
   LineResult,
   ModelGateway,
@@ -16,119 +12,165 @@ import type {
   PlanSplitResult,
   RestReplyInput,
   ReturnPopupInput,
+  ReturnTrigger,
   StepCardsInput,
   StepCardsResult,
   StuckStoryInput,
 } from "./types";
 
-const DEFAULT_TIMEOUT_MS = 12_000;
+/** Waiting time limit for one call, all attempts included. The real value is set by testing (TIME-LIMIT). */
+export const DEFAULT_TIME_LIMIT_MS = 12_000;
+/** Most attempts per call within the time limit, so a provider that fails at once is not hammered. */
+export const DEFAULT_MAX_ATTEMPTS = 3;
 
 type Attempt<T> = { ok: true; value: T } | { ok: false; rejectedRules: string[] };
 
+/** Plain reasons added to the prompt on a retry. Rule ids only; never user text or forbid terms. */
+const RULE_FIXES: Record<string, string> = {
+  parse: "Return valid JSON in exactly the shape asked for.",
+  empty: "Write a non-empty line within the size asked for.",
+  minutes: "Use positive whole minutes that add up to the total.",
+  failure_text: "Do not mention errors or failures.",
+  cjk: "Write in English only.",
+  dash: "Use no dashes.",
+  ban: "Use none of the banned words.",
+  clock: "Use no clock times, numbers of minutes or durations.",
+  back: "Use no behind-the-scenes words such as step, session, app, screen or task.",
+  cmd: "Give no orders or advice.",
+  question: "Ask no question, or at most one where a question is allowed.",
+  you: "Do not address the person as you.",
+  hook: "Use no hook words such as more, later, soon or next.",
+  praise: "Give no praise.",
+  form: "Use no exclamation marks, emoji or links, and end with a full stop.",
+  name: "Never say his own name.",
+  first_person: "Write in his first person.",
+  blame: "Do not blame the person for being away.",
+  len: "Keep within the length asked for.",
+  leak: "Use none of the forbidden words.",
+  repeat: "Do not repeat a line already shown.",
+  opening: "Do not start with the same three words as a recent line.",
+  similar: "Do not write a line close to one already shown.",
+  card_nouns: "Do not reuse the nouns of the last card.",
+};
+
+function retryPrompt(prompt: string, rejectedRules: string[]): string {
+  const fixes = [...new Set(rejectedRules.map((rule) => RULE_FIXES[rule]).filter(Boolean))];
+  if (fixes.length === 0) return prompt;
+  return `${prompt}\n\nThe last answer was rejected. Fix this: ${fixes.join(" ")}`;
+}
+
+class TimeLimitError extends Error {}
+
 export function createModelGateway(options: {
   provider: ModelProvider;
-  timeoutMs?: number;
+  /** Waiting time limit for one call, all attempts included (default 12 s). */
+  timeLimitMs?: number;
+  /** Most attempts per call within the time limit (default 3). */
+  maxAttempts?: number;
   log?: (event: GatewayLog) => void;
 }): ModelGateway {
-  const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const timeLimitMs = options.timeLimitMs ?? DEFAULT_TIME_LIMIT_MS;
+  const maxAttempts = Math.max(1, options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS);
   const log = options.log ?? (() => undefined);
 
-  async function run<T extends { source: "generated" | "authored" }>(
+  /**
+   * One pipeline for every call: generate, parse, clean, check. A failed answer is generated again
+   * with the failure reason until it passes, the attempts run out or the time limit ends. A line is
+   * returned only after it passed; otherwise the result is an explicit failure with no text.
+   */
+  async function run<T extends { source: "generated" }>(
     call: GatewayCall,
     prompt: string,
     accept: (raw: string) => Attempt<T>,
-    fallback: () => T,
-  ): Promise<T> {
+  ): Promise<T | GatewayFailure> {
     const started = Date.now();
+    const deadline = started + timeLimitMs;
     let rejectedRules: string[] = [];
+    let reason: GatewayFailureReason = "request";
     let attempts = 0;
+    let nextPrompt = prompt;
 
-    try {
-      for (let attempt = 0; attempt < 2; attempt += 1) {
-        attempts += 1;
-        const controller = new AbortController();
-        try {
-          const raw = await withTimeout(
-            options.provider({ prompt, signal: controller.signal }),
-            timeoutMs,
-            controller,
-          );
-          const parsed = accept(raw);
-          if (parsed.ok) {
-            log({
-              call,
-              source: "generated",
-              rejectedRules,
-              latencyMs: Date.now() - started,
-              attempts,
-            });
-            return parsed.value;
-          }
-          rejectedRules = parsed.rejectedRules;
-        } catch {
-          controller.abort();
-          rejectedRules = ["request"];
-        }
+    while (attempts < maxAttempts) {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) {
+        reason = "timeout";
+        break;
       }
-    } catch {
-      rejectedRules = ["request"];
+      attempts += 1;
+      const controller = new AbortController();
+      try {
+        const raw = await withTimeout(
+          options.provider({ prompt: nextPrompt, signal: controller.signal }),
+          remaining,
+          controller,
+        );
+        const parsed = accept(raw);
+        if (parsed.ok) {
+          log({
+            call,
+            source: "generated",
+            rejectedRules,
+            latencyMs: Date.now() - started,
+            attempts,
+          });
+          return parsed.value;
+        }
+        rejectedRules = parsed.rejectedRules;
+        reason = "checks";
+        nextPrompt = retryPrompt(prompt, rejectedRules);
+      } catch (error) {
+        controller.abort();
+        reason = error instanceof TimeLimitError ? "timeout" : "request";
+        rejectedRules = [reason];
+        nextPrompt = prompt;
+        if (reason === "timeout") break;
+      }
     }
 
     log({
       call,
-      source: "authored",
+      source: "failed",
+      reason,
       rejectedRules,
       latencyMs: Date.now() - started,
       attempts,
     });
-    return fallback();
+    return { source: "failed", reason };
   }
 
   return {
-    splitPlan(input) {
-      return run<PlanSplitResult>(
-        "plan_split",
-        planPrompt(input),
-        (raw) => {
-          const parsed = parseModelJson(raw);
-          if (parsed === null) return { ok: false, rejectedRules: ["parse"] };
-          const checked = checkPlan(parsed, input.totalMinutes);
-          if (!checked.ok) return checked;
-          return { ok: true, value: checked.plan };
-        },
-        () => fallbackPlan(input.goal, input.totalMinutes),
+    splitPlan(input): Promise<PlanSplitResult> {
+      return run("plan_split", planPrompt(input), (raw) => {
+        const parsed = parseModelJson(raw);
+        if (parsed === null) return { ok: false, rejectedRules: ["parse"] };
+        const checked = checkPlan(parsed, input.totalMinutes);
+        if (!checked.ok) return checked;
+        return { ok: true, value: checked.plan };
+      });
+    },
+    writeStepCards(input): Promise<StepCardsResult> {
+      return run("step_cards", stepCardPrompt(input), (raw) =>
+        acceptCards(raw, input.forbidTerms ?? [], input.earlierLines ?? []),
       );
     },
-    writeStepCards(input) {
-      return run<StepCardsResult>(
-        "step_cards",
-        stepCardPrompt(input),
-        (raw) => acceptCards(raw, input.forbidTerms ?? []),
-        fallbackStepCards,
+    writeStuckStory(input): Promise<LineResult> {
+      return run("stuck_story", stuckPrompt(input), (raw) =>
+        acceptLine(raw, "story", "stuck_story", input.forbidTerms ?? [], {
+          earlierLines: input.earlierLines ?? [],
+          lastCard: input.lastCard,
+        }),
       );
     },
-    writeStuckStory(input) {
-      return run<LineResult>(
-        "stuck_story",
-        stuckPrompt(input),
-        (raw) => acceptLine(raw, "story", "stuck_story", input.forbidTerms ?? []),
-        fallbackStuck,
+    writeRestReply(input): Promise<LineResult> {
+      return run("rest_reply", restPrompt(input), (raw) =>
+        acceptLine(raw, "reply", "rest_reply", [], null),
       );
     },
-    writeRestReply(input) {
-      return run<LineResult>(
-        "rest_reply",
-        restPrompt(input),
-        (raw) => acceptLine(raw, "reply", "rest_reply", []),
-        fallbackReply,
-      );
-    },
-    writeReturnPopup(input) {
-      return run<LineResult>(
-        "return_popup",
-        returnPrompt(input),
-        (raw) => acceptLine(raw, "returnLine", "return_popup", input.forbidTerms ?? []),
-        fallbackReturn,
+    writeReturnPopup(input): Promise<LineResult> {
+      return run("return_popup", returnPrompt(input), (raw) =>
+        acceptLine(raw, "returnLine", "return_popup", input.forbidTerms ?? [], {
+          earlierLines: input.earlierLines ?? [],
+        }),
       );
     },
   };
@@ -137,6 +179,7 @@ export function createModelGateway(options: {
 function acceptCards(
   raw: string,
   forbidTerms: string[],
+  earlierLines: string[],
 ): Attempt<{ source: "generated"; cards: string[] }> {
   const parsed = parseModelJson(raw);
   const cards = isRecord(parsed) && Array.isArray(parsed.cards) ? parsed.cards : null;
@@ -147,22 +190,34 @@ function acceptCards(
     if (typeof card !== "string") return { ok: false, rejectedRules: ["parse"] };
     const checked = checkCompanionLine(card, "step_card", forbidTerms);
     if (!checked.ok) return checked;
+    // Each card is a one-way line: it is checked against the run and the cards before it.
+    const runRules = checkRunList(checked.text, [...earlierLines, ...accepted]);
+    if (runRules.length > 0) return { ok: false, rejectedRules: runRules };
     accepted.push(checked.text);
   }
   return { ok: true, value: { source: "generated", cards: accepted } };
 }
 
+/** `run` is null for the rest reply, which is a conversation turn and not a one-way line. */
 function acceptLine(
   raw: string,
   key: string,
   kind: "stuck_story" | "rest_reply" | "return_popup",
   forbidTerms: string[],
+  runList: { earlierLines: string[]; lastCard?: string } | null,
 ): Attempt<{ source: "generated"; text: string }> {
   const parsed = parseModelJson(raw);
   const text = isRecord(parsed) ? parsed[key] : undefined;
   if (typeof text !== "string") return { ok: false, rejectedRules: ["parse"] };
   const checked = checkCompanionLine(text, kind, forbidTerms);
   if (!checked.ok) return checked;
+  if (runList) {
+    const rules = checkRunList(checked.text, runList.earlierLines);
+    if (runList.lastCard && reusesCardNouns(checked.text, runList.lastCard)) {
+      rules.push("card_nouns");
+    }
+    if (rules.length > 0) return { ok: false, rejectedRules: rules };
+  }
   return { ok: true, value: { source: "generated", text: checked.text } };
 }
 
@@ -196,7 +251,7 @@ function withTimeout(
     };
     const timer = setTimeout(() => {
       controller.abort();
-      finish(() => reject(new Error("request")));
+      finish(() => reject(new TimeLimitError("timeout")));
     }, timeoutMs);
     work.then(
       (value) => finish(() => resolve(value)),
@@ -226,11 +281,29 @@ function stepCardPrompt(input: StepCardsInput): string {
   ].join("\n");
 }
 
+const HARDER_PAUSE = 3;
+
+/** A Pause number that is not a whole number of at least 1 is read as the first Pause. */
+function normalPauseNumber(value: number): number {
+  return Number.isInteger(value) && value >= 1 ? value : 1;
+}
+
 function stuckPrompt(input: StuckStoryInput): string {
+  const pauseNumber = normalPauseNumber(input.pauseNumber);
+  const situation =
+    pauseNumber >= HARDER_PAUSE
+      ? [
+          "Every pause has stalled his own work, and he remembers the earlier setbacks.",
+          "So this new stuck situation is much harder than the earlier ones.",
+          "He says he is worried he may fail.",
+        ]
+      : ["A new small snag that holds up his own work, and how he feels about it."];
   return [
     'Return JSON only: {"story":"..."}',
-    "One or two short first-person sentences about a small snag in his own work.",
-    `Step: ${input.stepTitle}`,
+    "One or two short first-person sentences about where his own work is stuck.",
+    ...situation,
+    "Never tell the person what to do and never ask the person to stop pausing.",
+    `Pause number: ${pauseNumber}`,
     `Facts already known: ${input.facts}`,
   ].join("\n");
 }
@@ -244,11 +317,20 @@ function restPrompt(input: RestReplyInput): string {
   ].join("\n");
 }
 
+const RETURN_SITUATION: Record<ReturnTrigger, string> = {
+  rest: "The person is coming back from the rest conversation with him.",
+  absence: "The person is coming back after being away from the app.",
+};
+
 function returnPrompt(input: ReturnPopupInput): string {
   return [
     'Return JSON only: {"returnLine":"..."}',
-    "One to three first-person sentences about the work still in front of him.",
+    "One to three first-person sentences: what he did in that time and how he felt.",
+    RETURN_SITUATION[input.trigger],
+    "He may say how the time felt in his own words, such as a while or very long.",
+    "No clock times and no numbers.",
+    `Return trigger: ${input.trigger}`,
     `Facts already known: ${input.facts}`,
-    `Minutes away: ${input.awayMinutes}`,
+    `Minutes away, for context only and never written out: ${input.awayMinutes}`,
   ].join("\n");
 }
