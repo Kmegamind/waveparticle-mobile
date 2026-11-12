@@ -507,6 +507,16 @@
       "School",
       "Mesa"
     ],
+    "pauseProp": "map",
+    "laterWords": [
+      "Mesa",
+      "Pajarito",
+      "Plateau",
+      "Los",
+      "Alamos",
+      "Ranch",
+      "School"
+    ],
     "props": [
       "boots",
       "coat",
