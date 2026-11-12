@@ -1,16 +1,16 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { backToStep, submitStepDraft } from "@/lib/safety/crisis";
 import { CrisisPage } from "./crisis-page";
 
 const noSubscription = () => () => {};
 
 export function StepSafetyGate() {
-  const [draft, setDraft] = useState("");
   const [screen, setScreen] = useState<"step" | "crisis">("step");
+  const message = useRef<HTMLTextAreaElement>(null);
   // False in the server HTML and during hydration, true once React has hydrated the form.
-  // Text typed before that is not in `draft`, so tests wait for data-ready="true" before typing.
+  // Send stays disabled until then, so the browser never does a native submit (#204).
   const ready = useSyncExternalStore(
     noSubscription,
     () => true,
@@ -19,21 +19,14 @@ export function StepSafetyGate() {
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const next = submitStepDraft(draft);
-    setDraft(next.draft);
+    // The field is uncontrolled, so text typed before hydration is read from the field itself.
+    const next = submitStepDraft(message.current?.value ?? "");
     setScreen(next.screen);
   }
 
   if (screen === "crisis") {
-    return (
-      <CrisisPage
-        onBack={() => {
-          const next = backToStep();
-          setDraft(next.draft);
-          setScreen(next.screen);
-        }}
-      />
-    );
+    // Back to my Step mounts a new, empty field.
+    return <CrisisPage onBack={() => setScreen(backToStep().screen)} />;
   }
 
   return (
@@ -42,11 +35,22 @@ export function StepSafetyGate() {
       <form data-ready={ready ? "true" : "false"} onSubmit={onSubmit}>
         <label>
           Message
-          <textarea onChange={(event) => setDraft(event.target.value)} value={draft} />
+          {/* No name attribute: the text is never part of a native form submission. */}
+          <textarea defaultValue="" ref={message} />
         </label>
-        <button className="button-filled" type="submit">
+        <button
+          aria-describedby={ready ? undefined : "send-not-ready"}
+          className="button-filled"
+          disabled={!ready}
+          type="submit"
+        >
           Send
         </button>
+        {ready ? null : (
+          <p className="step-note" id="send-not-ready">
+            Send is ready once the page has loaded.
+          </p>
+        )}
       </form>
     </main>
   );

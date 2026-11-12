@@ -41,8 +41,9 @@ jobs:
 
   pr-closes-issue:
     timeout-minutes: 5
-    # Bots (Dependabot) do not close issues, so they are exempt.
-    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+    # Bots (Dependabot) do not close issues, so pull requests they opened are exempt,
+    # even when a person pushes a fix to the branch.
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: PR body must close an issue

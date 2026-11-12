@@ -1,6 +1,7 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isPrototypeEnabled, isTryPath } from "../prototype/config";
 import { readSupabaseEnv } from "./env";
 
 /** Returns the signed-in user, or null when the request has no valid session. */
@@ -8,6 +9,14 @@ export async function getCurrentUser(client: SupabaseClient): Promise<User | nul
   const { data, error } = await client.auth.getUser();
   if (error || !data.user) return null;
   return data.user;
+}
+
+/** Paths a signed-out visitor may open. /try is public only while the test path is enabled (#208). */
+export function isPublicPath(pathname: string, prototypeEnabled: boolean): boolean {
+  if (pathname.startsWith("/auth/")) return true;
+  if (pathname === "/safety" || pathname.startsWith("/safety/")) return true;
+  if (prototypeEnabled && isTryPath(pathname)) return true;
+  return false;
 }
 
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
@@ -25,10 +34,8 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   const supabase = createServerClient(url, anonKey, { cookies });
   const { data } = await supabase.auth.getUser();
   const pathname = request.nextUrl.pathname;
-  const isAuthRoute = pathname.startsWith("/auth/");
-  const isSafetyRoute = pathname === "/safety" || pathname.startsWith("/safety/");
 
-  if (!data.user && !isAuthRoute && !isSafetyRoute) {
+  if (!data.user && !isPublicPath(pathname, isPrototypeEnabled())) {
     return NextResponse.redirect(new URL("/auth/sign-in", request.url));
   }
 

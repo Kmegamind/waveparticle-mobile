@@ -20,6 +20,7 @@ Browser (installed web app, mobile first)
 | Clock formatting | `src/lib/clock.ts` | Formats seconds as `MM:SS`, never below `00:00` |
 | Story start | `src/lib/story/start.ts` | Divides a story across the plan's steps when Start is pressed. Key slices are must-use facts. No model call |
 | Model gateway | `src/lib/model-gateway/` | Server-only calls for the plan split, step cards, the stuck story, the rest reply and the return pop-up. Each call parses, cleans and checks the answer (with the per-run list), regenerates with the failure reason within a time limit, and otherwise returns an explicit failure with no stored text |
+| Test path (prototype) | `src/app/try/`, `src/lib/prototype/` | Sign-in-free `/try` route for test builds only, on when `PROTOTYPE_ENABLED` is `1` (the proxy answers 404 otherwise). Progress stays in the browser; chapter 8 generated content is labelled test data (`docs/decisions/0011`) |
 | Supabase clients | `src/lib/supabase/` | Browser client (public key), server client (reads request cookies), `getCurrentUser`, settings reader |
 | User-data schema | `supabase/migrations/20261106000000_create_user_data_schema.sql` | Profiles, account-owned Goals and Steps, and Sessions with row-level security |
 | Server progress | `supabase/migrations/20261106120000_save_server_progress.sql` and `src/lib/progress/` | Story binding on a session, step positions, and shown lines. Home, Goals and the Life Path read this account state |
