@@ -1,4 +1,4 @@
-import type { CompanionKind, PlanSplitResult } from "./types";
+import type { CompanionKind, GeneratedPlan } from "./types";
 
 const FAILURE_WORDING = /\b(error|failed|failure|timeout|exception|undefined)\b/i;
 const CJK = /[\u3400-\u9fff]/;
@@ -97,7 +97,7 @@ function lengthFails(kind: CompanionKind, sentenceCount: number, wordCount: numb
 export function checkPlan(
   value: unknown,
   totalMinutes: number,
-): { ok: true; plan: PlanSplitResult } | { ok: false; rejectedRules: string[] } {
+): { ok: true; plan: GeneratedPlan } | { ok: false; rejectedRules: string[] } {
   const rejected: string[] = [];
   const record = isRecord(value) ? value : null;
   const title = typeof record?.title === "string" ? cleanLine(record.title) : "";
