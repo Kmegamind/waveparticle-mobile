@@ -513,8 +513,8 @@ These apply to every line the companion shows, whether authored or model-written
 | No future facts | "will", "going to" and "'ll" are allowed only inside his own worry or someone else's stated prediction, marked by words such as "says", "thinks", "warned", "forecast", "can't tell", "don't know", "whether", "if", "neither/nor" (K02). "The sky will clear at dawn." fails. "Neither Fermi nor Hubbard can tell me what the sky will do." passes. |
 | Leak map | A card may not use words that belong to facts of later steps (K04 for ending words; the leak map for per-fact or per-slice words, rule RW8). For the authored fallback, a card at entry state k may not use words that belong to slice k or later. Also no word from the story's forbid list. |
 | Length | See the limits table below. |
-| No question | No question marks (R01), except the one question in the goal opener and the goal conversation. |
-| Not addressed to the user | No "you" (R04), except in the goal conversation. |
+| No question | No question marks (R01), except the one question in the goal opener and the goal conversation, and at most one question in a rest chat reply (`docs/ai/AI_04_rest-chat.md` section B). |
+| Not addressed to the user | No "you" (R04), except in the goal conversation and the rest chat reply, which answers the user (`docs/ai/AI_06_check-and-fallback.md` section 4). |
 | No hooks | None of: more, later, tomorrow, soon, continue, find out, next (R06; "next to" is allowed). |
 | No praise, no talk about absence, no source notes, no behind-the-scenes words | R07 to R10. The return pop-up is exempt from the absence rule, because he says what he did during the time away (Decided, T6). |
 | Form | No dashes, no exclamation marks or emoji, no links, ends with a full stop, never names himself (R11 to R15). |
