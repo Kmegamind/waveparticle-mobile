@@ -383,3 +383,336 @@ a {
 .try-card p {
   margin: 0;
 }
+
+/* Goal dialogue on the test path, issues 30 and 33 to 39 (FLOW 4.3). */
+.try-screen a.button-filled {
+  text-decoration: none;
+}
+
+.try-dialogue {
+  min-width: 0;
+}
+
+.try-dialogue-bar {
+  display: flex;
+  min-height: var(--target);
+}
+
+.try-back {
+  font-size: var(--text-display-size);
+  justify-content: flex-start;
+  padding-inline: 0;
+  text-decoration: none;
+}
+
+.try-slip {
+  background: var(--raised);
+  border-radius: var(--r-note);
+  box-shadow: var(--shadow-paper);
+  color: var(--ink);
+  font-family: var(--type-voice);
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-leading);
+  margin: var(--space-small-gap) 0 0;
+  max-width: 100%;
+  padding: var(--space-screen-inline) var(--space-screen-inline) var(--space-control-gap);
+  position: relative;
+}
+
+/* Tape: decorative, no text content, so screen readers skip it (DESIGN.md 6.11). */
+.try-slip::before {
+  background: var(--fill-soft);
+  content: "";
+  height: 1.25rem;
+  left: 50%;
+  position: absolute;
+  top: calc(var(--space-small-gap) * -1);
+  transform: translateX(-50%) rotate(2deg);
+  width: 4.625rem;
+}
+
+.try-you {
+  background: var(--control);
+  border-radius: var(--r-note);
+  color: var(--on-control);
+  font-family: var(--type-shell);
+  justify-self: end;
+  margin: 0;
+  max-width: 85%;
+  padding: var(--space-small-gap) var(--space-control-gap);
+}
+
+.try-system-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-small-gap);
+}
+
+.try-system,
+.try-hint,
+.try-count {
+  font-family: var(--type-shell);
+  margin: 0;
+}
+
+.try-hint {
+  color: var(--ink-2);
+}
+
+.try-composer {
+  align-items: center;
+  background: var(--raised);
+  border-radius: var(--r-capsule);
+  box-shadow: inset 0 0 0 1px var(--edge);
+  display: flex;
+  gap: var(--space-small-gap);
+  min-width: 0;
+  padding: 0.1875rem 0.1875rem 0.1875rem var(--space-control-gap);
+}
+
+.try-composer input {
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  flex: 1 1 auto;
+  font-family: var(--type-sans);
+  font-size: var(--text-body-size);
+  min-width: 0;
+}
+
+.try-composer:focus-within {
+  outline: 3px solid var(--control);
+  outline-offset: 3px;
+}
+
+.try-composer input:focus-visible {
+  outline: none;
+}
+
+.try-send {
+  align-items: center;
+  background: var(--control);
+  border: 0;
+  border-radius: var(--r-capsule);
+  color: var(--on-control);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 var(--target);
+  height: var(--target);
+  justify-content: center;
+  width: var(--target);
+}
+
+.try-send svg {
+  fill: none;
+  height: 1.25rem;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+  width: 1.25rem;
+}
+
+.try-link {
+  background: transparent;
+  border: 0;
+  color: var(--accent-text);
+  cursor: pointer;
+  font-family: var(--type-shell);
+  font-size: var(--text-body-size);
+  font-weight: 700;
+  justify-self: start;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.try-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-small-gap);
+}
+
+.try-chip {
+  background: transparent;
+  border: 1px solid var(--edge);
+  border-radius: var(--r-capsule);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--type-shell);
+  font-size: var(--text-body-size);
+  font-weight: 600;
+  padding-inline: var(--space-screen-inline);
+}
+
+.try-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-control-gap);
+}
+
+.try-actions > :first-child {
+  flex: 62 1 auto;
+}
+
+.try-actions > :last-child {
+  flex: 38 1 auto;
+}
+
+.try-dots {
+  display: flex;
+  gap: var(--space-small-gap);
+}
+
+.try-dots span {
+  background: var(--mark);
+  border-radius: var(--r-capsule);
+  height: var(--space-small-gap);
+  width: var(--space-small-gap);
+}
+
+/* System voice: bold border and text, not red (FLOW GD-F). */
+.try-failure {
+  border: 2px solid var(--ink);
+  border-radius: var(--r-note);
+  display: grid;
+  font-family: var(--type-shell);
+  gap: var(--space-control-gap);
+  padding: var(--space-screen-inline);
+}
+
+.try-failure p {
+  font-weight: 700;
+  margin: 0;
+}
+
+.try-plan {
+  display: grid;
+  gap: var(--space-control-gap);
+  min-width: 0;
+}
+
+.try-plan h2 {
+  font-family: var(--type-display);
+  font-size: var(--text-body-size);
+  font-weight: 800;
+  margin: 0;
+}
+
+.try-steps {
+  display: grid;
+  gap: var(--space-small-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.try-step-button {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  gap: 0.25rem;
+  padding: var(--space-small-gap) 0;
+  text-align: left;
+  width: 100%;
+}
+
+.try-step-head {
+  display: flex;
+  gap: var(--space-small-gap);
+  justify-content: space-between;
+}
+
+.try-step-title {
+  font-weight: 700;
+  min-width: 0;
+}
+
+.try-step-description {
+  color: var(--ink-2);
+}
+
+.try-minutes {
+  font-family: var(--type-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.try-step-editor,
+.try-step-editor label {
+  display: grid;
+  gap: var(--space-small-gap);
+}
+
+.try-step-editor {
+  gap: var(--space-control-gap);
+  padding: var(--space-small-gap) 0;
+}
+
+.try-step-editor input,
+.try-step-editor textarea {
+  background: var(--raised);
+  border: 0;
+  border-radius: var(--r-field);
+  box-shadow: inset 0 0 0 1px var(--edge);
+  color: var(--ink);
+  font-family: var(--type-sans);
+  font-size: var(--text-body-size);
+  min-height: 3.125rem;
+  min-width: 0;
+  padding: var(--space-small-gap) var(--space-control-gap);
+  width: 100%;
+}
+
+.try-step-editor input:focus-visible,
+.try-step-editor textarea:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 3px;
+}
+
+.try-stepper-row,
+.try-step-tools {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-control-gap);
+}
+
+/* Stepper: one capsule, two 56 by 44 halves, value outside (DESIGN.md 6.3). */
+.try-stepper {
+  background: var(--gray);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-capsule);
+  display: inline-flex;
+  overflow: hidden;
+}
+
+.try-stepper button {
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--type-shell);
+  font-size: var(--text-button-size);
+  font-weight: 600;
+  height: var(--target);
+  width: 3.5rem;
+}
+
+.try-stepper button + button {
+  border-left: 1px solid var(--edge);
+}
+
+.try-stepper button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.try-stepper button:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: -3px;
+}
