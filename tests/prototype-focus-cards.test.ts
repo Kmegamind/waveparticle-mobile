@@ -58,12 +58,17 @@ describe("FAIL-SCREEN with the model configured", () => {
   });
 
   it("treats a stored fallback, an empty result or an error as a failure", async () => {
-    for (const outcome of [
-      { source: "authored" as const, cards: ["stored line"] },
-      { source: "generated" as const, cards: [] },
-      { source: "failed" } as unknown as { source: "authored"; cards: string[] },
+    type Outcome = Awaited<ReturnType<ModelGateway["writeStepCards"]>> | Error;
+    const outcomes: Outcome[] = [
+      // A stored fallback is no longer in the gateway's types (#219), but the answer is
+      // untyped at runtime, so an unexpected source must still count as a failure.
+      { source: "authored", cards: ["stored line"] } as unknown as Outcome,
+      { source: "generated", cards: [] },
+      { source: "failed" } as unknown as Outcome,
+      { source: "failed", reason: "checks" },
       new Error("network"),
-    ]) {
+    ];
+    for (const outcome of outcomes) {
       const { gateway } = gatewayReturning(outcome);
       expect(await cardsForStep({ index: 0, stepTitle: "Outline", minutes: 15 }, gateway)).toEqual({
         status: "failed",
