@@ -2,7 +2,13 @@ import { expect, test, type Page } from "@playwright/test";
 
 // The Message field is controlled by React state. Text typed before React has hydrated the form
 // is wiped at hydration, and Send then submits an empty message, so wait until the form is ready.
+// The page scripts are delayed on purpose, so this wait matters on every run and not only on a
+// slow CI machine.
 async function openStep(page: Page) {
+  await page.route("**/_next/static/**/*.js", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await route.continue();
+  });
   await page.goto("/safety");
   await expect(page.locator('form[data-ready="true"]')).toBeVisible();
 }
