@@ -18,7 +18,7 @@ Decider: Yue (product owner). Dates are the day the decision was given.
 
 | Id | Date | Decision | Consequences |
 |---|---|---|---|
-| F1 | 2026-11-04, refined 2026-11-05 | Pause has no limit and no timer reset. Pausing never adds a screen, a pop-up or a penalty. Every Pause opens the same conversation: the character first sends a message about the snag his own task has hit and how he feels about it (a Pause means his side of the story has stalled). The message is generated live. The prompt receives the number of the pause. From the third Pause in one step, the prompt changes: the character says more strongly that he cannot finish his task and asks the user not to pause again. | The change lives entirely in the prompt (pause count passed in, rules for the third pause and after). No new screen. The earlier "comments once" idea and the quiet line (A2, C7) are replaced by this. **From the fourth pause on, the same strong tone continues in new words each time; nothing else happens (decided 2026-11-05).** |
+| F1 | 2026-11-04, refined 2026-11-05 | Pause has no limit and no timer reset. Pausing never adds a screen, a pop-up or a penalty. Every Pause opens the same conversation: the character first sends a message about the snag his own task has hit and how he feels about it (a Pause means his side of the story has stalled). The message is generated live. The prompt receives the number of the pause. From the third Pause in one step, the prompt changes: every Pause stalls his own story and he remembers the earlier setbacks, so the new stuck situation is much harder and he says he is worried that he may fail. **Changed 2026-11-12 (decision PAUSE-3): he never gives the user an instruction and never asks the user to stop pausing.** | The change lives entirely in the prompt (pause count passed in, rules for the third pause and after). No new screen. The earlier "comments once" idea and the quiet line (A2, C7) are replaced by this. **From the fourth pause on, the same strong tone continues in new words each time; nothing else happens (decided 2026-11-05).** |
 | F2 | 2026-11-04 | Leaving the app freezes the step clock. A setting named "Keep the clock running when I leave" is available. | A phone call is not quitting. |
 | F3 | 2026-11-04 | Done never asks a question and is always allowed. Every Done can be undone. | A short Undo is shown after each Done, as it already is after the last step. |
 | F4 | 2026-11-04 | Enforcement stops at level 1: when the user returns, the character shows a card about his own situation. Level 2 (one opt-in notification) is not built or tested. Level 3 (blocking apps) is never built. | No push notifications in Release 1 for this purpose. |
@@ -39,7 +39,7 @@ Decider: Yue (product owner). Dates are the day the decision was given.
 |---|---|---|---|
 | T1 | 2026-11-05 | The character's goal mirrors the user's goal. If the user has x steps of y minutes each, the character also has x steps of y minutes each. The whole story is given to the AI with the instruction: the story is divided into x steps; according to the story's progress, split each step sensibly into n story cards. The number n is chosen by the AI for each step and is not fixed (five was only an example). A card appears every y divided by n minutes during that step. | Replaces the fixed 15-minute and 10-minute proposals and the idea of five cards. Cards belong to steps; each step has its own stack that starts again with one card. Assumption to confirm: the n cards include the card shown when the step opens. |
 | T2 | 2026-11-05 | The user may choose any number of steps. There is no maximum. The goal dialogue asks, in this order: the user's task, the time available, then whether to split the task into finer steps. The assistant proposes a split and the user can adjust it. The question suits users who have a detailed task. | Replaces the maximum of 5 or 6 steps. |
-| T3 | 2026-11-05 | The story is treated as a whole. The number and duration of the user's steps are matched by an AI that distributes the story across them; the content of each step may vary. Story slices do not decide how many steps there are. **Decided: the AI writes each step's cards live from the story's facts and the key turning points (given as must-use facts). Every card passes the same checks as authored cards (first person, no future facts, no clock times). The pre-written cards from the 8 slices remain as the safety net when a card fails the checks or generation is slow.** | The key-slice rule (C2) still holds: key moments are inputs the AI must use, and the summary lists any that were merged. The content team's work shifts to the facts, the leak map, the checks and the fallback cards. |
+| T3 | 2026-11-05 | The story is treated as a whole. The number and duration of the user's steps are matched by an AI that distributes the story across them; the content of each step may vary. Story slices do not decide how many steps there are. **Decided: the AI writes each step's cards live from the story's facts and the key turning points (given as must-use facts). Every card passes the same checks as authored cards (first person, no future facts, no clock times). The pre-written cards from the 8 slices remain as the safety net when a card fails the checks or generation is slow.** **Changed 2026-11-12 (decision NO-BACKUP): there is no safety net of pre-written cards. A card that fails the checks is generated again within the time limit.** | The key-slice rule (C2) still holds: key moments are inputs the AI must use, and the summary lists any that were merged. The content team's work shifts to the facts, the leak map, the checks and the reference examples (formerly called fallback cards). |
 | T4 | 2026-11-05 | When the user first enters the story, an extra background card is shown first. It is not progress, so it is not counted among the n story cards. It tells who is in the story, the places, and the knowledge needed. | Assumption to confirm: it appears once at the start of the goal, not at the start of every step. |
 | T5 | 2026-11-05 | Start over restarts the character's night, because the character's task has failed. | Resolves the open conflict between the story design and the prototype note. |
 | T6 | 2026-11-05, final version the same day | **There is no time limit on resuming.** However long the user was away, they can resume their task. Before the clock restarts, a pop-up appears in which the character says what he did during that time and how he felt. When the user taps the start button in the pop-up, the original task resumes and the clock starts. This version replaces the earlier same-day rule and the 24-hour cut-off. | Removes the 24-hour rule, the Start-from-step-1 behaviour, the "not completed" History entry for lapsed tasks, and the older "Home keeps the task after 24 hours" rule. The pop-up text is generated by the AI. Open: in which return cases the pop-up appears (see the open list). |
@@ -79,7 +79,7 @@ Yue replied "use the defaults" to the following list.
 | H5 | After finishing, Home keeps a small trace of the character. | |
 | H6 | On the first visit Home shows one card and no sample data. | |
 | H7 | After a long absence with nothing in progress, Home shows no "welcome back". | |
-| D5 | For the 24 stories without pre-written cards, a few generic fallback lines in the character's voice are shown if generation fails or is slow. | |
+| D5 | ~~For the 24 stories without pre-written cards, a few generic fallback lines in the character's voice are shown if generation fails or is slow.~~ **Withdrawn 2026-11-12 (decision NO-BACKUP): no stored lines are ever shown to the user.** | |
 | A7 | The end-of-story line is written by the model. Data retention by the model provider depends on the provider's terms and is not decided now. | |
 | S2 | Engineering checks which phone features (vibration, lock-screen alerts, background timers) a web app can use on iPhone and Android. | Not a product decision. |
 
@@ -151,11 +151,44 @@ Yue replied "use the defaults" to the following list.
 
 | Id | Date | Decision | Consequences |
 |---|---|---|---|
-| C1 | 2026-11-05 | The AI workflow is already configured: the AI first generates a stuck story, then the character describes his predicament and how he feels. This is live generation. | Authored snag lines become a fallback set only. The content team supplies the generator's inputs (scene table, allowed props, allowed names, rules). |
-| A3 | 2026-11-05 | The rest conversation is in the character's world and voice. He may answer questions; he does not have to refuse. | Open: what he does with questions about things he could not know in his time. |
+| C1 | 2026-11-05 | The AI workflow is already configured: the AI first generates a stuck story, then the character describes his predicament and how he feels. This is live generation. | Authored snag lines become reference examples and evaluation material only and are never shown to the user (changed 2026-11-12, decision NO-BACKUP). The content team supplies the generator's inputs (scene table, allowed props, allowed names, rules). |
+| A3 | 2026-11-05 | The rest conversation is in the character's world and voice. He may answer questions; he does not have to refuse. | Resolved 2026-11-12 (decision ERA-ANSWER): he answers as a person of his own time would, and may guess about things he could not know. |
 | A4 | 2026-11-05 | The fact that the character is AI is disclosed only in the terms and in settings. The conversation does not mention it. | Legal risk: some regions require a clear answer when a user asks directly. Check with a lawyer before release. |
 | A5 | 2026-11-05, amended by A5b | Safety had three tiers (crisis, low mood, ordinary stress) in Release 1; the low-mood tier is now deferred (A5b), with a classifier and real hotlines by region. | Replaces the earlier decision to park safety. Needs legal and clinical review, a hotline list by region, English test sets, and a logging rule. |
-| A6, H2 | 2026-11-05 | The line shown when the user returns after hours is generated live by the AI. | A small authored fallback is still required. |
+| A6, H2 | 2026-11-05 | The line shown when the user returns after hours is generated live by the AI. | ~~A small authored fallback is still required.~~ Withdrawn 2026-11-12 (decision NO-BACKUP). |
+
+### Decisions of 2026-11-12
+
+Yue answered the questions raised by the three audits (AI specifications, product documents, content and character pack). Ids are descriptive on purpose.
+
+| Id | Date | Decision | Consequences |
+|---|---|---|---|
+| PAUSE-3 | 2026-11-12 | Every Pause means the character's own story is blocked, and the AI generates a new stuck story each time. From the third Pause the stuck situation is much harder, and because he remembers the earlier setbacks he says he is worried he may fail. The message is never an instruction to the user and never asks the user to stop pausing. | Replaces the wording in F1 that had him ask the user not to pause again. The pause prompt receives the pause number. |
+| TIME-WORDS | 2026-11-12 | In the return pop-up the character may describe how the time felt in any words he would use ("a while", "it felt very long"). It is not limited to one phrase. | Applies to R1 and T6. Open: whether exact clock numbers are allowed; until decided they stay out. |
+| ERA-ANSWER | 2026-11-12 | When the user asks something the character could not know, he answers exactly as a person of his own time would: he says what he knows, says plainly when he does not know, and may guess. | Resolves the open part of A3. A list of later-knowledge words stays as a check. |
+| NO-BACKUP | 2026-11-12 | No stored or pre-written text is ever shown to the user. Everything shown (background card, step cards, stuck story, pause message, return pop-up, closing line, goal split) is generated live for the situation, because a backup would make the product features meaningless. The first card of the next step is generated ahead of time, during the previous step. If generation takes long, the user waits up to a time limit that is set by testing. A card that fails the checks is generated again within that limit. | Withdraws the safety nets in T3, D5 and A6/H2 and the fallback role in C1. Existing authored cards (the Trinity night, "finding the place", Moriarty story 1) become reference examples and evaluation material. The model gateway's stored fallback lines must be replaced by the failure behaviour below. |
+| FAIL-SCREEN | 2026-11-12 | If generation still fails after retrying within the time limit (for example the network is down), the app shows one calm message in the app's own voice, for example "He is not here right now. Please try again.", with a retry button. The step clock does not start while this message is shown. No stored story text is substituted. | Wording and the time limit are decided later by testing. |
+| END-TONE | 2026-11-12 | The closing line at the end of a story tells what happened to the character that day and how he feels about it. It does not count the user's pauses and does not judge the user. | Replaces the smooth-or-rough mood that depended on the number of stuck events. |
+| READ-STATUS | 2026-11-12 | Every written or generated piece of content that Yue must judge (for example a character's cards) carries one of three states: written, checked by script, read by a person. Only Yue, or a person Yue names, may set "read by a person". | A script check passing never counts as "read". Content that nobody has read is not treated as approved. |
+| PERIODS | 2026-11-12 | The user never sees dates or ages for a story. The Life Path groups stories into named periods, like chapters of a book (for Oppenheimer for example his youth, the Berkeley period, the Manhattan Project period). | Removes the date precision and age rules from the story-record requirements (issue #45) and the approximate-date flag. The period names are drafted later for Yue to approve. |
+| CARD-LENGTH | 2026-11-12 | A story card is one to three sentences and at most 45 words. The background card is at most 70 words. | To be revisited after Yue reads real generated cards. |
+| CARD-NEW | 2026-11-12 | Every card must contain something new: a card that repeats earlier information is not acceptable. | The checks and the prompts enforce it. |
+| KEY-MOMENTS-DRAFT | 2026-11-12 | The machine-derived key moments stay for now, marked unconfirmed. Yue and the content owner review them later. | The confirmed flag set on all of them is reset to unconfirmed. |
+| KNOWLEDGE-CHECK | 2026-11-12 | The background knowledge, names and notes in the planning story database are cross-checked first. What can be used directly is imported; for the rest Yue and the team decide the final content together. | Nothing is imported before the cross-check. |
+| GOAL-TIME | 2026-11-12 | If the goal text already says how long the user will work ("study chemistry for one hour"), the goal dialogue does not ask for the time again. It shows the time it understood, and the user can change it. | Refines T2 and D1e. |
+| STEP-EDIT | 2026-11-12 | The user can edit steps freely: rename, change minutes without a minimum or maximum other than one minute, add, delete, and move up or down with buttons. The goal's time follows the edits (D1d). | Adds the move buttons. |
+| NO-STEP-COUNT | 2026-11-12 | The character's lines never state the number of steps or how many are left. He speaks only about his own story. | |
+| NO-READ-ALOUD | 2026-11-12 | The writing rules for cards that sound good when read aloud are not done now. | The story "Cards written so that they can be read aloud" (issue #108) is parked. |
+| TEST-LATER | 2026-11-12 | The first user test is chosen after the live-generation demo works, so the test uses the real product. | |
+| ACCOUNT-SCREENS | 2026-11-12 | The sign-in, sign-up, email confirmation, forgot-password, new-password and account-deletion screens are added to the screen list. | A documentation change only. |
+| SUMMARY-RECORD | 2026-11-12 | The record on the summary screen shows only the plan length and the focus time, with no verdict. | |
+| OTHER-COMPANIONS | 2026-11-12 | The other six companions of the old product are out of scope for Release 1 until each has a content plan. | Only Oppenheimer and Moriarty are being built. |
+| MORIARTY-1 | 2026-11-12 | Moriarty has one overall theme, "The Invisible Empire", and every one of his stories has its own goal that serves that theme. | A character pack has one theme and one goal per story. |
+| MORIARTY-2 | 2026-11-12 | The original-novel version is the base and is adapted freely. The BBC-style Moriarty of the old Python application is not used. | |
+| MORIARTY-3 | 2026-11-12 | The story does not have to follow the source text, so he may say how he feels; the general voice rule that characters say their feelings directly stays for him. | |
+| MORIARTY-4 | 2026-11-12 | His eighth story is included. It ends just before the fall at the waterfall and has an open ending. Because the character is adapted, new stories follow after it. | The waterfall is not the end of his path, so his knowledge cut-off and forbidden words are reworked. |
+| MORIARTY-5 | 2026-11-12 | There is no "intellectual game with the user". His game is against Holmes. His relationship with the user is trust. | |
+| MORIARTY-6 | 2026-11-12 | Yue first reads the 31 cards of Moriarty story 1 and marks which sound like him and which do not. These become the evaluation baseline. Stories 2 to 7 wait for that. | |
 
 ## 2. Superseded rules (do not implement)
 
@@ -178,6 +211,11 @@ Yue replied "use the defaults" to the following list.
 | Success measures and north star in the PRD | N1 |
 | Sign-up after the first finished step | ACC |
 | Comment once on repeated pauses (A2, C7) | F1 refined |
+| The character asks the user not to pause again (third pause) | PAUSE-3 |
+| Stored or pre-written text shown when generation fails or is slow (T3 safety net, D5, A6 and H2 fallback) | NO-BACKUP and FAIL-SCREEN |
+| Closing line mood that depends on the number of stuck events | END-TONE |
+| Dates, ages and approximate-date flags shown for a story | PERIODS |
+| A Pause or return line limited to exact fixed phrases | TIME-WORDS |
 
 ## 3. Open
 
@@ -187,3 +225,8 @@ Yue replied "use the defaults" to the following list.
 | S2 | The engineering result on phone features (see above) |
 | A7b | Provider data retention terms |
 | M5, M6 | Original test data (issues B15 and B17, "low preference" definition); may be skipped |
+| TIME-LIMIT | The length of the waiting time limit for live generation and the wording of the failure message (FAIL-SCREEN); set by testing |
+| CLOCK-NUMBERS | Whether the return pop-up may use exact clock numbers (TIME-WORDS) |
+| KEY-REVIEW | The review of the machine-derived key moments (KEY-MOMENTS-DRAFT) |
+| PERIOD-NAMES | The named periods of each character's Life Path (PERIODS), drafted for Yue to approve |
+| MORIARTY-READ | Yue's reading of the 31 cards of Moriarty story 1 (MORIARTY-6) |

@@ -11,7 +11,7 @@
     "closing_line"
   ],
   "maxInputTokensPerCall": 1200,
-  "maxOutputTokensPerCall": 120,
+  "maxOutputTokensPerCall": 1024,
   "costCapUsd": 2,
   "providers": [
     {

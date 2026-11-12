@@ -32,7 +32,7 @@ Words used with a fixed meaning:
 
 Content files used as the real data (all in the planning folder under `1_Projects/Newfeatures/NF3_content/` unless stated): `site_search_cards_2026-10-29.json`, `trinity_chains_2026-10-29.json`, `trinity_leakmap_2026-10-29.json`, `dialogue_pools_2026-10-29.json`, `story_openers_2026-10-29.json`, `snag_sample_trinity_s4_2026-11-04.json`, `nf5_records_2026-10-29.json`, plus the story database under `2_Areas/Product/oppenheimer-stories/en/database/` (index, `entries/*.plan.json`, `personas.json`). The repository import is `src/content/oppenheimer/stories.json`, exposed through `src/content/oppenheimer/index.ts`.
 
-The repository import contains the 26 story goals, ordered facts, forbidden terms, and provenance. Key slices are represented by task-level cut points: content-owner `added_later` markers are preferred, and the first two task cut points are used when a story has fewer than two markers. Each imported key slice is marked `confirmed` and records the fact ids it covers. This selection is data, not a limit on the number of user Steps.
+The repository import contains the 26 story goals, ordered facts, forbidden terms, and provenance. Key slices are represented by task-level cut points: content-owner `added_later` markers are preferred, and the first two task cut points are used when a story has fewer than two markers. Each imported key slice is marked `confirmed` and records the fact ids it covers. Its `keyLine` is one first-person past-tense sentence of at most 18 words. This selection is data, not a limit on the number of user Steps. Pressing Start calls `startStory` in `src/lib/story/start.ts`, which gives the whole story to the card writer with the instruction that it is divided into the plan's steps and that the key slices are facts the writer must use. That function does not call a model.
 
 No person has read any of the authored lines for voice. They were written from the story database entries and passed by script only.
 
@@ -115,7 +115,7 @@ One episode. The story database holds 26 Oppenheimer stories (`entries/<id>.plan
 | who_i_am | text | "I'm a physicist from Berkeley, asked to run a laboratory the Army has not yet found a home for." (key `where_now.who`) |
 | slice count (runtime) | integer | `8` for `site-search`, `7` for `trinity`; none for the other stories. Equals the number of authored slices. It is not a limit on the number of steps (Decided, T2). Earlier called capacity. |
 | allowed_cut_points (runtime) | list of text | `["after s1", ..., "after s7"]`. Fallback only. |
-| key moments (proposed) | list of {fact, key_line} | 2 to 4 per story, confirmed by the content owner (Decided, C2). Given to the AI as must-use facts. `key_line`: first person, at most 18 words, past tense, no future. Missing from the data. |
+| key moments | list of {fact ids, key_line} | 2 to 4 per story, confirmed by the content owner (Decided, C2). Imported as `keySlices`. Given to the AI as must-use facts. `keyLine`: one first-person past-tense sentence of at most 18 words. |
 | forbid_terms (runtime) | list of text | Ending words of the whole story; checked on every generated card. Trinity: `["Hiroshima", "Nagasaki", "Little Boy", "Fat Man", "Truman", "Potsdam", "Enola Gay", "destroyer of worlds", "White Sands", "Cold War", "hearing"]` |
 | dialogue_open (runtime) | list of text | Opening line of the goal conversation in this story's starting situation: "I have given up the bench and I am betting everything on a calculation. What are you working on?" (chapter 1). Rules: at most 2 sentences and 30 words, exactly one question and it is the last sentence, first person, nothing that happens after the story starts, no time-of-day words, no "we". |
 | step_lines (runtime) | map slice id to {current, done, plan} | See 2.3. |
@@ -235,7 +235,7 @@ Story step: the AI's allocation of the story to one user step (Decided, T1, T3).
  "cards": [{"position": 1, "due_min": 10}, {"position": 2, "due_min": 20}, {"position": 3, "due_min": 30}]}
 ```
 
-The pacing fields are defined in 2.14. For the two stories with authored cards, `site_search_cards_2026-10-29.json` also lists one precomputed step per slice (8 steps), each with `cards`, `current`, `done`, `plan` and `where_now`. Those are used only as the fallback (section 6). Its `reveal_foreground_min` values are not used: they showed four cards at time zero, which contradicts the decision that a step opens with one card.
+The fact cut and the must-use key slices come from `startStory` (`src/lib/story/start.ts`) when the user presses Start. It does not choose n and it does not call a model. The pacing fields are defined in 2.14. For the two stories with authored cards, `site_search_cards_2026-10-29.json` also lists one precomputed step per slice (8 steps), each with `cards`, `current`, `done`, `plan` and `where_now`. Those are used only as the fallback (section 6). Its `reveal_foreground_min` values are not used: they showed four cards at time zero, which contradicts the decision that a step opens with one card.
 
 ### 2.6 Goal (the user's)
 
@@ -437,7 +437,7 @@ Draft rules from the story database workstream that follow from this:
 - If N is at least the number of key slices, each key slice ends a step and any extra cut points go into the stretch with the most facts. If N is smaller, the latest key slices are merged and the end screen lists every key slice the session covered, each with its `key_line`.
 - There are no markers for turning points or scenes on the map rows or on the current card (Decided, M3); key moments appear only in the summary.
 
-Proposed key slices for the two authored stories (not yet confirmed by the content owner; the JSON has no `key` field yet). The other 24 stories have none marked:
+The import marks key slices on all 26 stories. The slice ids below are an earlier proposal for the two authored stories, and the table is the worked example the tests use. They are not the task ids stored for `site-search` (`offer_the_mesa`, `show_groves_the_mesa`) or `trinity` (`weigh_the_storm`, `answer_the_reporter`):
 
 | Story | Key slices |
 |---|---|
@@ -455,6 +455,8 @@ How the cut falls for `site-search` with the key slices s4, s6, s8:
 | 5 | s1 to s2, s3, s4, s5 to s6, s7 to s8 | s2, s3, s4, s6 | key line of s8 |
 
 For N above 5 there is no limit (Decided, T2): each key slice still ends a step and the extra cut points go where the story has the most facts. The "landing shown" column describes the authored fallback; with live cards the final card of the step carries the key scene.
+
+`startStory` follows that cut. Extra steps are split inside the stretch with the most facts, larger parts first, and a tie goes to the earlier stretch. Facts after the last key slice stay in that step until the plan has a spare step, which then takes those facts so the key slice can end the step before them. When there are fewer steps than key slices, the later key slices merge into the last step and the summary lists each merged key line. When nothing was merged, that list is empty: for N of 3 or more in the table, the summary does not list s8, because that key slice ended its own step (US-MAP-9). One step has no next-step card and goes straight to the summary. The step count is the plan's count and does not depend on the number of slices.
 
 ## 5. Which card appears when
 

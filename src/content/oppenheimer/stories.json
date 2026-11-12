@@ -102,7 +102,7 @@
           "answer_bohr.happened-3",
           "answer_bohr.happened-4"
         ],
-        "keyLine": "I have answered Bohr's question about how my work is going and heard his reply",
+        "keyLine": "I told Bohr that I did not know, and heard him call that bad.",
         "confirmed": true
       },
       {
@@ -112,7 +112,7 @@
           "quit_the_films.happened-2",
           "quit_the_films.happened-3"
         ],
-        "keyLine": "I have stopped trying to make beryllium films and decided to learn the trade of a theoretical physicist",
+        "keyLine": "I left the bench and decided to learn the trade of a theoretical physicist.",
         "confirmed": true
       }
     ],
@@ -189,13 +189,13 @@
       {
         "id": "hold_the_pace",
         "factIds": ["hold_the_pace.happened-1", "hold_the_pace.happened-2"],
-        "keyLine": "I have answered the complaint that I'm too fast and decided how far I'll slow down",
+        "keyLine": "I slowed the lecture, then complained that I was not getting anywhere.",
         "confirmed": true
       },
       {
         "id": "ask_tolman",
         "factIds": ["ask_tolman.happened-1", "ask_tolman.happened-2"],
-        "keyLine": "Tolman has told me what he thought of the lecture",
+        "keyLine": "I asked Tolman what he thought, and he said he had not understood a word.",
         "confirmed": true
       }
     ],
@@ -268,13 +268,13 @@
           "persuade_the_climb.happened-2",
           "persuade_the_climb.happened-3"
         ],
-        "keyLine": "George and Roger have agreed to climb North Truchas Peak that day",
+        "keyLine": "I persuaded George and Roger to climb North Truchas Peak that morning.",
         "confirmed": true
       },
       {
         "id": "reach_the_summit",
         "factIds": ["reach_the_summit.happened-1", "reach_the_summit.happened-2"],
-        "keyLine": "We are standing on the summit of North Truchas Peak",
+        "keyLine": "I climbed with them and stood on the summit of North Truchas Peak.",
         "confirmed": true
       }
     ],
@@ -351,13 +351,13 @@
           "judge_the_draft.happened-2",
           "judge_the_draft.happened-3"
         ],
-        "keyLine": "I have read Hoke's manuscript all the way through and know whether it works",
+        "keyLine": "I read Hoke's midnight pamphlet through and judged that it failed.",
         "confirmed": true
       },
       {
         "id": "tell_him_straight",
         "factIds": ["tell_him_straight.happened-1", "tell_him_straight.happened-2"],
-        "keyLine": "I have told Hoke plainly what I think of the draft",
+        "keyLine": "I told Hoke plainly that the draft was no good.",
         "confirmed": true
       }
     ],
@@ -440,13 +440,13 @@
       {
         "id": "spain_started_the_war",
         "factIds": ["spain_started_the_war.happened-1", "spain_started_the_war.happened-2"],
-        "keyLine": "I have stood up as the featured speaker and made the case to the hall that the fascist...",
+        "keyLine": "I told the hall that the fascist victory in Spain had led to general war.",
         "confirmed": true
       },
       {
         "id": "they_bought_time",
         "factIds": ["they_bought_time.happened-1", "they_bought_time.happened-2"],
-        "keyLine": "I have told the hall that those who served in Spain, men like Nelson, fought a delaying action",
+        "keyLine": "I told the hall that the men who served in Spain had fought a delaying action.",
         "confirmed": true
       }
     ],
@@ -547,7 +547,7 @@
           "tell_lawrence.happened-2",
           "tell_lawrence.happened-3"
         ],
-        "keyLine": "I've told Lawrence about the union myself and kept everyone else's names to myself",
+        "keyLine": "I told Lawrence about the union and kept the other names to myself.",
         "confirmed": true
       },
       {
@@ -557,7 +557,7 @@
           "square_with_kamen.happened-2",
           "square_with_kamen.happened-3"
         ],
-        "keyLine": "I've found Kamen and told him how Lawrence took it",
+        "keyLine": "I found Kamen and told him how Lawrence took the news.",
         "confirmed": true
       }
     ],
@@ -660,7 +660,7 @@
           "press_case_on_train.happened-2",
           "press_case_on_train.happened-3"
         ],
-        "keyLine": "Groves and I have continued our discussions aboard the Twentieth Century Limited",
+        "keyLine": "I continued the talks with Groves aboard the train to New York.",
         "confirmed": true
       },
       {
@@ -670,7 +670,7 @@
           "win_groves_trust.happened-2",
           "win_groves_trust.happened-3"
         ],
-        "keyLine": "I've met Groves at the luncheon and talked with him in my office",
+        "keyLine": "I met Groves at the luncheon and talked with him in my office.",
         "confirmed": true
       }
     ],
@@ -763,7 +763,7 @@
           "offer_the_mesa.happened-2",
           "offer_the_mesa.happened-3"
         ],
-        "keyLine": "I've told Groves about the mesa and the boys' school above the canyon",
+        "keyLine": "I told Groves about the mesa and the boys' school above the canyon.",
         "confirmed": true
       },
       {
@@ -773,7 +773,7 @@
           "show_groves_the_mesa.happened-2",
           "show_groves_the_mesa.happened-3"
         ],
-        "keyLine": "Groves has stood on the school grounds and looked out from the mesa",
+        "keyLine": "I brought Groves onto the mesa, and he said this was the place.",
         "confirmed": true
       }
     ],
@@ -861,7 +861,7 @@
           "refuse_eltenton_scheme.happened-3",
           "refuse_eltenton_scheme.happened-4"
         ],
-        "keyLine": "I've told Hoke plainly that this is a terrible thing to do and he's agreed",
+        "keyLine": "I told Hoke that passing information that way was a terrible thing.",
         "confirmed": true
       },
       {
@@ -871,7 +871,7 @@
           "rejoin_the_wives.happened-2",
           "rejoin_the_wives.happened-3"
         ],
-        "keyLine": "Hoke and I are back in the living room with Kitty and Barbara, drinks in hand, before we...",
+        "keyLine": "I went back with Hoke and joined Kitty and Barbara in the living room.",
         "confirmed": true
       }
     ],
@@ -1008,7 +1008,7 @@
           "protect_the_names.happened-3",
           "protect_the_names.happened-4"
         ],
-        "keyLine": "Pash has pressed me to name the men approached and the intermediary, and I have refused, saying only...",
+        "keyLine": "I refused to name the men and drew the line where Pash pressed me.",
         "confirmed": true
       },
       {
@@ -1019,7 +1019,7 @@
           "raise_lomanitz.happened-3",
           "raise_lomanitz.happened-4"
         ],
-        "keyLine": "I have told them I don't know whether to talk to Lomanitz but want to tell him he...",
+        "keyLine": "I told Pash that I wanted to warn Lomanitz he had been indiscreet.",
         "confirmed": true
       }
     ],
@@ -1117,7 +1117,7 @@
           "attend_and_listen.happened-2",
           "attend_and_listen.happened-3"
         ],
-        "keyLine": "I have sat through the discussion in the cyclotron building and heard the room's objections out",
+        "keyLine": "I sat through the cold meeting and heard the objections out.",
         "confirmed": true
       },
       {
@@ -1127,7 +1127,7 @@
           "dissuade_wilson.happened-2",
           "dissuade_wilson.happened-3"
         ],
-        "keyLine": "I have told Wilson my reasons against a formal meeting and he has given me his answer",
+        "keyLine": "I tried to talk Wilson out of the meeting and heard his answer.",
         "confirmed": true
       }
     ],
@@ -1256,7 +1256,7 @@
           "bring_marshall_around.happened-3",
           "bring_marshall_around.happened-4"
         ],
-        "keyLine": "I have answered Marshall's warning about Russia with the proposal to open tentative talks without giving away our...",
+        "keyLine": "I answered Marshall with a proposal for talks that gave away no details.",
         "confirmed": true
       },
       {
@@ -1267,7 +1267,7 @@
           "hold_against_byrnes.happened-3",
           "hold_against_byrnes.happened-4"
         ],
-        "keyLine": "The committee has reached its conclusion on Russia and adjourned for lunch at 1:15",
+        "keyLine": "I heard the committee side with Byrnes before we adjourned for lunch.",
         "confirmed": true
       }
     ],
@@ -1379,7 +1379,7 @@
           "answer_the_reporter.happened-2",
           "answer_the_reporter.happened-3"
         ],
-        "keyLine": "I have given William Laurence my comment on the blast",
+        "keyLine": "I gave William Laurence my comment on the blast.",
         "confirmed": true
       },
       {
@@ -1390,7 +1390,7 @@
           "weigh_the_storm.happened-3",
           "weigh_the_storm.happened-4"
         ],
-        "keyLine": "I have heard Fermi's warning about radioactive rain and Hubbard's forecast that the storm will pass, with his...",
+        "keyLine": "I heard Fermi warn of radioactive rain and Hubbard say the storm would pass.",
         "confirmed": true
       }
     ],
@@ -1489,7 +1489,7 @@
           "argue_with_lawrence.happened-3",
           "argue_with_lawrence.happened-4"
         ],
-        "keyLine": "I have had it out with Ernest about the bomb and he has made his case that it...",
+        "keyLine": "I argued with Ernest about the bomb and was not reassured.",
         "confirmed": true
       },
       {
@@ -1499,7 +1499,7 @@
           "no_countermeasure.happened-2",
           "no_countermeasure.happened-3"
         ],
-        "keyLine": "The report states plainly that no effective military countermeasure to atomic weapons will be found and that these...",
+        "keyLine": "I wrote that no effective military countermeasure would be found.",
         "confirmed": true
       }
     ],
@@ -1586,7 +1586,7 @@
       {
         "id": "find_the_words",
         "factIds": ["find_the_words.happened-1", "find_the_words.happened-2"],
-        "keyLine": "I have the substance of what I'll say settled in my head and I rise to speak",
+        "keyLine": "I sat with the speech unwritten and worked it out in my head.",
         "confirmed": true
       },
       {
@@ -1596,7 +1596,7 @@
           "accept_and_give_credit.happened-2",
           "accept_and_give_credit.happened-3"
         ],
-        "keyLine": "I have accepted the certificate from General Groves and told them I hope they can look back on...",
+        "keyLine": "I accepted the certificate from Groves and hoped they could look back with pride.",
         "confirmed": true
       }
     ],
@@ -1704,7 +1704,7 @@
           "warn_the_senators.happened-2",
           "warn_the_senators.happened-3"
         ],
-        "keyLine": "I have outlined the dangers of the bomb to the senators at the Statler conference and asked Wallace...",
+        "keyLine": "I outlined the perils of the bomb to the senators and asked Wallace to walk.",
         "confirmed": true
       },
       {
@@ -1715,7 +1715,7 @@
           "walk_with_wallace.happened-3",
           "walk_with_wallace.happened-4"
         ],
-        "keyLine": "I have told Wallace on our walk why using the bomb as a threat won't work and pointed...",
+        "keyLine": "I told Wallace that the threat of the bomb had prepared a great slaughter.",
         "confirmed": true
       }
     ],
@@ -1827,7 +1827,7 @@
           "hold_off_the_party.happened-2",
           "hold_off_the_party.happened-3"
         ],
-        "keyLine": "Kitty has come out a second time and I have stayed in the garden with Haakon, still unwilling...",
+        "keyLine": "I stayed in the garden with Haakon and sent Kitty back to the guests.",
         "confirmed": true
       },
       {
@@ -1837,7 +1837,7 @@
           "take_haakon_outside.happened-2",
           "take_haakon_outside.happened-3"
         ],
-        "keyLine": "Haakon and I are pacing in the back garden, away from the house, and he has started telling...",
+        "keyLine": "I took Haakon into the garden and we started pacing there.",
         "confirmed": true
       }
     ],
@@ -1930,13 +1930,13 @@
           "handle_navy_captain.happened-3",
           "handle_navy_captain.happened-4"
         ],
-        "keyLine": "The Navy officer has let us go and we are on our way to Boston aboard a Navy...",
+        "keyLine": "I told the Navy officer my name, and he put us on a bus to Boston.",
         "confirmed": true
       },
       {
         "id": "steer_meson_discussion",
         "factIds": ["steer_meson_discussion.happened-1", "steer_meson_discussion.happened-2"],
-        "keyLine": "I have opened the meson discussion and kept it moving with leading questions, without handing out a finished...",
+        "keyLine": "I led the meson discussion with questions and kept it moving.",
         "confirmed": true
       }
     ],
@@ -2053,7 +2053,7 @@
           "dismiss_isotope_scare.happened-2",
           "dismiss_isotope_scare.happened-3"
         ],
-        "keyLine": "I've given the Joint Committee my view of the isotope exports in open session and asked Joe how...",
+        "keyLine": "I dismissed the isotope scare and asked Joe how I had done.",
         "confirmed": true
       },
       {
@@ -2063,7 +2063,7 @@
           "bring_volpe_as_aec_counsel.happened-2",
           "bring_volpe_as_aec_counsel.happened-3"
         ],
-        "keyLine": "I'm at the witness table with Joe introduced as the AEC's general counsel and the committee's first question...",
+        "keyLine": "I sat down with Joe as counsel and said I had no such knowledge.",
         "confirmed": true
       }
     ],
@@ -2166,7 +2166,7 @@
           "sound_out_hans.happened-2",
           "sound_out_hans.happened-3"
         ],
-        "keyLine": "Bethe has told me why he came to Princeton and I've given him what answer I have",
+        "keyLine": "I gave Hans no advice, because I was as undecided as he was.",
         "confirmed": true
       },
       {
@@ -2176,7 +2176,7 @@
           "give_jims_view_keep_mine.happened-2",
           "give_jims_view_keep_mine.happened-3"
         ],
-        "keyLine": "Hans and Edward have heard that Conant opposes a crash program, and they leave Princeton without my own...",
+        "keyLine": "I told them Jim opposed a crash program and kept my own view back.",
         "confirmed": true
       }
     ],
@@ -2285,7 +2285,7 @@
           "face_crouch.happened-3",
           "face_crouch.happened-4"
         ],
-        "keyLine": "Crouch has been brought in and identified me, and I have told the lawyers I do not know...",
+        "keyLine": "I faced Crouch and told the lawyers that I did not know him.",
         "confirmed": true
       },
       {
@@ -2296,7 +2296,7 @@
           "pin_down_the_questions.happened-3",
           "pin_down_the_questions.happened-4"
         ],
-        "keyLine": "Crouch has described the questions he says I asked, and I have told the lawyers such questions were...",
+        "keyLine": "I told them those questions were impossible, because I had never thought them.",
         "confirmed": true
       }
     ],
@@ -2378,7 +2378,7 @@
           "stand_by_finletter_story.happened-2",
           "stand_by_finletter_story.happened-3"
         ],
-        "keyLine": "I have told Griggs I believe the Finletter story and that I heard it from an unimpeachable source...",
+        "keyLine": "I told Griggs I believed the Finletter story and had heard it from someone present.",
         "confirmed": true
       },
       {
@@ -2388,7 +2388,7 @@
           "ask_about_my_loyalty.happened-2",
           "ask_about_my_loyalty.happened-3"
         ],
-        "keyLine": "Griggs has answered whether he has questioned my loyalty, and I have told him what I make of...",
+        "keyLine": "I asked Griggs whether he had questioned my loyalty, and called him paranoid.",
         "confirmed": true
       }
     ],
@@ -2505,7 +2505,7 @@
           "read_the_charges.happened-2",
           "read_the_charges.happened-3"
         ],
-        "keyLine": "I have read the draft letter of charges and said out loud which parts are true and which...",
+        "keyLine": "I read the draft charges and said which parts were true and which were not.",
         "confirmed": true
       },
       {
@@ -2515,7 +2515,7 @@
           "weigh_resigning.happened-2",
           "weigh_resigning.happened-3"
         ],
-        "keyLine": "I have thought the resignation option through out loud with Strauss and Nichols and left without giving them...",
+        "keyLine": "I thought about resigning out loud and left without agreeing to it.",
         "confirmed": true
       },
       {
@@ -2525,7 +2525,7 @@
           "buy_time_answer_in_person.happened-2",
           "buy_time_answer_in_person.happened-3"
         ],
-        "keyLine": "I have called Nichols back and arranged to take the afternoon train to Washington and see Strauss at...",
+        "keyLine": "I called Nichols back and arranged to give my answer to Strauss in person.",
         "confirmed": true
       },
       {
@@ -2536,7 +2536,7 @@
           "refuse_in_writing.happened-3",
           "refuse_in_writing.happened-4"
         ],
-        "keyLine": "The one-page letter to Strauss is drafted, saying I cannot accept that I'm unfit to serve",
+        "keyLine": "I drafted the letter to Strauss and said I could not accept that I was unfit.",
         "confirmed": true
       }
     ],
@@ -2674,7 +2674,7 @@
           "hold_to_memory.happened-3",
           "hold_to_memory.happened-4"
         ],
-        "keyLine": "Robb has finished reading the Pash transcript to me and I have answered his last question about it",
+        "keyLine": "I heard Robb read the Pash transcript and answered his last question.",
         "confirmed": true
       },
       {
@@ -2685,7 +2685,7 @@
           "answer_for_jean.happened-3",
           "answer_for_jean.happened-4"
         ],
-        "keyLine": "I have answered Robb's questions about Jean Tatlock and named her friends as he asked",
+        "keyLine": "I answered Robb about Jean Tatlock and named her friends as he asked.",
         "confirmed": true
       }
     ],
@@ -2786,13 +2786,13 @@
           "defend_the_conant_letter.happened-2",
           "defend_the_conant_letter.happened-3"
         ],
-        "keyLine": "I have answered Robb on the October 1949 letter to Conant and defended calling Lawrence and Teller promoters",
+        "keyLine": "I defended the letter to Conant and stood by what I called the promoters.",
         "confirmed": true
       },
       {
         "id": "demand_context",
         "factIds": ["demand_context.happened-1", "demand_context.happened-2"],
-        "keyLine": "I have answered Robb's question about opposing the hydrogen bomb after the President's decision without claiming a specific...",
+        "keyLine": "I told Robb I had called it a dreadful weapon and asked him for the context.",
         "confirmed": true
       }
     ],
@@ -2908,7 +2908,7 @@
           "teller_handshake.happened-2",
           "teller_handshake.happened-3"
         ],
-        "keyLine": "I have shaken Edward Teller's hand in front of the room",
+        "keyLine": "I grinned and shook Edward Teller's hand in front of the room.",
         "confirmed": true
       },
       {
@@ -2919,7 +2919,7 @@
           "mrs_kennedy.happened-3",
           "mrs_kennedy.happened-4"
         ],
-        "keyLine": "Kitty and I have gone upstairs and heard what Mrs. Kennedy wanted to tell me",
+        "keyLine": "Kitty and I went upstairs and heard what Mrs. Kennedy wanted to tell me.",
         "confirmed": true
       }
     ],
