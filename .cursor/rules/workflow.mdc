@@ -10,6 +10,12 @@ Cursor has no pre-commit or pre-PR hook in this repository, so follow these step
 4. Before every commit run all four, and fix failures instead of skipping them: `npm test`, `npm run test:e2e`, `npm run lint`, `npm run format:check`.
 5. Open a pull request whose body contains `Closes #<issue#>`. Comment the PR link on the issue.
 
+Keeping a branch mergeable (same rules as `AGENTS.md`):
+- Before starting work, and again before opening or updating a pull request, merge `origin/main` into the branch: `git fetch origin && git merge origin/main`. Merge; never rebase and never force-push.
+- Before reporting a task done, run `gh pr view <number> --json mergeable,mergeStateStatus` and wait for the checks of the newest commit (`gh pr checks <number> --watch`), not an older run.
+- The report states the mergeable status and the check result.
+- If a merge conflict touches a file whose behaviour both sides changed, stop and report the conflict instead of choosing a side.
+
 Hard limits:
 - Never merge a pull request, never push to `main`, never run deploy commands (`vercel`, production deploys).
 - Never read, print or paste `.env*` files, `secrets/`, or any key value. Real values live only in the local `.env` and in Vercel environment settings.

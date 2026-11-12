@@ -34,6 +34,12 @@ WaveParticle Mobile: A mobile-first web app where you do a real task while a his
 7. Open a PR with `.github/pull_request_template.md`; body has `Closes #N`. Commit messages follow Conventional Commits (`feat: … (#N)`).
 8. Comment the PR link on the issue. A human reviews and merges. Agents NEVER merge.
 
+## Keeping a branch mergeable
+- Before starting work, and again before opening or updating a pull request, merge `origin/main` into the branch: `git fetch origin && git merge origin/main`. Merge; never rebase and never force-push.
+- Before reporting a task done, run `gh pr view <number> --json mergeable,mergeStateStatus` and wait for the checks of the newest commit (`gh pr checks <number> --watch`), not an older run.
+- The report states the mergeable status and the check result.
+- If a merge conflict touches a file whose behaviour both sides changed, stop and report the conflict instead of choosing a side.
+
 ## Definition of Done
 - Every acceptance criterion has a passing test.
 - CI is green (lint, format, unit, e2e, build).
