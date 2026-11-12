@@ -1,0 +1,219 @@
+{
+  "_note": "DRAFT, UNREVIEWED. Written by an AI from src/content/oppenheimer/stories.json (story kitchen-martinis). Status: written, checked by script, not read by a person. Facts, title, date, goal and forbidden terms come from stories.json; the grouping of facts into eight moments and three steps (2, 4 and 2 moments) is the AI's choice. Invented by the AI, and only in these fields: place wording; the roles of Kitty (his wife) and Hoke (an old friend, full name Haakon Chevalier) and Barbara (Hoke's wife), from common knowledge and the goal; the people lines; all whereNow lines; step titles; userSide lines; whyHard lines; the leaks lists; the allowed words and later words; the props (including plain kitchen things such as a stove and a wooden spoon), pause prop and gestures; the voice lines; all example cards and chat replies. George Eltenton and the Chevaliers as a pair are not in the people list on purpose, so their names are not shown early.",
+  "story": {
+    "id": "kitchen-martinis",
+    "title": "Martinis in the Kitchen",
+    "date": "1943-01-15",
+    "place": "my home in Berkeley",
+    "goalShort": "I want to give Haakon and Barbara a proper goodbye and keep my secret work out of the evening.",
+    "goalFull": "I want to give Haakon and Barbara a proper goodbye before we leave Berkeley. I also want to keep the work I cannot talk about out of the evening.",
+    "forbidTerms": [
+      "security hearing",
+      "Pash interview",
+      "Chevalier incident",
+      "clearance revoked",
+      "Manhattan Project",
+      "Trinity test",
+      "Hiroshima",
+      "The Story of a Friendship",
+      "Atomic Energy Commission"
+    ]
+  },
+  "who": "I'm a physicist in Berkeley, about to leave for work I cannot discuss, and I'm spending an evening with old friends.",
+  "whereNow": {
+    "s1": "I'm at home in Berkeley with Kitty, and we mean to give Haakon and Barbara a proper goodbye.",
+    "s2": "I'm at home with Kitty, and our friends are about to come through the door.",
+    "s3": "I'm in the kitchen with Hoke beside me, mixing a tray of martinis for the four of us.",
+    "s4": "I'm in the kitchen with Hoke, who has just told me about Eltenton and a man at the Soviet consulate.",
+    "s5": "I'm in the kitchen with Hoke, who says he is not asking anything of me.",
+    "s6": "I'm in the kitchen with Hoke, still angry, and I've said what I think.",
+    "s7": "I'm in the kitchen with Hoke, the martinis ready on the tray and nothing more to say to him.",
+    "s8": "I'm in the living room with Hoke, Kitty and Barbara, carrying the tray of martinis."
+  },
+  "people": {
+    "Kitty": {
+      "role": "wife",
+      "inline": "my wife",
+      "line": "Kitty is my wife and the other host of this evening.",
+      "first_card": "kitchen-martinis.s1.c1"
+    },
+    "Hoke": {
+      "role": "old friend",
+      "inline": "an old friend of ours",
+      "line": "Haakon Chevalier, known as Hoke, is an old friend who is coming to dinner.",
+      "first_card": "kitchen-martinis.s1.c1"
+    },
+    "Barbara": {
+      "role": "friend",
+      "inline": "Hoke's wife",
+      "line": "Barbara is Hoke's wife and a friend of Kitty and mine.",
+      "first_card": "kitchen-martinis.s1.c1"
+    }
+  },
+  "slices": [
+    {
+      "id": "s1",
+      "priority": 2,
+      "facts": [
+        "Knowing we'd be leaving Berkeley soon, Kitty and I invited the Chevaliers over for a quiet farewell dinner."
+      ],
+      "leaks": ["quiet farewell dinner", "invited the chevaliers", "leaving berkeley soon"]
+    },
+    {
+      "id": "s2",
+      "priority": 2,
+      "facts": [
+        "When they arrived, I went into the kitchen to make a tray of martinis.",
+        "Hoke followed me in."
+      ],
+      "leaks": ["tray of martinis", "followed me in", "when they arrived"]
+    },
+    {
+      "id": "s3",
+      "priority": 1,
+      "facts": [
+        "Hoke said something like, I saw George Eltenton recently, and told me Eltenton had a means of getting technical information to Soviet scientists, through a diplomat he knew at the Soviet consulate in San Francisco."
+      ],
+      "leaks": ["eltenton", "soviet", "diplomat", "consulate", "san francisco", "technical information"]
+    },
+    {
+      "id": "s4",
+      "priority": 1,
+      "facts": [
+        "As Hoke put it, he wasn't soliciting anything from me, only passing it on because he thought I should know."
+      ],
+      "leaks": ["wasn't soliciting", "passing it on", "thought i should know"]
+    },
+    {
+      "id": "s5",
+      "priority": 1,
+      "facts": [
+        "I was angry. I think I said, \"But that is treason,\" though I'm not sure; I said anyway something, \"This is a terrible thing to do.\""
+      ],
+      "leaks": ["i was angry", "treason", "terrible thing"]
+    },
+    {
+      "id": "s6",
+      "priority": 1,
+      "facts": [
+        "Hoke expressed complete agreement, we exchanged a remark or two, and that was the end of it. It was a brief conversation."
+      ],
+      "leaks": ["complete agreement", "remark or two", "end of it", "brief conversation"]
+    },
+    {
+      "id": "s7",
+      "priority": 1,
+      "facts": [
+        "With the martinis mixed and the conversation over, Hoke and I went back to the living room to join Kitty and Barbara."
+      ],
+      "leaks": ["martinis mixed", "living room", "join kitty"]
+    },
+    {
+      "id": "s8",
+      "priority": 1,
+      "facts": [
+        "Kitty had just bought an early-nineteenth-century French edition of a book on mycology, with hand-painted illustrations of orchids, her favorite flower.",
+        "Sipping our drinks, the four of us looked through the book before sitting down to dinner."
+      ],
+      "leaks": ["mycology", "orchids", "hand-painted", "french edition", "looked through the book", "sipping our drinks"]
+    }
+  ],
+  "authoredCards": [],
+  "steps": [
+    {
+      "n": 1,
+      "title": "Host a quiet farewell dinner",
+      "userSide": "Your Step: the first part of your Goal.",
+      "entrySlice": "s1",
+      "covers": ["s1", "s2"],
+      "whyHard": "I know we are about to leave Berkeley, and the work I cannot talk about is already in my head. I want an evening that feels ordinary and warm, and that is harder than it sounds."
+    },
+    {
+      "n": 2,
+      "title": "Refuse the Eltenton scheme",
+      "userSide": "Your Step: the second part of your Goal.",
+      "entrySlice": "s3",
+      "covers": ["s3", "s4", "s5", "s6"],
+      "whyHard": "Hoke followed me in, and I am mixing drinks while Kitty and Barbara wait in the other room. I want to keep the work out of the evening, and I do not know what he wants to say."
+    },
+    {
+      "n": 3,
+      "title": "Rejoin Kitty and Barbara",
+      "userSide": "Your Step: the last part of your Goal.",
+      "entrySlice": "s7",
+      "covers": ["s7", "s8"],
+      "whyHard": "Hoke has told me something that angered me, and I have answered him. Now I have to walk back in and be a good host, with Kitty and Barbara waiting, as if nothing had happened."
+    }
+  ],
+  "scene": {
+    "present": ["Kitty"],
+    "allowedWords": ["Kitty", "Hoke", "Haakon", "Barbara", "Chevalier", "Chevaliers", "Berkeley", "George", "Eltenton", "Soviet", "San", "Francisco"],
+    "pauseProp": "candle",
+    "laterWords": ["French"],
+    "props": [
+      "dining table",
+      "candle",
+      "chair",
+      "lamp",
+      "window",
+      "front door",
+      "bookshelf",
+      "cigarette",
+      "ashtray",
+      "rug",
+      "napkin",
+      "kitchen counter",
+      "dish towel",
+      "wooden spoon",
+      "stove"
+    ]
+  },
+  "gestures": [
+    "smoothing a napkin on the table",
+    "drying hands on a dish towel",
+    "stirring slowly with a wooden spoon",
+    "lighting a cigarette",
+    "tapping ash into an ashtray",
+    "stepping back from the stove",
+    "looking out the window at the dark street",
+    "adjusting a candle in its holder"
+  ],
+  "voice": [
+    "Short, plain sentences. Most spoken sentences are under 12 words.",
+    "Concrete things (a glass, a candle, a door), not abstractions.",
+    "Dry one-line wit now and then, never for effect. No grand sentences, no moral.",
+    "Say what he feels directly (tired, wary, impatient) and what is in front of him.",
+    "Contractions are fine in speech.",
+    "He is a gracious host who keeps what he cannot say behind a friendly manner.",
+    "He is loyal to his friends and angry when he thinks a line has been crossed, and then he tries to settle himself."
+  ],
+  "examples": {
+    "card_why": [
+      "I want this evening to feel ordinary and warm. People remember how a goodbye felt long after they forget what was said."
+    ],
+    "card_now": [
+      "I straighten a napkin on the table and light a candle. The street outside the window is dark and still."
+    ],
+    "card_feeling": [
+      "I am a little wistful and a little tense. The house is tidy, the candle is lit, and I keep checking the door."
+    ],
+    "chat": [
+      {
+        "user": "hey",
+        "reply": "(Drying hands on a dish towel.) Hello. I'm putting off a small job and glad of a reason to stop."
+      },
+      {
+        "user": "I'm so tired I can't focus",
+        "reply": "(Leaning on the kitchen counter.) I'm tired too, so you have company. I'd sit down if the evening allowed it."
+      },
+      {
+        "user": "I'm stuck on my math homework",
+        "reply": "(Stirring slowly with a wooden spoon.) Mine is a pot and yours is a proof, and neither wants to be hurried. I only have to keep going until it settles."
+      },
+      {
+        "user": "I want to quit",
+        "reply": "(Looking out the window at the dark street.) I'm going to stand here a while longer. Nothing needs deciding before the candle burns down."
+      }
+    ]
+  }
+}

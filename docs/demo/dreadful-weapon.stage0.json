@@ -1,0 +1,304 @@
+{
+  "_note": "DRAFT, UNREVIEWED. Written by an AI from stories.json (only facts, keySlices, goal, forbiddenTerms, title, date), status: written, checked by script, not read by a person. Copied from stories.json: title, date, forbiddenTerms and the facts (dates, clock times and a weekday dropped; a dash or quote mark inside a fact may be changed to a comma). Invented by the AI, and only in these fields: place wording, who, goalShort and goalFull wording, whereNow lines, people roles, inline phrases and lines, step titles, whyHard, scene props, pauseProp, allowedWords, laterWords, leaks lists, gestures, voice lines, and the example cards and chat replies. Story-specific inventions: the place wording (the witness chair at a hearing, with a table, a microphone and a window); the roles and lines of Robb, Conant, Lawrence and Teller (kept short, from the facts); the step titles; all whereNow lines; whyHard; the props, gestures, voice and examples; the leaks and allowed words. The date in two facts (January 1950, October 21 1949) and the weekday in the last fact are dropped, and the President is not given a name.",
+  "story": {
+    "id": "dreadful-weapon",
+    "title": "A Dreadful Weapon",
+    "date": "1954-04-16",
+    "place": "the witness chair at my hearing",
+    "goalShort": "I want to answer for the hydrogen bomb in my own words without walking into another trap.",
+    "goalFull": "I want to get through my last day of questioning without walking into another of Robb's traps, and answer for the hydrogen bomb in my own words. I have to say plainly what I think.",
+    "forbidTerms": [
+      "clearance revoked",
+      "denied my clearance",
+      "Gray Board",
+      "two to one",
+      "Nichols",
+      "Fermi Award",
+      "Lyndon Johnson",
+      "security risk finding"
+    ]
+  },
+  "who": "I'm a physicist in the witness chair on the last day of a hearing about whether I can be trusted with secrets.",
+  "whereNow": {
+    "s1": "I'm in the witness chair with Robb in front of me, and the day has been long.",
+    "s2": "I'm still in the witness chair, and Robb has just asked about the hydrogen bomb.",
+    "s3": "I'm still in the witness chair, waiting for Robb to tell me what conversation he has in mind.",
+    "s4": "I'm still in the witness chair, and Robb has offered me his own words for what I felt, one of which I turned down.",
+    "s5": "I'm still in the witness chair, and Robb has finished with that word for now and is about to ask about things I wrote years ago.",
+    "s6": "I'm still in the witness chair, and Robb has put a letter of mine in front of me.",
+    "s7": "I'm still in the witness chair, still on the subject of the two men in my letter.",
+    "s8": "I'm still in the witness chair, with Robb still pressing me on a single word of mine."
+  },
+  "people": {
+    "Robb": {
+      "role": "the lawyer questioning me",
+      "inline": "the lawyer who has been questioning me",
+      "line": "Robb is the lawyer who has been questioning me, and he keeps looking for a trap.",
+      "first_card": "dreadful-weapon.s1.c1"
+    },
+    "Conant": {
+      "role": "a man I wrote to",
+      "inline": "a man I wrote to about the bomb",
+      "line": "Conant is a man I wrote to about the bomb.",
+      "first_card": "dreadful-weapon.s5.c1"
+    },
+    "Lawrence": {
+      "role": "Berkeley physicist",
+      "inline": "a Berkeley physicist",
+      "line": "Ernest Lawrence is a Berkeley physicist.",
+      "first_card": "dreadful-weapon.s5.c1"
+    },
+    "Teller": {
+      "role": "physicist",
+      "inline": "a physicist",
+      "line": "Edward Teller is a physicist.",
+      "first_card": "dreadful-weapon.s5.c1"
+    }
+  },
+  "slices": [
+    {
+      "id": "s1",
+      "priority": 1,
+      "facts": [
+        "Late in the day Robb finally got around to the hydrogen bomb and asked if, after the President's decision, I had ever opposed producing it on moral grounds."
+      ],
+      "leaks": [
+        "moral grounds",
+        "president's decision"
+      ]
+    },
+    {
+      "id": "s2",
+      "priority": 1,
+      "facts": [
+        "I told him I could very well have said it was a dreadful weapon, or something like that, but that I had no specific recollection and would prefer he remind me of the context or conversation he had in mind."
+      ],
+      "leaks": [
+        "dreadful weapon",
+        "specific recollection",
+        "the context or conversation",
+        "prefer he remind"
+      ]
+    },
+    {
+      "id": "s3",
+      "priority": 2,
+      "facts": [
+        "Robb asked why I could very well have said it, and I told him: because I have always thought it was a dreadful weapon. Even though from a technical point of view it was a sweet and lovely and beautiful job, I have still thought it was a dreadful weapon.",
+        "When he asked if I'd had a moral revulsion, I said, 'This is too strong.' He begged my pardon and asked whether the weapon or his expression was too strong. 'Your expression. I had a grave concern and anxiety.'"
+      ],
+      "leaks": [
+        "sweet and lovely",
+        "beautiful job",
+        "technical point of view",
+        "moral revulsion",
+        "too strong"
+      ]
+    },
+    {
+      "id": "s4",
+      "priority": 3,
+      "facts": [
+        "He tried 'moral qualms,' and I said, 'Let us leave the word moral out of it.'",
+        "When he settled for qualms, I asked him how could one not have qualms about it, and said I know no one who doesn't."
+      ],
+      "leaks": [
+        "moral qualms",
+        "leave the word moral out",
+        "not have qualms",
+        "know no one who doesn't"
+      ]
+    },
+    {
+      "id": "s5",
+      "priority": 1,
+      "facts": [
+        "Later in the day Robb produced my letter to Conant, out of my own files, the one that says two experienced promoters, Ernest Lawrence and Edward Teller, had been at work."
+      ],
+      "leaks": [
+        "letter to conant",
+        "experienced promoters",
+        "my own files"
+      ]
+    },
+    {
+      "id": "s6",
+      "priority": 1,
+      "facts": [
+        "He asked if I'd agree my references to Lawrence and Teller were a little bit belittling. I told him Lawrence came to Washington, didn't talk to the Commission, and went to the joint congressional committee and the Military Establishment instead, and that I thought that deserves some belittling.",
+        "When he asked again whether they were belittling, I said no: I pay my great respects to them as promoters, and I don't think I did them justice."
+      ],
+      "leaks": [
+        "belittling",
+        "came to washington",
+        "joint congressional",
+        "military establishment",
+        "great respects",
+        "did them justice"
+      ]
+    },
+    {
+      "id": "s7",
+      "priority": 2,
+      "facts": [
+        "Robb asked if I'd used the word 'promoters' in an invidious sense. I said I had no idea.",
+        "He asked if I meant it to be invidious now. I said no."
+      ],
+      "leaks": [
+        "invidious",
+        "no idea",
+        "meant it to be"
+      ]
+    },
+    {
+      "id": "s8",
+      "priority": 3,
+      "facts": [
+        "He asked if I thought their work of promotion was admirable, and I said I think they did an admirable job of promotion.",
+        "Then I was excused from the witness chair."
+      ],
+      "leaks": [
+        "admirable",
+        "work of promotion",
+        "job of promotion",
+        "excused"
+      ]
+    }
+  ],
+  "authoredCards": [],
+  "steps": [
+    {
+      "n": 1,
+      "title": "Ask Robb for the context",
+      "userSide": "Your Step: the first part of your Goal.",
+      "entrySlice": "s1",
+      "covers": [
+        "s1",
+        "s2"
+      ],
+      "whyHard": "I've come to the end of a long day, and Robb has only now reached the hydrogen bomb, which is what I most want to answer for. I won't be rushed into a trap or into the wrong words."
+    },
+    {
+      "n": 2,
+      "title": "Leave the word moral out",
+      "userSide": "Your Step: the second part of your Goal.",
+      "entrySlice": "s3",
+      "covers": [
+        "s3",
+        "s4"
+      ],
+      "whyHard": "Robb has already steered me toward the word moral, and I know a single word can become a trap. I want to say what I truly think in my own words."
+    },
+    {
+      "n": 3,
+      "title": "Defend the letter",
+      "userSide": "Your Step: the third part of your Goal.",
+      "entrySlice": "s5",
+      "covers": [
+        "s5",
+        "s6"
+      ],
+      "whyHard": "Robb has been picking at my words one at a time, and I've held my ground on the word moral. He seems to have done his homework, and I don't want to be led into a trap."
+    },
+    {
+      "n": 4,
+      "title": "Finish and leave the chair",
+      "userSide": "Your Step: the last part of your Goal.",
+      "entrySlice": "s7",
+      "covers": [
+        "s7",
+        "s8"
+      ],
+      "whyHard": "I have just defended a letter I wrote and stood by what I called two men. Robb wants that word to sound like an insult, and I won't give him the sneer, nor take back what's true."
+    }
+  ],
+  "scene": {
+    "present": [
+      "Robb"
+    ],
+    "allowedWords": [
+      "Robb",
+      "Conant",
+      "Lawrence",
+      "Teller",
+      "Ernest",
+      "Edward",
+      "Berkeley",
+      "President",
+      "Washington",
+      "Commission",
+      "Congressional",
+      "Military",
+      "Establishment"
+    ],
+    "pauseProp": "glass of water",
+    "laterWords": [
+      "Congressional"
+    ],
+    "props": [
+      "witness chair",
+      "glass of water",
+      "water pitcher",
+      "microphone",
+      "long table",
+      "legal pad",
+      "pencil",
+      "pipe",
+      "ashtray",
+      "wall clock",
+      "window",
+      "stenographer",
+      "lamp",
+      "jacket",
+      "handkerchief"
+    ]
+  },
+  "gestures": [
+    "taking a slow sip of water",
+    "setting the glass down carefully",
+    "tapping a pipe against an ashtray",
+    "smoothing a jacket front",
+    "pressing fingertips together",
+    "leaning toward the microphone",
+    "wiping a palm on a handkerchief",
+    "glancing at the wall clock"
+  ],
+  "voice": [
+    "Short, plain sentences. Most spoken sentences are under 12 words.",
+    "Concrete things (a glass of water, a microphone, a chair, a clock), not abstractions.",
+    "Dry one-line wit now and then, never for effect. No grand sentences, no moral.",
+    "Say what he feels directly (tired, wary, impatient) and what is in front of him.",
+    "Contractions are fine in speech.",
+    "He is exact about words and will push back on a label he does not accept.",
+    "He likes a precise phrase and sometimes a literary one, but never a showy one."
+  ],
+  "examples": {
+    "card_why": [
+      "I want to say what I think in words I would use at my own table. A borrowed phrase is easy to accept and hard to shake."
+    ],
+    "card_now": [
+      "A glass of water stands by the microphone. I set a hand beside it and watch the stenographer's fingers."
+    ],
+    "card_feeling": [
+      "I am weary, and I notice it in the weight of my arms. The clock on the wall seems slower than it should be."
+    ],
+    "chat": [
+      {
+        "user": "hey",
+        "reply": "(Taking a slow sip of water.) Hello. The afternoon has been long and my voice is thinner for it."
+      },
+      {
+        "user": "I'm so tired I can't focus",
+        "reply": "(Glancing at the wall clock.) That makes two of us. I keep losing the end of a sentence before I reach it."
+      },
+      {
+        "user": "I'm stuck on my math homework",
+        "reply": "(Pressing fingertips together.) A proof will not hurry for anyone. I would rather be slow and exact than quick and wrong."
+      },
+      {
+        "user": "I want to quit",
+        "reply": "(Setting the glass down carefully.) I know the feeling, and I stay in the chair anyway. Walking out is easy to picture and hard to undo."
+      }
+    ]
+  }
+}

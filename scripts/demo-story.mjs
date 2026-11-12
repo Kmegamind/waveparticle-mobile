@@ -1,7 +1,7 @@
 // Generates the demo content for "The Canyon and the Mesa" with DeepSeek, in four stages:
 //   1. story cards (background card, landing, why, now), 2. a second call that says how it feels,
 //   3. the pause (stuck message, roleplay chat with an opening action, resolved card), 4. the closing line.
-// Usage: node --env-file=.env scripts/demo-story.mjs
+// Usage: node --env-file=.env scripts/demo-story.mjs [story-id]   (default: site-search)
 // Demo only. The production path is the server-side model gateway (issue #132).
 import { readFile, writeFile } from "node:fs/promises";
 import { checkCard, checkChatReply, checkStuck } from "./demo-checks.mjs";
@@ -22,10 +22,11 @@ import {
 } from "./demo-prompts.mjs";
 
 const read = async (name) => JSON.parse(await readFile(new URL(name, import.meta.url), "utf8"));
-const stage0 = await read("../docs/demo/site-search.stage0.json");
+const storyId = process.argv[2] ?? "site-search";
+const stage0 = await read(`../docs/demo/${storyId}.stage0.json`);
 const config = await read("./live-generation-benchmark.config.json");
 const provider = config.providers.find((p) => p.provider === "deepseek");
-const OUT = new URL("../docs/demo/site-search.generated.json", import.meta.url);
+const OUT = new URL(`../docs/demo/${storyId}.generated.json`, import.meta.url);
 const key = process.env.DEEPSEEK_API_KEY;
 if (!key) {
   console.error("DEEPSEEK_API_KEY is missing in .env");
@@ -52,6 +53,15 @@ async function chat(messages, { maxTokens = 2500, temperature = 0.8 } = {}) {
   usage.calls += 1;
   usage.inputTokens += body.usage?.prompt_tokens ?? 0;
   usage.outputTokens += body.usage?.completion_tokens ?? 0;
+  // Optional spending guard: DEMO_BUDGET_USD stops this run when its own cost passes the limit.
+  const spent =
+    (usage.inputTokens * provider.inputPricePerMillion +
+      usage.outputTokens * provider.outputPricePerMillion) /
+    1e6;
+  if (spent > Number(process.env.DEMO_BUDGET_USD ?? Infinity)) {
+    console.error(`stopped: this run passed its budget of ${process.env.DEMO_BUDGET_USD} USD`);
+    process.exit(3);
+  }
   // The served model reasons first and reasoning tokens count toward max_tokens.
   const text = body.choices?.[0]?.message?.content ?? "";
   if (!text.trim()) throw new Error("empty answer (token budget used by reasoning)");
@@ -59,12 +69,12 @@ async function chat(messages, { maxTokens = 2500, temperature = 0.8 } = {}) {
 }
 
 const alwaysAllowed = stage0.scene.allowedWords;
+// Words kept out of the cards (laterWords), and people's names until he has met them.
 const allowedAt = (entry) => {
   const met = peopleMetBefore(stage0, entry);
+  const later = stage0.scene.laterWords ?? [];
   return alwaysAllowed.filter(
-    (w) =>
-      !["Groves", "Mesa", "Pajarito", "Plateau", "Los", "Alamos", "Ranch", "School"].includes(w) ||
-      (w === "Groves" && met.includes("Groves")),
+    (w) => !later.includes(w) && (!(w in stage0.people) || met.includes(w)),
   );
 };
 const baseCtx = (entry) => ({
@@ -100,7 +110,7 @@ async function writeFields(prompt, fields, ctxFor, label) {
 }
 
 const authored = (slice, role) =>
-  stage0.authoredCards.find((c) => c.slice === slice && c.role === role)?.text ?? null;
+  (stage0.authoredCards ?? []).find((c) => c.slice === slice && c.role === role)?.text ?? null;
 const prevSlice = (entry) => stage0.slices[stage0.slices.findIndex((x) => x.id === entry) - 1]?.id;
 
 // ---- Stage 1 and 2: the cards of the four Steps ----
@@ -197,11 +207,11 @@ for (const step of stage0.steps) {
 const pauseStep = stage0.steps[1];
 const entry = pauseStep.entrySlice;
 const props = stage0.scene.props;
-const prop = props[props.indexOf("map")];
+const prop = stage0.scene.pauseProp ?? props[0];
 prompts.stuck = stuckPrompt(stage0, pauseStep, prop);
 let stuck = null;
 for (let attempt = 1; attempt <= 3; attempt += 1) {
-  const json = await chat([{ role: "user", content: prompts.stuck }]);
+  const json = await chat([{ role: "user", content: prompts.stuck }]).catch(() => ({}));
   const text = String(json.story ?? "");
   const checks = checkStuck(text, { ...baseCtx(entry), maxChars: 300 });
   stuck = { prop, text, why: String(json.why ?? ""), checks, attempts: attempt };
@@ -211,14 +221,18 @@ console.log(
   `stuck message: ${stuck.checks.ok ? "OK" : "checks failed: " + stuck.checks.failures.join(", ")}`,
 );
 
-const whyHard = authored(entry, "worry");
-const peopleLines = stage0.scene.present.map((n) => stage0.people[n].line);
+const whyHard = authored(entry, "worry") ?? pauseStep.whyHard ?? "";
+const metNames = peopleMetBefore(stage0, entry);
+const peopleLines = [...new Set([...stage0.scene.present, ...metNames])].map(
+  (n) => stage0.people[n].line,
+);
+const extraNames = metNames.filter((n) => !stage0.scene.present.includes(n));
 const turns = [
   "hey",
   "I'm so tired I can't focus anymore",
   "I'm stuck on a proof in my math homework",
   "what are you doing right now?",
-  "wait, who's Dudley?",
+  stage0.scene.present[0] ? `wait, who's ${stage0.scene.present[0]}?` : "what do you mean by that?",
   "honestly I just want to quit",
 ];
 let seed = 7;
@@ -245,7 +259,7 @@ for (let i = 0; i < turns.length; i += 1) {
     gestures,
     max: fmt.max,
     history,
-    extraNames: [],
+    extraNames,
     peopleLines,
   });
   if (i === 2) prompts.chat = system;
@@ -279,7 +293,12 @@ for (let i = 0; i < turns.length; i += 1) {
   );
   const scored = attempts.filter(Boolean).map((c) => ({ ...c, checks: checkChatReply(c, ctx) }));
   scored.sort((a, b) => a.checks.failures.length - b.checks.failures.length);
-  const chosen = scored[0];
+  const chosen = scored[0] ?? {
+    scope: "",
+    action: "",
+    reply: "",
+    checks: { ok: false, failures: ["no answer from the model"] },
+  };
   const others = scored.slice(1);
   chatTurns.push({
     user: text,
@@ -303,7 +322,7 @@ for (let i = 0; i < turns.length; i += 1) {
 prompts.resolve = resolvePrompt(stage0, pauseStep, stuck);
 let back = null;
 for (let attempt = 1; attempt <= 3; attempt += 1) {
-  const json = await chat([{ role: "user", content: prompts.resolve }]);
+  const json = await chat([{ role: "user", content: prompts.resolve }]).catch(() => ({}));
   const text = String(json.card ?? "");
   const checks = checkCard(text, { ...baseCtx(entry), seen: [stuck.text] });
   back = { kind: "back", text, checks, attempts: attempt };
@@ -327,7 +346,7 @@ for (const mode of ["smooth", "rough"]) {
   };
   let best = null;
   for (let attempt = 1; attempt <= 3; attempt += 1) {
-    const json = await chat([{ role: "user", content: p }]);
+    const json = await chat([{ role: "user", content: p }]).catch(() => ({}));
     const text = String(json.line ?? "");
     const checks = checkCard(text, { ...ctx, maxChars: 360 });
     if (!best || checks.failures.length < best.checks.failures.length)
@@ -351,7 +370,7 @@ const output = {
     model: provider.model,
     generatedAt: new Date().toISOString(),
     pauseAtStep: 2,
-    note: "Draft content generated for a demo from the story database, the NF3 scene data and the canvas prompt blocks. The checks are a subset of docs/ai/AI_06. Not reviewed by a content owner.",
+    note: "Demo cache and reference material only: never shown to users (docs/DECISIONS.md, NO-BACKUP). Draft content generated for a demo from the story database, the NF3 scene data and the canvas prompt blocks. The checks are a subset of docs/ai/AI_06. Not reviewed by a content owner.",
     usage: { ...usage, costUsd: Number(costUsd.toFixed(4)) },
   },
   prompts,
@@ -361,5 +380,5 @@ const output = {
 };
 await writeFile(OUT, `${JSON.stringify(output, null, 2)}\n`);
 console.log(
-  `wrote docs/demo/site-search.generated.json (${usage.calls} calls, about $${costUsd.toFixed(4)})`,
+  `wrote docs/demo/${storyId}.generated.json (${usage.calls} calls, about $${costUsd.toFixed(4)})`,
 );

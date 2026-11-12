@@ -1,0 +1,285 @@
+{
+  "_note": "DRAFT, UNREVIEWED. Written by an AI from stories.json (only facts, keySlices, goal, forbiddenTerms, title, date), status: written, checked by script, not read by a person. Copied from stories.json: title, date, forbiddenTerms and the facts (dates, clock times and a weekday dropped; a dash or quote mark inside a fact may be changed to a comma). Invented by the AI, and only in these fields: place wording, who, goalShort and goalFull wording, whereNow lines, people roles, inline phrases and lines, step titles, whyHard, scene props, pauseProp, allowedWords, laterWords, leaks lists, gestures, voice lines, and the example cards and chat replies. Story-specific inventions: the place wording (a room at the Institute in Princeton, a plain office with a desk and a window); the roles and lines of Griggs, Finletter and Vandenberg (Finletter as Secretary of the Air Force is plain common knowledge, the rest is from the goal and facts); the step titles; all whereNow lines; whyHard; the props, gestures, voice and examples; the leaks and allowed words.",
+  "story": {
+    "id": "griggs-in-princeton",
+    "title": "Griggs in Princeton",
+    "date": "1952-05-23",
+    "place": "a room at the Institute in Princeton",
+    "goalShort": "I want Griggs to face what we actually advised on the H-bomb without my begging for his good opinion.",
+    "goalFull": "I want Griggs to face what we actually advised on the H-bomb, without begging for his good opinion. He has the generals' ear, so I have to be plain and steady.",
+    "forbidTerms": [
+      "convinced I was dangerous",
+      "more convinced than ever",
+      "Gray Board",
+      "Personnel Security Board",
+      "clearance suspended",
+      "Lewis Strauss",
+      "William Borden",
+      "Ivy Mike",
+      "1954 hearing"
+    ]
+  },
+  "who": "I'm the director of the Institute in Princeton, and I'm about to sit down with a man who has the generals' ear.",
+  "whereNow": {
+    "s1": "I'm at the Institute in Princeton, expecting Griggs, who has the generals' ear.",
+    "s2": "I'm sitting across from Griggs with our report open between us.",
+    "s3": "I'm still across from Griggs, the report lying between us, watching how he takes it.",
+    "s4": "I'm still with Griggs, and the talk between us has gone stiff.",
+    "s5": "I'm still with Griggs, and he has just put a story about Finletter to me.",
+    "s6": "I'm still with Griggs, and I have just told him where I stand on the Finletter story.",
+    "s7": "I'm still with Griggs, and the argument over the Finletter story has left a lot of bad feeling between us.",
+    "s8": "I'm still with Griggs, and I have just asked him whether he thinks me pro-Russian or merely confused."
+  },
+  "people": {
+    "Griggs": {
+      "role": "adviser to the generals",
+      "inline": "the man with the generals' ear",
+      "line": "Griggs is the man who has the generals' ear.",
+      "first_card": "griggs-in-princeton.s1.c1"
+    },
+    "Finletter": {
+      "role": "Secretary of the Air Force",
+      "inline": "the Secretary of the Air Force",
+      "line": "Finletter is the Secretary of the Air Force.",
+      "first_card": "griggs-in-princeton.s4.c1"
+    },
+    "Vandenberg": {
+      "role": "Air Force general",
+      "inline": "the Air Force Chief of Staff",
+      "line": "General Vandenberg is the Air Force Chief of Staff.",
+      "first_card": "griggs-in-princeton.s8.c1"
+    }
+  },
+  "slices": [
+    {
+      "id": "s1",
+      "priority": 2,
+      "facts": [
+        "Griggs came in and sat down, and I took out our report against developing the H-bomb right away."
+      ],
+      "leaks": [
+        "took out our",
+        "1949 report",
+        "right away"
+      ]
+    },
+    {
+      "id": "s2",
+      "priority": 2,
+      "facts": [
+        "It didn't reassure him. If anything it was like waving a red flag."
+      ],
+      "leaks": [
+        "reassure",
+        "red flag",
+        "waving"
+      ]
+    },
+    {
+      "id": "s3",
+      "priority": 3,
+      "facts": [
+        "I didn't defend myself, and I didn't try to charm him. The conversation got strained fast."
+      ],
+      "leaks": [
+        "defend myself",
+        "charm",
+        "strained"
+      ]
+    },
+    {
+      "id": "s4",
+      "priority": 1,
+      "facts": [
+        "Griggs asked if I had circulated a story that Secretary Finletter boasted the United States could rule the world with a few H-bombs."
+      ],
+      "leaks": [
+        "circulated",
+        "boasted",
+        "rule the world",
+        "few h-bombs"
+      ]
+    },
+    {
+      "id": "s5",
+      "priority": 1,
+      "facts": [
+        "I stared back at him and said I had heard the story, and furthermore I believed it."
+      ],
+      "leaks": [
+        "stared back",
+        "heard the story",
+        "believed it",
+        "furthermore"
+      ]
+    },
+    {
+      "id": "s6",
+      "priority": 1,
+      "facts": [
+        "He insisted he'd been in the room and Finletter said no such thing. I told him I'd heard it from an unimpeachable source who was also present."
+      ],
+      "leaks": [
+        "in the room",
+        "no such thing",
+        "unimpeachable",
+        "also present"
+      ]
+    },
+    {
+      "id": "s7",
+      "priority": 1,
+      "facts": [
+        "Since slander was on the table, I asked Griggs whether he thought me \"pro-Russian or merely confused.\" He said he wished he knew the answer."
+      ],
+      "leaks": [
+        "slander",
+        "pro-russian",
+        "merely confused",
+        "wished he knew"
+      ]
+    },
+    {
+      "id": "s8",
+      "priority": 1,
+      "facts": [
+        "I asked whether he had ever assailed my loyalty. He said he'd heard it questioned and had discussed me as a security risk with Finletter and with General Vandenberg, the Air Force Chief of Staff.",
+        "I told him he was \"a paranoid.\" He left angry."
+      ],
+      "leaks": [
+        "assailed",
+        "security risk",
+        "vandenberg",
+        "a paranoid",
+        "left angry"
+      ]
+    }
+  ],
+  "authoredCards": [],
+  "steps": [
+    {
+      "n": 1,
+      "title": "Put our report on the table",
+      "userSide": "Your Step: the first part of your Goal.",
+      "entrySlice": "s1",
+      "covers": [
+        "s1",
+        "s2",
+        "s3"
+      ],
+      "whyHard": "I want him to see what we actually advised, and I do not want to beg for his good opinion. He has the generals' ear, so it matters how this goes."
+    },
+    {
+      "n": 2,
+      "title": "Stand by the Finletter story",
+      "userSide": "Your Step: the second part of your Goal.",
+      "entrySlice": "s4",
+      "covers": [
+        "s4",
+        "s5",
+        "s6"
+      ],
+      "whyHard": "I did not defend myself or charm him, and the talk has already gone strained. Whatever he puts to me next, I want to answer plainly and keep my head."
+    },
+    {
+      "n": 3,
+      "title": "Ask him what he thinks of me",
+      "userSide": "Your Step: the last part of your Goal.",
+      "entrySlice": "s7",
+      "covers": [
+        "s7",
+        "s8"
+      ],
+      "whyHard": "He and I have just quarrelled over a story about Finletter, and I'm angry at what he seems to think of me. I don't want to lose my temper or plead my case."
+    }
+  ],
+  "scene": {
+    "present": [
+      "Griggs"
+    ],
+    "allowedWords": [
+      "Griggs",
+      "Finletter",
+      "Vandenberg",
+      "Princeton",
+      "Institute",
+      "Air",
+      "Force",
+      "Secretary",
+      "General",
+      "Chief",
+      "Staff",
+      "United",
+      "States",
+      "Russian"
+    ],
+    "pauseProp": "pencil",
+    "laterWords": [
+      "Russian"
+    ],
+    "props": [
+      "desk",
+      "chair",
+      "window",
+      "papers",
+      "folder",
+      "pencil",
+      "pipe",
+      "ashtray",
+      "lamp",
+      "bookshelf",
+      "coffee cup",
+      "blotter",
+      "carpet",
+      "lawn"
+    ]
+  },
+  "gestures": [
+    "tapping a pipe against an ashtray",
+    "squaring a stack of papers on the desk",
+    "folding both hands under the chin",
+    "turning a pencil end over end",
+    "looking out of the window at the lawn",
+    "tugging at a jacket sleeve",
+    "leaning back until the chair creaks",
+    "pressing fingertips together"
+  ],
+  "voice": [
+    "Short, plain sentences. Most spoken sentences are under 12 words.",
+    "Concrete things (a desk, a pipe, a window, a pencil), not abstractions.",
+    "Dry one-line wit now and then, never for effect. No grand sentences, no moral.",
+    "Say what he feels directly (tired, wary, impatient) and what is in front of him.",
+    "Contractions are fine in speech.",
+    "He is guarded and exact with a man who doubts him, and he never pleads.",
+    "Politeness comes first, with a dry edge when he is pushed."
+  ],
+  "examples": {
+    "card_why": [
+      "I would like to be heard without having to ask for it. That is harder than it sounds."
+    ],
+    "card_now": [
+      "The tea on the corner of the desk has gone cold. I turn the cup a quarter turn and look at the lawn outside the window."
+    ],
+    "card_feeling": [
+      "I am uneasy, and I know it because my hands will not stay still. The pencil in my fingers has turned over a dozen times."
+    ],
+    "chat": [
+      {
+        "user": "hey",
+        "reply": "(Looking up from the papers on the desk.) Hello. I was just working out how much of an afternoon a man really controls."
+      },
+      {
+        "user": "I'm so tired I can't focus",
+        "reply": "(Rubbing tired eyes with thumb and finger.) That makes two of us. I keep reading the same line and getting nowhere."
+      },
+      {
+        "user": "I'm stuck on my math homework",
+        "reply": "(Turning a pencil end over end.) A proof will not hurry for anyone. I keep going back to the first line until it looks different."
+      },
+      {
+        "user": "I want to quit",
+        "reply": "(Squaring a stack of papers on the desk.) I know the feeling, and I put the papers back in order anyway. Quitting is easy to picture and hard to undo."
+      }
+    ]
+  }
+}

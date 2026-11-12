@@ -384,6 +384,250 @@ a {
   margin: 0;
 }
 
+/* Focus page of the test path (/try/focus), issues 12, 14, 15, 18, 24, 26, 27. */
+.focus-page {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: calc(100svh - var(--target) - var(--space-small-gap) * 2);
+  min-width: 0;
+}
+
+.focus-seam {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-control-gap);
+  justify-content: space-between;
+  padding: 0 calc(var(--space-screen-inline) + env(safe-area-inset-right)) var(--space-small-gap)
+    calc(var(--space-screen-inline) + env(safe-area-inset-left));
+}
+
+.focus-step-label {
+  color: var(--ink-2);
+  font-family: var(--type-shell);
+  font-size: var(--text-caption-size);
+  font-weight: 600;
+  margin: 0;
+}
+
+.focus-clock {
+  font-family: var(--type-mono);
+  font-size: calc(var(--text-timer-size) * 0.75);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 1;
+  margin: 0 0 0 auto;
+}
+
+.focus-middle {
+  display: grid;
+  gap: var(--space-screen-top);
+  align-content: start;
+  min-width: 0;
+  overflow-y: auto;
+  padding: var(--space-small-gap) calc(var(--space-screen-inline) + env(safe-area-inset-right))
+    var(--space-screen-bottom) calc(var(--space-screen-inline) + env(safe-area-inset-left));
+  animation: focus-fade 200ms ease-out;
+}
+
+.focus-his,
+.focus-yours {
+  display: grid;
+  gap: var(--space-small-gap);
+  min-width: 0;
+}
+
+.focus-his p,
+.focus-yours p {
+  margin: 0;
+}
+
+.focus-label {
+  color: var(--ink-2);
+  font-family: var(--type-shell);
+  font-size: var(--text-overline-size);
+  font-weight: 600;
+  margin: 0;
+}
+
+.focus-goal-line {
+  font-family: var(--type-voice);
+}
+
+.focus-step-title {
+  font-weight: 700;
+}
+
+.focus-stack {
+  border-radius: var(--r-note);
+  padding-top: var(--space-control-gap);
+  touch-action: pan-y;
+}
+
+.focus-stack:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 3px;
+}
+
+.focus-slip {
+  background: var(--raised);
+  border-radius: var(--r-note);
+  box-shadow: var(--shadow-paper);
+  margin: 0;
+  padding: var(--space-screen-bottom);
+  position: relative;
+  transform: rotate(-0.6deg);
+}
+
+.focus-slip p {
+  font-family: var(--type-voice);
+  font-size: var(--text-slip-size);
+  line-height: var(--text-slip-leading);
+}
+
+.focus-tape {
+  background: var(--fill-soft);
+  height: var(--tape-height);
+  left: 50%;
+  position: absolute;
+  top: calc(var(--tape-height) / -2);
+  transform: translateX(-50%) rotate(2deg);
+  width: var(--tape-width);
+}
+
+.focus-pager {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-small-gap);
+  justify-content: space-between;
+}
+
+.focus-pager .button-plain {
+  padding-inline: var(--space-small-gap);
+}
+
+.focus-dots {
+  display: flex;
+  gap: var(--space-small-gap);
+}
+
+.focus-dot {
+  border: 1px solid var(--edge);
+  border-radius: var(--r-capsule);
+  height: var(--space-small-gap);
+  width: var(--space-small-gap);
+}
+
+.focus-dot-on {
+  background: var(--ink-2);
+  border-color: var(--ink-2);
+}
+
+.focus-failure {
+  display: grid;
+  font-family: var(--type-shell);
+  gap: var(--space-control-gap);
+  justify-items: start;
+}
+
+.focus-steps {
+  display: grid;
+  gap: var(--space-small-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.focus-steps-row {
+  align-items: center;
+  display: flex;
+  gap: var(--space-small-gap);
+  min-height: var(--target);
+}
+
+.focus-mark {
+  border-radius: var(--r-capsule);
+  flex: none;
+  height: var(--space-control-gap);
+  width: var(--space-control-gap);
+}
+
+.focus-mark-done {
+  background: var(--ink-2);
+}
+
+.focus-mark-now {
+  border: 2px solid var(--ink);
+}
+
+.focus-mark-to-do {
+  border: 1px dotted var(--edge);
+}
+
+.focus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-control-gap);
+  padding: var(--space-small-gap) calc(var(--space-screen-inline) + env(safe-area-inset-right))
+    calc(var(--space-screen-bottom) + env(safe-area-inset-bottom))
+    calc(var(--space-screen-inline) + env(safe-area-inset-left));
+}
+
+.focus-actions .button-filled {
+  flex: 62 1 auto;
+}
+
+.focus-actions .button-gray {
+  flex: 38 1 auto;
+}
+
+.focus-toast {
+  align-items: center;
+  background: var(--ink);
+  border-radius: var(--r-toast);
+  bottom: calc(3.125rem + var(--space-screen-bottom) * 2 + env(safe-area-inset-bottom));
+  color: var(--bg);
+  display: flex;
+  font-family: var(--type-shell);
+  font-size: var(--text-toast-size);
+  gap: var(--space-control-gap);
+  justify-content: space-between;
+  left: 50%;
+  max-width: calc(var(--layout-phone-max) - var(--space-screen-inline) * 2);
+  padding: 0 var(--space-small-gap) 0 var(--space-screen-bottom);
+  position: fixed;
+  transform: translateX(-50%);
+  width: calc(100% - var(--space-screen-inline) * 2);
+}
+
+.focus-toast-action {
+  background: transparent;
+  border: 0;
+  color: var(--bg);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.focus-toast-action:focus-visible {
+  outline: 3px solid var(--bg);
+  outline-offset: -3px;
+}
+
+@keyframes focus-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .focus-middle {
+    animation: none;
+  }
+}
+
 /* Goal dialogue on the test path, issues 30 and 33 to 39 (FLOW 4.3). */
 .try-screen a.button-filled {
   text-decoration: none;
