@@ -6,7 +6,10 @@ const read = (file: string) => readFileSync(path.join(__dirname, "..", file), "u
 
 describe("CI configuration", () => {
   it("exempts Dependabot from the issue-link check", () => {
-    expect(read(".github/workflows/ci.yml")).toMatch(/github\.actor != 'dependabot\[bot\]'/);
+    const ci = read(".github/workflows/ci.yml");
+    // The exemption follows who opened the pull request, not who pushed last (#206).
+    expect(ci).toMatch(/github\.event\.pull_request\.user\.login != 'dependabot\[bot\]'/);
+    expect(ci).not.toMatch(/github\.actor != 'dependabot\[bot\]'/);
   });
 
   it("ignores major updates that conflict with recorded decisions", () => {
