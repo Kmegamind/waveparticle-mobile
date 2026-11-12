@@ -322,6 +322,12 @@ a {
   width: 100%;
 }
 
+.step-screen .step-note {
+  color: var(--ink-2);
+  font-size: var(--text-caption-size);
+  margin: 0;
+}
+
 .step-screen textarea:focus-visible {
   outline: 3px solid var(--control);
   outline-offset: 3px;
