@@ -15,6 +15,9 @@ const tabs = [
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
+  // The sign-in-free test path (#208) has its own header and no account tab bar.
+  if (pathname === "/try" || pathname.startsWith("/try/")) return <>{children}</>;
+
   return (
     <div className="app-shell">
       <header className="app-header">

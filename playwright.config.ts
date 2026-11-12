@@ -18,6 +18,8 @@ export default defineConfig({
         env: {
           NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:9",
           NEXT_PUBLIC_SUPABASE_ANON_KEY: "playwright-placeholder",
+          // Turns on the sign-in-free test path (#208) for the e2e server only.
+          PROTOTYPE_ENABLED: "1",
         },
         reuseExistingServer: !process.env.CI,
         timeout: 240_000,
