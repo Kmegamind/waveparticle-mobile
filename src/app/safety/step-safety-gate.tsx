@@ -9,8 +9,8 @@ const noSubscription = () => () => {};
 export function StepSafetyGate() {
   const [draft, setDraft] = useState("");
   const [screen, setScreen] = useState<"step" | "crisis">("step");
-  // False in the server HTML and during hydration, true once React has taken over the form.
-  // Before that, Send is an ordinary browser submit that reloads the page.
+  // False in the server HTML and during hydration, true once React has hydrated the form.
+  // Text typed before that is not in `draft`, so tests wait for data-ready="true" before typing.
   const ready = useSyncExternalStore(
     noSubscription,
     () => true,
