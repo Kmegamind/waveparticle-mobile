@@ -72,7 +72,9 @@ export function checkCompanionLine(
   push(rejected, "you", kind !== "rest_reply" && ADDRESSED.test(text));
   push(rejected, "hook", HOOK.test(text));
   push(rejected, "praise", PRAISE.test(text));
-  push(rejected, "form", EXCLAIM_OR_EMOJI.test(text) || LINK.test(text) || !text.endsWith("."));
+  // A rest reply may end on its one question (CHAT-QUESTION-END); every other line ends with a full stop.
+  const endsWell = text.endsWith(".") || (kind === "rest_reply" && text.endsWith("?"));
+  push(rejected, "form", EXCLAIM_OR_EMOJI.test(text) || LINK.test(text) || !endsWell);
   push(rejected, "name", OWN_NAME.test(text));
   push(rejected, "first_person", !FIRST_PERSON.test(text));
   push(rejected, "blame", kind === "return_popup" && BLAME.test(text));
