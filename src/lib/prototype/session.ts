@@ -23,6 +23,8 @@ export const UNDO_MS = 8_000;
 /** At least five minutes between story cards (T7). */
 const MIN_CARD_GAP_MINUTES = 5;
 const MAX_STORY_CARDS = 5;
+/** Away this long or more, the return pop-up opens before the clock restarts (T6, R1). */
+export const AWAY_MS = 5 * 60_000;
 
 export type StepCards = {
   /** The one card a Step opens with: the background card on Step 1, otherwise what he just finished. */
@@ -52,6 +54,29 @@ export type FocusSession = {
   undo: { step: number; untilMs: number } | null;
   /** True while the clock is frozen because the user left the page or paused. */
   paused: boolean;
+  /** When the clock first froze; the absence rule counts from here (T6, R1). */
+  pausedAtMs: number | null;
+  /** Pauses so far in each Step. Passed to his pause message only; never shown (F1, PAUSE-3). */
+  pauses: number[];
+  /** The open rest conversation (R1, R1-C), kept so a reopened rest page looks the same. */
+  rest: RestState | null;
+  /** The return pop-up (F-RET) that must open before the clock restarts. */
+  returnPending: ReturnTrigger | null;
+  /** His return line once written: stored once and never regenerated (#57 AC3). */
+  returnLine: string | null;
+};
+
+/** Why the return pop-up opens: Back to step from rest, or back after 5 minutes or more away. */
+export type ReturnTrigger = "rest" | "absence";
+
+export type RestMessage = { from: "him" | "you"; text: string };
+
+export type RestState = {
+  /** 1-based number of this Pause in the current Step. */
+  pauseNumber: number;
+  messages: RestMessage[];
+  /** Unsent text in the composer; kept when the page is reopened. */
+  draft: string;
 };
 
 export type SessionPlan = {
@@ -92,6 +117,11 @@ function newSession(plan: SessionPlan, speed: number): FocusSession {
     holdUntilMs: null,
     undo: null,
     paused: false,
+    pausedAtMs: null,
+    pauses: plan.steps.map(() => 0),
+    rest: null,
+    returnPending: null,
+    returnLine: null,
   };
 }
 
@@ -201,7 +231,10 @@ export function completeStep(session: FocusSession, nowMs: number): FocusSession
   let clock = following.clock;
   if (clock) clock = resumeClock(clock, holdUntilMs);
   else if (following.cards) clock = createClock(following.targetSeconds, holdUntilMs);
-  return replaceStep({ ...next, holdUntilMs, paused: false }, nextIndex, { ...following, clock });
+  return replaceStep({ ...next, holdUntilMs, paused: false, pausedAtMs: null }, nextIndex, {
+    ...following,
+    clock,
+  });
 }
 
 export function canUndo(session: FocusSession, nowMs: number): boolean {
@@ -226,15 +259,16 @@ export function undoDone(session: FocusSession, nowMs: number): FocusSession {
     ...step,
     clock: step.clock ? resumeClock(step.clock, holdUntilMs) : null,
   });
-  return { ...next, current: back, holdUntilMs, undo: null, paused: false };
+  return { ...next, current: back, holdUntilMs, undo: null, paused: false, pausedAtMs: null };
 }
 
 /** Freezes the current Step's clock (the page was left, or Pause was pressed). */
 export function pauseSession(session: FocusSession, nowMs: number): FocusSession {
   if (session.paused) return session;
+  const frozen = { ...session, paused: true, pausedAtMs: nowMs };
   const step = session.steps[session.current];
-  if (!step?.clock) return { ...session, paused: true };
-  return replaceStep({ ...session, paused: true }, session.current, {
+  if (!step?.clock) return frozen;
+  return replaceStep(frozen, session.current, {
     ...tick(session, nowMs).steps[session.current],
     clock: pauseClock(step.clock, nowMs),
   });
@@ -243,13 +277,88 @@ export function pauseSession(session: FocusSession, nowMs: number): FocusSession
 /** Restarts the clock from the frozen value; a hold that has not finished is kept. */
 export function resumeSession(session: FocusSession, nowMs: number): FocusSession {
   if (!session.paused) return session;
+  const running = { ...session, paused: false, pausedAtMs: null };
   const step = session.steps[session.current];
-  if (!step?.clock) return { ...session, paused: false };
+  if (!step?.clock) return running;
   const startAt = Math.max(nowMs, session.holdUntilMs ?? 0);
-  return replaceStep({ ...session, paused: false }, session.current, {
+  return replaceStep(running, session.current, {
     ...step,
     clock: resumeClock(step.clock, startAt),
   });
+}
+
+/** Pause: freezes the clock, counts this Pause for the current Step and opens a new rest. */
+export function startRest(session: FocusSession, nowMs: number): FocusSession {
+  if (isFinished(session)) return session;
+  const frozen = pauseSession(session, nowMs);
+  const pauses = session.steps.map((_, index) => frozen.pauses[index] ?? 0);
+  pauses[session.current] += 1;
+  return {
+    ...frozen,
+    pauses,
+    rest: { pauseNumber: pauses[session.current], messages: [], draft: "" },
+    returnPending: null,
+    returnLine: null,
+  };
+}
+
+/** The number of the latest Pause in the current Step (0 before the first). */
+export function pauseNumberFor(session: FocusSession): number {
+  return session.pauses[session.current] ?? 0;
+}
+
+export function addRestMessage(session: FocusSession, message: RestMessage): FocusSession {
+  if (!session.rest) return session;
+  return { ...session, rest: { ...session.rest, messages: [...session.rest.messages, message] } };
+}
+
+/** His first message for this Pause goes first, even if the user wrote before it arrived. */
+export function addFirstRestMessage(session: FocusSession, text: string): FocusSession {
+  if (!session.rest || hasFirstRestMessage(session)) return session;
+  const messages: RestMessage[] = [{ from: "him", text }, ...session.rest.messages];
+  return { ...session, rest: { ...session.rest, messages } };
+}
+
+export function hasFirstRestMessage(session: FocusSession): boolean {
+  return session.rest?.messages[0]?.from === "him";
+}
+
+export function setRestDraft(session: FocusSession, draft: string): FocusSession {
+  if (!session.rest) return session;
+  return { ...session, rest: { ...session.rest, draft } };
+}
+
+/** Back to step: the rest ends, the clock stays frozen and the return pop-up is due. */
+export function backFromRest(session: FocusSession): FocusSession {
+  return { ...session, rest: null, returnPending: "rest", returnLine: null };
+}
+
+/** Home from the rest page: the rest ends and the Step stays paused (FLOW 3.6). */
+export function leaveRest(session: FocusSession): FocusSession {
+  return { ...session, rest: null };
+}
+
+/**
+ * Opening the focus page with a frozen clock. Coming from a rest that is still open counts as
+ * Back to step. Away 5 minutes or more (60/s seconds at test speed s) asks for the absence pop-up;
+ * a shorter absence resumes the clock with no pop-up. The pop-up keeps the clock frozen.
+ */
+export function returnOnOpen(session: FocusSession, nowMs: number): FocusSession {
+  if (!session.paused || isFinished(session) || session.returnPending) return session;
+  if (session.rest) return backFromRest(session);
+  const awayMs = session.pausedAtMs === null ? 0 : nowMs - session.pausedAtMs;
+  if (awayMs >= AWAY_MS / session.speed) return { ...session, returnPending: "absence" };
+  return resumeSession(session, nowMs);
+}
+
+export function setReturnLine(session: FocusSession, text: string): FocusSession {
+  if (session.returnLine !== null) return session;
+  return { ...session, returnLine: text };
+}
+
+/** Start in the return pop-up: it closes and the clock starts from the frozen value. */
+export function startFromReturn(session: FocusSession, nowMs: number): FocusSession {
+  return resumeSession({ ...session, returnPending: null, returnLine: null }, nowMs);
 }
 
 function isSession(value: unknown): value is FocusSession {
@@ -264,12 +373,25 @@ function isSession(value: unknown): value is FocusSession {
   );
 }
 
+/** Sessions stored before the rest page have no rest fields; they get the defaults. */
+function withRestFields(session: FocusSession): FocusSession {
+  const partial = session as Partial<FocusSession> & FocusSession;
+  return {
+    ...session,
+    pausedAtMs: partial.pausedAtMs ?? null,
+    pauses: session.steps.map((_, index) => partial.pauses?.[index] ?? 0),
+    rest: partial.rest ?? null,
+    returnPending: partial.returnPending ?? null,
+    returnLine: partial.returnLine ?? null,
+  };
+}
+
 export function loadSession(storage: SessionStorage): FocusSession | null {
   try {
     const raw = storage.getItem(SESSION_KEY);
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
-    return isSession(parsed) ? parsed : null;
+    return isSession(parsed) ? withRestFields(parsed) : null;
   } catch {
     return null;
   }
