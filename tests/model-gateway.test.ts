@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { createModelGateway, type ModelProvider } from "@/lib/model-gateway";
+import { checkCompanionLine } from "@/lib/model-gateway/checks";
 import { MODEL_GATEWAY_ENV_NAMES, createServerModelGateway } from "@/lib/model-gateway/server";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -273,5 +274,59 @@ describe("model gateway", () => {
       expect(source).not.toContain("model-gateway");
       expect(source).not.toContain("MODEL_API_KEY");
     }
+  });
+
+  describe("rules per line kind (#201)", () => {
+    const chatWithQuestion = "Do you see the wind on the mesa? I keep my notes dry under my coat.";
+    const oneWayKinds = ["step_card", "stuck_story", "return_popup"] as const;
+
+    it("test_201_ac1_rest_reply_allows_a_question_and_you", () => {
+      const checked = checkCompanionLine(chatWithQuestion, "rest_reply");
+      expect(checked).toEqual({ ok: true, text: chatWithQuestion });
+    });
+
+    it("test_201_ac1_rest_reply_allows_at_most_one_question", () => {
+      const checked = checkCompanionLine(
+        "Do you see it? Do you hear it? I keep my notes dry.",
+        "rest_reply",
+      );
+      expect(checked).toEqual({ ok: false, rejectedRules: ["question"] });
+    });
+
+    it("test_201_ac1_rest_reply_still_applies_the_other_rules", () => {
+      const cases: [string, string][] = [
+        ["Do you see it? I wait for the 5:30 signal.", "clock"],
+        ["Do you see it? I watch the gadget rise from the tower.", "leak"],
+        ["Do you see it? I keep my notes dry, bro.", "ban"],
+        ["Do you see it? I keep my notes dry. I keep them dry. I keep them close.", "len"],
+        ["Do you see the wind on the mesa? I keep my notes dry", "form"],
+        ["Do you see it? You should close your eyes, I think.", "cmd"],
+      ];
+      for (const [text, rule] of cases) {
+        const checked = checkCompanionLine(text, "rest_reply", ["gadget"]);
+        expect(checked.ok, text).toBe(false);
+        if (!checked.ok) expect(checked.rejectedRules, text).toContain(rule);
+      }
+    });
+
+    it("test_201_ac2_one_way_lines_still_reject_a_question_and_you", () => {
+      for (const kind of oneWayKinds) {
+        const question = checkCompanionLine("Is the wind on the mesa? I keep my notes dry.", kind);
+        expect(question.ok, kind).toBe(false);
+        if (!question.ok) expect(question.rejectedRules, kind).toContain("question");
+
+        const addressed = checkCompanionLine("I keep my notes dry for you.", kind);
+        expect(addressed.ok, kind).toBe(false);
+        if (!addressed.ok) expect(addressed.rejectedRules, kind).toEqual(["you"]);
+      }
+    });
+
+    it("test_201_ac3_gateway_returns_a_rest_reply_with_a_question", async () => {
+      const gateway = createModelGateway({
+        provider: async () => JSON.stringify({ reply: chatWithQuestion }),
+      });
+      const reply = await gateway.writeRestReply({ userMessage, facts: "A quiet room." });
+      expect(reply).toEqual({ source: "generated", text: chatWithQuestion });
+    });
   });
 });
