@@ -32,8 +32,8 @@ Status words: **current** (use as is), **needs rewrite**, **missing**, **to arch
 | Test strategy | `docs/testing.md` | How each kind of test is run and named | **Needs rewrite**: nine lines; no table from acceptance criterion to test, no plan for testing model output | Whole product | #42, #46 | writing-feature-spec for the criteria; writing-evaluation-plan for model output |
 | Deploy notes | `docs/deploy.md` | Environments, smoke test, rollback | **Current but short**: launch checklist, monitoring and runbook are missing | Platform | #135, #154 | Edit by hand |
 | Research notes | `docs/research/` | Spikes on phone features, clock, live generation | **Current**. The benchmark's output limit must be raised before it runs (AI audit finding 5) | Platform, AI pipeline | #153, #130 | None |
-| Design rules and prototype note | `DESIGN.md` (repository root), `docs/design/README.md` | Look and controls | `DESIGN.md` is current. The design note points to prototype version 1 and is **out of date** | Look | #170 | design-from-prototype |
-| Prototype | Planning folder: `1_Projects/Newfeatures/wp-prototype_2026-11-05_v2.html` with `..._v2_diff.md` | The screens as drawn, built from the decision log | **Current but outside the repository**. Missing: password reset, account deletion, a few registry screens | Look | #170 | design-from-prototype |
+| Design rules and prototype note | `DESIGN.md` (repository root), `docs/design/README.md` | Look and controls | The design note is **current** (2026-11-12): it names prototype version 4 as the reference. `DESIGN.md` **needs rewrite**: its tokens and controls disagree with version 4 in the places listed in `docs/design/prototype/TOKENS_FROM_V4.md`, and its buttons must become the paper-tag buttons (decided by Yue on 2026-11-12) | Look | #227 | design-from-prototype |
+| Prototype | `docs/design/prototype/wp-prototype_2026-11-12_v4_live-ai.html` with `..._v4_live-ai_notes.md`, reference screenshots in `docs/design/prototype/reference-screenshots/`, differences with the app in `docs/design/prototype/GAP_LIST_V4.md` | The screens as drawn and as they look, built from the decisions of 2026-11-12 | **Current** (version 4, the reference since 2026-11-12). Version 2 (`docs/design/prototype/wp-prototype_2026-11-05_v2.html`) is **superseded** and kept for history | Look | #227 | design-from-prototype |
 | Earlier document map | Planning: `PRODUCT_doc-map-and-open-decisions_2026-11-04_v1_draft.md` | Provenance of the first document set | **To archive** after this map is merged; keep as history | Whole product | None | None |
 | Vision and principles | Planning: `2_Areas/Product/PROD_core-experience-constitution.md` | The experience pillars | **Needs rewrite**: Chinese only; the repository has the pillars in `docs/PRD.md` sections 1 and 2 | Whole product | None | superpowers:brainstorming |
 | July roadmap | Planning: `2_Areas/Product/PROD_ROADMAP_2026-H2.md` | An old plan | **To archive**: Chinese; its north star was cancelled (decision N1) | Whole product | None | None |
@@ -59,7 +59,7 @@ The planning folder has two seven-document sets, one for Goals and one for the s
 | Home and life state specification (`NF4_..._v4`) | `PRDs_MomTest/` | Home screen states | **Needs rewrite** into one feature specification | Home (NF4) | epic #142 | writing-feature-spec |
 | Focus and rest notes (`NF6_v7`, `US_NF6`) | `PRDs_MomTest/` | Focus page, pause, rest | **Needs rewrite** into one feature specification; `US_NF6` is partly Chinese | Focus and rest (NF6) | epic #139 | writing-feature-spec |
 | Feature specification for each feature above | `docs/01-features/<feature>/` (planned) | The one-page brief with acceptance tests | **Missing** for all seven features | NF1 to NF7 | epics #139 to #142, #146, #147 | writing-feature-spec |
-| Prototype v1 and design mock-ups v1 to v7 | `1_Projects/Newfeatures/` | Earlier looks | **To archive**: replaced by prototype v2; version 1 still holds the high-fidelity visual reference | Look | None | None |
+| Prototype v1 and design mock-ups v1 to v7 | `1_Projects/Newfeatures/` | Earlier looks | **To archive**: replaced by prototype version 4, which carries the visual design of version 1 | Look | None | None |
 
 ### 1.3 AI documents
 
@@ -144,7 +144,7 @@ The audits suggest this order. Each step needs the one before it unless said oth
 3. Write the Character Pack specification (needs the reviewer-role answer in section 5).
 4. Write the pipeline specification, then one AI specification per feature, each with an evaluation plan.
 5. Create `src/prompts/` and port the check rules to one TypeScript rule table.
-6. Add the account screens and prototype-only screens to the screen registry; copy prototype version 2 into the repository.
+6. Add the account screens and prototype-only screens to the screen registry. (Prototype version 4 was copied into the repository on 2026-11-12, #227.)
 7. Write the cross-cutting documents: test strategy with a table from criterion to test, privacy and threat model, speed and cost budgets, release plan.
 8. Retire the files marked **to archive**, only after their content is imported.
 
