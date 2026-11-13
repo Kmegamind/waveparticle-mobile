@@ -56,3 +56,19 @@ export function formatMinutes(minutes: number): string {
   const hourText = hours === 1 ? "1 hour" : `${hours} hours`;
   return rest === 0 ? hourText : `${hourText} ${rest} min`;
 }
+
+/** The time question is a slider from 0 to 3 hours with no fixed example times (TIME-SLIDER). */
+export const SLIDER_MAX_MINUTES = 180;
+export const SLIDER_STEP_MINUTES = 5;
+export const SLIDER_ZERO_HINT = "Choose a time above 0";
+
+/** Where the slider starts: at 0, or at the time read from the goal, never past 3 hours. */
+export function sliderStart(understood: number | null): number {
+  if (understood === null) return 0;
+  return Math.min(Math.max(0, understood), SLIDER_MAX_MINUTES);
+}
+
+/** The slider's value in words, shown beside it and read aloud. */
+export function sliderValueText(minutes: number): string {
+  return minutes <= 0 ? "No time chosen" : formatMinutes(minutes);
+}

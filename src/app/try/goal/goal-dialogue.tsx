@@ -18,10 +18,13 @@ import {
   timeAck,
 } from "@/lib/prototype/goal-lines";
 import {
-  TIME_HINT,
+  SLIDER_MAX_MINUTES,
+  SLIDER_STEP_MINUTES,
+  SLIDER_ZERO_HINT,
   findTimeInGoal,
   formatMinutes,
-  parseTypedTime,
+  sliderStart,
+  sliderValueText,
 } from "@/lib/prototype/goal-time";
 import { loadLastOpening, saveLastOpening } from "@/lib/prototype/opening-memory";
 import {
@@ -47,11 +50,6 @@ type Phase = "goal" | "time" | "split" | "splitting" | "plan" | "failed" | "cris
 type TimeMode = "asked" | "not-sure" | "understood" | "changed";
 
 const DEFAULT_MINUTES = 30;
-const QUICK_TIMES = [
-  { label: "30 min", minutes: 30 },
-  { label: "1 hour", minutes: 60 },
-  { label: "2 hours", minutes: 120 },
-] as const;
 
 export function GoalDialogue() {
   const router = useRouter();
@@ -73,8 +71,8 @@ export function GoalDialogue() {
   const [goalHint, setGoalHint] = useState(false);
   const [goal, setGoal] = useState("");
   const [reaction, setReaction] = useState("");
-  const [timeDraft, setTimeDraft] = useState("");
-  const [timeHint, setTimeHint] = useState(false);
+  // TIME-SLIDER: the time question is a slider from 0 to 3 hours (Yue, 2026-11-12).
+  const [sliderMinutes, setSliderMinutes] = useState(0);
   const [minutes, setMinutes] = useState<number | null>(null);
   const [timeMode, setTimeMode] = useState<TimeMode | null>(null);
   const [timeAnswer, setTimeAnswer] = useState("");
@@ -140,8 +138,7 @@ export function GoalDialogue() {
     setReaction(reactionFor(classifyGoalShape(text)));
     setSplitFiner(null);
     setJustSplit(false);
-    setTimeDraft("");
-    setTimeHint(false);
+    setSliderMinutes(0);
     const understood = findTimeInGoal(text);
     if (understood !== null) {
       setMinutes(understood);
@@ -157,7 +154,6 @@ export function GoalDialogue() {
   function chooseTime(value: number, answer: string) {
     setMinutes(value);
     setTimeAnswer(answer);
-    setTimeHint(false);
     if (timeMode === "understood" || timeMode === "changed") {
       setTimeMode("changed");
     } else {
@@ -172,23 +168,18 @@ export function GoalDialogue() {
     setTimeAnswer("Not sure");
     setTimeMode("not-sure");
     setAckLine(NOT_SURE_LINE);
-    setTimeHint(false);
     setPhase("split");
   }
 
   function onSendTime(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (gateFreeText(timeDraft).action === "crisis-page") {
-      setTimeDraft("");
-      openCrisis("time");
-      return;
-    }
-    const value = parseTypedTime(timeDraft);
-    if (value === null) {
-      setTimeHint(true);
-      return;
-    }
-    chooseTime(value, formatMinutes(value));
+    if (sliderMinutes <= 0) return;
+    chooseTime(sliderMinutes, formatMinutes(sliderMinutes));
+  }
+
+  function openTimeQuestion() {
+    setSliderMinutes(sliderStart(minutes));
+    setPhase("time");
   }
 
   function onJustSplit() {
@@ -334,7 +325,7 @@ export function GoalDialogue() {
           {phase === "split" ? (
             <button
               className="button-plain button-small"
-              onClick={() => setPhase("time")}
+              onClick={openTimeQuestion}
               type="button"
             >
               Change time
@@ -431,39 +422,31 @@ export function GoalDialogue() {
 
       {phase === "time" ? (
         <>
-          <div className="try-chips">
-            {QUICK_TIMES.map((item) => (
-              <button
-                className="try-chip"
-                key={item.label}
-                onClick={() => chooseTime(item.minutes, item.label)}
-                type="button"
-              >
-                {item.label}
-              </button>
-            ))}
-            {timeMode === "understood" ? null : (
+          <form className="try-time" onSubmit={onSendTime}>
+            <input
+              aria-label="Your time"
+              aria-valuetext={sliderValueText(sliderMinutes)}
+              className="try-time-slider"
+              max={SLIDER_MAX_MINUTES}
+              min={0}
+              onChange={(event) => setSliderMinutes(Number(event.target.value))}
+              step={SLIDER_STEP_MINUTES}
+              type="range"
+              value={sliderMinutes}
+            />
+            <output aria-hidden="true" className="try-time-value">
+              {sliderValueText(sliderMinutes)}
+            </output>
+            <SendButton disabled={sliderMinutes <= 0} />
+          </form>
+          {sliderMinutes <= 0 ? <p className="try-hint">{SLIDER_ZERO_HINT}</p> : null}
+          {timeMode === "understood" ? null : (
+            <div className="try-chips">
               <button className="try-chip" onClick={chooseNotSure} type="button">
                 Not sure
               </button>
-            )}
-          </div>
-          <form className="try-composer" onSubmit={onSendTime}>
-            <input
-              aria-label="Your time"
-              autoComplete="off"
-              inputMode="decimal"
-              onChange={(event) => setTimeDraft(event.target.value)}
-              placeholder="45 or 1.5 hours"
-              value={timeDraft}
-            />
-            <SendButton />
-          </form>
-          {timeHint ? (
-            <p className="try-hint" role="status">
-              {TIME_HINT}
-            </p>
-          ) : null}
+            </div>
+          )}
           <button className="try-link" onClick={onJustSplit} type="button">
             Just split it
           </button>
@@ -488,9 +471,9 @@ function Slip({ children }: { children: string }) {
   return <p className="try-slip">{children}</p>;
 }
 
-function SendButton() {
+function SendButton(props: { disabled?: boolean }) {
   return (
-    <button aria-label="Send" className="try-send" type="submit">
+    <button aria-label="Send" className="try-send" disabled={props.disabled} type="submit">
       <svg aria-hidden="true" viewBox="0 0 24 24">
         <path d="M12 19V5M5 12l7-7 7 7" />
       </svg>

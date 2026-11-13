@@ -29,7 +29,8 @@ async function goalDialogue(page, stage) {
   await page.locator("form input").first().fill("Write the methods section for Friday");
   await page.getByRole("button", { name: "Send" }).click();
   await settle(page, 1000);
-  await page.getByRole("button", { name: "1 hour" }).click();
+  await page.getByRole("slider", { name: "Your time" }).fill("60");
+  await page.getByRole("button", { name: "Send" }).click();
   await settle(page, 1000);
   await page.getByRole("button", { name: "Keep it broad" }).click();
   await settle(page, 1500);

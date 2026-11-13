@@ -22,6 +22,11 @@ import {
   findTimeInGoal,
   formatMinutes,
   parseTypedTime,
+  SLIDER_MAX_MINUTES,
+  SLIDER_STEP_MINUTES,
+  SLIDER_ZERO_HINT,
+  sliderStart,
+  sliderValueText,
 } from "@/lib/prototype/goal-time";
 import {
   addStep,
@@ -73,6 +78,26 @@ describe("#35 AC1 the typed time box accepts only a time", () => {
     expect(formatMinutes(60)).toBe("1 hour");
     expect(formatMinutes(90)).toBe("1 hour 30 min");
     expect(formatMinutes(120)).toBe("2 hours");
+  });
+});
+
+describe("TIME-SLIDER the time slider runs from 0 to 3 hours", () => {
+  it("has the range, the step and the zero hint", () => {
+    expect(SLIDER_MAX_MINUTES).toBe(180);
+    expect(SLIDER_STEP_MINUTES).toBe(5);
+    expect(SLIDER_ZERO_HINT).toBe("Choose a time above 0");
+  });
+
+  it("starts at 0, or at an understood time capped at 3 hours", () => {
+    expect(sliderStart(null)).toBe(0);
+    expect(sliderStart(60)).toBe(60);
+    expect(sliderStart(240)).toBe(180);
+  });
+
+  it("reads its value as words", () => {
+    expect(sliderValueText(0)).toBe("No time chosen");
+    expect(sliderValueText(75)).toBe("1 hour 15 min");
+    expect(sliderValueText(5)).toBe("5 min");
   });
 });
 
@@ -241,6 +266,17 @@ describe("#39 the test-data splitter (used only when no model keys are set)", ()
       plan.steps.forEach((step) => expect(step.minutes % 15).toBe(0));
     }
   });
+
+  it.each([5, 20, 95, 175])(
+    "TIME-SLIDER adds up to a slider time of %i that is not a multiple of 15",
+    (total) => {
+      for (const splitFiner of [false, true]) {
+        const plan = splitWithTestData({ goal: "Write the report", totalMinutes: total, splitFiner });
+        expect(plan.steps.reduce((sum, step) => sum + step.minutes, 0)).toBe(total);
+        plan.steps.forEach((step) => expect(step.minutes).toBeGreaterThanOrEqual(1));
+      }
+    },
+  );
 
   it("#33 AC2 Split it finer gives more Steps than Keep it broad", () => {
     const broad = splitWithTestData({ goal: "Write", totalMinutes: 60, splitFiner: false });

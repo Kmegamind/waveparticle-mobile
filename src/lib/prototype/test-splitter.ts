@@ -55,14 +55,24 @@ export function splitWithTestData(input: {
   splitFiner: boolean;
 }): TestDataPlan {
   if (input.goal.includes(SPLIT_FAILURE_TOKEN)) throw new Error("test-data split failure");
-  const units = Math.max(1, Math.round(input.totalMinutes / 15));
+  // 15-minute units; a slider time that is not a multiple of 15 (TIME-SLIDER) puts the rest on
+  // the last Step, so the Plan always adds up to the time given.
+  if (input.totalMinutes < 15) {
+    return {
+      source: "test-data",
+      title: input.goal.trim().slice(0, 80),
+      steps: [{ ...piece(0, 1), minutes: input.totalMinutes }],
+    };
+  }
+  const units = Math.floor(input.totalMinutes / 15);
+  const rest = input.totalMinutes - units * 15;
   const broad = Math.max(1, Math.round(units / 2));
   const count = input.splitFiner ? Math.min(units, Math.max(broad + 1, broad * 2)) : broad;
   const base = Math.floor(units / count);
   const extra = units % count;
   const steps = Array.from({ length: count }, (_, index) => ({
     ...piece(index, count),
-    minutes: (base + (index < extra ? 1 : 0)) * 15,
+    minutes: (base + (index < extra ? 1 : 0)) * 15 + (index === count - 1 ? rest : 0),
   }));
   return { source: "test-data", title: input.goal.trim().slice(0, 80), steps };
 }
