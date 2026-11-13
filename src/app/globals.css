@@ -37,57 +37,58 @@ a {
   outline-offset: 2px;
 }
 
+/* Paper-tag buttons of prototype version 4 (issue 240, C2 to C4, decided by Yue on 2026-11-12). */
 .button-filled,
 .button-tinted,
 .button-gray,
 .button-plain {
   align-items: center;
-  border: 0;
-  border-radius: var(--r-capsule);
+  border: 1px solid transparent;
+  border-radius: var(--r-field);
   cursor: pointer;
   display: inline-flex;
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: var(--type-sans);
   font-size: var(--text-button-size);
-  font-weight: 600;
+  font-weight: 700;
   justify-content: center;
-  letter-spacing: -0.022em;
-  line-height: 1;
-  min-height: 3.125rem;
-  padding-inline: 1.5rem;
+  line-height: 1.1;
+  min-height: var(--button-height);
+  padding-inline: var(--button-padding);
   transition:
     transform 120ms,
     opacity 120ms;
 }
 
 .button-filled {
-  background: var(--control);
-  color: var(--on-control);
+  background: var(--tag-fill);
+  border: 1px solid var(--tag-edge);
+  box-shadow: 0 2px 0 0 var(--tag-edge);
+  color: var(--tag-ink);
 }
 
 .button-tinted {
-  background: var(--tint);
-  border: 1px solid var(--control);
-  color: var(--accent-text);
+  background: var(--raised);
+  border: 1px solid var(--edge);
+  color: var(--ink);
 }
 
 .button-gray {
-  background: var(--gray);
+  background: var(--raised);
   border: 1px solid var(--edge);
   color: var(--ink);
 }
 
 .button-plain {
   background: transparent;
-  color: var(--accent-text);
+  border: 0;
+  color: var(--ink);
   min-height: var(--target);
 }
 
 .button-small {
+  font-size: var(--text-button-small-size);
   min-height: var(--target);
-  padding-inline: 1rem;
+  padding-inline: var(--button-small-padding);
 }
 
 .button-filled:active,
@@ -250,10 +251,6 @@ a {
   border: 1.5px solid var(--edge);
   border-radius: var(--r-field);
   color: var(--ink);
-}
-
-.auth-page .button-filled {
-  border-radius: var(--r-capsule);
 }
 
 .crisis-page {

@@ -252,29 +252,38 @@ describe("design tokens", () => {
     expect(css).toMatch(/\.button-small\s*\{[\s\S]*min-height:\s*var\(--target\)/);
   });
 
-  it("defines capsule buttons without paper-tag edges", async () => {
+  // Replaces "defines capsule buttons without paper-tag edges": Yue chose the paper-tag buttons of
+  // prototype version 4 on 2026-11-12 (#240 C2 to C4, docs/design/prototype/TOKENS_FROM_V4.md).
+  it("defines paper-tag buttons from prototype v4", async () => {
     const css = await readWorkspaceFile("src/app/globals.css");
     const rule = (name: string) =>
       css.match(new RegExp(`\\n\\n\\.${name}\\s*\\{([^}]*)\\}`))?.[1] ?? "";
 
     for (const name of ["button-filled", "button-tinted", "button-gray", "button-plain"]) {
-      const body = rule(name);
-      expect(body, `.${name} missing`).not.toBe("");
-      expect(body).not.toMatch(/box-shadow|2px/);
+      expect(rule(name), `.${name} missing`).not.toBe("");
     }
     const shared = css.match(/\.button-filled,[^{]*\{([^}]*)\}/)?.[1] ?? "";
-    expect(shared).toContain("border-radius: var(--r-capsule)");
-    expect(shared).toContain("min-height: 3.125rem");
-    expect(shared).not.toMatch(/box-shadow|2px/);
-    expect(rule("button-filled")).toContain("background: var(--control)");
-    expect(rule("button-filled")).toContain("color: var(--on-control)");
-    expect(rule("button-tinted")).toContain("background: var(--tint)");
-    expect(rule("button-tinted")).toContain("1px solid var(--control)");
-    expect(rule("button-gray")).toContain("background: var(--gray)");
-    expect(rule("button-gray")).toContain("1px solid var(--edge)");
+    expect(shared).toContain("border-radius: var(--r-field)");
+    expect(shared).toContain("min-height: var(--button-height)");
+    expect(shared).toContain("padding-inline: var(--button-padding)");
+    expect(shared).toContain("font-family: var(--type-sans)");
+    expect(shared).toContain("font-weight: 700");
+    expect(shared).not.toContain("letter-spacing");
+    expect(rule("button-filled")).toContain("background: var(--tag-fill)");
+    expect(rule("button-filled")).toContain("color: var(--tag-ink)");
+    expect(rule("button-filled")).toContain("border: 1px solid var(--tag-edge)");
+    expect(rule("button-filled")).toContain("box-shadow: 0 2px 0 0 var(--tag-edge)");
+    for (const name of ["button-tinted", "button-gray"]) {
+      expect(rule(name)).toContain("background: var(--raised)");
+      expect(rule(name)).toContain("border: 1px solid var(--edge)");
+      expect(rule(name)).toContain("color: var(--ink)");
+      expect(rule(name)).not.toContain("box-shadow");
+    }
     expect(rule("button-plain")).toContain("background: transparent");
+    expect(rule("button-plain")).toContain("color: var(--ink)");
     expect(rule("button-plain")).toContain("min-height: var(--target)");
     expect(css).toMatch(/\.button-small\s*\{[^}]*min-height:\s*var\(--target\)/);
+    expect(css).not.toMatch(/\.auth-page \.button-filled\s*\{[^}]*r-capsule/);
     expect(css).not.toContain("--shadow-tag");
   });
 });

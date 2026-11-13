@@ -17,6 +17,9 @@
   --glow-1: #cfe7d3;
   --glow-2: #e7e2da;
   --logo-filter: none;
+  --tag-fill: #c3e0c8;
+  --tag-ink: #050b06;
+  --tag-edge: #517e5a;
 
   --type-display: var(--font-bricolage), "Bricolage Grotesque", system-ui, sans-serif;
   --type-sans: var(--font-atkinson-next), "Atkinson Hyperlegible Next", system-ui, sans-serif;
@@ -30,6 +33,10 @@
   --text-body-size: 1.0625rem;
   --text-body-leading: 1.5;
   --text-button-size: 1.0625rem;
+  --text-button-small-size: 0.875rem;
+  --button-height: 3.5rem;
+  --button-padding: 1.125rem;
+  --button-small-padding: 0.875rem;
   --text-caption-size: 0.84375rem;
   --text-overline-size: 0.8125rem;
   --text-tab-size: 0.8125rem;
@@ -83,6 +90,9 @@
   --glow-1: #102515;
   --glow-2: #1a1814;
   --logo-filter: invert(1);
+  --tag-fill: #a1caa8;
+  --tag-ink: #050b06;
+  --tag-edge: #6e9876;
 }
 
 .skin-opp {
@@ -104,6 +114,9 @@
   --glow-1: #12261a;
   --glow-2: #1f141d;
   --logo-filter: invert(1);
+  --tag-fill: #a1caa8;
+  --tag-ink: #050b06;
+  --tag-edge: #6e9876;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -126,6 +139,9 @@
     --glow-1: #102515;
     --glow-2: #1a1814;
     --logo-filter: invert(1);
+    --tag-fill: #a1caa8;
+    --tag-ink: #050b06;
+    --tag-edge: #6e9876;
   }
 }
 
