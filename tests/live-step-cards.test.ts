@@ -238,7 +238,12 @@ describe("#43 the request from the page is checked (it is a public endpoint)", (
       planMinutes: [10],
       earlierCards: [...Array(80).fill("I wait."), 5, "x".repeat(601)],
     });
-    expect(many).toEqual({ index: 0, planMinutes: [10], earlierCards: Array(60).fill("I wait.") });
+    expect(many).toEqual({
+      storyId: "site-search",
+      index: 0,
+      planMinutes: [10],
+      earlierCards: Array(60).fill("I wait."),
+    });
   });
 });
 

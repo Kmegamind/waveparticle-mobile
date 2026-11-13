@@ -12,6 +12,8 @@ export type PrototypeState = {
   goal: { text: string; minutes: number } | null;
   steps: PrototypeStep[];
   currentStep: number;
+  /** The chosen Oppenheimer story (#254). Missing: chapter 8, as before. */
+  storyId?: string;
 };
 
 export type PrototypeStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
