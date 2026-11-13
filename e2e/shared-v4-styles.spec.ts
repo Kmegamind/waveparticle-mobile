@@ -128,3 +128,12 @@ test("#240 C5 text on a session page uses the skin's ink", async ({ page }) => {
   const color = await page.locator("main").evaluate((element) => getComputedStyle(element).color);
   expect(color).toBe("rgb(241, 237, 240)");
 });
+
+for (const path of ["/auth/sign-in", "/safety"]) {
+  test(`#240 C7 C8 ${path} has no header and no tab bar`, async ({ page }) => {
+    await page.goto(path);
+    await expect(page.locator("h1").first()).toBeVisible();
+    await expect(page.locator(".app-header")).toHaveCount(0);
+    await expect(page.getByRole("navigation", { name: "Primary" })).toHaveCount(0);
+  });
+}

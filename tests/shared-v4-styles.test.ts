@@ -137,3 +137,67 @@ describe("#240 C5 C6 session skin and glow", () => {
     );
   });
 });
+
+describe("#240 C7 C8 header and tab bar", () => {
+  it("#240 C8 the tab bar follows the prototype table", async () => {
+    const { showsTabBar } = await import("../src/app/shell-rules");
+    for (const path of [
+      "/",
+      "/goals",
+      "/companions",
+      "/companions/oppenheimer",
+      "/me",
+      "/me/signals",
+    ]) {
+      expect(showsTabBar(path), path).toBe(true);
+    }
+    for (const path of [
+      "/goals/12",
+      "/me/delete-account",
+      "/auth/sign-in",
+      "/auth/update-password",
+      "/safety",
+      "/try",
+      "/try/goal",
+    ]) {
+      expect(showsTabBar(path), path).toBe(false);
+    }
+  });
+
+  it("#240 C7 no header on account and safety pages", async () => {
+    const { showsHeader } = await import("../src/app/shell-rules");
+    for (const path of ["/auth/sign-in", "/auth/sign-up", "/auth/update-password", "/safety"]) {
+      expect(showsHeader(path), path).toBe(false);
+    }
+    for (const path of ["/", "/me", "/goals"]) {
+      expect(showsHeader(path), path).toBe(true);
+    }
+  });
+
+  it("#240 C8 tabs are in prototype order with icons", async () => {
+    const shell = await read("src/app/shell.tsx");
+    const order = ["Home", "Goals", "Companions", "Me"].map((label) =>
+      shell.indexOf(`label: "${label}"`),
+    );
+    expect(order.every((index) => index >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(shell).toMatch(/<svg[^>]*aria-hidden="true"/);
+    expect(shell).toContain("M4 11l8-7 8 7v9H4z");
+    expect(shell).toContain("M5 6h14M5 12h14M5 18h9");
+  });
+
+  it("#240 C8 the selected tab has the mark bar and the prototype sizes", async () => {
+    const [css, tokens] = await Promise.all([
+      read("src/app/globals.css"),
+      read("src/app/tokens.css"),
+    ]);
+    const current = css.match(/\.app-tab\[aria-current="page"\]::before\s*\{([^}]*)\}/)?.[1] ?? "";
+    expect(current).toContain("background: var(--mark)");
+    expect(current).toContain("width: 48%");
+    expect(block(css, ".app-tab")).toContain("font-size: var(--text-tab-size)");
+    expect(block(css, ".app-tab-bar")).toContain("background: var(--bg)");
+    expect(tokens).toContain("--text-tab-size: 0.78125rem");
+    expect(tokens).toContain("--tab-item-height: 3.25rem");
+    expect(tokens).toContain("--tab-icon: 1.5rem");
+  });
+});
