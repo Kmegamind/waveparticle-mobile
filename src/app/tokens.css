@@ -51,6 +51,10 @@
   --text-slip-small-size: 1rem;
   --text-slip-small-leading: 1.45;
   --shade: rgba(0, 0, 0, 0.38);
+  /* The page behind a session page (issue 240 C5): the same values as .skin-opp below. */
+  --skin-opp-bg: #140d12;
+  --skin-opp-glow-1: #12261a;
+  --skin-opp-glow-2: #1f141d;
 
   --space-screen-top: 1.625rem;
   --space-screen-inline: 1.375rem;

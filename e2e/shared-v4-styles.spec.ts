@@ -6,7 +6,9 @@ test.use({ viewport: { width: 390, height: 800 } });
 async function loadedFamilies(page: Page): Promise<string[]> {
   return page.evaluate(async () => {
     await document.fonts.ready;
-    return [...document.fonts].filter((face) => face.status === "loaded").map((face) => face.family);
+    return [...document.fonts]
+      .filter((face) => face.status === "loaded")
+      .map((face) => face.family);
   });
 }
 
@@ -18,7 +20,9 @@ test("#240 C1 the typefaces are loaded on sign in", async ({ page }) => {
   expect(families.some((family) => /atkinson hyperlegible next/i.test(family))).toBe(true);
   expect(families.some((family) => /bricolage/i.test(family))).toBe(true);
   expect(distinct.size).toBeGreaterThanOrEqual(2);
-  const title = await page.locator("h1").evaluate((element) => getComputedStyle(element).fontFamily);
+  const title = await page
+    .locator("h1")
+    .evaluate((element) => getComputedStyle(element).fontFamily);
   expect(title).toMatch(/bricolage/i);
 });
 
@@ -26,7 +30,9 @@ for (const colorScheme of ["light", "dark"] as const) {
   test.describe(`${colorScheme} scheme`, () => {
     test.use({ colorScheme });
 
-    test(`#240 C2 C3 sign in uses the paper-tag filled button (${colorScheme})`, async ({ page }) => {
+    test(`#240 C2 C3 sign in uses the paper-tag filled button (${colorScheme})`, async ({
+      page,
+    }) => {
       await page.goto("/auth/sign-in");
       const button = page.getByRole("button", { name: "Sign in" });
       const style = await button.evaluate((element) => {
@@ -80,4 +86,45 @@ test("#240 C9 text links are ink, 15 pixels, bold, underlined", async ({ page })
     return [computed.color, computed.fontSize, computed.fontWeight, computed.textDecorationLine];
   });
   expect(style).toEqual(["rgb(27, 26, 25)", "15px", "700", "underline"]);
+});
+
+async function pageBackground(page: Page): Promise<{ color: string; image: string }> {
+  return page.locator("body").evaluate((element) => {
+    const computed = getComputedStyle(element);
+    return { color: computed.backgroundColor, image: computed.backgroundImage };
+  });
+}
+
+for (const colorScheme of ["light", "dark"] as const) {
+  test.describe(`${colorScheme} session skin`, () => {
+    test.use({ colorScheme });
+
+    test(`#240 C5 C6 the goal dialogue and focus page use the Oppenheimer skin (${colorScheme})`, async ({
+      page,
+    }) => {
+      await page.goto("/try/goal");
+      await expect(page.locator(".try-shell.skin-opp")).toHaveCount(1);
+      const goal = await pageBackground(page);
+      expect(goal.color).toBe("rgb(20, 13, 18)");
+      expect(goal.image).toContain("rgb(18, 38, 26)");
+
+      await page.goto("/try/focus");
+      await expect(page.locator(".try-shell.skin-opp")).toHaveCount(1);
+      expect((await pageBackground(page)).color).toBe("rgb(20, 13, 18)");
+    });
+  });
+}
+
+test("#240 C6 the test path start page keeps the Shell with its glow", async ({ page }) => {
+  await page.goto("/try");
+  await expect(page.locator(".skin-opp")).toHaveCount(0);
+  const start = await pageBackground(page);
+  expect(start.color).toBe("rgb(234, 233, 231)");
+  expect(start.image).toContain("rgb(207, 231, 211)");
+});
+
+test("#240 C5 text on a session page uses the skin's ink", async ({ page }) => {
+  await page.goto("/try/goal");
+  const color = await page.locator("main").evaluate((element) => getComputedStyle(element).color);
+  expect(color).toBe("rgb(241, 237, 240)");
 });

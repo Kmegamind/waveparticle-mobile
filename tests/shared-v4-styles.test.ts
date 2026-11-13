@@ -76,7 +76,10 @@ describe("#240 C2 C3 C4 buttons", () => {
 
 describe("#240 C9 C10 links and labels", () => {
   it("#240 C10 small labels are capitals", async () => {
-    const [css, tokens] = await Promise.all([read("src/app/globals.css"), read("src/app/tokens.css")]);
+    const [css, tokens] = await Promise.all([
+      read("src/app/globals.css"),
+      read("src/app/tokens.css"),
+    ]);
     const label = block(css, ".focus-label");
     expect(label).toContain("text-transform: uppercase");
     expect(label).toContain("font-size: var(--text-overline-size)");
@@ -87,13 +90,50 @@ describe("#240 C9 C10 links and labels", () => {
   });
 
   it("#240 C9 text links use ink at the link size", async () => {
-    const [css, tokens] = await Promise.all([read("src/app/globals.css"), read("src/app/tokens.css")]);
+    const [css, tokens] = await Promise.all([
+      read("src/app/globals.css"),
+      read("src/app/tokens.css"),
+    ]);
     for (const selector of ["\na", ".try-link"]) {
-      const rule = selector === "\na" ? (css.match(/\na \{([^}]*)\}/)?.[1] ?? "") : block(css, selector);
+      const rule =
+        selector === "\na" ? (css.match(/\na \{([^}]*)\}/)?.[1] ?? "") : block(css, selector);
       expect(rule, selector).toContain("color: var(--ink)");
       expect(rule, selector).toContain("font-size: var(--text-link-size)");
       expect(rule, selector).toContain("font-weight: 700");
     }
     expect(tokens).toContain("--text-link-size: 0.9375rem");
+  });
+});
+
+describe("#240 C5 C6 session skin and glow", () => {
+  it("#240 C5 session paths use the Oppenheimer skin", async () => {
+    const { isSessionPath } = await import("../src/app/try/session-paths");
+    for (const path of ["/try/goal", "/try/focus", "/try/rest", "/try/end", "/try/rest/x"]) {
+      expect(isSessionPath(path), path).toBe(true);
+    }
+    for (const path of ["/try", "/try/", "/try/goals", "/", "/safety"]) {
+      expect(isSessionPath(path), path).toBe(false);
+    }
+  });
+
+  it("#240 C5 the page behind a session uses the same Oppenheimer values", async () => {
+    const css = await read("src/app/tokens.css");
+    const skin = block(css, ".skin-opp");
+    const root = block(css, ":root");
+    const value = (body: string, name: string) =>
+      body.match(new RegExp(`${name}:\\s*([^;]+);`))?.[1].trim();
+    expect(value(root, "--skin-opp-bg")).toBe(value(skin, "--bg"));
+    expect(value(root, "--skin-opp-glow-1")).toBe(value(skin, "--glow-1"));
+    expect(value(root, "--skin-opp-glow-2")).toBe(value(skin, "--glow-2"));
+  });
+
+  it("#240 C6 the page background carries the two prototype glows", async () => {
+    const css = await read("src/app/globals.css");
+    const body = css.match(/\nbody \{([^}]*)\}/)?.[1] ?? "";
+    expect(body).toContain("radial-gradient(60% 34% at 92% 4%, var(--glow-1), transparent 70%)");
+    expect(body).toContain("radial-gradient(70% 44% at 2% 104%, var(--glow-2), transparent 70%)");
+    expect(css).toMatch(
+      /html:has\(\.skin-opp\) body \{[^}]*var\(--skin-opp-glow-1\)[^}]*var\(--skin-opp-bg\)/,
+    );
   });
 });

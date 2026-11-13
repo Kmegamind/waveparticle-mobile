@@ -5,8 +5,12 @@ html {
   overflow-x: clip;
 }
 
+/* Two diffuse glows over the page, as measured on the prototype's phone (issue 240 C6). */
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(60% 34% at 92% 4%, var(--glow-1), transparent 70%),
+    radial-gradient(70% 44% at 2% 104%, var(--glow-2), transparent 70%), var(--bg);
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--type-sans);
   font-size: var(--text-body-size);
@@ -14,6 +18,14 @@ body {
   margin: 0;
   overflow-wrap: break-word;
   overflow-x: clip;
+}
+
+/* Session pages: the page around the frame is the Oppenheimer skin too (issue 240 C5). */
+html:has(.skin-opp) body {
+  background:
+    radial-gradient(60% 34% at 92% 4%, var(--skin-opp-glow-1), transparent 70%),
+    radial-gradient(70% 44% at 2% 104%, var(--skin-opp-glow-2), transparent 70%), var(--skin-opp-bg);
+  background-attachment: fixed;
 }
 
 * {
@@ -332,8 +344,9 @@ a {
   outline-offset: 3px;
 }
 
-/* Sign-in-free test path, issue 208. */
+/* Sign-in-free test path, issue 208. The colour is set here so a skin's ink is inherited. */
 .try-shell {
+  color: var(--ink);
   margin-inline: auto;
   max-width: var(--layout-phone-max);
   min-height: 100svh;
