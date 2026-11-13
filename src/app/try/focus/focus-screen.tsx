@@ -130,7 +130,16 @@ function FocusBody({
       const planStep = steps[target];
       if (!planStep || loading.current.has(target)) return;
       loading.current.add(target);
-      loadStepCards({ index: target, stepTitle: planStep.title, minutes: planStep.minutes })
+      // #216: only numbers and his own earlier cards go to the server, never the Step titles.
+      // CARD-NEW: the cards already known in this run, oldest first.
+      const earlierCards = session.steps
+        .slice(0, target)
+        .flatMap((step) => (step.cards ? [step.cards.opening, ...step.cards.story] : []));
+      loadStepCards({
+        index: target,
+        planMinutes: steps.map((step) => step.minutes),
+        earlierCards,
+      })
         .catch(() => ({ status: "failed" as const }))
         .then((result) => {
           loading.current.delete(target);
@@ -143,14 +152,20 @@ function FocusBody({
           }
         });
     },
-    [steps],
+    [session.steps, steps],
   );
 
-  // Load the current Step's cards, and the next Step's ahead of time (NO-BACKUP).
+  // Load the current Step's cards, and the next Step's ahead of time once this Step's cards are
+  // in, so the next Step's request carries them (NO-BACKUP, CARD-NEW).
   useEffect(() => {
     if (finished) return;
     if (!session.steps[index]?.cards && !failed[index]) fetchCards(index);
-    if (index + 1 < total && !session.steps[index + 1]?.cards && !failed[index + 1]) {
+    if (
+      session.steps[index]?.cards &&
+      index + 1 < total &&
+      !session.steps[index + 1]?.cards &&
+      !failed[index + 1]
+    ) {
       fetchCards(index + 1);
     }
   }, [failed, fetchCards, finished, index, session.steps, total]);

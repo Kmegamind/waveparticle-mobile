@@ -524,9 +524,9 @@ These apply to every line the companion shows, whether authored or model-written
 
 | Line | Limit |
 |---|---|
-| Live story card; SIT, EVM, WRY, DOI, NTC | 2 to 4 sentences, at most 60 words (one sentence gives a warning) |
+| Live story card; SIT, EVM, WRY, DOI, NTC | 1 to 3 sentences, at most 45 words (CARD-LENGTH, 2026-11-12; was 2 to 4 sentences and 60 words) |
 | Return pop-up text | Proposed from the earlier return card rule: at most 3 sentences, 25 to 40 words (fewer than 25 gives a warning) |
-| Background card | Not set (Missing, 2.13) |
+| Background card | At most 70 words, no sentence limit (CARD-LENGTH, 2026-11-12) |
 | His message on the rest page (obstacle) and `ret_line` | At most 2 sentences, 25 words |
 | Single status line (older design, still in the Trinity pool) | 1 sentence, 14 words |
 | Opening of the goal conversation | 2 sentences, 30 words, one question and it comes last |

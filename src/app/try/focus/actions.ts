@@ -5,23 +5,23 @@ import { isPrototypeEnabled } from "@/lib/prototype/config";
 import {
   cardsForStep,
   modelIsConfigured,
+  normaliseStepCardsRequest,
   type StepCardsRequest,
   type StepCardsResponse,
 } from "@/lib/prototype/focus-cards";
 import { returnLineFor, type LineResponse } from "@/lib/prototype/rest-lines";
 import type { ReturnTrigger } from "@/lib/prototype/session";
 
-/** Writes one Step's cards for /try/focus. Nothing about the request is logged. */
+/**
+ * Writes one Step's cards for /try/focus (#43). The request carries no user-written text (#216);
+ * anything else sent is dropped. Nothing about the request is logged.
+ */
 export async function loadStepCards(request: StepCardsRequest): Promise<StepCardsResponse> {
   if (!isPrototypeEnabled()) return { status: "failed" };
-  const index = Number.isInteger(request?.index) && request.index >= 0 ? request.index : 0;
-  const stepTitle = typeof request?.stepTitle === "string" ? request.stepTitle.slice(0, 200) : "";
-  const minutes =
-    typeof request?.minutes === "number" && request.minutes >= 1 && request.minutes <= 600
-      ? request.minutes
-      : 1;
+  const normal = normaliseStepCardsRequest(request);
+  if (!normal) return { status: "failed" };
   const gateway = modelIsConfigured() ? createServerModelGateway() : null;
-  return cardsForStep({ index, stepTitle, minutes }, gateway);
+  return cardsForStep(normal, gateway);
 }
 
 /**

@@ -95,7 +95,6 @@ describe("model gateway", () => {
     const gateway = createModelGateway({ provider: fake.impl });
 
     const cards = await gateway.writeStepCards({
-      stepTitle: "Read",
       minutes: 25,
       facts: "He is at a table.",
     });
@@ -127,7 +126,6 @@ describe("model gateway", () => {
       provider: provider(async () => cardsJson(6)).impl,
     });
     const cards = await gateway.writeStepCards({
-      stepTitle: "Read",
       minutes: 40,
       facts: "He is at a table.",
     });
@@ -495,7 +493,7 @@ describe("model gateway", () => {
       });
       const results = [
         await gateway.splitPlan({ goal, totalMinutes: 25, splitFiner: false }),
-        await gateway.writeStepCards({ stepTitle: "Read", minutes: 25, facts }),
+        await gateway.writeStepCards({ minutes: 25, facts }),
         await gateway.writeStuckStory({ pauseNumber: 1, facts }),
         await gateway.writeRestReply({ userMessage, facts }),
         await gateway.writeReturnPopup({ trigger: "absence", facts, awayMinutes: 90 }),
@@ -565,7 +563,7 @@ describe("model gateway", () => {
 
       const cards = await createModelGateway({
         provider: async () => JSON.stringify({ cards: [card, card] }),
-      }).writeStepCards({ stepTitle: "Read", minutes: 25, facts });
+      }).writeStepCards({ minutes: 25, facts });
       expect(cards).toEqual({ source: "failed", reason: "checks" });
 
       const popup = await createModelGateway({

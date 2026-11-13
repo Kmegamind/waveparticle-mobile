@@ -149,9 +149,7 @@ export function createModelGateway(options: {
       });
     },
     writeStepCards(input): Promise<StepCardsResult> {
-      return run("step_cards", stepCardPrompt(input), (raw) =>
-        acceptCards(raw, input.forbidTerms ?? [], input.earlierLines ?? []),
-      );
+      return run("step_cards", stepCardPrompt(input), (raw) => acceptCards(raw, input));
     },
     writeStuckStory(input): Promise<LineResult> {
       return run("stuck_story", stuckPrompt(input), (raw) =>
@@ -176,19 +174,31 @@ export function createModelGateway(options: {
   };
 }
 
+const DEFAULT_CARDS = 5;
+const MAX_STORY_CARDS = 5;
+
+/** The opening card plus at most the Step's story cards (T7); extra cards are dropped. */
+function cardLimit(input: StepCardsInput): number {
+  const story = input.storyCards;
+  if (typeof story !== "number" || !Number.isInteger(story) || story < 1) return DEFAULT_CARDS;
+  return 1 + Math.min(story, MAX_STORY_CARDS);
+}
+
 function acceptCards(
   raw: string,
-  forbidTerms: string[],
-  earlierLines: string[],
+  input: StepCardsInput,
 ): Attempt<{ source: "generated"; cards: string[] }> {
+  const forbidTerms = input.forbidTerms ?? [];
+  const earlierLines = input.earlierLines ?? [];
   const parsed = parseModelJson(raw);
   const cards = isRecord(parsed) && Array.isArray(parsed.cards) ? parsed.cards : null;
   if (!cards || cards.length === 0) return { ok: false, rejectedRules: ["parse"] };
 
   const accepted: string[] = [];
-  for (const card of cards.slice(0, 5)) {
+  for (const [position, card] of cards.slice(0, cardLimit(input)).entries()) {
     if (typeof card !== "string") return { ok: false, rejectedRules: ["parse"] };
-    const checked = checkCompanionLine(card, "step_card", forbidTerms);
+    const kind = position === 0 && input.background ? "background_card" : "step_card";
+    const checked = checkCompanionLine(card, kind, forbidTerms);
     if (!checked.ok) return checked;
     // Each card is a one-way line: it is checked against the run and the cards before it.
     const runRules = checkRunList(checked.text, [...earlierLines, ...accepted]);
@@ -271,14 +281,33 @@ function planPrompt(input: PlanSplitInput): string {
   ].join("\n");
 }
 
+/** No user-written text goes into this prompt (#216): only the Story side and numbers. */
 function stepCardPrompt(input: StepCardsInput): string {
-  return [
+  const storyCards =
+    typeof input.storyCards === "number" && input.storyCards >= 1
+      ? Math.min(Math.floor(input.storyCards), MAX_STORY_CARDS)
+      : null;
+  const lines = [
     'Return JSON only: {"cards":["..."]}',
-    "Each card is 2 to 4 sentences in his first person, with no advice and no question.",
-    `Step: ${input.stepTitle}`,
-    `Minutes: ${input.minutes}`,
-    `Facts already known: ${input.facts}`,
-  ].join("\n");
+    storyCards === null
+      ? "Write one opening card and then the story cards for this part of his day."
+      : `Write 1 opening card and then ${storyCards} story cards for this part of his day.`,
+    "Each card is 1 to 3 sentences and at most 45 words, in his first person, with no advice and no question.",
+    "Every card says something new: never repeat what an earlier card said.",
+  ];
+  if (input.background) {
+    lines.push(
+      "The opening card is the background card: who is here, where this is and what each person knows, at most 70 words.",
+    );
+  }
+  if (input.stepNumber && input.stepCount) {
+    lines.push(`This is Step ${input.stepNumber} of ${input.stepCount} of his Story.`);
+  }
+  if (input.mustUse && input.mustUse.length > 0) {
+    lines.push(`These moments must happen in these cards: ${input.mustUse.join(" ")}`);
+  }
+  lines.push(`Minutes: ${input.minutes}`, `Facts already known: ${input.facts}`);
+  return lines.join("\n");
 }
 
 const HARDER_PAUSE = 3;

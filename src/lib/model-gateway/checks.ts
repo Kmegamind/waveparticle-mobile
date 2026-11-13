@@ -90,7 +90,10 @@ export function checkCompanionLine(
 }
 
 function lengthFails(kind: CompanionKind, sentenceCount: number, wordCount: number): boolean {
-  if (kind === "step_card") return sentenceCount > 4 || wordCount > 60;
+  // CARD-LENGTH (2026-11-12): a story card is 1 to 3 sentences and at most 45 words; the
+  // background card is at most 70 words and has no sentence limit.
+  if (kind === "step_card") return sentenceCount > 3 || wordCount > 45;
+  if (kind === "background_card") return wordCount > 70;
   if (kind === "stuck_story") return sentenceCount > 2 || wordCount > 20;
   if (kind === "rest_reply") return sentenceCount < 1 || sentenceCount > 3 || wordCount > 80;
   return sentenceCount > 3 || wordCount > 40;
