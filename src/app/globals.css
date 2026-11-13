@@ -535,14 +535,27 @@ a {
   line-height: var(--text-slip-leading);
 }
 
+/* Tape of prototype version 4 (issue 240 C11): top left of the slip, rotated -4 degrees. */
 .focus-tape {
-  background: var(--fill-soft);
+  background: var(--tape);
+  border-radius: var(--r-tape);
+  box-shadow: 0 0 0 1px var(--tape-ring);
   height: var(--tape-height);
-  left: 50%;
+  left: var(--tape-left);
   position: absolute;
-  top: calc(var(--tape-height) / -2);
-  transform: translateX(-50%) rotate(2deg);
+  top: var(--tape-top);
+  transform: rotate(-4deg);
   width: var(--tape-width);
+}
+
+/*
+ * In a chat thread, only his first slip has tape. The prototype's rule is
+ * ".thread .note.him:not(:first-child)::before { display: none }"; the app's two threads are the
+ * goal dialogue and the rest page. Slips outside a thread always keep their tape.
+ */
+.try-dialogue .try-slip ~ .try-slip::before,
+.rest-log .rest-slip ~ .rest-slip .focus-tape {
+  display: none;
 }
 
 .focus-pager {
@@ -715,14 +728,16 @@ a {
 
 /* Tape: decorative, no text content, so screen readers skip it (DESIGN.md 6.11). */
 .try-slip::before {
-  background: var(--fill-soft);
-  content: "";
-  height: 1.25rem;
-  left: 50%;
+  background: var(--tape);
+  border-radius: var(--r-tape);
+  box-shadow: 0 0 0 1px var(--tape-ring);
+  height: var(--tape-height);
+  left: var(--tape-left);
   position: absolute;
-  top: calc(var(--space-small-gap) * -1);
-  transform: translateX(-50%) rotate(2deg);
-  width: 4.625rem;
+  top: var(--tape-top);
+  transform: rotate(-4deg);
+  width: var(--tape-width);
+  content: "";
 }
 
 .try-you {

@@ -201,3 +201,43 @@ describe("#240 C7 C8 header and tab bar", () => {
     expect(tokens).toContain("--tab-icon: 1.5rem");
   });
 });
+
+describe("#240 C11 tape", () => {
+  it("#240 C11 tape matches the prototype", async () => {
+    const [css, tokens] = await Promise.all([
+      read("src/app/globals.css"),
+      read("src/app/tokens.css"),
+    ]);
+    for (const selector of [".focus-tape", ".try-slip::before"]) {
+      const rule = block(css, selector);
+      expect(rule, selector).toContain("background: var(--tape)");
+      expect(rule, selector).toContain("rotate(-4deg)");
+      expect(rule, selector).toContain("width: var(--tape-width)");
+      expect(rule, selector).toContain("height: var(--tape-height)");
+      expect(rule, selector).toContain("box-shadow: 0 0 0 1px var(--tape-ring)");
+      expect(rule, selector).not.toContain("translateX(-50%)");
+    }
+    expect(block(tokens, ":root")).toContain("--tape-width: 3.625rem");
+    expect(block(tokens, ":root")).toContain("--tape-height: 1.0625rem");
+    expect(block(tokens, ":root")).toMatch(
+      /--tape: color-mix\(in srgb, #c3e0c8 75%, transparent\)/,
+    );
+    for (const selector of [".theme-dark", ".skin-opp", ".theme-shell:not(.theme-light)"]) {
+      expect(block(tokens, selector), selector).toMatch(
+        /--tape: color-mix\(in srgb, #a1caa8 55%, transparent\)/,
+      );
+    }
+  });
+
+  it("#240 C11 in a chat thread only his first slip has tape", async () => {
+    const css = await read("src/app/globals.css");
+    const thread = css.match(/([^{}]*)\{\s*display: none;\s*\}/g) ?? [];
+    const rule = thread.find((text) =>
+      text.includes(".try-dialogue .try-slip ~ .try-slip::before"),
+    );
+    expect(rule).toBeDefined();
+    expect(rule).toContain(".rest-log .rest-slip ~ .rest-slip .focus-tape");
+    // Slips outside a thread (the focus page, the return pop-up) always keep their tape.
+    expect(css).not.toMatch(/\.focus-slip[^{,]*\.focus-tape\s*\{[^}]*display: none/);
+  });
+});

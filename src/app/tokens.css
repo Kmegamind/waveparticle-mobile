@@ -20,6 +20,7 @@
   --tag-fill: #c3e0c8;
   --tag-ink: #050b06;
   --tag-edge: #517e5a;
+  --tape: color-mix(in srgb, #c3e0c8 75%, transparent);
 
   --type-display: var(--font-bricolage), "Bricolage Grotesque", system-ui, sans-serif;
   --type-sans: var(--font-atkinson-next), "Atkinson Hyperlegible Next", system-ui, sans-serif;
@@ -56,8 +57,12 @@
   --text-slip-size: 1.125rem;
   --text-slip-leading: 1.5;
   --text-toast-size: 0.90625rem;
-  --tape-width: 4.625rem;
-  --tape-height: 1.25rem;
+  --tape-width: 3.625rem;
+  --tape-height: 1.0625rem;
+  --tape-top: -0.5625rem;
+  --tape-left: 1rem;
+  --r-tape: 0.1875rem;
+  --tape-ring: color-mix(in srgb, var(--tag-edge) 35%, transparent);
   --text-slip-small-size: 1rem;
   --text-slip-small-leading: 1.45;
   --shade: rgba(0, 0, 0, 0.38);
@@ -109,6 +114,8 @@
   --tag-fill: #a1caa8;
   --tag-ink: #050b06;
   --tag-edge: #6e9876;
+  --tape: color-mix(in srgb, #a1caa8 55%, transparent);
+  --tape-ring: color-mix(in srgb, var(--tag-edge) 35%, transparent);
 }
 
 .skin-opp {
@@ -133,6 +140,8 @@
   --tag-fill: #a1caa8;
   --tag-ink: #050b06;
   --tag-edge: #6e9876;
+  --tape: color-mix(in srgb, #a1caa8 55%, transparent);
+  --tape-ring: color-mix(in srgb, var(--tag-edge) 35%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -158,6 +167,8 @@
     --tag-fill: #a1caa8;
     --tag-ink: #050b06;
     --tag-edge: #6e9876;
+    --tape: color-mix(in srgb, #a1caa8 55%, transparent);
+    --tape-ring: color-mix(in srgb, var(--tag-edge) 35%, transparent);
   }
 }
 
