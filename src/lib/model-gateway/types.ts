@@ -44,10 +44,28 @@ export type GeneratedPlan = {
 
 export type PlanSplitResult = GeneratedPlan | GatewayFailure;
 
+/**
+ * One Step's cards. No user-written text goes in (#216, US-AI-11): not the Step title, not the
+ * Goal. The Story side says where this Step sits in his Story (#43).
+ */
 export type StepCardsInput = {
-  stepTitle: string;
   minutes: number;
+  /** Who he is and where, and the Story facts of earlier Steps; never a later Step's facts. */
   facts: string;
+  /**
+   * The Story facts of this Step only, so the prompt can say what is new (CARD-NEW). An empty
+   * string means this Step has no facts of its own. Omitted: `facts` is sent as before.
+   */
+  stepFacts?: string;
+  /** 1-based place of this Step among the Plan's Steps. */
+  stepNumber?: number;
+  stepCount?: number;
+  /** How many story cards follow the opening card (1 to 5, T7). Default: up to 4. */
+  storyCards?: number;
+  /** The first card is the background card (Step 1; CARD-LENGTH allows it 70 words). */
+  background?: boolean;
+  /** Key lines this Step must use (US-CON-2). */
+  mustUse?: string[];
   forbidTerms?: string[];
   /** One-way lines already shown in this run, oldest first (per-run list, US-AI-8). */
   earlierLines?: string[];
@@ -103,4 +121,5 @@ export type ModelGateway = {
   writeReturnPopup(input: ReturnPopupInput): Promise<LineResult>;
 };
 
-export type CompanionKind = "step_card" | "stuck_story" | "rest_reply" | "return_popup";
+export type CompanionKind =
+  "step_card" | "background_card" | "stuck_story" | "rest_reply" | "return_popup";

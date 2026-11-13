@@ -1,7 +1,9 @@
 import generated from "../../../docs/demo/site-search.generated.json";
+import { oppenheimerStories, type OppenheimerStory } from "@/content/oppenheimer";
 import type { ModelGateway } from "@/lib/model-gateway";
 import { MODEL_GATEWAY_ENV_NAMES } from "@/lib/model-gateway/server";
-import type { StepCards } from "./session";
+import { startStory } from "@/lib/story/start";
+import { maxStoryCards, type StepCards } from "./session";
 import { loadTestStory } from "./test-story";
 
 /**
@@ -10,7 +12,60 @@ import { loadTestStory } from "./test-story";
  * result is a failure (FAIL-SCREEN), never a stored line (NO-BACKUP). Without the model, the
  * chapter 8 test data is used and labelled as test data on the page.
  */
-export type StepCardsRequest = { index: number; stepTitle: string; minutes: number };
+/**
+ * What the page sends for one Step's cards. It carries no user-written text (#216): the Plan's
+ * minutes and the cards already shown in this run (his own lines, for CARD-NEW).
+ */
+export type StepCardsRequest = { index: number; planMinutes: number[]; earlierCards: string[] };
+
+const MAX_STEPS = 50;
+const MAX_STEP_MINUTES = 24 * 60;
+/** The run list keeps his last 60 cards: a bounded check, never a stricter rule. */
+const MAX_EARLIER_CARDS = 60;
+const MAX_CARD_LENGTH = 600;
+
+/**
+ * The server action is a public endpoint: keep the numbers and his earlier cards within limits,
+ * drop every other field (a Step title or Goal sent anyway never goes further). Null when the
+ * request cannot describe a Step of a Plan.
+ */
+export function normaliseStepCardsRequest(raw: unknown): StepCardsRequest | null {
+  if (typeof raw !== "object" || raw === null) return null;
+  const value = raw as Record<string, unknown>;
+  const planMinutes = value.planMinutes;
+  if (
+    !Array.isArray(planMinutes) ||
+    planMinutes.length === 0 ||
+    planMinutes.length > MAX_STEPS ||
+    !planMinutes.every(
+      (minutes) =>
+        typeof minutes === "number" &&
+        Number.isInteger(minutes) &&
+        minutes >= 1 &&
+        minutes <= MAX_STEP_MINUTES,
+    )
+  ) {
+    return null;
+  }
+  const index = value.index;
+  if (typeof index !== "number" || !Number.isInteger(index) || index < 0) return null;
+  if (index >= planMinutes.length) return null;
+  const earlier = Array.isArray(value.earlierCards) ? value.earlierCards : [];
+  const earlierCards = earlier
+    .filter(
+      (card): card is string =>
+        typeof card === "string" && card.length > 0 && card.length <= MAX_CARD_LENGTH,
+    )
+    .slice(-MAX_EARLIER_CARDS);
+  return { index, planMinutes: [...planMinutes] as number[], earlierCards };
+}
+
+/** The Story behind the test path's chapter 8 (#208). */
+function testPathStory(): OppenheimerStory {
+  const story = oppenheimerStories.find((item) => item.id === generated.meta.story.id);
+  if (!story) throw new Error("test path story missing");
+  return story;
+}
 
 export type StepCardsResponse =
   { status: "ok"; isTestData: boolean; cards: StepCards } | { status: "failed" };
@@ -24,15 +79,29 @@ export function testStoryGoalLine(): string {
   return generated.meta.story.goalShort;
 }
 
-function storyFacts(index: number): string {
-  const meta = generated.meta.story;
-  const parts = [generated.meta.who, `Place: ${meta.place}.`, meta.goalShort];
-  parts.push(
-    index === 0
-      ? "The first card is the background card: in his own voice, who is here, where this is and what each person knows."
-      : "The first card says what he just finished and what he now faces.",
+/**
+ * #43 AC1: the whole Story is divided across the Plan's Steps (US-FMT-3, `startStory`). A Step's
+ * prompt gets the facts of this Step and the Steps before it, never a later Step's facts, and the
+ * key lines this Step must use (US-CON-2).
+ */
+function stepBrief(story: OppenheimerStory, request: StepCardsRequest) {
+  const brief = startStory(
+    story,
+    request.planMinutes.map((minutes) => ({ minutes })),
   );
-  return parts.join(" ");
+  const share = brief.steps[request.index];
+  const textOf = (ids: Set<string>) =>
+    story.facts.filter((fact) => ids.has(fact.id)).map((fact) => fact.text);
+  const earlier = new Set(brief.steps.slice(0, request.index).flatMap((step) => step.factIds));
+  const meta = generated.meta.story;
+  const facts = [generated.meta.who, `Place: ${meta.place}.`, meta.goalShort, ...textOf(earlier)];
+  // CARD-NEW: this Step's own facts go separately, so the prompt says what is new. A Plan with
+  // more Steps than the Story has facts gives the later Steps none (startStory).
+  const stepFacts = textOf(new Set(share.factIds)).join(" ");
+  const mustUse = share.mustUseKeySliceIds
+    .map((id) => story.keySlices.find((slice) => slice.id === id)?.keyLine)
+    .filter((line): line is string => typeof line === "string");
+  return { share, facts: facts.join(" "), stepFacts, mustUse, stepCount: brief.stepCount };
 }
 
 function testCards(index: number): StepCards {
@@ -49,12 +118,22 @@ export async function cardsForStep(
 ): Promise<StepCardsResponse> {
   if (!gateway) return { status: "ok", isTestData: true, cards: testCards(request.index) };
   try {
-    // Only the Step title and minutes leave the server with the story facts; the Goal text does not.
+    // No user-written text leaves the server (#216): only the Story side and numbers.
+    const story = testPathStory();
+    const { share, facts, stepFacts, mustUse, stepCount } = stepBrief(story, request);
+    const minutes = request.planMinutes[request.index];
     const result = await gateway.writeStepCards({
-      stepTitle: request.stepTitle,
-      minutes: request.minutes,
-      facts: storyFacts(request.index),
-      forbidTerms: generated.meta.story.forbidTerms,
+      minutes,
+      facts,
+      stepFacts,
+      stepNumber: share.index,
+      stepCount,
+      storyCards: maxStoryCards(minutes),
+      background: request.index === 0,
+      mustUse,
+      forbidTerms: [...new Set([...story.forbiddenTerms, ...generated.meta.story.forbidTerms])],
+      // CARD-NEW: his cards already shown in this run.
+      earlierLines: request.earlierCards,
     });
     if (
       result?.source !== "generated" ||
