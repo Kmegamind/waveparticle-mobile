@@ -12,12 +12,16 @@ const [base = "http://localhost:3000", out = "shots", label = "app"] = process.a
 mkdirSync(out, { recursive: true });
 
 const settle = (page, ms = 700) => page.waitForTimeout(ms);
-const hideDevBadge = (page) => page.addStyleTag({ content: "nextjs-portal{display:none!important}" });
+const hideDevBadge = (page) =>
+  page.addStyleTag({ content: "nextjs-portal{display:none!important}" });
 
 async function goalDialogue(page, stage) {
   await page.goto(`${base}/try`);
   await settle(page);
-  await page.getByRole("button", { name: "Reset test data" }).click().catch(() => {});
+  await page
+    .getByRole("button", { name: "Reset test data" })
+    .click()
+    .catch(() => {});
   await settle(page, 300);
   await page.getByRole("link", { name: "Begin" }).click();
   await settle(page, 900);

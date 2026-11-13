@@ -40,7 +40,7 @@ Not compared, and why:
 
 ## Differences that appear on every compared screen
 
-These are counted once here and not repeated in the screen tables below.
+These are counted once here and not repeated in the screen tables below. Issue #240 fixes them in shared styles; what was done and what was left is in [pr-240/README.md](pr-240/README.md).
 
 | # | What the prototype shows | What the app shows | Size |
 |---|---|---|---|
