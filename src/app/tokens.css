@@ -38,7 +38,9 @@
   --button-padding: 1.125rem;
   --button-small-padding: 0.875rem;
   --text-caption-size: 0.84375rem;
-  --text-overline-size: 0.8125rem;
+  --text-overline-size: 0.78125rem;
+  --overline-tracking: 0.09em;
+  --text-link-size: 0.9375rem;
   --text-tab-size: 0.8125rem;
   --text-timer-size: 4.875rem;
   --text-slip-size: 1.125rem;

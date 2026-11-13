@@ -22,8 +22,10 @@ body {
 
 a {
   align-items: center;
-  color: var(--accent-text);
+  color: var(--ink);
   display: inline-flex;
+  font-size: var(--text-link-size);
+  font-weight: 700;
   text-decoration: underline;
 }
 
@@ -443,8 +445,10 @@ a {
   color: var(--ink-2);
   font-family: var(--type-shell);
   font-size: var(--text-overline-size);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: var(--overline-tracking);
   margin: 0;
+  text-transform: uppercase;
 }
 
 .focus-goal-line {
@@ -758,10 +762,10 @@ a {
 .try-link {
   background: transparent;
   border: 0;
-  color: var(--accent-text);
+  color: var(--ink);
   cursor: pointer;
   font-family: var(--type-shell);
-  font-size: var(--text-body-size);
+  font-size: var(--text-link-size);
   font-weight: 700;
   justify-self: start;
   padding: 0;

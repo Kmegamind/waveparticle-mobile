@@ -73,3 +73,27 @@ describe("#240 C2 C3 C4 buttons", () => {
     expect(css).toMatch(/\.button-filled:disabled,[^{]*\{[^}]*opacity: 0\.35/);
   });
 });
+
+describe("#240 C9 C10 links and labels", () => {
+  it("#240 C10 small labels are capitals", async () => {
+    const [css, tokens] = await Promise.all([read("src/app/globals.css"), read("src/app/tokens.css")]);
+    const label = block(css, ".focus-label");
+    expect(label).toContain("text-transform: uppercase");
+    expect(label).toContain("font-size: var(--text-overline-size)");
+    expect(label).toContain("letter-spacing: var(--overline-tracking)");
+    expect(label).toContain("font-weight: 700");
+    expect(tokens).toContain("--text-overline-size: 0.78125rem");
+    expect(tokens).toContain("--overline-tracking: 0.09em");
+  });
+
+  it("#240 C9 text links use ink at the link size", async () => {
+    const [css, tokens] = await Promise.all([read("src/app/globals.css"), read("src/app/tokens.css")]);
+    for (const selector of ["\na", ".try-link"]) {
+      const rule = selector === "\na" ? (css.match(/\na \{([^}]*)\}/)?.[1] ?? "") : block(css, selector);
+      expect(rule, selector).toContain("color: var(--ink)");
+      expect(rule, selector).toContain("font-size: var(--text-link-size)");
+      expect(rule, selector).toContain("font-weight: 700");
+    }
+    expect(tokens).toContain("--text-link-size: 0.9375rem");
+  });
+});

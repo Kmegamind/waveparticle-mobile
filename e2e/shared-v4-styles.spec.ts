@@ -72,3 +72,12 @@ test("#240 C4 the crisis page's second button is a secondary paper tag", async (
   });
   expect(style).toEqual(["rgb(255, 255, 255)", "rgb(129, 128, 125)", "rgb(27, 26, 25)"]);
 });
+
+test("#240 C9 text links are ink, 15 pixels, bold, underlined", async ({ page }) => {
+  await page.goto("/auth/sign-in");
+  const style = await page.getByRole("link", { name: "Create an account" }).evaluate((element) => {
+    const computed = getComputedStyle(element);
+    return [computed.color, computed.fontSize, computed.fontWeight, computed.textDecorationLine];
+  });
+  expect(style).toEqual(["rgb(27, 26, 25)", "15px", "700", "underline"]);
+});
