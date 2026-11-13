@@ -78,10 +78,9 @@ test("US-PLAT-1 a wider screen keeps the phone layout", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await page.goto("/auth/sign-in");
 
+  // Sign in has no tab bar since #240 (C8, prototype v4); the tab bar's own width limit is checked
+  // in tests/installable-pwa.test.ts. Changed with Yue's approval on 2026-11-12.
   const shell = await page.locator(".app-shell").boundingBox();
-  const tabBar = await page.locator(".app-tab-bar").boundingBox();
   expect(shell?.width ?? 999).toBeLessThanOrEqual(430);
-  expect(tabBar?.width ?? 999).toBeLessThanOrEqual(430);
-  await expect(page.getByRole("navigation", { name: "Primary" })).toBeVisible();
-  await expect(page.locator(".app-tab")).toHaveCount(4);
+  await expect(page.getByRole("navigation", { name: "Primary" })).toHaveCount(0);
 });

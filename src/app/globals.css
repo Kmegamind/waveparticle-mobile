@@ -5,8 +5,12 @@ html {
   overflow-x: clip;
 }
 
+/* Two diffuse glows over the page, as measured on the prototype's phone (issue 240 C6). */
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(60% 34% at 92% 4%, var(--glow-1), transparent 70%),
+    radial-gradient(70% 44% at 2% 104%, var(--glow-2), transparent 70%), var(--bg);
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--type-sans);
   font-size: var(--text-body-size);
@@ -16,14 +20,24 @@ body {
   overflow-x: clip;
 }
 
+/* Session pages: the page around the frame is the Oppenheimer skin too (issue 240 C5). */
+html:has(.skin-opp) body {
+  background:
+    radial-gradient(60% 34% at 92% 4%, var(--skin-opp-glow-1), transparent 70%),
+    radial-gradient(70% 44% at 2% 104%, var(--skin-opp-glow-2), transparent 70%), var(--skin-opp-bg);
+  background-attachment: fixed;
+}
+
 * {
   border-color: var(--hairline);
 }
 
 a {
   align-items: center;
-  color: var(--accent-text);
+  color: var(--ink);
   display: inline-flex;
+  font-size: var(--text-link-size);
+  font-weight: 700;
   text-decoration: underline;
 }
 
@@ -37,57 +51,58 @@ a {
   outline-offset: 2px;
 }
 
+/* Paper-tag buttons of prototype version 4 (issue 240, C2 to C4, decided by Yue on 2026-11-12). */
 .button-filled,
 .button-tinted,
 .button-gray,
 .button-plain {
   align-items: center;
-  border: 0;
-  border-radius: var(--r-capsule);
+  border: 1px solid transparent;
+  border-radius: var(--r-field);
   cursor: pointer;
   display: inline-flex;
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: var(--type-sans);
   font-size: var(--text-button-size);
-  font-weight: 600;
+  font-weight: 700;
   justify-content: center;
-  letter-spacing: -0.022em;
-  line-height: 1;
-  min-height: 3.125rem;
-  padding-inline: 1.5rem;
+  line-height: 1.1;
+  min-height: var(--button-height);
+  padding-inline: var(--button-padding);
   transition:
     transform 120ms,
     opacity 120ms;
 }
 
 .button-filled {
-  background: var(--control);
-  color: var(--on-control);
+  background: var(--tag-fill);
+  border: 1px solid var(--tag-edge);
+  box-shadow: 0 2px 0 0 var(--tag-edge);
+  color: var(--tag-ink);
 }
 
 .button-tinted {
-  background: var(--tint);
-  border: 1px solid var(--control);
-  color: var(--accent-text);
+  background: var(--raised);
+  border: 1px solid var(--edge);
+  color: var(--ink);
 }
 
 .button-gray {
-  background: var(--gray);
+  background: var(--raised);
   border: 1px solid var(--edge);
   color: var(--ink);
 }
 
 .button-plain {
   background: transparent;
-  color: var(--accent-text);
+  border: 0;
+  color: var(--ink);
   min-height: var(--target);
 }
 
 .button-small {
+  font-size: var(--text-button-small-size);
   min-height: var(--target);
-  padding-inline: 1rem;
+  padding-inline: var(--button-small-padding);
 }
 
 .button-filled:active,
@@ -150,7 +165,14 @@ a {
 
 .app-content {
   min-height: calc(100svh - var(--target));
-  padding-bottom: calc(var(--target) + var(--space-screen-bottom) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.app-shell:has(.app-tab-bar) .app-content {
+  padding-bottom: calc(
+    var(--tab-item-height) + var(--tab-bar-pad-top) + var(--tab-bar-pad-bottom) +
+      env(safe-area-inset-bottom)
+  );
 }
 
 .app-screen {
@@ -169,17 +191,18 @@ a {
   margin: 0;
 }
 
+/* Tab bar of prototype version 4 (issue 240 C8). */
 .app-tab-bar {
   align-items: stretch;
-  background: var(--surface);
+  background: var(--bg);
   border-top: 1px solid var(--hairline);
   bottom: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   left: 50%;
   max-width: var(--layout-phone-max);
-  padding: var(--space-small-gap) calc(var(--space-small-gap) + env(safe-area-inset-right))
-    calc(var(--space-small-gap) + env(safe-area-inset-bottom))
+  padding: var(--tab-bar-pad-top) calc(var(--space-small-gap) + env(safe-area-inset-right))
+    calc(var(--tab-bar-pad-bottom) + env(safe-area-inset-bottom))
     calc(var(--space-small-gap) + env(safe-area-inset-left));
   position: fixed;
   transform: translateX(-50%);
@@ -191,15 +214,43 @@ a {
   align-items: center;
   color: var(--ink-2);
   display: flex;
+  flex-direction: column;
+  font-family: var(--type-sans);
+  font-size: var(--text-tab-size);
+  font-weight: 600;
+  gap: var(--tab-icon-gap);
   justify-content: center;
-  min-height: var(--target);
-  padding: 0 var(--space-small-gap);
+  line-height: 1.1;
+  min-height: var(--tab-item-height);
+  padding: var(--tab-item-pad-block) var(--tab-item-pad-inline);
+  position: relative;
   text-decoration: none;
 }
 
+.app-tab svg {
+  fill: none;
+  height: var(--tab-icon);
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  width: var(--tab-icon);
+}
+
 .app-tab[aria-current="page"] {
-  color: var(--control);
-  font-weight: 700;
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.app-tab[aria-current="page"]::before {
+  background: var(--mark);
+  border-radius: var(--r-tab-mark);
+  content: "";
+  height: var(--tab-mark-height);
+  left: 26%;
+  position: absolute;
+  top: var(--tab-mark-offset);
+  width: 48%;
 }
 
 .logo {
@@ -222,6 +273,8 @@ a {
 .auth-page h1 {
   font-family: var(--type-display);
   font-size: var(--text-display-size);
+  font-weight: 800;
+  letter-spacing: -0.025em;
   line-height: var(--text-display-leading);
   margin: 0;
 }
@@ -250,10 +303,6 @@ a {
   border: 1.5px solid var(--edge);
   border-radius: var(--r-field);
   color: var(--ink);
-}
-
-.auth-page .button-filled {
-  border-radius: var(--r-capsule);
 }
 
 .crisis-page {
@@ -333,8 +382,9 @@ a {
   outline-offset: 3px;
 }
 
-/* Sign-in-free test path, issue 208. */
+/* Sign-in-free test path, issue 208. The colour is set here so a skin's ink is inherited. */
 .try-shell {
+  color: var(--ink);
   margin-inline: auto;
   max-width: var(--layout-phone-max);
   min-height: 100svh;
@@ -446,8 +496,10 @@ a {
   color: var(--ink-2);
   font-family: var(--type-shell);
   font-size: var(--text-overline-size);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: var(--overline-tracking);
   margin: 0;
+  text-transform: uppercase;
 }
 
 .focus-goal-line {
@@ -485,14 +537,27 @@ a {
   line-height: var(--text-slip-leading);
 }
 
+/* Tape of prototype version 4 (issue 240 C11): top left of the slip, rotated -4 degrees. */
 .focus-tape {
-  background: var(--fill-soft);
+  background: var(--tape);
+  border-radius: var(--r-tape);
+  box-shadow: 0 0 0 1px var(--tape-ring);
   height: var(--tape-height);
-  left: 50%;
+  left: var(--tape-left);
   position: absolute;
-  top: calc(var(--tape-height) / -2);
-  transform: translateX(-50%) rotate(2deg);
+  top: var(--tape-top);
+  transform: rotate(-4deg);
   width: var(--tape-width);
+}
+
+/*
+ * In a chat thread, only his first slip has tape. The prototype's rule is
+ * ".thread .note.him:not(:first-child)::before { display: none }"; the app's two threads are the
+ * goal dialogue and the rest page. Slips outside a thread always keep their tape.
+ */
+.try-dialogue .try-slip ~ .try-slip::before,
+.rest-log .rest-slip ~ .rest-slip .focus-tape {
+  display: none;
 }
 
 .focus-pager {
@@ -665,14 +730,16 @@ a {
 
 /* Tape: decorative, no text content, so screen readers skip it (DESIGN.md 6.11). */
 .try-slip::before {
-  background: var(--fill-soft);
-  content: "";
-  height: 1.25rem;
-  left: 50%;
+  background: var(--tape);
+  border-radius: var(--r-tape);
+  box-shadow: 0 0 0 1px var(--tape-ring);
+  height: var(--tape-height);
+  left: var(--tape-left);
   position: absolute;
-  top: calc(var(--space-small-gap) * -1);
-  transform: translateX(-50%) rotate(2deg);
-  width: 4.625rem;
+  top: var(--tape-top);
+  transform: rotate(-4deg);
+  width: var(--tape-width);
+  content: "";
 }
 
 .try-you {
@@ -761,10 +828,10 @@ a {
 .try-link {
   background: transparent;
   border: 0;
-  color: var(--accent-text);
+  color: var(--ink);
   cursor: pointer;
   font-family: var(--type-shell);
-  font-size: var(--text-body-size);
+  font-size: var(--text-link-size);
   font-weight: 700;
   justify-self: start;
   padding: 0;

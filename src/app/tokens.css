@@ -17,31 +17,59 @@
   --glow-1: #cfe7d3;
   --glow-2: #e7e2da;
   --logo-filter: none;
+  --tag-fill: #c3e0c8;
+  --tag-ink: #050b06;
+  --tag-edge: #517e5a;
+  --tape: color-mix(in srgb, #c3e0c8 75%, transparent);
 
-  --type-display: "Bricolage Grotesque", system-ui, sans-serif;
-  --type-sans: "Atkinson Hyperlegible Next", system-ui, sans-serif;
-  --type-mono: "Atkinson Hyperlegible Mono", ui-monospace, monospace;
-  --type-voice: Newsreader, Georgia, serif;
+  --type-display: var(--font-bricolage), "Bricolage Grotesque", system-ui, sans-serif;
+  --type-sans: var(--font-atkinson-next), "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --type-mono: var(--font-atkinson-mono), "Atkinson Hyperlegible Mono", ui-monospace, monospace;
+  --type-voice: var(--font-newsreader), Newsreader, Georgia, serif;
   --type-hand: "Shantell Sans", "Patrick Hand", system-ui, sans-serif;
-  --type-shell: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --type-shell: var(--type-sans);
 
   --text-display-size: 2rem;
   --text-display-leading: 1.08;
   --text-body-size: 1.0625rem;
   --text-body-leading: 1.5;
   --text-button-size: 1.0625rem;
+  --text-button-small-size: 0.875rem;
+  --button-height: 3.5rem;
+  --button-padding: 1.125rem;
+  --button-small-padding: 0.875rem;
   --text-caption-size: 0.84375rem;
-  --text-overline-size: 0.8125rem;
-  --text-tab-size: 0.8125rem;
+  --text-overline-size: 0.78125rem;
+  --overline-tracking: 0.09em;
+  --text-link-size: 0.9375rem;
+  --text-tab-size: 0.78125rem;
+  --tab-icon: 1.5rem;
+  --tab-icon-gap: 0.1875rem;
+  --tab-item-height: 3.25rem;
+  --tab-item-pad-block: 0.0625rem;
+  --tab-item-pad-inline: 0.375rem;
+  --tab-bar-pad-top: 0.375rem;
+  --tab-bar-pad-bottom: 0.75rem;
+  --tab-mark-height: 0.1875rem;
+  --tab-mark-offset: -0.4375rem;
+  --r-tab-mark: 0.125rem;
   --text-timer-size: 4.875rem;
   --text-slip-size: 1.125rem;
   --text-slip-leading: 1.5;
   --text-toast-size: 0.90625rem;
-  --tape-width: 4.625rem;
-  --tape-height: 1.25rem;
+  --tape-width: 3.625rem;
+  --tape-height: 1.0625rem;
+  --tape-top: -0.5625rem;
+  --tape-left: 1rem;
+  --r-tape: 0.1875rem;
+  --tape-ring: color-mix(in srgb, var(--tag-edge) 35%, transparent);
   --text-slip-small-size: 1rem;
   --text-slip-small-leading: 1.45;
   --shade: rgba(0, 0, 0, 0.38);
+  /* The page behind a session page (issue 240 C5): the same values as .skin-opp below. */
+  --skin-opp-bg: #140d12;
+  --skin-opp-glow-1: #12261a;
+  --skin-opp-glow-2: #1f141d;
 
   --space-screen-top: 1.625rem;
   --space-screen-inline: 1.375rem;
@@ -83,6 +111,12 @@
   --glow-1: #102515;
   --glow-2: #1a1814;
   --logo-filter: invert(1);
+  --tag-fill: #a1caa8;
+  --tag-ink: #050b06;
+  --tag-edge: #6e9876;
+  --tape: color-mix(in srgb, #a1caa8 55%, transparent);
+  --tape-ring: color-mix(in srgb, var(--tag-edge) 35%, transparent);
+  --shadow-paper: 0 0.625rem 1.25rem -0.875rem color-mix(in srgb, var(--ink) 45%, transparent);
 }
 
 .skin-opp {
@@ -104,6 +138,12 @@
   --glow-1: #12261a;
   --glow-2: #1f141d;
   --logo-filter: invert(1);
+  --tag-fill: #a1caa8;
+  --tag-ink: #050b06;
+  --tag-edge: #6e9876;
+  --tape: color-mix(in srgb, #a1caa8 55%, transparent);
+  --tape-ring: color-mix(in srgb, var(--tag-edge) 35%, transparent);
+  --shadow-paper: 0 0.625rem 1.25rem -0.875rem color-mix(in srgb, var(--ink) 45%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -126,6 +166,12 @@
     --glow-1: #102515;
     --glow-2: #1a1814;
     --logo-filter: invert(1);
+    --tag-fill: #a1caa8;
+    --tag-ink: #050b06;
+    --tag-edge: #6e9876;
+    --tape: color-mix(in srgb, #a1caa8 55%, transparent);
+    --tape-ring: color-mix(in srgb, var(--tag-edge) 35%, transparent);
+    --shadow-paper: 0 0.625rem 1.25rem -0.875rem color-mix(in srgb, var(--ink) 45%, transparent);
   }
 }
 
