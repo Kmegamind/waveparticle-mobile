@@ -137,3 +137,12 @@ for (const path of ["/auth/sign-in", "/safety"]) {
     await expect(page.getByRole("navigation", { name: "Primary" })).toHaveCount(0);
   });
 }
+
+test("#240 C1 page titles are heavy Bricolage Grotesque", async ({ page }) => {
+  await page.goto("/auth/sign-in");
+  const style = await page.locator("h1").evaluate((element) => {
+    const computed = getComputedStyle(element);
+    return [computed.fontWeight, computed.letterSpacing];
+  });
+  expect(style).toEqual(["800", "-0.8px"]);
+});
