@@ -7,6 +7,7 @@ import {
   type StartGoalInput,
   type StepRow,
 } from "@/lib/goals/start-goal";
+import { createSupabaseGoalWriter } from "@/lib/goals/supabase-goal-writer";
 
 const USER = "11111111-1111-4111-8111-111111111111";
 const GOAL_ID = "22222222-2222-4222-8222-222222222222";
@@ -202,5 +203,92 @@ describe("#32 US-GD-15 Start saves the Goal and the Plan", () => {
     );
     expect(outcome.status).toBe("invalid");
     expect(memory.calls).toEqual([]);
+  });
+});
+
+type Call = [table: string, op: string, args: unknown[]];
+
+/** A recording stand-in for the Supabase query builder; `failOn` makes one operation return an error. */
+function fakeClient(options: { exists?: boolean; failOn?: string } = {}) {
+  const calls: Call[] = [];
+  function builder(table: string) {
+    const result = (op: string) => ({
+      data: op === "maybeSingle" ? (options.exists ? { id: GOAL_ID } : null) : null,
+      error: options.failOn === `${table}.${op}` ? { message: "boom" } : null,
+    });
+    let lastOp = "";
+    const chain: Record<string, unknown> = {};
+    for (const op of ["select", "insert", "update", "delete", "eq", "maybeSingle"]) {
+      chain[op] = (...args: unknown[]) => {
+        calls.push([table, op, args]);
+        if (op !== "eq" && op !== "maybeSingle") lastOp = op;
+        if (op === "maybeSingle") return Promise.resolve(result("maybeSingle"));
+        return chain;
+      };
+    }
+    chain.then = (resolve: (value: unknown) => void) => resolve(result(lastOp));
+    return chain;
+  }
+  return { client: { from: (table: string) => builder(table) }, calls };
+}
+
+const goalRow: GoalRow = {
+  id: GOAL_ID,
+  user_id: USER,
+  title: "Methods section",
+  text: "Write the methods",
+  shape: "specific",
+  split_finer: false,
+  total_minutes: 30,
+  status: "in_progress",
+};
+const stepRows: StepRow[] = [
+  { goal_id: GOAL_ID, position: 0, title: "Draft it", description: null, minutes: 30 },
+];
+
+describe("#32 the Supabase GoalWriter", () => {
+  it("reads goals by id to know whether the Goal exists", async () => {
+    const fake = fakeClient({ exists: true });
+    const writer = createSupabaseGoalWriter(fake.client as never);
+    expect(await writer.goalExists(GOAL_ID)).toBe(true);
+    expect(fake.calls).toContainEqual(["goals", "eq", ["id", GOAL_ID]]);
+    expect(await createSupabaseGoalWriter(fakeClient().client as never).goalExists(GOAL_ID)).toBe(
+      false,
+    );
+  });
+
+  it("inserts and updates the Goal row", async () => {
+    const fake = fakeClient();
+    const writer = createSupabaseGoalWriter(fake.client as never);
+    await writer.insertGoal(goalRow);
+    await writer.updateGoal(goalRow);
+    expect(fake.calls).toContainEqual(["goals", "insert", [goalRow]]);
+    expect(fake.calls.filter(([t, op]) => t === "goals" && op === "update")).toHaveLength(1);
+    expect(fake.calls).toContainEqual(["goals", "eq", ["id", GOAL_ID]]);
+  });
+
+  it("replaces the Steps: deletes the Goal's Steps, then inserts the new rows", async () => {
+    const fake = fakeClient();
+    await createSupabaseGoalWriter(fake.client as never).replaceSteps(GOAL_ID, stepRows);
+    const ops = fake.calls.filter(([t]) => t === "steps").map(([, op, args]) => [op, args]);
+    expect(ops).toEqual([
+      ["delete", []],
+      ["eq", ["goal_id", GOAL_ID]],
+      ["insert", [stepRows]],
+    ]);
+  });
+
+  it("deletes a Goal by id", async () => {
+    const fake = fakeClient();
+    await createSupabaseGoalWriter(fake.client as never).deleteGoal(GOAL_ID);
+    expect(fake.calls).toEqual([
+      ["goals", "delete", []],
+      ["goals", "eq", ["id", GOAL_ID]],
+    ]);
+  });
+
+  it("throws, without row data, when the database returns an error", async () => {
+    const writer = createSupabaseGoalWriter(fakeClient({ failOn: "steps.insert" }).client as never);
+    await expect(writer.replaceSteps(GOAL_ID, stepRows)).rejects.toThrow(/^goal write failed$/);
   });
 });
