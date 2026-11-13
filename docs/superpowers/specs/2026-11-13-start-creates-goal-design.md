@@ -9,7 +9,7 @@ Pressing Start on the Plan should start the work right away. For a signed-in per
 ## Acceptance criteria (corrected against the decision log)
 
 1. Given I tap Start on the Plan card, then the focus page opens on Step 1, and **the clock starts when his first card is shown**. This replaces "the Step timer starts" because of NO-BACKUP and FAIL-SCREEN: while the failure message is shown, the clock does not start. Corrected by Yue on 2026-11-13.
-2. Given this is the first Start for this Goal, then the Goal and the Plan are created now and the Goal appears on Goals. A second Start for the same Plan (a double tap, or Back and Start again) creates nothing new.
+2. Given this is the first Start for this Goal, then the Goal and the Plan are created now and the Goal appears on Goals. A second Start for the same Plan (a double tap, or Retry after a failed save) creates no second Goal; it makes the saved Steps match the Plan.
 3. Given any Step has an empty name, then the server removes it when the Plan is saved.
 4. Given the Plan is saved, then the Step names, descriptions and minutes are stored on our server, tied to my account (US-ACC-3). Minutes are kept as given, at least 1 (STEP-EDIT); the server does not round them.
 5. **Time question (Yue, 2026-11-12, `_handoff/2026-11-12-spec-audit/01_DECISIONS_FROM_YUE_2026-11-12.md`, round 2, "Time questions").** The dialogue asks how long with a slider from 0 to 3 hours, with no fixed example times such as "1 hour". If the goal text already states a time, the dialogue skips the question and shows the time it understood, which the user can change (GOAL-TIME).
@@ -86,7 +86,7 @@ Saving: (a, chosen) two inserts with a compensating delete, and no migration. (b
   - Steps with empty names are dropped;
   - minutes are kept and must be at least 1;
   - a crisis in the goal or in a Step saves nothing;
-  - a second call with the same id writes nothing;
+  - a second call with the same id keeps one Goal and replaces its Steps;
   - a failure on the Steps write deletes the Goal;
   - a signed-out user gets `signed-out`.
 - **Unit:** `/try` code has no import of the account save path.

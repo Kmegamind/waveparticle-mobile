@@ -86,8 +86,15 @@ test("#33 #34 #35 #36 the walk-through: goal, time, split question, plan, Start"
   }
   await expect(page.getByRole("textbox", { name: "Your time" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Not sure", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Send" })).toBeDisabled();
+  // The reason is tied to the slider, and Send stays in the Tab order while inactive.
+  const send = page.getByRole("button", { name: "Send" });
+  await expect(send).toBeDisabled();
+  await expect(send).toHaveAttribute("aria-disabled", "true");
+  await expect(send).not.toHaveAttribute("disabled", /.*/);
   await expect(page.getByText("Choose a time above 0")).toBeVisible();
+  const hintId = await slider.getAttribute("aria-describedby");
+  expect(hintId).toBeTruthy();
+  await expect(page.locator(`[id="${hintId}"]`)).toHaveText("Choose a time above 0");
   await slider.fill("60");
   await expect(slider).toHaveAttribute("aria-valuetext", "1 hour");
   await page.getByRole("button", { name: "Send" }).click();
@@ -188,6 +195,9 @@ test("#37 editing the Plan: title, description, minutes, add, remove", async ({ 
 
   // AC1: tap a Step to edit; the stepper changes minutes by 15 with 44 by 44 controls.
   await card.getByRole("button", { name: /Gather what you need/ }).click();
+  // #32: the editor cannot go past what the server accepts.
+  await expect(card.getByLabel("Title")).toHaveAttribute("maxlength", "200");
+  await expect(card.getByLabel("Description")).toHaveAttribute("maxlength", "1000");
   const more = card.getByRole("button", { name: "15 minutes more" });
   const box = await more.boundingBox();
   expect(box!.width).toBeGreaterThanOrEqual(44);

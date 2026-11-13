@@ -296,3 +296,61 @@ describe("#32 the Supabase GoalWriter", () => {
     await expect(writer.replaceSteps(GOAL_ID, stepRows)).rejects.toThrow(/^goal write failed$/);
   });
 });
+
+describe("#32 the server action checks its input at run time (it is a public endpoint)", () => {
+  const malformed: [string, unknown][] = [
+    ["steps is not a list", { ...input(), steps: null }],
+    ["a Step has no title", { ...input(), steps: [{ description: "", minutes: 30 }] }],
+    ["goalId is not a UUID", { ...input(), goalId: "not-a-uuid" }],
+    ["splitFiner is not a boolean or null", { ...input(), splitFiner: "yes" }],
+    [
+      "more than 50 Steps",
+      {
+        ...input(),
+        steps: Array.from({ length: 51 }, () => ({ title: "A", description: "", minutes: 1 })),
+      },
+    ],
+    ["a goal text over 1000 characters", { ...input(), goalText: "a".repeat(1001) }],
+    ["a title over 1000 characters", { ...input(), title: "a".repeat(1001) }],
+    [
+      "a Step title over 200 characters",
+      { ...input(), steps: [{ title: "a".repeat(201), description: "", minutes: 30 }] },
+    ],
+    [
+      "a Step description over 1000 characters",
+      { ...input(), steps: [{ title: "A", description: "a".repeat(1001), minutes: 30 }] },
+    ],
+    [
+      "a Step longer than one day",
+      { ...input(), steps: [{ title: "A", description: "", minutes: 24 * 60 + 1 }] },
+    ],
+    ["not an object", "hello"],
+  ];
+
+  it.each(malformed)("%s gives invalid and writes nothing", async (_name, value) => {
+    const memory = memoryWriter();
+    const outcome = await startGoal(value as StartGoalInput, {
+      userId: USER,
+      writer: memory.writer,
+    });
+    expect(outcome.status).toBe("invalid");
+    expect(memory.calls).toEqual([]);
+  });
+
+  it("still accepts the limits themselves", async () => {
+    const memory = memoryWriter();
+    const outcome = await startGoal(
+      input({
+        goalText: "a".repeat(1000),
+        title: "a".repeat(1000),
+        steps: Array.from({ length: 50 }, () => ({
+          title: "a".repeat(200),
+          description: "a".repeat(1000),
+          minutes: 24 * 60,
+        })),
+      }),
+      { userId: USER, writer: memory.writer },
+    );
+    expect(outcome.status).toBe("saved");
+  });
+});

@@ -41,6 +41,8 @@ import {
   totalMinutes,
   type EditableStep,
   MINUTES_STEP,
+  STEP_DESCRIPTION_MAX,
+  STEP_TITLE_MAX,
 } from "@/lib/prototype/plan-edit";
 import type { SplitInput, SplitOutcome } from "@/lib/prototype/split-goal";
 import { gateFreeText } from "@/lib/safety/crisis";
@@ -489,6 +491,7 @@ export function GoalDialogue({ split = splitGoalAction, start }: GoalDialoguePro
         <>
           <form className="try-time" onSubmit={onSendTime}>
             <input
+              aria-describedby={sliderMinutes <= 0 ? "try-time-hint" : undefined}
               aria-label="Your time"
               aria-valuetext={sliderValueText(sliderMinutes)}
               className="try-time-slider"
@@ -504,7 +507,11 @@ export function GoalDialogue({ split = splitGoalAction, start }: GoalDialoguePro
             </output>
             <SendButton disabled={sliderMinutes <= 0} />
           </form>
-          {sliderMinutes <= 0 ? <p className="try-hint">{SLIDER_ZERO_HINT}</p> : null}
+          {sliderMinutes <= 0 ? (
+            <p className="try-hint" id="try-time-hint">
+              {SLIDER_ZERO_HINT}
+            </p>
+          ) : null}
           {timeMode === "understood" ? null : (
             <div className="try-chips">
               <button className="try-chip" onClick={chooseNotSure} type="button">
@@ -538,7 +545,13 @@ function Slip({ children }: { children: string }) {
 
 function SendButton(props: { disabled?: boolean }) {
   return (
-    <button aria-label="Send" className="try-send" disabled={props.disabled} type="submit">
+    // aria-disabled, not disabled: an inactive Send stays in the Tab order with its reason.
+    <button
+      aria-disabled={props.disabled ? true : undefined}
+      aria-label="Send"
+      className="try-send"
+      type="submit"
+    >
       <svg aria-hidden="true" viewBox="0 0 24 24">
         <path d="M12 19V5M5 12l7-7 7 7" />
       </svg>
@@ -575,6 +588,7 @@ function PlanCard(props: {
                     Title
                     <input
                       autoFocus
+                      maxLength={STEP_TITLE_MAX}
                       onChange={(event) =>
                         props.onChangeEditing({ ...editing, title: event.target.value })
                       }
@@ -584,6 +598,7 @@ function PlanCard(props: {
                   <label>
                     Description
                     <textarea
+                      maxLength={STEP_DESCRIPTION_MAX}
                       onChange={(event) =>
                         props.onChangeEditing({ ...editing, description: event.target.value })
                       }

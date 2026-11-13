@@ -1,4 +1,5 @@
 import { classifyGoalShape, type GoalShape } from "@/lib/prototype/goal-lines";
+import { STEP_DESCRIPTION_MAX, STEP_TITLE_MAX } from "@/lib/prototype/plan-edit";
 import { gateFreeText } from "@/lib/safety/crisis";
 
 /**
@@ -48,6 +49,42 @@ export type StartGoalOutcome =
   | { status: "saved"; goalId: string; steps: StartStep[] }
   | { status: "signed-out" | "crisis" | "invalid" | "failed" };
 
+/** Limits for the public server action; anything outside them is refused, never trimmed. */
+export const LIMITS = {
+  steps: 50,
+  goalText: 1000,
+  // The Plan title can be the whole goal text ("Use one step").
+  title: 1000,
+  stepTitle: STEP_TITLE_MAX,
+  description: STEP_DESCRIPTION_MAX,
+  stepMinutes: 24 * 60,
+} as const;
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const isText = (value: unknown, max: number): value is string =>
+  typeof value === "string" && value.length <= max;
+
+/** The action is a public endpoint, so the shape and size are checked at run time. */
+function isWellFormed(value: unknown): value is StartGoalInput {
+  if (typeof value !== "object" || value === null) return false;
+  const input = value as Record<string, unknown>;
+  if (typeof input.goalId !== "string" || !UUID.test(input.goalId)) return false;
+  if (!isText(input.goalText, LIMITS.goalText) || !isText(input.title, LIMITS.title)) return false;
+  if (input.splitFiner !== null && typeof input.splitFiner !== "boolean") return false;
+  if (!Array.isArray(input.steps) || input.steps.length > LIMITS.steps) return false;
+  return input.steps.every((step: unknown) => {
+    if (typeof step !== "object" || step === null) return false;
+    const { title, description, minutes } = step as Record<string, unknown>;
+    return (
+      isText(title, LIMITS.stepTitle) &&
+      isText(description, LIMITS.description) &&
+      typeof minutes === "number" &&
+      minutes <= LIMITS.stepMinutes
+    );
+  });
+}
+
 function isCrisis(text: string): boolean {
   return gateFreeText(text).action === "crisis-page";
 }
@@ -57,6 +94,7 @@ export async function startGoal(
   deps: { userId: string | null; writer: GoalWriter },
 ): Promise<StartGoalOutcome> {
   if (!deps.userId) return { status: "signed-out" };
+  if (!isWellFormed(input)) return { status: "invalid" };
 
   if (isCrisis(input.goalText) || isCrisis(input.title)) return { status: "crisis" };
   if (input.steps.some((step) => isCrisis(`${step.title}\n${step.description}`))) {
