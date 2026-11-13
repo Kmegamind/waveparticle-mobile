@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { fontVariables } from "./fonts";
 import { AppShell } from "./shell";
 
 export const metadata: Metadata = {
@@ -27,7 +28,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className="theme-shell min-h-full antialiased">
+    <html lang="en" className={`theme-shell min-h-full antialiased ${fontVariables}`}>
       <body className="min-h-full">
         <AppShell>{children}</AppShell>
       </body>

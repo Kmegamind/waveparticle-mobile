@@ -18,12 +18,12 @@
   --glow-2: #e7e2da;
   --logo-filter: none;
 
-  --type-display: "Bricolage Grotesque", system-ui, sans-serif;
-  --type-sans: "Atkinson Hyperlegible Next", system-ui, sans-serif;
-  --type-mono: "Atkinson Hyperlegible Mono", ui-monospace, monospace;
-  --type-voice: Newsreader, Georgia, serif;
+  --type-display: var(--font-bricolage), "Bricolage Grotesque", system-ui, sans-serif;
+  --type-sans: var(--font-atkinson-next), "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --type-mono: var(--font-atkinson-mono), "Atkinson Hyperlegible Mono", ui-monospace, monospace;
+  --type-voice: var(--font-newsreader), Newsreader, Georgia, serif;
   --type-hand: "Shantell Sans", "Patrick Hand", system-ui, sans-serif;
-  --type-shell: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --type-shell: var(--type-sans);
 
   --text-display-size: 2rem;
   --text-display-leading: 1.08;
