@@ -78,8 +78,11 @@ describe("#43 AC1 the Story is divided across the Plan's Steps", () => {
     const input = (writeStepCards.mock.calls[0] as unknown as [Record<string, unknown>])[0];
 
     const text = (id: string) => siteSearch.facts.find((fact) => fact.id === id)!.text;
-    for (const id of brief.steps[1].factIds) expect(input.facts).toContain(text(id));
-    for (const id of brief.steps[2].factIds) expect(input.facts).not.toContain(text(id));
+    for (const id of brief.steps[1].factIds) expect(input.stepFacts).toContain(text(id));
+    for (const id of brief.steps[2].factIds) {
+      expect(input.facts).not.toContain(text(id));
+      expect(input.stepFacts).not.toContain(text(id));
+    }
     const mustUse = brief.steps[1].mustUseKeySliceIds.map(
       (id) => siteSearch.keySlices.find((slice) => slice.id === id)!.keyLine,
     );
@@ -236,5 +239,64 @@ describe("#43 the request from the page is checked (it is a public endpoint)", (
       earlierCards: [...Array(80).fill("I wait."), 5, "x".repeat(601)],
     });
     expect(many).toEqual({ index: 0, planMinutes: [10], earlierCards: Array(60).fill("I wait.") });
+  });
+});
+
+describe("#43 review: the prompt marks what is new in this Step (CARD-NEW)", () => {
+  it("sends this Step's facts apart from the facts of earlier Steps", async () => {
+    const plan = [20, 25, 15];
+    const brief = startStory(
+      siteSearch,
+      plan.map((minutes) => ({ minutes })),
+    );
+    const text = (id: string) => siteSearch.facts.find((fact) => fact.id === id)!.text;
+    const { gateway, writeStepCards } = recordingGateway();
+    await cardsForStep(request({ index: 1, planMinutes: plan }), gateway);
+    const input = (writeStepCards.mock.calls[0] as unknown as [Record<string, string>])[0];
+    for (const id of brief.steps[1].factIds) expect(input.stepFacts).toContain(text(id));
+    for (const id of brief.steps[0].factIds) {
+      expect(input.stepFacts).not.toContain(text(id));
+      expect(input.facts).toContain(text(id));
+    }
+  });
+
+  it("the prompt labels earlier facts and this part's facts", async () => {
+    const fake = recordingProvider([JSON.stringify({ cards: ["I look at the canyon."] })]);
+    await createModelGateway({ provider: fake.impl }).writeStepCards({
+      minutes: 20,
+      facts: "I drove to Jemez Springs.",
+      stepFacts: "Groves listens to me about the mesa.",
+    });
+    expect(fake.prompts[0]).toContain("Already happened: I drove to Jemez Springs.");
+    expect(fake.prompts[0]).toContain("New in this part: Groves listens to me about the mesa.");
+    expect(fake.prompts[0]).not.toContain("Facts already known");
+  });
+
+  it("a Step with no facts of its own is told that nothing new happens", async () => {
+    const plan = Array.from({ length: 14 }, () => 5);
+    const { gateway, writeStepCards } = recordingGateway();
+    await cardsForStep(request({ index: 13, planMinutes: plan }), gateway);
+    const input = (writeStepCards.mock.calls[0] as unknown as [Record<string, string>])[0];
+    expect(input.stepFacts).toBe("");
+
+    const fake = recordingProvider([JSON.stringify({ cards: ["I look at the canyon."] })]);
+    await createModelGateway({ provider: fake.impl }).writeStepCards({
+      minutes: 5,
+      facts: "I drove to Jemez Springs.",
+      stepFacts: "",
+    });
+    expect(fake.prompts[0]).toContain(
+      "Nothing new happens in this part: he stays in the moment he is in, with no new events.",
+    );
+  });
+
+  it("the word limit of 45 is for story cards, so the background card keeps its 70", async () => {
+    const fake = recordingProvider([JSON.stringify({ cards: ["I look at the canyon."] })]);
+    await createModelGateway({ provider: fake.impl }).writeStepCards({
+      minutes: 20,
+      facts: "f",
+      background: true,
+    });
+    expect(fake.prompts[0]).toContain("Each story card is 1 to 3 sentences");
   });
 });

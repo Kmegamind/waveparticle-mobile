@@ -20,6 +20,7 @@ export type StepCardsRequest = { index: number; planMinutes: number[]; earlierCa
 
 const MAX_STEPS = 50;
 const MAX_STEP_MINUTES = 24 * 60;
+/** The run list keeps his last 60 cards: a bounded check, never a stricter rule. */
 const MAX_EARLIER_CARDS = 60;
 const MAX_CARD_LENGTH = 600;
 
@@ -89,16 +90,18 @@ function stepBrief(story: OppenheimerStory, request: StepCardsRequest) {
     request.planMinutes.map((minutes) => ({ minutes })),
   );
   const share = brief.steps[request.index];
-  const known = new Set(brief.steps.slice(0, request.index + 1).flatMap((step) => step.factIds));
-  const factText = story.facts.filter((fact) => known.has(fact.id)).map((fact) => fact.text);
+  const textOf = (ids: Set<string>) =>
+    story.facts.filter((fact) => ids.has(fact.id)).map((fact) => fact.text);
+  const earlier = new Set(brief.steps.slice(0, request.index).flatMap((step) => step.factIds));
   const meta = generated.meta.story;
-  const facts = [generated.meta.who, `Place: ${meta.place}.`, meta.goalShort, ...factText].join(
-    " ",
-  );
+  const facts = [generated.meta.who, `Place: ${meta.place}.`, meta.goalShort, ...textOf(earlier)];
+  // CARD-NEW: this Step's own facts go separately, so the prompt says what is new. A Plan with
+  // more Steps than the Story has facts gives the later Steps none (startStory).
+  const stepFacts = textOf(new Set(share.factIds)).join(" ");
   const mustUse = share.mustUseKeySliceIds
     .map((id) => story.keySlices.find((slice) => slice.id === id)?.keyLine)
     .filter((line): line is string => typeof line === "string");
-  return { share, facts, mustUse, stepCount: brief.stepCount };
+  return { share, facts: facts.join(" "), stepFacts, mustUse, stepCount: brief.stepCount };
 }
 
 function testCards(index: number): StepCards {
@@ -117,11 +120,12 @@ export async function cardsForStep(
   try {
     // No user-written text leaves the server (#216): only the Story side and numbers.
     const story = testPathStory();
-    const { share, facts, mustUse, stepCount } = stepBrief(story, request);
+    const { share, facts, stepFacts, mustUse, stepCount } = stepBrief(story, request);
     const minutes = request.planMinutes[request.index];
     const result = await gateway.writeStepCards({
       minutes,
       facts,
+      stepFacts,
       stepNumber: share.index,
       stepCount,
       storyCards: maxStoryCards(minutes),

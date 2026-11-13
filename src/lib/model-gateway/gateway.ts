@@ -292,7 +292,7 @@ function stepCardPrompt(input: StepCardsInput): string {
     storyCards === null
       ? "Write one opening card and then the story cards for this part of his day."
       : `Write 1 opening card and then ${storyCards} story cards for this part of his day.`,
-    "Each card is 1 to 3 sentences and at most 45 words, in his first person, with no advice and no question.",
+    "Each story card is 1 to 3 sentences and at most 45 words, in his first person, with no advice and no question.",
     "Every card says something new: never repeat what an earlier card said.",
   ];
   if (input.background) {
@@ -306,7 +306,18 @@ function stepCardPrompt(input: StepCardsInput): string {
   if (input.mustUse && input.mustUse.length > 0) {
     lines.push(`These moments must happen in these cards: ${input.mustUse.join(" ")}`);
   }
-  lines.push(`Minutes: ${input.minutes}`, `Facts already known: ${input.facts}`);
+  lines.push(`Minutes: ${input.minutes}`);
+  if (input.stepFacts === undefined) {
+    lines.push(`Facts already known: ${input.facts}`);
+  } else {
+    // CARD-NEW: say what happened before and what is new in this part.
+    lines.push(`Already happened: ${input.facts}`);
+    lines.push(
+      input.stepFacts.trim().length > 0
+        ? `New in this part: ${input.stepFacts}`
+        : "Nothing new happens in this part: he stays in the moment he is in, with no new events.",
+    );
+  }
   return lines.join("\n");
 }
 

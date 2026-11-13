@@ -50,8 +50,13 @@ export type PlanSplitResult = GeneratedPlan | GatewayFailure;
  */
 export type StepCardsInput = {
   minutes: number;
-  /** The Story facts for this Step and the ones before it; never a later Step's facts. */
+  /** Who he is and where, and the Story facts of earlier Steps; never a later Step's facts. */
   facts: string;
+  /**
+   * The Story facts of this Step only, so the prompt can say what is new (CARD-NEW). An empty
+   * string means this Step has no facts of its own. Omitted: `facts` is sent as before.
+   */
+  stepFacts?: string;
   /** 1-based place of this Step among the Plan's Steps. */
   stepNumber?: number;
   stepCount?: number;
