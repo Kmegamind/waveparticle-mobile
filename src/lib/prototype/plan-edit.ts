@@ -7,6 +7,10 @@ import { formatMinutes } from "./goal-time";
 
 export const MINUTES_STEP = 15;
 
+/** The longest Step title and description the editor allows; the account save refuses longer (#32). */
+export const STEP_TITLE_MAX = 200;
+export const STEP_DESCRIPTION_MAX = 1000;
+
 export type EditableStep = PlanStep & {
   id: string;
   /** The last non-empty title; an emptied title comes back to this (#37 AC4). */

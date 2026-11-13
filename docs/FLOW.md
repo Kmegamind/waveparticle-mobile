@@ -319,8 +319,8 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 
 - **Frame:** the same page, scrolled; full page, no tab bar.
 - **Purpose:** respond to the shape of the goal and learn how long the user will work.
-- **Shows:** his reaction to the shape of the goal (specific, vague or too big), without repeating the user's words, and then one question about how long. Quick replies: **30 min**, **1 hour**, **2 hours**, **Not sure**, and a typed box that accepts only a time such as "45", "45 min" or "1.5 hours" (5 to 300 minutes, rounded to 15). If the goal was vague he asks one follow-up first, once only. A goal that is too big is not questioned: the split cuts it to the part that fits the time given. The plan always matches that time.
-- **Can do and leads to:** choosing or typing a time opens GD3. **Not sure** makes him set 30 minutes with one line of reason. A typed value that is not a time shows "Type a time like 45 or 1.5 hours" and is not sent to him.
+- **Shows:** his reaction to the shape of the goal (specific, vague or too big), without repeating the user's words, and then one question about how long. A slider from 0 to 3 hours in steps of 5 minutes, its value in words beside it, a Send button that is inactive at 0 ("Choose a time above 0"), and **Not sure**. No fixed example times (TIME-SLIDER). If the goal was vague he asks one follow-up first, once only. A goal that is too big is not questioned: the split cuts it to the part that fits the time given. The plan always matches that time.
+- **Can do and leads to:** sending a time from the slider opens GD3. **Not sure** makes him set 30 minutes with one line of reason. **Change time** after a time read from the goal opens the slider at that time (at most 3 hours).
 - **System back:** goes to the previous turn. The user's previous answer can be changed and his reply is chosen again from the pool.
 - **States:** loading while the goal is classified is covered by the authored fallback line; a classifier failure uses the generic reply. Offline: not yet specified.
 

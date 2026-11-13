@@ -1009,11 +1009,11 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user, **I want** to answer the time question in one tap, **so that** I am not asked to compute anything.
 
 **Acceptance criteria**
-- Given he asks for the time, then four quick replies show (30 min, 1 hour, 2 hours, Not sure) and I can also type a time; the field accepts only a time.
+- ~~Given he asks for the time, then four quick replies show (30 min, 1 hour, 2 hours, Not sure) and I can also type a time; the field accepts only a time.~~ Superseded by TIME-SLIDER: given he asks for the time, then a slider from 0 to 3 hours and Not sure show, with no fixed example times; the time cannot be sent at 0.
 - Given I tap Not sure, then he chooses 30 minutes and gives one short reason without comforting me.
 - Given I tap Just split it at any point, then he does not ask more and the Plan is made for 30 minutes.
 - Given the time is set, then he acknowledges it in at most two sentences.
-- The page has no time slider and no extra presets.
+- ~~The page has no time slider and no extra presets.~~ Superseded by TIME-SLIDER (2026-11-12): the time is set with a slider; there are no presets.
 
 **Priority:** Must · **Area:** Goal start dialogue (NF7) · **Screens:** GD1, GD2 · **Depends on:** US-GD-2 · **Size:** S · **Source:** NF7v6 sections 2.2 and 3; NF7v7 section 3.1 (default of 30 minutes, not 60, which the prototype uses)
 
@@ -1114,10 +1114,12 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user, **I want** pressing Start to begin my first Step at once, **so that** nothing stands between a decision and the work.
 
 **Acceptance criteria**
-- Given I tap Start on the Plan card, then the focus page opens on Step 1 and the Step timer starts.
-- Given this is the first Start for this Goal, then the Goal and the Plan are created now and the Goal appears on Goals.
+- Given I tap Start on the Plan card, then the focus page opens on Step 1 and the clock starts when his first card is shown (NO-BACKUP, FAIL-SCREEN; corrected 2026-11-13).
+- Given this is the first Start for this Goal, then the Goal and the Plan are created now and the Goal appears on Goals. Start again for the same Plan creates no second Goal.
 - Given any Step has an empty name, then the server removes it when the Plan is saved.
-- Given the Plan is saved, then the Step names and descriptions are stored on our server tied to my account (US-ACC-3).
+- Given the Plan is saved, then the Step names, descriptions and minutes are stored on our server tied to my account (US-ACC-3); minutes are kept as given, at least 1 (STEP-EDIT).
+- Given the time question, then it is a slider from 0 to 3 hours with no fixed example times (TIME-SLIDER).
+- Given the sign-in-free test path, then Start writes nothing to the account.
 
 **Priority:** Must · **Area:** Goal start dialogue (NF7) · **Screens:** GD4, F1 · **Depends on:** US-GD-5, US-ACC-3 · **Size:** M · **Source:** FLOW jump rules (Start creates the Goal and the Plan); G02 G-25; NF7v7 sections 4.1 and 8; DEC S3
 

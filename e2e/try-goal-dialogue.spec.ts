@@ -30,6 +30,14 @@ async function noHorizontalScroll(page: Page) {
 
 const plan = (page: Page) => page.getByRole("region", { name: "Plan" });
 
+const timeSlider = (page: Page) => page.getByRole("slider", { name: "Your time" });
+
+/** TIME-SLIDER: moves the time slider and sends the time. */
+async function setTime(page: Page, minutes: number) {
+  await timeSlider(page).fill(String(minutes));
+  await page.getByRole("button", { name: "Send" }).click();
+}
+
 test("#30 AC1 AC3 AC4 /try Begin opens the dialogue; he speaks first; the input is a composer", async ({
   page,
 }) => {
@@ -64,14 +72,32 @@ test("#33 #34 #35 #36 the walk-through: goal, time, split question, plan, Start"
   await openDialogue(page);
   await sendGoal(page, "Write the methods section of my lab report");
 
-  // #34 AC1: one sentence about the shape, then the time question with four quick replies.
+  // #34 AC1: one sentence about the shape, then the time question.
+  // TIME-SLIDER (Yue, 2026-11-12; replaces #35 AC5 and the quick replies): a slider from 0 to
+  // 3 hours, no fixed example times, no typed box; Not sure stays.
   await expect(page.getByText("How long do you have?")).toBeVisible();
-  for (const name of ["30 min", "1 hour", "2 hours", "Not sure"]) {
-    await expect(page.getByRole("button", { name, exact: true })).toBeVisible();
+  const slider = timeSlider(page);
+  await expect(slider).toHaveAttribute("min", "0");
+  await expect(slider).toHaveAttribute("max", "180");
+  await expect(slider).toHaveAttribute("step", "5");
+  await expect(slider).toHaveValue("0");
+  for (const name of ["30 min", "1 hour", "2 hours"]) {
+    await expect(page.getByRole("button", { name, exact: true })).toHaveCount(0);
   }
-  // #35 AC5: no slider, no extra presets.
-  await expect(page.getByRole("slider")).toHaveCount(0);
-  await page.getByRole("button", { name: "1 hour", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Your time" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Not sure", exact: true })).toBeVisible();
+  // The reason is tied to the slider, and Send stays in the Tab order while inactive.
+  const send = page.getByRole("button", { name: "Send" });
+  await expect(send).toBeDisabled();
+  await expect(send).toHaveAttribute("aria-disabled", "true");
+  await expect(send).not.toHaveAttribute("disabled", /.*/);
+  await expect(page.getByText("Choose a time above 0")).toBeVisible();
+  const hintId = await slider.getAttribute("aria-describedby");
+  expect(hintId).toBeTruthy();
+  await expect(page.locator(`[id="${hintId}"]`)).toHaveText("Choose a time above 0");
+  await slider.fill("60");
+  await expect(slider).toHaveAttribute("aria-valuetext", "1 hour");
+  await page.getByRole("button", { name: "Send" }).click();
 
   // #33 AC1: the split question comes after the time, with buttons only.
   await expect(page.getByRole("button", { name: "Split it finer" })).toBeVisible();
@@ -102,7 +128,7 @@ test("#33 #34 #35 #36 the walk-through: goal, time, split question, plan, Start"
 test("#33 AC2 Split it finer gives more Steps", async ({ page }) => {
   await openDialogue(page);
   await sendGoal(page, "Write the methods section of my lab report");
-  await page.getByRole("button", { name: "1 hour", exact: true }).click();
+  await setTime(page, 60);
   await page.getByRole("button", { name: "Split it finer" }).click();
   await expect(plan(page)).toContainText("4 steps · 1 hour");
 });
@@ -127,18 +153,14 @@ test("#35 AC2 Not sure sets 30 minutes with one reason", async ({ page }) => {
   await expect(plan(page)).toContainText("· 30 min");
 });
 
-test("#35 AC1 the typed time accepts only a time", async ({ page }) => {
+test("TIME-SLIDER any time from 5 minutes to 3 hours makes a Plan of that length", async ({
+  page,
+}) => {
   await openDialogue(page);
   await sendGoal(page, "Write the methods section of my lab report");
-  const time = page.getByLabel("Your time");
-  await time.fill("soon");
-  await page.getByRole("button", { name: "Send" }).click();
-  await expect(page.getByText("Type a time like 45 or 1.5 hours")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Split it finer" })).toHaveCount(0);
-  await time.fill("1.5 hours");
-  await page.getByRole("button", { name: "Send" }).click();
+  await setTime(page, 95);
   await page.getByRole("button", { name: "Keep it broad" }).click();
-  await expect(plan(page)).toContainText("1 hour 30 min");
+  await expect(plan(page)).toContainText("1 hour 35 min");
 });
 
 test("GOAL-TIME a stated length skips the time question and can be changed", async ({ page }) => {
@@ -147,7 +169,8 @@ test("GOAL-TIME a stated length skips the time question and can be changed", asy
   await expect(page.getByText("How long do you have?")).toHaveCount(0);
   await expect(page.getByText("Time: 1 hour")).toBeVisible();
   await page.getByRole("button", { name: "Change time" }).click();
-  await page.getByRole("button", { name: "2 hours", exact: true }).click();
+  await expect(timeSlider(page)).toHaveValue("60");
+  await setTime(page, 120);
   await page.getByRole("button", { name: "Keep it broad" }).click();
   await expect(plan(page)).toContainText("· 2 hours");
 });
@@ -164,7 +187,7 @@ test("#30 AC5 stepping back keeps the typed text", async ({ page }) => {
 test("#37 editing the Plan: title, description, minutes, add, remove", async ({ page }) => {
   await openDialogue(page);
   await sendGoal(page, "Write the methods section of my lab report");
-  await page.getByRole("button", { name: "1 hour", exact: true }).click();
+  await setTime(page, 60);
   await page.getByRole("button", { name: "Keep it broad" }).click();
   const card = plan(page);
   await expect(card).toContainText("2 steps · 1 hour");
@@ -172,6 +195,9 @@ test("#37 editing the Plan: title, description, minutes, add, remove", async ({ 
 
   // AC1: tap a Step to edit; the stepper changes minutes by 15 with 44 by 44 controls.
   await card.getByRole("button", { name: /Gather what you need/ }).click();
+  // #32: the editor cannot go past what the server accepts.
+  await expect(card.getByLabel("Title")).toHaveAttribute("maxlength", "200");
+  await expect(card.getByLabel("Description")).toHaveAttribute("maxlength", "1000");
   const more = card.getByRole("button", { name: "15 minutes more" });
   const box = await more.boundingBox();
   expect(box!.width).toBeGreaterThanOrEqual(44);

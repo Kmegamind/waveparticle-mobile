@@ -14,3 +14,13 @@ export function isTryPath(pathname: string): boolean {
 export function tryPathIsHidden(pathname: string, enabled: boolean): boolean {
   return !enabled && isTryPath(pathname);
 }
+
+/** The signed-in goal dialogue (#32). Like /try it exists only while the test path is on. */
+export function isGoalPath(pathname: string): boolean {
+  return pathname === "/goal" || pathname.startsWith("/goal/");
+}
+
+/** True when the request is for /goal while the test path is off: the proxy answers 404. */
+export function goalPathIsHidden(pathname: string, enabled: boolean): boolean {
+  return !enabled && isGoalPath(pathname);
+}

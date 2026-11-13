@@ -33,5 +33,6 @@ CI and local runs have no model keys. Decision NO-BACKUP forbids silent stand-in
 ## Consequences
 - Whether NO-BACKUP also forbids the authored dialogue lines is an open question for the
   product owner.
-- The Plan is saved in the browser store. Saving the Goal on the account (#32) and counting
-  turns on the server (#31) are still to do.
+- The Plan is saved in the browser store on `/try`. Saving the Goal on the account is done for
+  the signed-in `/goal` (#32), which uses the same split with its own cost-cap cookie (path
+  `/goal`). Counting turns on the server (#31) is still to do.

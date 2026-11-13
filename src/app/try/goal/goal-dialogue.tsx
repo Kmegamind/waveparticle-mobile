@@ -18,10 +18,13 @@ import {
   timeAck,
 } from "@/lib/prototype/goal-lines";
 import {
-  TIME_HINT,
+  SLIDER_MAX_MINUTES,
+  SLIDER_STEP_MINUTES,
+  SLIDER_ZERO_HINT,
   findTimeInGoal,
   formatMinutes,
-  parseTypedTime,
+  sliderStart,
+  sliderValueText,
 } from "@/lib/prototype/goal-time";
 import { loadLastOpening, saveLastOpening } from "@/lib/prototype/opening-memory";
 import {
@@ -38,7 +41,10 @@ import {
   totalMinutes,
   type EditableStep,
   MINUTES_STEP,
+  STEP_DESCRIPTION_MAX,
+  STEP_TITLE_MAX,
 } from "@/lib/prototype/plan-edit";
+import type { SplitInput, SplitOutcome } from "@/lib/prototype/split-goal";
 import { gateFreeText } from "@/lib/safety/crisis";
 import { usePrototypeState } from "../use-prototype-state";
 import { splitGoalAction } from "./actions";
@@ -47,13 +53,27 @@ type Phase = "goal" | "time" | "split" | "splitting" | "plan" | "failed" | "cris
 type TimeMode = "asked" | "not-sure" | "understood" | "changed";
 
 const DEFAULT_MINUTES = 30;
-const QUICK_TIMES = [
-  { label: "30 min", minutes: 30 },
-  { label: "1 hour", minutes: 60 },
-  { label: "2 hours", minutes: 120 },
-] as const;
 
-export function GoalDialogue() {
+/** The account save on Start (#32). Defined in src/lib/goals; /try passes nothing. */
+type StartInput = {
+  goalId: string;
+  goalText: string;
+  title: string;
+  splitFiner: boolean | null;
+  steps: { title: string; description: string; minutes: number }[];
+};
+type StartOutcome =
+  | { status: "saved"; goalId: string; steps: StartInput["steps"] }
+  | { status: "signed-out" | "crisis" | "invalid" | "failed" };
+
+type GoalDialogueProps = {
+  /** The split; /try uses its own action (docs/decisions/0012). */
+  split?: (input: SplitInput) => Promise<SplitOutcome>;
+  /** Saves the Goal and Plan on the account before the focus page opens (/goal only). */
+  start?: (input: StartInput) => Promise<StartOutcome>;
+};
+
+export function GoalDialogue({ split = splitGoalAction, start }: GoalDialogueProps = {}) {
   const router = useRouter();
   const { ready, state, update } = usePrototypeState();
   const returning = state.goal !== null;
@@ -73,8 +93,8 @@ export function GoalDialogue() {
   const [goalHint, setGoalHint] = useState(false);
   const [goal, setGoal] = useState("");
   const [reaction, setReaction] = useState("");
-  const [timeDraft, setTimeDraft] = useState("");
-  const [timeHint, setTimeHint] = useState(false);
+  // TIME-SLIDER: the time question is a slider from 0 to 3 hours (Yue, 2026-11-12).
+  const [sliderMinutes, setSliderMinutes] = useState(0);
   const [minutes, setMinutes] = useState<number | null>(null);
   const [timeMode, setTimeMode] = useState<TimeMode | null>(null);
   const [timeAnswer, setTimeAnswer] = useState("");
@@ -89,6 +109,10 @@ export function GoalDialogue() {
     null,
   );
   const [crisisBack, setCrisisBack] = useState<Phase>("goal");
+  // One Goal id per Plan from a split: Start again for the same Plan updates that one Goal.
+  const [goalId, setGoalId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
 
   function openCrisis(back: Phase) {
     setCrisisBack(back);
@@ -98,9 +122,9 @@ export function GoalDialogue() {
   async function requestSplit(input: { goal: string; totalMinutes: number; splitFiner: boolean }) {
     setWaitLine(splittingLine());
     setPhase("splitting");
-    let outcome: Awaited<ReturnType<typeof splitGoalAction>>;
+    let outcome: SplitOutcome;
     try {
-      outcome = await splitGoalAction(input);
+      outcome = await split(input);
     } catch {
       outcome = { status: "failed" };
     }
@@ -111,6 +135,8 @@ export function GoalDialogue() {
       setPhase("failed");
     } else {
       setPlanTitle(outcome.plan.title);
+      setGoalId(crypto.randomUUID());
+      setSaveFailed(false);
       setSteps(fromPlan(outcome.plan.steps));
       setEditing(null);
       setPhase("plan");
@@ -140,8 +166,7 @@ export function GoalDialogue() {
     setReaction(reactionFor(classifyGoalShape(text)));
     setSplitFiner(null);
     setJustSplit(false);
-    setTimeDraft("");
-    setTimeHint(false);
+    setSliderMinutes(0);
     const understood = findTimeInGoal(text);
     if (understood !== null) {
       setMinutes(understood);
@@ -157,7 +182,6 @@ export function GoalDialogue() {
   function chooseTime(value: number, answer: string) {
     setMinutes(value);
     setTimeAnswer(answer);
-    setTimeHint(false);
     if (timeMode === "understood" || timeMode === "changed") {
       setTimeMode("changed");
     } else {
@@ -172,23 +196,18 @@ export function GoalDialogue() {
     setTimeAnswer("Not sure");
     setTimeMode("not-sure");
     setAckLine(NOT_SURE_LINE);
-    setTimeHint(false);
     setPhase("split");
   }
 
   function onSendTime(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (gateFreeText(timeDraft).action === "crisis-page") {
-      setTimeDraft("");
-      openCrisis("time");
-      return;
-    }
-    const value = parseTypedTime(timeDraft);
-    if (value === null) {
-      setTimeHint(true);
-      return;
-    }
-    chooseTime(value, formatMinutes(value));
+    if (sliderMinutes <= 0) return;
+    chooseTime(sliderMinutes, formatMinutes(sliderMinutes));
+  }
+
+  function openTimeQuestion() {
+    setSliderMinutes(sliderStart(minutes));
+    setPhase("time");
   }
 
   function onJustSplit() {
@@ -227,6 +246,8 @@ export function GoalDialogue() {
   function useOneStep() {
     const total = minutes ?? DEFAULT_MINUTES;
     setPlanTitle(goal);
+    setGoalId(crypto.randomUUID());
+    setSaveFailed(false);
     setSteps(fromPlan([{ title: goal.slice(0, 80), description: "", minutes: total }]));
     setEditing(null);
     setPhase("plan");
@@ -274,11 +295,7 @@ export function GoalDialogue() {
     setEditing({ id: added.id, title: "", description: "" });
   }
 
-  function onStart() {
-    const committed = editing ? finishEditing() : steps;
-    if (committed === null) return;
-    const saved = toSavedSteps(committed);
-    if (saved.length === 0) return;
+  function openFocus(saved: StartInput["steps"]) {
     update({
       ...state,
       goal: { text: planTitle || goal, minutes: totalMinutes(saved) },
@@ -286,6 +303,38 @@ export function GoalDialogue() {
       currentStep: 0,
     });
     router.push("/try/focus");
+  }
+
+  async function onStart() {
+    if (saving) return;
+    const committed = editing ? finishEditing() : steps;
+    if (committed === null) return;
+    const saved = toSavedSteps(committed);
+    if (saved.length === 0) return;
+    if (!start) {
+      openFocus(saved);
+      return;
+    }
+    // #32: the Goal and Plan are saved on the account before the focus page opens.
+    setSaving(true);
+    setSaveFailed(false);
+    let outcome: StartOutcome;
+    try {
+      outcome = await start({
+        goalId,
+        goalText: goal,
+        title: planTitle || goal,
+        splitFiner,
+        steps: saved,
+      });
+    } catch {
+      outcome = { status: "failed" };
+    }
+    setSaving(false);
+    if (outcome.status === "saved") openFocus(outcome.steps);
+    else if (outcome.status === "crisis") openCrisis("plan");
+    else if (outcome.status === "signed-out") router.push("/auth/sign-in");
+    else setSaveFailed(true);
   }
 
   if (phase === "crisis") {
@@ -332,11 +381,7 @@ export function GoalDialogue() {
         <div className="try-system-row">
           <p className="try-system">Time: {formatMinutes(minutes)}</p>
           {phase === "split" ? (
-            <button
-              className="button-plain button-small"
-              onClick={() => setPhase("time")}
-              type="button"
-            >
+            <button className="button-plain button-small" onClick={openTimeQuestion} type="button">
               Change time
             </button>
           ) : null}
@@ -383,7 +428,20 @@ export function GoalDialogue() {
           <button className="try-link" onClick={splitAgain} type="button">
             Split again
           </button>
-          <button className="button-filled" onClick={onStart} type="button">
+          {saveFailed ? (
+            <div className="try-failure" role="alert">
+              <p className="try-system">Your Goal was not saved. Please try again.</p>
+              <button className="button-gray" onClick={() => void onStart()} type="button">
+                Retry
+              </button>
+            </div>
+          ) : null}
+          <button
+            className="button-filled"
+            disabled={saving}
+            onClick={() => void onStart()}
+            type="button"
+          >
             Start
           </button>
         </>
@@ -431,39 +489,36 @@ export function GoalDialogue() {
 
       {phase === "time" ? (
         <>
-          <div className="try-chips">
-            {QUICK_TIMES.map((item) => (
-              <button
-                className="try-chip"
-                key={item.label}
-                onClick={() => chooseTime(item.minutes, item.label)}
-                type="button"
-              >
-                {item.label}
-              </button>
-            ))}
-            {timeMode === "understood" ? null : (
+          <form className="try-time" onSubmit={onSendTime}>
+            <input
+              aria-describedby={sliderMinutes <= 0 ? "try-time-hint" : undefined}
+              aria-label="Your time"
+              aria-valuetext={sliderValueText(sliderMinutes)}
+              className="try-time-slider"
+              max={SLIDER_MAX_MINUTES}
+              min={0}
+              onChange={(event) => setSliderMinutes(Number(event.target.value))}
+              step={SLIDER_STEP_MINUTES}
+              type="range"
+              value={sliderMinutes}
+            />
+            <output aria-hidden="true" className="try-time-value">
+              {sliderValueText(sliderMinutes)}
+            </output>
+            <SendButton disabled={sliderMinutes <= 0} />
+          </form>
+          {sliderMinutes <= 0 ? (
+            <p className="try-hint" id="try-time-hint">
+              {SLIDER_ZERO_HINT}
+            </p>
+          ) : null}
+          {timeMode === "understood" ? null : (
+            <div className="try-chips">
               <button className="try-chip" onClick={chooseNotSure} type="button">
                 Not sure
               </button>
-            )}
-          </div>
-          <form className="try-composer" onSubmit={onSendTime}>
-            <input
-              aria-label="Your time"
-              autoComplete="off"
-              inputMode="decimal"
-              onChange={(event) => setTimeDraft(event.target.value)}
-              placeholder="45 or 1.5 hours"
-              value={timeDraft}
-            />
-            <SendButton />
-          </form>
-          {timeHint ? (
-            <p className="try-hint" role="status">
-              {TIME_HINT}
-            </p>
-          ) : null}
+            </div>
+          )}
           <button className="try-link" onClick={onJustSplit} type="button">
             Just split it
           </button>
@@ -488,9 +543,15 @@ function Slip({ children }: { children: string }) {
   return <p className="try-slip">{children}</p>;
 }
 
-function SendButton() {
+function SendButton(props: { disabled?: boolean }) {
   return (
-    <button aria-label="Send" className="try-send" type="submit">
+    // aria-disabled, not disabled: an inactive Send stays in the Tab order with its reason.
+    <button
+      aria-disabled={props.disabled ? true : undefined}
+      aria-label="Send"
+      className="try-send"
+      type="submit"
+    >
       <svg aria-hidden="true" viewBox="0 0 24 24">
         <path d="M12 19V5M5 12l7-7 7 7" />
       </svg>
@@ -527,6 +588,7 @@ function PlanCard(props: {
                     Title
                     <input
                       autoFocus
+                      maxLength={STEP_TITLE_MAX}
                       onChange={(event) =>
                         props.onChangeEditing({ ...editing, title: event.target.value })
                       }
@@ -536,6 +598,7 @@ function PlanCard(props: {
                   <label>
                     Description
                     <textarea
+                      maxLength={STEP_DESCRIPTION_MAX}
                       onChange={(event) =>
                         props.onChangeEditing({ ...editing, description: event.target.value })
                       }
