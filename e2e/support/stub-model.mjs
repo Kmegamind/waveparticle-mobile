@@ -15,7 +15,14 @@ createServer((request, response) => {
   let body = "";
   request.on("data", (chunk) => (body += chunk));
   request.on("end", () => {
-    const prompt = JSON.parse(body || "{}").messages?.[0]?.content ?? "";
+    let prompt = "";
+    try {
+      prompt = JSON.parse(body || "{}").messages?.[0]?.content ?? "";
+    } catch {
+      response.writeHead(400);
+      response.end();
+      return;
+    }
     prompts.push(prompt);
     response.writeHead(200, { "content-type": "application/json" });
     response.end(JSON.stringify({ choices: [{ message: { content: stubAnswer(prompt) } }] }));

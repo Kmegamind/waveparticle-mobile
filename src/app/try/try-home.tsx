@@ -2,9 +2,8 @@
 
 import Link from "next/link";
 import type { StoryProfile } from "@/lib/prototype/story-inputs";
+import { pickStory } from "@/lib/prototype/story-ids";
 import { usePrototypeState } from "./use-prototype-state";
-
-const DEFAULT_STORY = "site-search";
 
 /**
  * The test path's start page. Any of the 26 Oppenheimer stories can be chosen (#254); the goal
@@ -12,8 +11,8 @@ const DEFAULT_STORY = "site-search";
  */
 export function TryHome({ stories }: { stories: StoryProfile[] }) {
   const { ready, state, update, reset } = usePrototypeState();
-  const chosenId = state.storyId ?? DEFAULT_STORY;
-  const story = stories.find((item) => item.id === chosenId) ?? stories[0];
+  const story = pickStory(stories, state.storyId);
+  const chosenId = story.id;
 
   return (
     <main className="app-screen try-screen" data-ready={ready ? "true" : "false"}>

@@ -3,6 +3,7 @@ import type { ModelGateway } from "@/lib/model-gateway";
 import { MODEL_GATEWAY_ENV_NAMES } from "@/lib/model-gateway/server";
 import { startStory } from "@/lib/story/start";
 import { maxStoryCards, type StepCards } from "./session";
+import { DEFAULT_STORY_ID } from "./story-ids";
 import { generationInputs, isStoryId } from "./story-inputs";
 import { loadTestStory } from "./test-story";
 
@@ -24,8 +25,7 @@ export type StepCardsRequest = {
   earlierCards: string[];
 };
 
-/** A request from before #254 carries no story: it was chapter 8. */
-export const DEFAULT_STORY_ID = "site-search";
+export { DEFAULT_STORY_ID };
 
 const MAX_STEPS = 50;
 const MAX_STEP_MINUTES = 24 * 60;

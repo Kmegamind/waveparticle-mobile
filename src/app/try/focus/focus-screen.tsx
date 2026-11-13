@@ -26,10 +26,9 @@ import {
   type FocusSession,
 } from "@/lib/prototype/session";
 import { fullPageLoad } from "../full-page-load";
+import { pickStory } from "@/lib/prototype/story-ids";
 import type { StoryProfile } from "@/lib/prototype/story-inputs";
 import { usePrototypeState } from "../use-prototype-state";
-
-const DEFAULT_STORY = "site-search";
 import { loadReturnLine, loadStepCards } from "./actions";
 
 const TICK_MS = 250;
@@ -40,10 +39,8 @@ const currentTime = () => Date.now();
 export function FocusScreen({ stories }: { stories: StoryProfile[] }) {
   const { ready, state, update } = usePrototypeState();
   // #254: "My goal" is the chosen story's goal sentence (chapter 8 when none was chosen).
-  const story =
-    stories.find((item) => item.id === state.storyId) ??
-    stories.find((item) => item.id === DEFAULT_STORY);
-  const goalLine = story?.goalShort ?? "";
+  const story = pickStory(stories, state.storyId);
+  const goalLine = story.goalShort;
   const hasPlan = state.goal !== null && state.steps.length > 0;
 
   if (!ready) {

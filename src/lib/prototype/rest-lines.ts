@@ -1,6 +1,7 @@
 import type { ModelGateway } from "@/lib/model-gateway";
 import { gateFreeText } from "@/lib/safety/crisis";
 import type { RestMessage, ReturnTrigger } from "./session";
+import { DEFAULT_STORY_ID } from "./story-ids";
 import { generationInputs, isStoryId } from "./story-inputs";
 import { loadTestStory } from "./test-story";
 
@@ -21,12 +22,13 @@ export type RestReplyResponse = LineResponse | { status: "crisis" };
 export const MAX_MESSAGE_CHARS = 1_000;
 const MAX_HISTORY = 6;
 
-/** A request from before #254 carries no story: it was chapter 8. */
-const DEFAULT_STORY_ID = "site-search";
-
-/** The story being played; an unknown or missing id is chapter 8, as before #254. */
-function storyOf(storyId: unknown): string {
-  return isStoryId(storyId) ? storyId : DEFAULT_STORY_ID;
+/**
+ * The story being played. A missing id is chapter 8 (a session from before #254); an id that is
+ * present but unknown is null, and the line fails rather than switching story (#254 AC5).
+ */
+function storyOf(storyId: unknown): string | null {
+  if (storyId === undefined) return DEFAULT_STORY_ID;
+  return isStoryId(storyId) ? storyId : null;
 }
 
 /** Who he is, the place and the goal sentence, from this story's own inputs (#254). */
@@ -37,7 +39,10 @@ function baseFacts(storyId: string): string {
 
 /** The pause number for his stuck story; from the third Pause the snag is much harder (PAUSE-3). */
 export function stuckFacts(pauseNumber: number, storyId: string = DEFAULT_STORY_ID): string {
-  const parts = [baseFacts(storyOf(storyId)), `This is pause number ${pauseNumber} in this Step.`];
+  const parts = [
+    baseFacts(storyOf(storyId) ?? DEFAULT_STORY_ID),
+    `This is pause number ${pauseNumber} in this Step.`,
+  ];
   if (pauseNumber >= 3) {
     parts.push(
       "Every pause has stalled his own work and he remembers the earlier setbacks, so this snag is much harder, and he says he is worried he may fail.",
@@ -83,8 +88,9 @@ export async function pauseMessageFor(
   request: { storyId?: string; pauseNumber: number; stepTitle?: string; lastCard?: string },
   gateway: ModelGateway | null,
 ): Promise<LineResponse> {
-  if (!gateway) return { status: "ok", isTestData: true, text: loadTestStory().pauseMessage };
   const storyId = storyOf(request.storyId);
+  if (storyId === null) return { status: "failed" };
+  if (!gateway) return { status: "ok", isTestData: true, text: loadTestStory().pauseMessage };
   const input = {
     stepTitle: request.stepTitle,
     pauseNumber: request.pauseNumber,
@@ -101,6 +107,8 @@ export async function restReplyFor(
 ): Promise<RestReplyResponse> {
   // The safety gate runs first: a crisis message is never sent to the model (US-SAF-1).
   if (gateFreeText(request.message).action === "crisis-page") return { status: "crisis" };
+  const storyId = storyOf(request.storyId);
+  if (storyId === null) return { status: "failed" };
   if (!gateway) {
     const replies = loadTestStory().restReplies;
     const text = replies[Math.abs(request.replyIndex) % replies.length];
@@ -112,7 +120,7 @@ export async function restReplyFor(
   return ask(() =>
     gateway.writeRestReply({
       userMessage: request.message.slice(0, MAX_MESSAGE_CHARS),
-      facts: restFacts(history, storyOf(request.storyId)),
+      facts: restFacts(history, storyId),
     }),
   );
 }
@@ -124,12 +132,14 @@ export async function returnLineFor(
   request: { storyId?: string; trigger: ReturnTrigger; awayMinutes: number },
   gateway: ModelGateway | null,
 ): Promise<LineResponse> {
+  const storyId = storyOf(request.storyId);
+  if (storyId === null) return { status: "failed" };
   if (!gateway) return { status: "ok", isTestData: true, text: loadTestStory().returnLine };
   const input = {
     trigger: request.trigger,
-    facts: baseFacts(storyOf(request.storyId)),
+    facts: baseFacts(storyId),
     awayMinutes: request.awayMinutes,
-    forbidTerms: generationInputs(storyOf(request.storyId)).forbidTerms,
+    forbidTerms: generationInputs(storyId).forbidTerms,
   };
   const result = await ask(() => gateway.writeReturnPopup(input));
   if (result.status === "ok" && HAS_NUMBER.test(result.text)) return { status: "failed" };

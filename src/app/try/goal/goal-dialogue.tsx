@@ -45,6 +45,7 @@ import {
   STEP_TITLE_MAX,
 } from "@/lib/prototype/plan-edit";
 import type { SplitInput, SplitOutcome } from "@/lib/prototype/split-goal";
+import { pickStory } from "@/lib/prototype/story-ids";
 import { gateFreeText } from "@/lib/safety/crisis";
 import { usePrototypeState } from "../use-prototype-state";
 import { splitGoalAction } from "./actions";
@@ -89,9 +90,7 @@ export function GoalDialogue({ split = splitGoalAction, start, stories }: GoalDi
     if (openingIndex !== null) saveLastOpening(window.localStorage, openingIndex);
   }, [openingIndex]);
   // #254: on the test path the first opening is the chosen story's own (chapter 8 when none).
-  const storyOpening =
-    stories?.find((story) => story.id === (state.storyId ?? "site-search"))?.opening ??
-    FIRST_OPENING;
+  const storyOpening = stories ? pickStory(stories, state.storyId).opening : FIRST_OPENING;
   const opening = openingIndex === null ? storyOpening : RETURNING_OPENINGS[openingIndex];
 
   const [phase, setPhase] = useState<Phase>("goal");

@@ -4,7 +4,9 @@ import { describe, expect, it, vi } from "vitest";
 import { oppenheimerStories } from "@/content/oppenheimer";
 import type { ModelGateway } from "@/lib/model-gateway";
 import { cardsForStep, normaliseStepCardsRequest } from "@/lib/prototype/focus-cards";
-import { pauseMessageFor } from "@/lib/prototype/rest-lines";
+import { pauseMessageFor, restReplyFor, returnLineFor } from "@/lib/prototype/rest-lines";
+import { syncSession } from "@/lib/prototype/session";
+import { DEFAULT_STORY_ID, pickStory } from "@/lib/prototype/story-ids";
 import {
   STORY_IDS,
   generationInputs,
@@ -219,5 +221,54 @@ describe("#254 AC7 the AI-drafted note stays in every file", () => {
   it.each(STORY_IDS)("%s", (id) => {
     const note = (rawStoryInputs(id) as { _note?: string })._note ?? "";
     expect(note).toMatch(/DRAFT|draft/);
+  });
+});
+
+describe("#254 review: the story never switches", () => {
+  it("an unknown story fails his pause, rest and return lines instead of using chapter 8", async () => {
+    const { gateway, writeStuckStory } = recordingGateway();
+    const writeRestReply = vi.fn();
+    const writeReturnPopup = vi.fn();
+    Object.assign(gateway, { writeRestReply, writeReturnPopup });
+    expect(await pauseMessageFor({ storyId: "nope", pauseNumber: 1 }, gateway)).toEqual({
+      status: "failed",
+    });
+    expect(
+      await restReplyFor(
+        { storyId: "nope", message: "hello", history: [], replyIndex: 0 },
+        gateway,
+      ),
+    ).toEqual({ status: "failed" });
+    expect(
+      await returnLineFor({ storyId: "nope", trigger: "rest", awayMinutes: 3 }, gateway),
+    ).toEqual({ status: "failed" });
+    expect(writeStuckStory).not.toHaveBeenCalled();
+    expect(writeRestReply).not.toHaveBeenCalled();
+    expect(writeReturnPopup).not.toHaveBeenCalled();
+  });
+
+  it("the focus session of one story is never reused for another with the same Plan", () => {
+    const plan = {
+      goal: { text: "Read the paper", minutes: 20 },
+      steps: [{ title: "Read", description: "", minutes: 20 }],
+    };
+    const chapter8 = syncSession(null, { ...plan, storyId: "site-search" }, 1);
+    expect(syncSession(chapter8, { ...plan, storyId: "site-search" }, 1)).toBe(chapter8);
+    expect(syncSession(chapter8, { ...plan, storyId: "bohr-difficulties" }, 1)).not.toBe(chapter8);
+  });
+
+  it("every screen picks the story the same way: the chosen one, else chapter 8", () => {
+    const stories = storyProfiles();
+    expect(pickStory(stories, "trinity").id).toBe("trinity");
+    expect(pickStory(stories, undefined).id).toBe(DEFAULT_STORY_ID);
+    expect(pickStory(stories, "nope").id).toBe(DEFAULT_STORY_ID);
+    for (const file of [
+      "src/app/try/try-home.tsx",
+      "src/app/try/focus/focus-screen.tsx",
+      "src/app/try/goal/goal-dialogue.tsx",
+    ]) {
+      expect(read(file), file).toContain("pickStory(");
+      expect(read(file), file).not.toContain('"site-search"');
+    }
   });
 });
