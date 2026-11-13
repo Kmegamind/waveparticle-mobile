@@ -42,6 +42,7 @@ import {
   type EditableStep,
   MINUTES_STEP,
 } from "@/lib/prototype/plan-edit";
+import type { SplitInput, SplitOutcome } from "@/lib/prototype/split-goal";
 import { gateFreeText } from "@/lib/safety/crisis";
 import { usePrototypeState } from "../use-prototype-state";
 import { splitGoalAction } from "./actions";
@@ -51,7 +52,26 @@ type TimeMode = "asked" | "not-sure" | "understood" | "changed";
 
 const DEFAULT_MINUTES = 30;
 
-export function GoalDialogue() {
+/** The account save on Start (#32). Defined in src/lib/goals; /try passes nothing. */
+type StartInput = {
+  goalId: string;
+  goalText: string;
+  title: string;
+  splitFiner: boolean | null;
+  steps: { title: string; description: string; minutes: number }[];
+};
+type StartOutcome =
+  | { status: "saved"; goalId: string; steps: StartInput["steps"] }
+  | { status: "signed-out" | "crisis" | "invalid" | "failed" };
+
+type GoalDialogueProps = {
+  /** The split; /try uses its own action (docs/decisions/0012). */
+  split?: (input: SplitInput) => Promise<SplitOutcome>;
+  /** Saves the Goal and Plan on the account before the focus page opens (/goal only). */
+  start?: (input: StartInput) => Promise<StartOutcome>;
+};
+
+export function GoalDialogue({ split = splitGoalAction, start }: GoalDialogueProps = {}) {
   const router = useRouter();
   const { ready, state, update } = usePrototypeState();
   const returning = state.goal !== null;
@@ -87,6 +107,10 @@ export function GoalDialogue() {
     null,
   );
   const [crisisBack, setCrisisBack] = useState<Phase>("goal");
+  // One Goal id per Plan from a split: Start again for the same Plan updates that one Goal.
+  const [goalId, setGoalId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
 
   function openCrisis(back: Phase) {
     setCrisisBack(back);
@@ -96,9 +120,9 @@ export function GoalDialogue() {
   async function requestSplit(input: { goal: string; totalMinutes: number; splitFiner: boolean }) {
     setWaitLine(splittingLine());
     setPhase("splitting");
-    let outcome: Awaited<ReturnType<typeof splitGoalAction>>;
+    let outcome: SplitOutcome;
     try {
-      outcome = await splitGoalAction(input);
+      outcome = await split(input);
     } catch {
       outcome = { status: "failed" };
     }
@@ -109,6 +133,8 @@ export function GoalDialogue() {
       setPhase("failed");
     } else {
       setPlanTitle(outcome.plan.title);
+      setGoalId(crypto.randomUUID());
+      setSaveFailed(false);
       setSteps(fromPlan(outcome.plan.steps));
       setEditing(null);
       setPhase("plan");
@@ -218,6 +244,8 @@ export function GoalDialogue() {
   function useOneStep() {
     const total = minutes ?? DEFAULT_MINUTES;
     setPlanTitle(goal);
+    setGoalId(crypto.randomUUID());
+    setSaveFailed(false);
     setSteps(fromPlan([{ title: goal.slice(0, 80), description: "", minutes: total }]));
     setEditing(null);
     setPhase("plan");
@@ -265,11 +293,7 @@ export function GoalDialogue() {
     setEditing({ id: added.id, title: "", description: "" });
   }
 
-  function onStart() {
-    const committed = editing ? finishEditing() : steps;
-    if (committed === null) return;
-    const saved = toSavedSteps(committed);
-    if (saved.length === 0) return;
+  function openFocus(saved: StartInput["steps"]) {
     update({
       ...state,
       goal: { text: planTitle || goal, minutes: totalMinutes(saved) },
@@ -277,6 +301,38 @@ export function GoalDialogue() {
       currentStep: 0,
     });
     router.push("/try/focus");
+  }
+
+  async function onStart() {
+    if (saving) return;
+    const committed = editing ? finishEditing() : steps;
+    if (committed === null) return;
+    const saved = toSavedSteps(committed);
+    if (saved.length === 0) return;
+    if (!start) {
+      openFocus(saved);
+      return;
+    }
+    // #32: the Goal and Plan are saved on the account before the focus page opens.
+    setSaving(true);
+    setSaveFailed(false);
+    let outcome: StartOutcome;
+    try {
+      outcome = await start({
+        goalId,
+        goalText: goal,
+        title: planTitle || goal,
+        splitFiner,
+        steps: saved,
+      });
+    } catch {
+      outcome = { status: "failed" };
+    }
+    setSaving(false);
+    if (outcome.status === "saved") openFocus(outcome.steps);
+    else if (outcome.status === "crisis") openCrisis("plan");
+    else if (outcome.status === "signed-out") router.push("/auth/sign-in");
+    else setSaveFailed(true);
   }
 
   if (phase === "crisis") {
@@ -374,7 +430,20 @@ export function GoalDialogue() {
           <button className="try-link" onClick={splitAgain} type="button">
             Split again
           </button>
-          <button className="button-filled" onClick={onStart} type="button">
+          {saveFailed ? (
+            <div className="try-failure" role="alert">
+              <p className="try-system">Your Goal was not saved. Please try again.</p>
+              <button className="button-gray" onClick={() => void onStart()} type="button">
+                Retry
+              </button>
+            </div>
+          ) : null}
+          <button
+            className="button-filled"
+            disabled={saving}
+            onClick={() => void onStart()}
+            type="button"
+          >
             Start
           </button>
         </>
