@@ -379,11 +379,7 @@ export function GoalDialogue({ split = splitGoalAction, start }: GoalDialoguePro
         <div className="try-system-row">
           <p className="try-system">Time: {formatMinutes(minutes)}</p>
           {phase === "split" ? (
-            <button
-              className="button-plain button-small"
-              onClick={openTimeQuestion}
-              type="button"
-            >
+            <button className="button-plain button-small" onClick={openTimeQuestion} type="button">
               Change time
             </button>
           ) : null}

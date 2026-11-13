@@ -168,21 +168,25 @@ describe("#32 US-GD-15 Start saves the Goal and the Plan", () => {
   it("#32 a crisis in the goal or in any Step saves nothing", async () => {
     const inGoal = memoryWriter();
     expect(
-      (await startGoal(input({ goalText: "I want to kill myself" }), {
-        userId: USER,
-        writer: inGoal.writer,
-      })).status,
+      (
+        await startGoal(input({ goalText: "I want to kill myself" }), {
+          userId: USER,
+          writer: inGoal.writer,
+        })
+      ).status,
     ).toBe("crisis");
     expect(inGoal.calls).toEqual([]);
 
     const inStep = memoryWriter();
     expect(
-      (await startGoal(
-        input({
-          steps: [{ title: "Draft it", description: "I want to kill myself", minutes: 30 }],
-        }),
-        { userId: USER, writer: inStep.writer },
-      )).status,
+      (
+        await startGoal(
+          input({
+            steps: [{ title: "Draft it", description: "I want to kill myself", minutes: 30 }],
+          }),
+          { userId: USER, writer: inStep.writer },
+        )
+      ).status,
     ).toBe("crisis");
     expect(inStep.calls).toEqual([]);
   });

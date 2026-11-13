@@ -271,7 +271,11 @@ describe("#39 the test-data splitter (used only when no model keys are set)", ()
     "TIME-SLIDER adds up to a slider time of %i that is not a multiple of 15",
     (total) => {
       for (const splitFiner of [false, true]) {
-        const plan = splitWithTestData({ goal: "Write the report", totalMinutes: total, splitFiner });
+        const plan = splitWithTestData({
+          goal: "Write the report",
+          totalMinutes: total,
+          splitFiner,
+        });
         expect(plan.steps.reduce((sum, step) => sum + step.minutes, 0)).toBe(total);
         plan.steps.forEach((step) => expect(step.minutes).toBeGreaterThanOrEqual(1));
       }
