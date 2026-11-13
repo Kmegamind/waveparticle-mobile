@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
 import { formatClock } from "@/lib/clock";
 import type { PrototypeState } from "@/lib/prototype/store";
@@ -14,17 +13,21 @@ import {
   parseSpeed,
   pauseSession,
   remainingFor,
-  resumeSession,
+  returnOnOpen,
   saveSession,
+  setReturnLine,
   setStepCards,
+  startFromReturn,
+  startRest,
   syncSession,
   tick,
   undoDone,
   visibleCards,
   type FocusSession,
 } from "@/lib/prototype/session";
+import { fullPageLoad } from "../full-page-load";
 import { usePrototypeState } from "../use-prototype-state";
-import { loadStepCards } from "./actions";
+import { loadReturnLine, loadStepCards } from "./actions";
 
 const TICK_MS = 250;
 const SWIPE_PX = 40;
@@ -52,9 +55,9 @@ export function FocusScreen({ goalLine }: { goalLine: string }) {
 function initialSession(plan: PrototypeState): FocusSession {
   const speed = parseSpeed(new URLSearchParams(window.location.search).get("speed") ?? undefined);
   const synced = syncSession(loadSession(window.localStorage), plan, speed);
-  // Coming back to the page restarts a clock frozen by leaving or Pause. The return pop-up
-  // (F-RET) is not built on the test path yet.
-  return resumeSession(synced, currentTime());
+  // A frozen clock restarts at once after a short absence; after Back to step or 5 minutes or
+  // more away, the return pop-up (F-RET) opens first and the clock waits for Start.
+  return returnOnOpen(synced, currentTime());
 }
 
 function FocusBody({
@@ -66,7 +69,6 @@ function FocusBody({
   plan: PrototypeState;
   update: (next: PrototypeState) => void;
 }) {
-  const router = useRouter();
   const [session, setSession] = useState<FocusSession>(() => initialSession(plan));
   const [now, setNow] = useState(currentTime);
   const [failed, setFailed] = useState<Record<number, boolean>>({});
@@ -78,6 +80,10 @@ function FocusBody({
   const loading = useRef(new Set<number>());
   const timeReached = useRef(new Set<number>());
   const swipeStart = useRef<number | null>(null);
+  const [returnFailed, setReturnFailed] = useState(false);
+  const [returnIsTestData, setReturnIsTestData] = useState(false);
+  const returnRequested = useRef(false);
+  const startButton = useRef<HTMLButtonElement>(null);
 
   const steps = plan.steps;
   const total = steps.length;
@@ -104,7 +110,7 @@ function FocusBody({
       setSession((current) =>
         document.visibilityState === "hidden"
           ? pauseSession(current, at)
-          : resumeSession(current, at),
+          : returnOnOpen(current, at),
       );
     };
     const onHide = () => {
@@ -179,7 +185,7 @@ function FocusBody({
     setViewIndex(null);
     setStepsOpen(false);
     if (isFinished(next)) {
-      router.push("/try/end");
+      fullPageLoad("/try/end");
       return;
     }
     const nextStep = steps[next.current];
@@ -214,11 +220,46 @@ function FocusBody({
     setToastHeldMs(null);
   }
 
-  function onPause() {
-    const next = pauseSession(session, currentTime());
+  // His return line for the pop-up: written once for this return and stored (#57 AC3).
+  const returnPending = session.returnPending;
+  const returnLine = session.returnLine;
+  useEffect(() => {
+    if (!returnPending || returnLine !== null || returnFailed || returnRequested.current) return;
+    returnRequested.current = true;
+    const pausedAt = session.pausedAtMs ?? currentTime();
+    const awayMinutes = ((currentTime() - pausedAt) / 60_000) * session.speed;
+    loadReturnLine({ trigger: returnPending, awayMinutes })
+      .catch(() => ({ status: "failed" as const }))
+      .then((result) => {
+        returnRequested.current = false;
+        if (result.status === "ok") {
+          setReturnIsTestData(result.isTestData);
+          setSession((current) =>
+            current.returnPending ? setReturnLine(current, result.text) : current,
+          );
+        } else {
+          setReturnFailed(true);
+        }
+      });
+  }, [returnFailed, returnLine, returnPending, session.pausedAtMs, session.speed]);
+
+  // Focus moves to Start when his line is there.
+  useEffect(() => {
+    if (returnPending && returnLine !== null) startButton.current?.focus();
+  }, [returnLine, returnPending]);
+
+  function onStart() {
+    const next = startFromReturn(session, currentTime());
     setSession(next);
     saveSession(window.localStorage, next);
-    router.push("/try/rest");
+    setViewIndex(null);
+  }
+
+  function onPause() {
+    const next = startRest(session, currentTime());
+    setSession(next);
+    saveSession(window.localStorage, next);
+    fullPageLoad("/try/rest");
   }
 
   function onRetry() {
@@ -252,152 +293,203 @@ function FocusBody({
 
   return (
     <main className="focus-page" data-ready="true">
-      <header className="focus-seam">
-        {total > 1 ? <p className="focus-step-label">{`Step ${index + 1} of ${total}`}</p> : null}
-        <p aria-label="Time left" className="focus-clock" role="timer">
-          {formatClock(remaining)}
+      <div className="focus-frame" inert={returnPending !== null}>
+        <header className="focus-seam">
+          {total > 1 ? <p className="focus-step-label">{`Step ${index + 1} of ${total}`}</p> : null}
+          <p aria-label="Time left" className="focus-clock" role="timer">
+            {formatClock(remaining)}
+          </p>
+        </header>
+
+        <div className="focus-middle" key={index}>
+          <section aria-labelledby="his-side" className="focus-his">
+            <h2 className="focus-label" id="his-side">
+              My goal
+            </h2>
+            <p className="focus-goal-line">{goalLine}</p>
+            {isTestData ? <p className="try-caption">Test data: chapter 8 cards</p> : null}
+
+            {showFailure ? (
+              <div className="focus-failure">
+                <p>He is not here right now. Please try again.</p>
+                <button className="button-filled" onClick={onRetry} type="button">
+                  Retry
+                </button>
+              </div>
+            ) : cards.length > 0 ? (
+              <>
+                <div
+                  aria-label="Story cards"
+                  className="focus-stack"
+                  onKeyDown={(event) => {
+                    if (event.key === "ArrowLeft" && shown > 0) earlier();
+                    if (event.key === "ArrowRight" && shown < cards.length - 1) newer();
+                  }}
+                  onPointerDown={onPointerDown}
+                  onPointerUp={onPointerUp}
+                  role="group"
+                  tabIndex={0}
+                >
+                  <figure className="focus-slip" data-testid="story-card">
+                    <span aria-hidden="true" className="focus-tape" />
+                    <p>{cards[shown]}</p>
+                  </figure>
+                </div>
+                <div className="focus-pager">
+                  <button
+                    className="button-plain button-small"
+                    disabled={shown === 0}
+                    onClick={earlier}
+                    type="button"
+                  >
+                    ‹ Earlier card
+                  </button>
+                  <span aria-hidden="true" className="focus-dots">
+                    {cards.map((card, position) => (
+                      <span
+                        className={position === shown ? "focus-dot focus-dot-on" : "focus-dot"}
+                        key={`${position}-${card.slice(0, 8)}`}
+                      />
+                    ))}
+                  </span>
+                  <button
+                    className="button-plain button-small"
+                    disabled={shown >= cards.length - 1}
+                    onClick={newer}
+                    type="button"
+                  >
+                    Newer card ›
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </section>
+
+          <section aria-labelledby="your-side" className="focus-yours">
+            <h2 className="focus-label" id="your-side">
+              Your goal
+            </h2>
+            <p>{plan.goal?.text}</p>
+            <h2 className="focus-label">Now</h2>
+            <p className="focus-step-title">{step.title}</p>
+            {step.description ? <p className="focus-step-description">{step.description}</p> : null}
+            {total > 1 ? (
+              <>
+                <button
+                  aria-controls="your-steps"
+                  aria-expanded={stepsOpen}
+                  className="button-gray button-small"
+                  onClick={() => setStepsOpen((open) => !open)}
+                  type="button"
+                >
+                  Your Steps
+                </button>
+                {stepsOpen ? (
+                  <ol className="focus-steps" id="your-steps">
+                    {steps.map((item, position) => {
+                      const status =
+                        position < session.current ? "done" : position === index ? "now" : "to do";
+                      return (
+                        <li className="focus-steps-row" key={`${position}-${item.title}`}>
+                          <span
+                            aria-hidden="true"
+                            className={`focus-mark focus-mark-${status.replace(" ", "-")}`}
+                          />
+                          <span>{item.title}</span>
+                          <span className="sr-only">{`, ${status}`}</span>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                ) : null}
+              </>
+            ) : null}
+          </section>
+        </div>
+
+        <footer className="focus-actions">
+          <button
+            className="button-filled"
+            disabled={holding || finished}
+            onClick={onDone}
+            type="button"
+          >
+            Done
+          </button>
+          <button className="button-gray" onClick={onPause} type="button">
+            Pause
+          </button>
+        </footer>
+
+        {undoOpen ? (
+          <div
+            className="focus-toast"
+            onBlur={releaseToast}
+            onFocus={holdToast}
+            onMouseEnter={holdToast}
+            onMouseLeave={releaseToast}
+            role="status"
+          >
+            <span>Step done</span>
+            <button className="focus-toast-action" onClick={onUndo} type="button">
+              Undo
+            </button>
+          </div>
+        ) : null}
+
+        <p aria-live="polite" className="sr-only">
+          {announcement}
         </p>
-      </header>
-
-      <div className="focus-middle" key={index}>
-        <section aria-labelledby="his-side" className="focus-his">
-          <h2 className="focus-label" id="his-side">
-            My goal
-          </h2>
-          <p className="focus-goal-line">{goalLine}</p>
-          {isTestData ? <p className="try-caption">Test data: chapter 8 cards</p> : null}
-
-          {showFailure ? (
-            <div className="focus-failure">
-              <p>He is not here right now. Please try again.</p>
-              <button className="button-filled" onClick={onRetry} type="button">
-                Retry
-              </button>
-            </div>
-          ) : cards.length > 0 ? (
-            <>
-              <div
-                aria-label="Story cards"
-                className="focus-stack"
-                onKeyDown={(event) => {
-                  if (event.key === "ArrowLeft" && shown > 0) earlier();
-                  if (event.key === "ArrowRight" && shown < cards.length - 1) newer();
-                }}
-                onPointerDown={onPointerDown}
-                onPointerUp={onPointerUp}
-                role="group"
-                tabIndex={0}
-              >
-                <figure className="focus-slip" data-testid="story-card">
-                  <span aria-hidden="true" className="focus-tape" />
-                  <p>{cards[shown]}</p>
-                </figure>
-              </div>
-              <div className="focus-pager">
-                <button
-                  className="button-plain button-small"
-                  disabled={shown === 0}
-                  onClick={earlier}
-                  type="button"
-                >
-                  ‹ Earlier card
-                </button>
-                <span aria-hidden="true" className="focus-dots">
-                  {cards.map((card, position) => (
-                    <span
-                      className={position === shown ? "focus-dot focus-dot-on" : "focus-dot"}
-                      key={`${position}-${card.slice(0, 8)}`}
-                    />
-                  ))}
-                </span>
-                <button
-                  className="button-plain button-small"
-                  disabled={shown >= cards.length - 1}
-                  onClick={newer}
-                  type="button"
-                >
-                  Newer card ›
-                </button>
-              </div>
-            </>
-          ) : null}
-        </section>
-
-        <section aria-labelledby="your-side" className="focus-yours">
-          <h2 className="focus-label" id="your-side">
-            Your goal
-          </h2>
-          <p>{plan.goal?.text}</p>
-          <h2 className="focus-label">Now</h2>
-          <p className="focus-step-title">{step.title}</p>
-          {step.description ? <p className="focus-step-description">{step.description}</p> : null}
-          {total > 1 ? (
-            <>
-              <button
-                aria-controls="your-steps"
-                aria-expanded={stepsOpen}
-                className="button-gray button-small"
-                onClick={() => setStepsOpen((open) => !open)}
-                type="button"
-              >
-                Your Steps
-              </button>
-              {stepsOpen ? (
-                <ol className="focus-steps" id="your-steps">
-                  {steps.map((item, position) => {
-                    const status =
-                      position < session.current ? "done" : position === index ? "now" : "to do";
-                    return (
-                      <li className="focus-steps-row" key={`${position}-${item.title}`}>
-                        <span
-                          aria-hidden="true"
-                          className={`focus-mark focus-mark-${status.replace(" ", "-")}`}
-                        />
-                        <span>{item.title}</span>
-                        <span className="sr-only">{`, ${status}`}</span>
-                      </li>
-                    );
-                  })}
-                </ol>
-              ) : null}
-            </>
-          ) : null}
-        </section>
       </div>
 
-      <footer className="focus-actions">
-        <button
-          className="button-filled"
-          disabled={holding || finished}
-          onClick={onDone}
-          type="button"
-        >
-          Done
-        </button>
-        <button className="button-gray" onClick={onPause} type="button">
-          Pause
-        </button>
-      </footer>
-
-      {undoOpen ? (
-        <div
-          className="focus-toast"
-          onBlur={releaseToast}
-          onFocus={holdToast}
-          onMouseEnter={holdToast}
-          onMouseLeave={releaseToast}
-          role="status"
-        >
-          <span>Step done</span>
-          <button className="focus-toast-action" onClick={onUndo} type="button">
-            Undo
-          </button>
+      {returnPending ? (
+        <div className="return-shade">
+          <div
+            aria-describedby="return-line"
+            aria-modal="true"
+            className="return-popup"
+            role="dialog"
+          >
+            {returnFailed ? (
+              <div className="focus-failure" id="return-line">
+                <p>He is not here right now. Please try again.</p>
+                <button
+                  className="button-filled"
+                  onClick={() => setReturnFailed(false)}
+                  type="button"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <>
+                {returnIsTestData ? <p className="try-caption">Test data: return line</p> : null}
+                <figure className="focus-slip" id="return-line">
+                  <span aria-hidden="true" className="focus-tape" />
+                  {returnLine !== null ? (
+                    <p>{returnLine}</p>
+                  ) : (
+                    <p aria-hidden="true" className="rest-dots">
+                      <span />
+                      <span />
+                      <span />
+                    </p>
+                  )}
+                </figure>
+                <button
+                  className="button-filled"
+                  disabled={returnLine === null}
+                  onClick={onStart}
+                  ref={startButton}
+                  type="button"
+                >
+                  Start
+                </button>
+              </>
+            )}
+          </div>
         </div>
       ) : null}
-
-      <p aria-live="polite" className="sr-only">
-        {announcement}
-      </p>
     </main>
   );
 }
