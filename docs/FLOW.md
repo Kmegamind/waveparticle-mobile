@@ -71,7 +71,7 @@ Some screen names below name a state of a page rather than a separate page. For 
 
 ### 3.2 Tab bar
 
-The tab bar has four items: **Home**, **Goals**, **Companions**, **Me**. It appears only on the top-level pages of those four tabs: the Home states, G1, G5, G5-D and G6, COMP, and ME. It does not appear on CPAGE and CPAGE-S (see Open questions, item 7), on goal detail pages, on the session record, in the goal dialogue, on the focus or rest pages, on S1, or on END. Sheets sit over a top-level page and keep it visible but inactive.
+The tab bar has four items: **Home**, **Goals**, **Companions**, **Me**. It appears where prototype version 4 shows it (decided by Yue on 2026-11-13): the Home states, G1, G5, G5-D and G6, COMP, CPAGE (the Life Path, also CPAGE-M), CPAGE-S, ME, the Signals sub-page, ME-CAL, and the session record ME-REC. It does not appear on the sign-in and account pages, on account deletion, on goal detail pages (G4), in the goal dialogue, on the focus or rest pages, on S1, or on END. Sheets sit over a page and keep it and its tab bar visible but inactive. The per-screen table read from the prototype is in `docs/superpowers/specs/2026-11-12-shared-v4-styles-design.md` ("Where the tab bar shows").
 
 The last tab used inside Goals (in progress, on hold, done, history) is remembered. Tab items carry no badges and no counts.
 
@@ -274,7 +274,7 @@ Each entry gives: **Frame** (page, sheet or state), **Purpose**, **Shows**, **Ca
 
 #### CPAGE · Oppenheimer, Life Path
 
-- **Frame:** child page of Companions with a ‹ "Back to Companions" and the heading "Oppenheimer"; no tab bar. It opens scrolled to the current card.
+- **Frame:** child page of Companions with a ‹ "Back to Companions" and the heading "Oppenheimer"; with the tab bar (section 3.2). It opens scrolled to the current card.
 - **Purpose:** show his life as a path of stories and start the next one.
 - **Shows:** a plain ruler with ticks and a marker and no fill, and a list of rows with every story of the path. Shape carries the state of each row:
   - Finished (you finished it): solid dot and ›, the story title and his past-tense line. Tappable.
@@ -290,7 +290,7 @@ Each entry gives: **Frame** (page, sheet or state), **Purpose**, **Shows**, **Ca
 
 #### CPAGE-S · A Companion with one story
 
-- **Frame:** child page of Companions, no tab bar.
+- **Frame:** child page of Companions, with the tab bar (section 3.2).
 - **Purpose:** introduce a Companion that has one climactic story and no path.
 - **Shows:** the Companion's portrait, name and tags, and one card with "One story" and a first-person story line. No path and no progress count.
 - **Can do and leads to:** **Begin** opens GD1. **‹** returns to COMP.
@@ -526,7 +526,7 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 
 #### ME-REC · Session record
 
-- **Frame:** child page of Me with ‹ "Back to History"; no tab bar. It is also opened from rows in G6 and G4.
+- **Frame:** child page of Me with ‹ "Back to History"; with the tab bar (section 3.2). It is also opened from rows in G6 and G4.
 - **Purpose:** show one finished session as a plain record.
 - **Shows:** the date, the duration, the Goal name, and the Steps on which the user pressed Done (Step titles only). A Step is shown as done only because Done was pressed, never from text the user typed. No score, no total, no "N of M", no "partial".
 - **Can do and leads to:** **‹** returns to the screen that opened it.
@@ -666,7 +666,7 @@ The interactive prototype `wp-prototype_2026-10-29_v1.html` is the current visua
 12. **Home fixtures and state after finishing.** The prototype Home always shows two Quick Replay chips and an "In progress" row from sample data, and a hard-coded name, whatever the account holds. After the last Step or after Put on hold, it falls back to the first-visit card "Let's launch your first wave". Home must read only the signed-in account and, with nothing in progress, keep a small trace of the Companion.
 13. **Companions list.** The prototype opens a Companion's page when its row is tapped. The decision is select first, then press one **Enter** button.
 14. **Life Path.** The prototype opens on chapter 8 with seven "his memory" rows above it and later rows that cannot be opened. New users start at chapter 1, and all stories are shown and playable.
-15. **Tab bar on CPAGE.** The prototype shows the tab bar on the Life Path page. The story-map specification says CPAGE has no tab bar (see Open questions, item 7).
+15. **Tab bar on CPAGE.** The story-map specification says CPAGE has no tab bar. Decided (Yue, 2026-11-13): as in the prototype, the tab bar shows on CPAGE, CPAGE-S and the session record (section 3.2).
 16. **Me page.** The prototype's Me has a Language row with a disabled Chinese option, a Reminders row and a Replay intro row, and no signal settings. English only, Reminders hidden until the start-time feature exists, and a Signals sub-page is added.
 17. **History.** The prototype's history rows cannot be opened. Rows open the session record (ME-REC), and there is no weekly total row.
 18. **Safety.** The prototype uses one keyword test and one page. The decision is a classifier with two tiers, crisis and ordinary stress, and real hotlines by region.
@@ -684,7 +684,7 @@ Each item names the files that disagree or leave the point open. File names are 
 4. **What Home shows with nothing in progress.** Decided: after finishing, Home keeps a small trace of the Companion; on a first visit it shows one card and no sample data; after a long absence with nothing in progress it shows no welcome back. Not decided: what the trace shows and whether a New session action sits beside it. File: `NF4_home-and-life-state_ux-spec_..._v4`.
 5. **Where "Start something else" leads.** The prototype opens Companions. `PRDs_MomTest/NF7_v6_goal-dialogue-spec` (sections 2.3 and 12) opens the shorter returning opening. `FLOW_jump-rules-and-screen-registry_2026-10-29_v1_draft` used a sheet that is now deferred.
 6. **Where ‹ on GD1 leads.** `NF7_v6_goal-dialogue-spec` (section 5) says Companions; the prototype goes to CPAGE or to Home if a Goal is in progress.
-7. **CPAGE and CPAGE-S.** `StoryMap_Feature_Docs/STORYMAP_03_ux-functional-spec` says the seven single-story Companions skip CPAGE (Enter opens GD1) and that CPAGE has no tab bar; the prototype and the screen set include CPAGE-S and the prototype shows a tab bar on CPAGE. The same file says system back on the Life Path goes to Home in one table and to COMP in another.
+7. **CPAGE and CPAGE-S.** `StoryMap_Feature_Docs/STORYMAP_03_ux-functional-spec` says the seven single-story Companions skip CPAGE (Enter opens GD1) and that CPAGE has no tab bar; the prototype and the screen set include CPAGE-S. The tab bar part is decided: it shows on CPAGE and CPAGE-S, as in the prototype (section 3.2). The same file says system back on the Life Path goes to Home in one table and to COMP in another.
 8. **Begin with several Goals.** The goal picker (PICK) is deferred, so Begin always opens GD1. `Goals_Feature_Docs/GOALS_03_ux-functional-spec` (section 6.5) and `STORYMAP_03_ux-functional-spec` (section 5) leave open what happens when the current story already has an open Step plan for a Goal.
 9. **Finished rows, LPH, S6, END record.** Finished rows should open a record screen (LPH) that is not in this set. S6 is not in the set. `STORYMAP_03_ux-functional-spec` leaves "Your record" on END, and his pending thing card, undecided.
 10. **Plan editing.** Decided: no maximum number of Steps, full editing, a short title and a description of one or two sentences per Step, and the plan matches the time given. Not decided: the range of minutes per Step, move up and down buttons, and the real AI planning prompt, which must replace the placeholder in `docs/ai/AI_01`. File: `PRDs_MomTest/NF7_v7_user-test-research-and-changes`.
