@@ -241,3 +241,19 @@ describe("#240 C11 tape", () => {
     expect(css).not.toMatch(/\.focus-slip[^{,]*\.focus-tape\s*\{[^}]*display: none/);
   });
 });
+
+describe("#240 skin-relative tokens", () => {
+  it("#240 C5 the paper shadow follows each skin's ink", async () => {
+    const css = await read("src/app/tokens.css");
+    for (const selector of [
+      ":root",
+      ".theme-dark",
+      ".skin-opp",
+      ".theme-shell:not(.theme-light)",
+    ]) {
+      expect(block(css, selector), selector).toContain(
+        "--shadow-paper: 0 0.625rem 1.25rem -0.875rem color-mix(in srgb, var(--ink) 45%, transparent)",
+      );
+    }
+  });
+});

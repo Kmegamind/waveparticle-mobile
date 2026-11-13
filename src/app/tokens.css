@@ -116,6 +116,7 @@
   --tag-edge: #6e9876;
   --tape: color-mix(in srgb, #a1caa8 55%, transparent);
   --tape-ring: color-mix(in srgb, var(--tag-edge) 35%, transparent);
+  --shadow-paper: 0 0.625rem 1.25rem -0.875rem color-mix(in srgb, var(--ink) 45%, transparent);
 }
 
 .skin-opp {
@@ -142,6 +143,7 @@
   --tag-edge: #6e9876;
   --tape: color-mix(in srgb, #a1caa8 55%, transparent);
   --tape-ring: color-mix(in srgb, var(--tag-edge) 35%, transparent);
+  --shadow-paper: 0 0.625rem 1.25rem -0.875rem color-mix(in srgb, var(--ink) 45%, transparent);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -169,6 +171,7 @@
     --tag-edge: #6e9876;
     --tape: color-mix(in srgb, #a1caa8 55%, transparent);
     --tape-ring: color-mix(in srgb, var(--tag-edge) 35%, transparent);
+    --shadow-paper: 0 0.625rem 1.25rem -0.875rem color-mix(in srgb, var(--ink) 45%, transparent);
   }
 }
 
