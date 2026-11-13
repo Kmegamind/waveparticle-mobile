@@ -830,8 +830,8 @@ a {
   opacity: 0.35;
 }
 
-/* TIME-SLIDER (issue #32): the time question is a slider from 0 to 3 hours. Placement on the
-   GD2 screen belongs to issue #235. */
+/* TIME-SLIDER (issue 32): the time question is a slider from 0 to 3 hours. Placement on the
+   GD2 screen belongs to issue 235. */
 .try-time {
   align-items: center;
   display: flex;
