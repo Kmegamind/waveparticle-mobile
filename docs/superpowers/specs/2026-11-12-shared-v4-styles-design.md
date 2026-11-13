@@ -42,7 +42,7 @@ Read from prototype version 4 on 2026-11-12: every screen in `scripts/design/ref
 | S1 (safety) | no | `/safety` |
 | END (summary) | no | not built (`/try/end`) |
 
-Implemented as a list in `src/app/shell.tsx`: the tab bar shows on `/`, `/goals`, `/companions` and every page below it, and `/me` and every page below it except a future account deletion page; it hides on everything else, including any future page below `/goals/` (Goal detail). This differs from `docs/FLOW.md` 3.2, which hides the tab bar on CPAGE, CPAGE-S and the session record; the prototype wins for looks, and the pull request lists the FLOW difference for a human.
+Implemented as a list in `src/app/shell.tsx`: the tab bar shows on `/`, `/goals`, `/companions` and every page below it, and `/me` and every page below it except a future account deletion page; it hides on everything else, including any future page below `/goals/` (Goal detail). This differs from `docs/FLOW.md` 3.2, which hides the tab bar on CPAGE, CPAGE-S and the session record; the prototype wins for looks, and the pull request lists the FLOW difference for a human. (Settled on 2026-11-13 by Yue: FLOW 3.2 now follows the prototype, issue #245.)
 
 ## Chat threads and tape
 
