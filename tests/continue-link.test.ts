@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => undefined }) }));
 // Sign out builds a Supabase client while rendering; it is not what these tests check.
 vi.mock("@/app/auth/auth-form", () => ({ SignOutButton: () => null }));
+vi.mock("@/app/home-actions", () => ({ setGoalStatusAction: async () => ({ status: "failed" }) }));
 
 const { ContinueLink, continueHref } = await import("@/app/continue-link");
 const { GoalsProgress } = await import("@/app/progress-view");
@@ -35,19 +36,29 @@ describe("#69 AC3 the Continue link", () => {
     expect(read("src/app/continue-link.tsx")).not.toMatch(/from "next\/link"/);
   });
 
-  it("shows on Home next to an in-progress Goal and not next to a done one", () => {
+  it("shows on Home in the card of the Goal in progress", () => {
+    // #268 replaced the Home list with the prototype's Goal card; Continue sits in that card.
     const html = renderToStaticMarkup(
       createElement(ProtectedHome, {
-        email: "a@example.com",
-        goals: [
-          { id: GOAL, title: "Write the report", continueHref: `/focus?goal=${GOAL}` },
-          { id: "g2", title: "Old goal", continueHref: null },
-        ],
+        view: {
+          kind: "goal",
+          card: {
+            goalId: GOAL,
+            title: "Write the report",
+            companion: "Oppenheimer",
+            stepLabel: "Step 1: Outline",
+            line: null,
+            status: "in_progress",
+          },
+          companions: [],
+          inProgress: [{ goalId: GOAL, title: "Write the report", companion: "Oppenheimer" }],
+        },
+        continueHref: `/focus?goal=${GOAL}`,
+        sessionPagesEnabled: true,
       }),
     );
     expect(html).toContain("Write the report");
     expect(html).toContain(`href="/focus?goal=${GOAL}">Continue</a>`);
-    expect(html).toContain("Old goal");
     expect(html.match(/>Continue</g)).toHaveLength(1);
   });
 
