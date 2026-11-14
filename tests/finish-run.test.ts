@@ -89,9 +89,7 @@ describe("#258 AC5 the run is matched to the account Goal by its Plan", () => {
     const spaced = planSteps.map((step) => ({ ...step, title: ` ${step.title} ` }));
     expect(findGoalForPlan(progress, spaced)?.id).toBe("g1");
     expect(findGoalForPlan(progress, [planSteps[0]])).toBeNull();
-    expect(
-      findGoalForPlan(progress, [planSteps[0], { ...planSteps[1], minutes: 21 }]),
-    ).toBeNull();
+    expect(findGoalForPlan(progress, [planSteps[0], { ...planSteps[1], minutes: 21 }])).toBeNull();
   });
 
   it("picks the last matching Goal", () => {

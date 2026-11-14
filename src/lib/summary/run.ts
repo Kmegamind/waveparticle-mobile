@@ -15,7 +15,10 @@ export type FinishedRun = {
   earlierLines: string[];
 };
 
-export function finishedRun(plan: PrototypeState, session: FocusSession | null): FinishedRun | null {
+export function finishedRun(
+  plan: PrototypeState,
+  session: FocusSession | null,
+): FinishedRun | null {
   if (!session || !plan.goal || plan.steps.length === 0) return null;
   if (!isFinished(session) || session.planKey !== planKey(plan)) return null;
   return {

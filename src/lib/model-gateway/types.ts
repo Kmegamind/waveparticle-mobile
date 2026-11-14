@@ -128,8 +128,7 @@ export type ClosingLineInput = {
 };
 
 export type ClosingLineResult =
-  | { source: "generated"; closingLine: string; carryLine: string }
-  | GatewayFailure;
+  { source: "generated"; closingLine: string; carryLine: string } | GatewayFailure;
 
 export type ModelGateway = {
   splitPlan(input: PlanSplitInput): Promise<PlanSplitResult>;
