@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -21,6 +22,7 @@ async function CompanionsContent() {
   return (
     <main className="app-screen">
       <h1>Companions</h1>
+      <Link href="/companions/oppenheimer">Oppenheimer</Link>
       <LifePathProgress progress={progress} />
     </main>
   );

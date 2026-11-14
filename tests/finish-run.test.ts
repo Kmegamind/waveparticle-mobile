@@ -52,7 +52,7 @@ const input = (overrides: Record<string, unknown> = {}) => ({
 });
 
 function gatewayWith(result: unknown) {
-  const writeClosingLine = vi.fn(async (_input: ClosingLineInput) => result);
+  const writeClosingLine = vi.fn<(input: ClosingLineInput) => Promise<unknown>>(async () => result);
   return { gateway: { writeClosingLine } as unknown as ModelGateway, writeClosingLine };
 }
 

@@ -24,3 +24,8 @@ export function isGoalPath(pathname: string): boolean {
 export function goalPathIsHidden(pathname: string, enabled: boolean): boolean {
   return !enabled && isGoalPath(pathname);
 }
+
+/** The signed-in summary (#258) ends a run of the test focus page, so it exists only with it. */
+export function endPathIsHidden(pathname: string, enabled: boolean): boolean {
+  return !enabled && (pathname === "/end" || pathname.startsWith("/end/"));
+}

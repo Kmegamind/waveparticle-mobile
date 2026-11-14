@@ -1254,3 +1254,172 @@ a {
     animation: none;
   }
 }
+
+/* Summary END (issue 258), prototype v4: overline, his slips, the Goal, Steps and record cards. */
+.end-page {
+  align-content: start;
+  display: grid;
+  gap: var(--space-control-gap);
+  padding-bottom: var(--space-screen-bottom);
+}
+
+.end-slip p {
+  margin: 0;
+}
+
+.end-carry p {
+  font-size: var(--text-body-size);
+}
+
+.end-card {
+  background: var(--raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-paper);
+  display: grid;
+  gap: var(--space-small-gap);
+  padding: var(--space-screen-inline);
+}
+
+.end-card p,
+.end-card h2 {
+  margin: 0;
+}
+
+.end-steps {
+  display: grid;
+  gap: var(--space-small-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.end-steps li {
+  display: flex;
+  gap: var(--space-control-gap);
+}
+
+.end-check {
+  color: var(--mark);
+  font-weight: 800;
+}
+
+.end-record {
+  display: grid;
+  gap: var(--space-small-gap);
+  margin: 0;
+}
+
+.end-record div {
+  display: flex;
+  justify-content: space-between;
+}
+
+.end-record dd {
+  font-family: var(--type-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  margin: 0;
+}
+
+.end-actions {
+  display: grid;
+  gap: var(--space-small-gap);
+  justify-items: center;
+}
+
+.end-actions .button-filled {
+  justify-self: stretch;
+}
+
+/* Life Path CPAGE (issue 258), prototype v4: header, named periods, a timeline of nodes. */
+.life-path {
+  display: grid;
+  gap: var(--space-control-gap);
+  align-content: start;
+}
+
+.life-back {
+  gap: var(--space-small-gap);
+  text-decoration: none;
+}
+
+.life-header {
+  align-items: center;
+  display: flex;
+  gap: var(--space-control-gap);
+}
+
+.life-portrait {
+  border: 2px solid var(--mark);
+  border-radius: 50%;
+  height: 6rem;
+  width: 6rem;
+}
+
+.life-tags,
+.life-path h3 {
+  margin: 0;
+}
+
+.life-periods,
+.life-rows {
+  display: grid;
+  gap: var(--space-control-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.life-period {
+  margin: var(--space-control-gap) 0 0;
+}
+
+.life-row {
+  display: grid;
+  gap: var(--space-control-gap);
+  grid-template-columns: var(--space-screen-inline) minmax(0, 1fr);
+}
+
+.life-node {
+  border: 2px dotted var(--edge);
+  border-radius: 50%;
+  height: 1.125rem;
+  margin-top: 0.25rem;
+  width: 1.125rem;
+}
+
+.life-row[data-state="finished"] .life-node {
+  background: var(--mark);
+  border: 2px solid var(--mark);
+}
+
+.life-row[data-state="current"] .life-node {
+  border: 4px solid var(--mark);
+}
+
+.life-row[data-state="later"] h3 {
+  color: var(--ink-2);
+}
+
+.life-current {
+  background: var(--raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-paper);
+  display: grid;
+  gap: var(--space-control-gap);
+  padding: var(--space-screen-inline);
+}
+
+.life-line {
+  font-family: var(--type-voice);
+  font-size: var(--text-slip-size);
+  line-height: var(--text-slip-leading);
+  margin: 0;
+}
+
+.life-said {
+  color: var(--ink-2);
+  font-style: italic;
+}
