@@ -315,6 +315,11 @@ test.describe("the Goal detail", () => {
   test("#78 AC3 nothing open: Nothing open right now. and Start", async ({ page, baseURL }) => {
     await detail(page, baseURL!, GOAL.ielts);
     await expect(page.getByText("Nothing open right now.")).toBeVisible();
+    // A short detail keeps its controls at their own size (no stretched rows).
+    const field = await page.getByRole("textbox", { name: "Goal" }).boundingBox();
+    expect(Math.round(field!.height)).toBeLessThanOrEqual(56);
+    const chip = await page.getByRole("radio", { name: /Ongoing/ }).boundingBox();
+    expect(Math.round(chip!.height)).toBeLessThanOrEqual(48);
     await expect(page.getByRole("link", { name: "Start", exact: true })).toHaveAttribute(
       "href",
       `/goal?line=${encodeURIComponent("IELTS listening, section 3")}`,
@@ -398,9 +403,20 @@ test.describe("the Goal detail", () => {
     await expect(page.getByRole("button", { name: "Mark done" })).toHaveCount(0);
   });
 
+  test("#78 the footer stays at the bottom of the screen while the Steps scroll", async ({
+    page,
+    baseURL,
+  }) => {
+    await detail(page, baseURL!, GOAL.methods);
+    const go = await page.getByRole("link", { name: "Continue", exact: true }).boundingBox();
+    expect(go!.y + go!.height).toBeLessThanOrEqual(800);
+    expect(go!.y + go!.height).toBeGreaterThan(700);
+  });
+
   test("#80 recent sessions on the detail, with See all", async ({ page, baseURL }) => {
     await detail(page, baseURL!, GOAL.lab);
     await expect(page.locator(".goals-history li")).toHaveCount(1);
+    await expect(page.locator(".goals-history li")).not.toContainText("Lab report");
     await expect(page.getByRole("link", { name: "See all" })).toHaveAttribute(
       "href",
       "/goals?tab=history",

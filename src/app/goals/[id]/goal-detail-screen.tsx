@@ -182,7 +182,7 @@ export function GoalDetailScreen({
         <h2 className="goals-group">Recent sessions</h2>
         {detail.recent.length > 0 ? (
           <>
-            <HistoryList ready={ready} rows={detail.recent} />
+            <HistoryList ready={ready} rows={detail.recent} withGoal={false} />
             <Link className="try-link goal-see-all" href="/goals?tab=history">
               See all
             </Link>

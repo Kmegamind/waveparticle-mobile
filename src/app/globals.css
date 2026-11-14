@@ -2533,8 +2533,8 @@ a {
   display: flex;
   flex-direction: column;
   gap: var(--space-small-gap);
-  min-height: 100svh;
-  padding-bottom: calc(var(--space-screen-bottom) + env(safe-area-inset-bottom));
+  min-height: calc(100svh - var(--target) - var(--space-small-gap) * 2);
+  padding-bottom: 0;
 }
 
 .goal-back {
@@ -2558,6 +2558,7 @@ a {
 }
 
 .goal-detail-body {
+  align-content: start;
   display: grid;
   flex: 1 1 auto;
   gap: var(--space-small-gap);
@@ -2655,10 +2656,14 @@ a {
   justify-self: start;
 }
 
+/* The footer stays on screen while the Steps scroll under it (prototype .scr bottom block). */
 .goal-footer {
+  background: var(--bg);
+  bottom: 0;
   display: grid;
   gap: var(--space-row-after);
-  padding-top: var(--space-small-gap);
+  padding: var(--space-small-gap) 0 calc(var(--space-screen-bottom) + env(safe-area-inset-bottom));
+  position: sticky;
 }
 
 .goal-primary {

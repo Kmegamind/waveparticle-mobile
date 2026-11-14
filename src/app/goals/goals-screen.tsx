@@ -289,15 +289,30 @@ function History({ rows, query, ready }: { rows: HistoryRow[]; query: string; re
   return <HistoryList ready={ready} rows={rows} />;
 }
 
-export function HistoryList({ rows, ready }: { rows: HistoryRow[]; ready: boolean }) {
+export function HistoryList({
+  rows,
+  ready,
+  withGoal = true,
+}: {
+  rows: HistoryRow[];
+  ready: boolean;
+  /** The Goal's name follows the date on History; the Goal detail's own list leaves it out. */
+  withGoal?: boolean;
+}) {
   return (
     <ul className="goals-history">
       {rows.map((row) => (
         <li key={row.sessionId}>
           <span className="goals-history-main">
             <span className="goals-history-title">
-              {ready ? `${row.date} · ` : ""}
-              {row.goalTitle}
+              {withGoal ? (
+                <>
+                  {ready ? `${row.date} · ` : ""}
+                  {row.goalTitle}
+                </>
+              ) : ready ? (
+                row.date
+              ) : null}
             </span>
             {row.doneSteps.length > 0 ? (
               <span className="goals-caption">{row.doneSteps.join(", ")}</span>
