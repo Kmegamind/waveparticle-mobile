@@ -152,7 +152,7 @@ export function HistoryPanel({
               </span>
             ) : null}
           </div>
-          <div aria-label={month.label} className="me-calendar" role="grid">
+          <div aria-label={month.label} className="me-calendar" role="group">
             {["S", "M", "T", "W", "T", "F", "S"].map((letter, index) => (
               <span aria-hidden="true" className="me-weekday" key={`${letter}-${index}`}>
                 {letter}

@@ -129,3 +129,26 @@ describe("#83 the layout script applies the stored appearance before paint", () 
     expect(run("{broken")).toEqual([]);
   });
 });
+
+describe("#81 final review: blocked device storage never throws", () => {
+  it("deviceStorage gives null when the browser blocks storage, and prefs fall back", async () => {
+    const { deviceStorage } = await import("@/lib/me/prefs");
+    const original = Object.getOwnPropertyDescriptor(globalThis, "window");
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: Object.defineProperty({}, "localStorage", {
+        get() {
+          throw new Error("SecurityError");
+        },
+      }),
+    });
+    try {
+      expect(deviceStorage()).toBeNull();
+    } finally {
+      if (original) Object.defineProperty(globalThis, "window", original);
+      else delete (globalThis as { window?: unknown }).window;
+    }
+    expect(readPrefs(null)).toEqual(DEFAULT_PREFS);
+    expect(() => writePrefs(null, DEFAULT_PREFS)).not.toThrow();
+  });
+});

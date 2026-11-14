@@ -129,3 +129,17 @@ describe("#82 the history panel", () => {
     expect(html).toContain("30 min");
   });
 });
+
+describe("#81 final review: accessibility", () => {
+  it("the calendar is a labelled group of day buttons, not an empty grid", () => {
+    const html = renderToStaticMarkup(createElement(HistoryPanel, { history: view.history }));
+    expect(html).not.toContain('role="grid"');
+    expect(html).toMatch(
+      /aria-label="November 2026"[^>]*role="group"|role="group"[^>]*aria-label="November 2026"/,
+    );
+  });
+
+  it("opening Edit moves focus into the name field", () => {
+    expect(readFileSync("src/app/me/me-screen.tsx", "utf8")).toMatch(/<input[\s\S]{0,80}autoFocus/);
+  });
+});

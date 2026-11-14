@@ -9,6 +9,7 @@ import {
   writePrefs,
   type Appearance,
   type Prefs,
+  deviceStorage,
 } from "@/lib/me/prefs";
 import type { MeView } from "@/lib/me/me-view";
 import { SignOutButton } from "../auth/auth-form";
@@ -36,11 +37,11 @@ function usePrefs(): [Prefs, (next: Prefs) => void] {
   useEffect(() => {
     // Device settings are read after hydration so the server HTML stays the same everywhere.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPrefs(readPrefs(window.localStorage));
+    setPrefs(readPrefs(deviceStorage()));
   }, []);
   function update(next: Prefs) {
     setPrefs(next);
-    writePrefs(window.localStorage, next);
+    writePrefs(deviceStorage(), next);
     applyPrefs(document.documentElement, next);
   }
   return [prefs, update];
@@ -90,6 +91,7 @@ function DisplayName({ initial }: { initial: string }) {
             Display name
           </label>
           <input
+            autoFocus
             autoComplete="nickname"
             className="me-field"
             id="me-display-name"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { DEFAULT_PREFS, readPrefs, writePrefs, type Prefs } from "@/lib/me/prefs";
+import { DEFAULT_PREFS, readPrefs, writePrefs, type Prefs, deviceStorage } from "@/lib/me/prefs";
 import { setKeepClockRunningAction } from "../actions";
 
 /**
@@ -79,13 +79,13 @@ export function SignalsScreen({ keepClockRunning }: { keepClockRunning: boolean 
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPrefs(readPrefs(window.localStorage));
+    setPrefs(readPrefs(deviceStorage()));
   }, []);
 
   function setSignal(key: keyof Prefs["signals"], value: boolean) {
     const next = { ...prefs, signals: { ...prefs.signals, [key]: value } };
     setPrefs(next);
-    writePrefs(window.localStorage, next);
+    writePrefs(deviceStorage(), next);
   }
 
   async function toggleLockScreen() {

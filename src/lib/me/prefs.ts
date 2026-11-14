@@ -20,6 +20,15 @@ export const DEFAULT_PREFS: Prefs = {
 
 type PrefsStorage = Pick<Storage, "getItem" | "setItem">;
 
+/** This device's storage, or null when the browser blocks it (reading the property can throw). */
+export function deviceStorage(): Storage | null {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
 const APPEARANCES = new Set<Appearance>(["day", "night", "system"]);
 
 function isPrefs(value: unknown): value is Prefs {
@@ -37,7 +46,8 @@ function isPrefs(value: unknown): value is Prefs {
   );
 }
 
-export function readPrefs(storage: PrefsStorage): Prefs {
+export function readPrefs(storage: PrefsStorage | null): Prefs {
+  if (!storage) return DEFAULT_PREFS;
   try {
     const raw = storage.getItem(PREFS_KEY);
     if (!raw) return DEFAULT_PREFS;
@@ -48,7 +58,8 @@ export function readPrefs(storage: PrefsStorage): Prefs {
   }
 }
 
-export function writePrefs(storage: PrefsStorage, prefs: Prefs): void {
+export function writePrefs(storage: PrefsStorage | null, prefs: Prefs): void {
+  if (!storage) return;
   try {
     storage.setItem(PREFS_KEY, JSON.stringify(prefs));
   } catch {
