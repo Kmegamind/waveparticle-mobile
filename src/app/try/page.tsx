@@ -1,7 +1,7 @@
-import { loadTestStory } from "@/lib/prototype/test-story";
+import { storyProfiles } from "@/lib/prototype/story-inputs";
 import { TryHome } from "./try-home";
 
+// Every Oppenheimer story can be played on the test path (#254); the page chooses one.
 export default function TryPage() {
-  const story = loadTestStory();
-  return <TryHome storyTitle={story.title} />;
+  return <TryHome stories={storyProfiles()} />;
 }

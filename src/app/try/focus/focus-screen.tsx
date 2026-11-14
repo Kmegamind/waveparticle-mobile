@@ -26,6 +26,8 @@ import {
   type FocusSession,
 } from "@/lib/prototype/session";
 import { fullPageLoad } from "../full-page-load";
+import { pickStory } from "@/lib/prototype/story-ids";
+import type { StoryProfile } from "@/lib/prototype/story-inputs";
 import { usePrototypeState } from "../use-prototype-state";
 import { loadReturnLine, loadStepCards } from "./actions";
 
@@ -34,8 +36,11 @@ const SWIPE_PX = 40;
 
 const currentTime = () => Date.now();
 
-export function FocusScreen({ goalLine }: { goalLine: string }) {
+export function FocusScreen({ stories }: { stories: StoryProfile[] }) {
   const { ready, state, update } = usePrototypeState();
+  // #254: "My goal" is the chosen story's goal sentence (chapter 8 when none was chosen).
+  const story = pickStory(stories, state.storyId);
+  const goalLine = story.goalShort;
   const hasPlan = state.goal !== null && state.steps.length > 0;
 
   if (!ready) {
@@ -136,6 +141,7 @@ function FocusBody({
         .slice(0, target)
         .flatMap((step) => (step.cards ? [step.cards.opening, ...step.cards.story] : []));
       loadStepCards({
+        storyId: plan.storyId,
         index: target,
         planMinutes: steps.map((step) => step.minutes),
         earlierCards,
@@ -152,7 +158,7 @@ function FocusBody({
           }
         });
     },
-    [session.steps, steps],
+    [plan.storyId, session.steps, steps],
   );
 
   // Load the current Step's cards, and the next Step's ahead of time once this Step's cards are
@@ -243,7 +249,7 @@ function FocusBody({
     returnRequested.current = true;
     const pausedAt = session.pausedAtMs ?? currentTime();
     const awayMinutes = ((currentTime() - pausedAt) / 60_000) * session.speed;
-    loadReturnLine({ trigger: returnPending, awayMinutes })
+    loadReturnLine({ storyId: plan.storyId, trigger: returnPending, awayMinutes })
       .catch(() => ({ status: "failed" as const }))
       .then((result) => {
         returnRequested.current = false;
@@ -256,7 +262,7 @@ function FocusBody({
           setReturnFailed(true);
         }
       });
-  }, [returnFailed, returnLine, returnPending, session.pausedAtMs, session.speed]);
+  }, [plan.storyId, returnFailed, returnLine, returnPending, session.pausedAtMs, session.speed]);
 
   // Focus moves to Start when his line is there.
   useEffect(() => {

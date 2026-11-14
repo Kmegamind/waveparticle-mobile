@@ -24,6 +24,7 @@ function gateway() {
 
 /** His first message on /try/rest. Nothing about the request is logged. */
 export async function loadPauseMessage(request: {
+  storyId?: string;
   pauseNumber: number;
   stepTitle: string;
   lastCard?: string;
@@ -33,6 +34,7 @@ export async function loadPauseMessage(request: {
     Number.isInteger(request?.pauseNumber) && request.pauseNumber >= 1 ? request.pauseNumber : 1;
   return pauseMessageFor(
     {
+      storyId: typeof request?.storyId === "string" ? request.storyId : undefined,
       pauseNumber,
       stepTitle: text(request?.stepTitle, 200),
       lastCard: text(request?.lastCard, 1_000) || undefined,
@@ -43,6 +45,7 @@ export async function loadPauseMessage(request: {
 
 /** His reply to one message on /try/rest. The safety gate runs again here, before any model call. */
 export async function loadRestReply(request: {
+  storyId?: string;
   message: string;
   history: RestMessage[];
   replyIndex: number;
@@ -55,5 +58,13 @@ export async function loadRestReply(request: {
     : [];
   const replyIndex =
     Number.isInteger(request?.replyIndex) && request.replyIndex >= 0 ? request.replyIndex : 0;
-  return restReplyFor({ message: text(request?.message, 10_000), history, replyIndex }, gateway());
+  return restReplyFor(
+    {
+      storyId: typeof request?.storyId === "string" ? request.storyId : undefined,
+      message: text(request?.message, 10_000),
+      history,
+      replyIndex,
+    },
+    gateway(),
+  );
 }

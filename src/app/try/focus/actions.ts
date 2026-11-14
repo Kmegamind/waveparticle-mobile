@@ -29,6 +29,7 @@ export async function loadStepCards(request: StepCardsRequest): Promise<StepCard
  * only; the line never shows how long the person was away.
  */
 export async function loadReturnLine(request: {
+  storyId?: string;
   trigger: ReturnTrigger;
   awayMinutes: number;
 }): Promise<LineResponse> {
@@ -40,5 +41,6 @@ export async function loadReturnLine(request: {
       ? Math.round(Math.min(request.awayMinutes, 60 * 24 * 365))
       : 0;
   const gateway = modelIsConfigured() ? createServerModelGateway() : null;
-  return returnLineFor({ trigger, awayMinutes }, gateway);
+  const storyId = typeof request?.storyId === "string" ? request.storyId : undefined;
+  return returnLineFor({ storyId, trigger, awayMinutes }, gateway);
 }

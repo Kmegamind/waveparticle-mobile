@@ -1,7 +1,8 @@
-import generated from "../../../docs/demo/site-search.generated.json";
 import type { ModelGateway } from "@/lib/model-gateway";
 import { gateFreeText } from "@/lib/safety/crisis";
 import type { RestMessage, ReturnTrigger } from "./session";
+import { DEFAULT_STORY_ID } from "./story-ids";
+import { generationInputs, isStoryId } from "./story-inputs";
 import { loadTestStory } from "./test-story";
 
 /**
@@ -21,14 +22,27 @@ export type RestReplyResponse = LineResponse | { status: "crisis" };
 export const MAX_MESSAGE_CHARS = 1_000;
 const MAX_HISTORY = 6;
 
-function baseFacts(): string {
-  const meta = generated.meta.story;
-  return [generated.meta.who, `Place: ${meta.place}.`, meta.goalShort].join(" ");
+/**
+ * The story being played. A missing id is chapter 8 (a session from before #254); an id that is
+ * present but unknown is null, and the line fails rather than switching story (#254 AC5).
+ */
+function storyOf(storyId: unknown): string | null {
+  if (storyId === undefined) return DEFAULT_STORY_ID;
+  return isStoryId(storyId) ? storyId : null;
+}
+
+/** Who he is, the place and the goal sentence, from this story's own inputs (#254). */
+function baseFacts(storyId: string): string {
+  const inputs = generationInputs(storyId);
+  return [inputs.who, `Place: ${inputs.place}.`, inputs.goalShort].join(" ");
 }
 
 /** The pause number for his stuck story; from the third Pause the snag is much harder (PAUSE-3). */
-export function stuckFacts(pauseNumber: number): string {
-  const parts = [baseFacts(), `This is pause number ${pauseNumber} in this Step.`];
+export function stuckFacts(pauseNumber: number, storyId: string = DEFAULT_STORY_ID): string {
+  const parts = [
+    baseFacts(storyOf(storyId) ?? DEFAULT_STORY_ID),
+    `This is pause number ${pauseNumber} in this Step.`,
+  ];
   if (pauseNumber >= 3) {
     parts.push(
       "Every pause has stalled his own work and he remembers the earlier setbacks, so this snag is much harder, and he says he is worried he may fail.",
@@ -38,13 +52,13 @@ export function stuckFacts(pauseNumber: number): string {
   return parts.join(" ");
 }
 
-function restFacts(history: RestMessage[]): string {
+function restFacts(history: RestMessage[], storyId: string): string {
   const lines = history.map(
     (message) =>
       `${message.from === "him" ? "He" : "The person"}: ${message.text.slice(0, MAX_MESSAGE_CHARS)}`,
   );
   return [
-    baseFacts(),
+    baseFacts(storyId),
     "If he is asked something he could not know, he answers as a person of his own time would: he says what he knows, says plainly when he does not know, and may guess.",
     lines.length > 0 ? `Conversation so far: ${lines.join(" | ")}` : "",
   ]
@@ -71,26 +85,30 @@ async function ask(call: () => Promise<unknown>): Promise<LineResponse> {
 }
 
 export async function pauseMessageFor(
-  request: { pauseNumber: number; stepTitle: string; lastCard?: string },
+  request: { storyId?: string; pauseNumber: number; stepTitle?: string; lastCard?: string },
   gateway: ModelGateway | null,
 ): Promise<LineResponse> {
+  const storyId = storyOf(request.storyId);
+  if (storyId === null) return { status: "failed" };
   if (!gateway) return { status: "ok", isTestData: true, text: loadTestStory().pauseMessage };
   const input = {
     stepTitle: request.stepTitle,
     pauseNumber: request.pauseNumber,
-    facts: stuckFacts(request.pauseNumber),
-    forbidTerms: generated.meta.story.forbidTerms,
+    facts: stuckFacts(request.pauseNumber, storyId),
+    forbidTerms: generationInputs(storyId).forbidTerms,
     lastCard: request.lastCard,
   };
   return ask(() => gateway.writeStuckStory(input));
 }
 
 export async function restReplyFor(
-  request: { message: string; history: RestMessage[]; replyIndex: number },
+  request: { storyId?: string; message: string; history: RestMessage[]; replyIndex: number },
   gateway: ModelGateway | null,
 ): Promise<RestReplyResponse> {
   // The safety gate runs first: a crisis message is never sent to the model (US-SAF-1).
   if (gateFreeText(request.message).action === "crisis-page") return { status: "crisis" };
+  const storyId = storyOf(request.storyId);
+  if (storyId === null) return { status: "failed" };
   if (!gateway) {
     const replies = loadTestStory().restReplies;
     const text = replies[Math.abs(request.replyIndex) % replies.length];
@@ -102,7 +120,7 @@ export async function restReplyFor(
   return ask(() =>
     gateway.writeRestReply({
       userMessage: request.message.slice(0, MAX_MESSAGE_CHARS),
-      facts: restFacts(history),
+      facts: restFacts(history, storyId),
     }),
   );
 }
@@ -111,15 +129,17 @@ export async function restReplyFor(
 const HAS_NUMBER = /\d/;
 
 export async function returnLineFor(
-  request: { trigger: ReturnTrigger; awayMinutes: number },
+  request: { storyId?: string; trigger: ReturnTrigger; awayMinutes: number },
   gateway: ModelGateway | null,
 ): Promise<LineResponse> {
+  const storyId = storyOf(request.storyId);
+  if (storyId === null) return { status: "failed" };
   if (!gateway) return { status: "ok", isTestData: true, text: loadTestStory().returnLine };
   const input = {
     trigger: request.trigger,
-    facts: baseFacts(),
+    facts: baseFacts(storyId),
     awayMinutes: request.awayMinutes,
-    forbidTerms: generated.meta.story.forbidTerms,
+    forbidTerms: generationInputs(storyId).forbidTerms,
   };
   const result = await ask(() => gateway.writeReturnPopup(input));
   if (result.status === "ok" && HAS_NUMBER.test(result.text)) return { status: "failed" };

@@ -1,9 +1,10 @@
-import generated from "../../../docs/demo/site-search.generated.json";
 import { oppenheimerStories, type OppenheimerStory } from "@/content/oppenheimer";
 import type { ModelGateway } from "@/lib/model-gateway";
 import { MODEL_GATEWAY_ENV_NAMES } from "@/lib/model-gateway/server";
 import { startStory } from "@/lib/story/start";
 import { maxStoryCards, type StepCards } from "./session";
+import { DEFAULT_STORY_ID } from "./story-ids";
+import { generationInputs, isStoryId } from "./story-inputs";
 import { loadTestStory } from "./test-story";
 
 /**
@@ -16,7 +17,15 @@ import { loadTestStory } from "./test-story";
  * What the page sends for one Step's cards. It carries no user-written text (#216): the Plan's
  * minutes and the cards already shown in this run (his own lines, for CARD-NEW).
  */
-export type StepCardsRequest = { index: number; planMinutes: number[]; earlierCards: string[] };
+export type StepCardsRequest = {
+  /** The story being played (#254); one of the 26 Oppenheimer stories. Missing: chapter 8. */
+  storyId?: string;
+  index: number;
+  planMinutes: number[];
+  earlierCards: string[];
+};
+
+export { DEFAULT_STORY_ID };
 
 const MAX_STEPS = 50;
 const MAX_STEP_MINUTES = 24 * 60;
@@ -57,14 +66,10 @@ export function normaliseStepCardsRequest(raw: unknown): StepCardsRequest | null
         typeof card === "string" && card.length > 0 && card.length <= MAX_CARD_LENGTH,
     )
     .slice(-MAX_EARLIER_CARDS);
-  return { index, planMinutes: [...planMinutes] as number[], earlierCards };
-}
-
-/** The Story behind the test path's chapter 8 (#208). */
-function testPathStory(): OppenheimerStory {
-  const story = oppenheimerStories.find((item) => item.id === generated.meta.story.id);
-  if (!story) throw new Error("test path story missing");
-  return story;
+  const storyId = value.storyId === undefined ? DEFAULT_STORY_ID : value.storyId;
+  // An unknown story is refused, never swapped for another one (#254 AC5).
+  if (!isStoryId(storyId)) return null;
+  return { storyId, index, planMinutes: [...planMinutes] as number[], earlierCards };
 }
 
 export type StepCardsResponse =
@@ -72,11 +77,6 @@ export type StepCardsResponse =
 
 export function modelIsConfigured(env: Record<string, string | undefined> = process.env): boolean {
   return MODEL_GATEWAY_ENV_NAMES.every((name) => (env[name]?.trim() ?? "").length > 0);
-}
-
-/** His static "My goal" line for the test story (FLOW F1 and F3: static data). */
-export function testStoryGoalLine(): string {
-  return generated.meta.story.goalShort;
 }
 
 /**
@@ -93,8 +93,9 @@ function stepBrief(story: OppenheimerStory, request: StepCardsRequest) {
   const textOf = (ids: Set<string>) =>
     story.facts.filter((fact) => ids.has(fact.id)).map((fact) => fact.text);
   const earlier = new Set(brief.steps.slice(0, request.index).flatMap((step) => step.factIds));
-  const meta = generated.meta.story;
-  const facts = [generated.meta.who, `Place: ${meta.place}.`, meta.goalShort, ...textOf(earlier)];
+  // #254: who he is, the place and the goal sentence come from this story's own inputs.
+  const inputs = generationInputs(story.id);
+  const facts = [inputs.who, `Place: ${inputs.place}.`, inputs.goalShort, ...textOf(earlier)];
   // CARD-NEW: this Step's own facts go separately, so the prompt says what is new. A Plan with
   // more Steps than the Story has facts gives the later Steps none (startStory).
   const stepFacts = textOf(new Set(share.factIds)).join(" ");
@@ -119,7 +120,9 @@ export async function cardsForStep(
   if (!gateway) return { status: "ok", isTestData: true, cards: testCards(request.index) };
   try {
     // No user-written text leaves the server (#216): only the Story side and numbers.
-    const story = testPathStory();
+    const storyId = request.storyId ?? DEFAULT_STORY_ID;
+    const story = oppenheimerStories.find((item) => item.id === storyId);
+    if (!story) return { status: "failed" };
     const { share, facts, stepFacts, mustUse, stepCount } = stepBrief(story, request);
     const minutes = request.planMinutes[request.index];
     const result = await gateway.writeStepCards({
@@ -131,7 +134,7 @@ export async function cardsForStep(
       storyCards: maxStoryCards(minutes),
       background: request.index === 0,
       mustUse,
-      forbidTerms: [...new Set([...story.forbiddenTerms, ...generated.meta.story.forbidTerms])],
+      forbidTerms: generationInputs(story.id).forbidTerms,
       // CARD-NEW: his cards already shown in this run.
       earlierLines: request.earlierCards,
     });

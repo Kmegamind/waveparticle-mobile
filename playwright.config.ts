@@ -1,27 +1,66 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const port = 3100;
+// The "live" project (#254) runs a second app with a model configured: MODEL_API_URL points at a
+// test-only stub model (e2e/support/stub-model.mjs), which is never part of the app bundle.
+const livePort = 3101;
+const stubPort = 3199;
 // Set E2E_BASE_URL to test a deployed site; otherwise the app is built and started locally.
 const deployed = process.env.E2E_BASE_URL;
+
+const appEnv = {
+  NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:9",
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: "playwright-placeholder",
+  // Turns on the sign-in-free test path (#208) for the e2e servers only.
+  PROTOTYPE_ENABLED: "1",
+};
 
 export default defineConfig({
   testDir: "e2e",
   fullyParallel: true,
   reporter: process.env.CI ? "github" : "list",
   use: { baseURL: deployed ?? `http://127.0.0.1:${port}` },
-  projects: [{ name: "mobile", use: { ...devices["iPhone 14"] } }],
+  projects: [
+    { name: "mobile", testIgnore: /\.live\.spec\.ts$/, use: { ...devices["iPhone 14"] } },
+    ...(deployed
+      ? []
+      : [
+          {
+            name: "mobile-live",
+            testMatch: /\.live\.spec\.ts$/,
+            use: { ...devices["iPhone 14"], baseURL: `http://127.0.0.1:${livePort}` },
+          },
+        ]),
+  ],
   webServer: deployed
     ? undefined
-    : {
-        command: `npm run build && npx next start --port ${port}`,
-        url: `http://127.0.0.1:${port}`,
-        env: {
-          NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:9",
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: "playwright-placeholder",
-          // Turns on the sign-in-free test path (#208) for the e2e server only.
-          PROTOTYPE_ENABLED: "1",
+    : [
+        {
+          command: "node e2e/support/stub-model.mjs",
+          url: `http://127.0.0.1:${stubPort}/health`,
+          env: { STUB_MODEL_PORT: String(stubPort) },
+          reuseExistingServer: !process.env.CI,
+          timeout: 30_000,
         },
-        reuseExistingServer: !process.env.CI,
-        timeout: 240_000,
-      },
+        {
+          command: `npm run build && npx next start --port ${port}`,
+          url: `http://127.0.0.1:${port}`,
+          env: appEnv,
+          reuseExistingServer: !process.env.CI,
+          timeout: 240_000,
+        },
+        {
+          // Starts once the first server is up, so the build is complete.
+          command: `node e2e/support/wait-for-url.mjs http://127.0.0.1:${port} && npx next start --port ${livePort}`,
+          url: `http://127.0.0.1:${livePort}`,
+          env: {
+            ...appEnv,
+            MODEL_API_KEY: "stub",
+            MODEL_API_URL: `http://127.0.0.1:${stubPort}/v1/chat/completions`,
+            MODEL_NAME: "stub",
+          },
+          reuseExistingServer: !process.env.CI,
+          timeout: 300_000,
+        },
+      ],
 });

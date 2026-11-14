@@ -5,6 +5,7 @@ import {
   resumeClock,
   type ClockState,
 } from "@/lib/clock";
+import { DEFAULT_STORY_ID } from "./story-ids";
 
 /**
  * Focus-page session for the sign-in-free test path (/try/focus). Browser-only, kept under its own
@@ -82,6 +83,8 @@ export type RestState = {
 export type SessionPlan = {
   goal: { text: string; minutes: number } | null;
   steps: { title: string; description: string; minutes: number }[];
+  /** The story being played (#254): a session of one story is never reused for another. */
+  storyId?: string;
 };
 
 /** Test-only speed-up from `?speed=`: a whole number from 1 to 600, otherwise 1. */
@@ -94,7 +97,9 @@ export function parseSpeed(value: string | string[] | undefined): number {
 export type SessionStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
 export function planKey(plan: SessionPlan): string {
-  return JSON.stringify([plan.goal, plan.steps]);
+  // A Plan without a story is chapter 8, so sessions stored before #254 keep their key.
+  const story = plan.storyId && plan.storyId !== DEFAULT_STORY_ID ? [plan.storyId] : [];
+  return JSON.stringify([plan.goal, plan.steps, ...story]);
 }
 
 /** The most story cards a Step of this many minutes may have: 1 to 5, at least 5 minutes apart. */

@@ -80,7 +80,12 @@ function RestBody({ plan, stored }: { plan: PrototypeState; stored: FocusSession
     firstRequested.current = true;
     const lastCard = visibleCards(session, session.current, currentTime()).at(-1);
     Promise.all([
-      loadPauseMessage({ pauseNumber: rest.pauseNumber, stepTitle, lastCard }).catch(() => ({
+      loadPauseMessage({
+        storyId: plan.storyId,
+        pauseNumber: rest.pauseNumber,
+        stepTitle,
+        lastCard,
+      }).catch(() => ({
         status: "failed" as const,
       })),
       wait(FIRST_MESSAGE_MIN_MS),
@@ -93,7 +98,7 @@ function RestBody({ plan, stored }: { plan: PrototypeState; stored: FocusSession
         setFirstFailed(true);
       }
     });
-  }, [firstFailed, rest, session, stepTitle]);
+  }, [firstFailed, plan.storyId, rest, session, stepTitle]);
 
   useEffect(() => {
     if (!waiting) return;
@@ -106,7 +111,7 @@ function RestBody({ plan, stored }: { plan: PrototypeState; stored: FocusSession
     setWaiting(true);
     setReplyFailed(false);
     const replyIndex = Math.max(0, history.filter((item) => item.from === "him").length - 1);
-    loadRestReply({ message, history, replyIndex })
+    loadRestReply({ storyId: plan.storyId, message, history, replyIndex })
       .catch(() => ({ status: "failed" as const }))
       .then((result) => {
         setWaiting(false);

@@ -45,6 +45,7 @@ import {
   STEP_TITLE_MAX,
 } from "@/lib/prototype/plan-edit";
 import type { SplitInput, SplitOutcome } from "@/lib/prototype/split-goal";
+import { pickStory } from "@/lib/prototype/story-ids";
 import { gateFreeText } from "@/lib/safety/crisis";
 import { usePrototypeState } from "../use-prototype-state";
 import { splitGoalAction } from "./actions";
@@ -71,9 +72,11 @@ type GoalDialogueProps = {
   split?: (input: SplitInput) => Promise<SplitOutcome>;
   /** Saves the Goal and Plan on the account before the focus page opens (/goal only). */
   start?: (input: StartInput) => Promise<StartOutcome>;
+  /** The test path's stories (#254): the first opening comes from the chosen story's inputs. */
+  stories?: { id: string; opening: string }[];
 };
 
-export function GoalDialogue({ split = splitGoalAction, start }: GoalDialogueProps = {}) {
+export function GoalDialogue({ split = splitGoalAction, start, stories }: GoalDialogueProps = {}) {
   const router = useRouter();
   const { ready, state, update } = usePrototypeState();
   const returning = state.goal !== null;
@@ -86,7 +89,9 @@ export function GoalDialogue({ split = splitGoalAction, start }: GoalDialoguePro
   useEffect(() => {
     if (openingIndex !== null) saveLastOpening(window.localStorage, openingIndex);
   }, [openingIndex]);
-  const opening = openingIndex === null ? FIRST_OPENING : RETURNING_OPENINGS[openingIndex];
+  // #254: on the test path the first opening is the chosen story's own (chapter 8 when none).
+  const storyOpening = stories ? pickStory(stories, state.storyId).opening : FIRST_OPENING;
+  const opening = openingIndex === null ? storyOpening : RETURNING_OPENINGS[openingIndex];
 
   const [phase, setPhase] = useState<Phase>("goal");
   const [draft, setDraft] = useState("");
