@@ -148,6 +148,23 @@ test.describe("the Goals page", () => {
     await expect(tab(page, "On hold")).toBeFocused();
   });
 
+  test("finding: after a change that fails, the error is read and focus is on the selected tab", async ({
+    page,
+    baseURL,
+  }) => {
+    await openGoals(page, baseURL!, sampleGoals, "/goals?tab=hold");
+    await page.route("**/*", (route) =>
+      route.request().method() === "POST" ? route.abort() : route.continue(),
+    );
+    await row(page, "Portfolio case study")
+      .getByRole("button", { name: "Resume Portfolio case study" })
+      .click();
+    await expect(page.locator(".goals-toast[role=alert]")).toHaveText(
+      "Could not change the Goal. Please try again.",
+    );
+    await expect(tab(page, "On hold")).toBeFocused();
+  });
+
   test("#79 Undo is gone after five seconds and cannot be sent twice", async ({
     page,
     baseURL,
