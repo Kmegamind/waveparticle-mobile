@@ -475,13 +475,28 @@ test.describe("the Goal detail", () => {
     baseURL,
   }) => {
     const account = await detail(page, baseURL!, GOAL.methods);
+    // What a screen reader reads when focus arrives: the line must already say the new status.
+    await page.evaluate(() => {
+      const heard: string[] = [];
+      (window as unknown as { heard: string[] }).heard = heard;
+      document
+        .getElementById("goal-status")!
+        .addEventListener("focus", (event) =>
+          heard.push((event.target as HTMLElement).textContent ?? ""),
+        );
+    });
+    const heard = () => page.evaluate(() => (window as unknown as { heard: string[] }).heard);
     await page.getByRole("button", { name: "Put on hold" }).focus();
     await page.keyboard.press("Enter");
     await expect.poll(() => goalStatus(account, GOAL.methods)).toBe("on_hold");
     await expect(page.locator(".goal-status")).toBeFocused();
+    expect(await heard()).toEqual([expect.stringMatching(/^On hold/)]);
     await page.getByRole("button", { name: "Undo" }).click();
     await expect.poll(() => goalStatus(account, GOAL.methods)).toBe("in_progress");
     await expect(page.locator(".goal-status")).toBeFocused();
+    await expect
+      .poll(heard)
+      .toEqual([expect.stringMatching(/^On hold/), expect.stringMatching(/^In progress/)]);
   });
 
   test("#78 the footer stays at the bottom of the screen while the Steps scroll", async ({

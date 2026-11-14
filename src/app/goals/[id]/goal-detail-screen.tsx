@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { goalDetail, type GoalKind, type GoalsData } from "@/lib/goals/goals-view";
 import { renameGoalAction, setGoalKindAction } from "../actions";
 import { Toast } from "../goal-sheets";
@@ -12,7 +12,6 @@ import { useLocalNow } from "../use-local-now";
 
 const EPOCH = { now: new Date(0), timeZone: "UTC" };
 
-/** After a change or Undo, keyboard focus goes to the status line: the button may be gone. */
 const statusLine = () => document.getElementById("goal-status");
 
 const KINDS: { id: GoalKind; label: string }[] = [
@@ -37,7 +36,20 @@ export function GoalDetailScreen({
     () => goalDetail(data, goalId, { ...(local ?? EPOCH), sessionPagesEnabled }),
     [data, goalId, local, sessionPagesEnabled],
   );
-  const { toast, busy, change, undo, close, setToast } = useGoalChanges(statusLine);
+  // After a change or Undo, keyboard focus goes to the status line (the button may be gone),
+  // once it shows the new status, so a screen reader reads the new status, not the old one.
+  const focusPending = useRef(false);
+  const focusStatus = useCallback((changing: boolean) => {
+    focusPending.current = changing;
+    return changing ? null : statusLine();
+  }, []);
+  const statusLabel = detail?.statusLabel;
+  useEffect(() => {
+    if (!focusPending.current) return;
+    focusPending.current = false;
+    statusLine()?.focus();
+  }, [statusLabel]);
+  const { toast, busy, change, undo, close, setToast } = useGoalChanges(focusStatus);
   const [title, setTitle] = useState(detail?.title ?? "");
   const [savedTitle, setSavedTitle] = useState(detail?.title ?? "");
   const [kind, setKind] = useState<GoalKind>(detail?.kind ?? "one_time");

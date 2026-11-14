@@ -3151,6 +3151,15 @@ a {
     padding: var(--space-small-gap);
   }
 
+  /*
+   * Done and Pause stack, so the Undo toast above them would cover Done: a tap meant for Done
+   * would undo the Step. At this size it sits at the top of the screen instead.
+   */
+  .focus-page .focus-toast {
+    bottom: auto;
+    top: calc(var(--space-small-gap) + env(safe-area-inset-top));
+  }
+
   /* The dialogue's header keeps its height in the one-screen column instead of being overlapped. */
   .try-dialogue-bar {
     flex-shrink: 0;

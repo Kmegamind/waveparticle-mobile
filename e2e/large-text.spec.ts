@@ -142,6 +142,35 @@ test("#100 AC2 on the focus page with large text Done and Pause stack", async ({
   expect(pause!.y).toBeGreaterThanOrEqual(done!.y + done!.height);
 });
 
+for (const width of [320, 430]) {
+  test(`#100 AC2 at 200% text on ${width} px the Undo toast covers neither Done nor Pause`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await seedPlan(page, twoSteps);
+    await page.goto("/try/focus?speed=60");
+    await expect(page.getByTestId("story-card")).toBeVisible();
+    await largeText(page);
+    await page.getByRole("button", { name: "Done", exact: true }).click();
+    const toast = page.locator(".focus-toast");
+    await expect(toast).toBeVisible();
+    const box = await toast.boundingBox();
+    for (const name of ["Done", "Pause"]) {
+      const button = await page.getByRole("button", { name, exact: true }).boundingBox();
+      const overlaps =
+        box!.x < button!.x + button!.width &&
+        button!.x < box!.x + box!.width &&
+        box!.y < button!.y + button!.height &&
+        button!.y < box!.y + box!.height;
+      expect(overlaps, `the toast covers ${name}`).toBe(false);
+    }
+    // Done and Pause stack at 200% on a 430 px phone too.
+    const done = await page.getByRole("button", { name: "Done", exact: true }).boundingBox();
+    const pause = await page.getByRole("button", { name: "Pause", exact: true }).boundingBox();
+    expect(pause!.y).toBeGreaterThanOrEqual(done!.y + done!.height);
+  });
+}
+
 test("#100 AC2 at normal size Done and Pause sit side by side at about 62 to 38", async ({
   page,
 }) => {

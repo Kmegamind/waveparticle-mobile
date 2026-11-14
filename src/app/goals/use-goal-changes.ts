@@ -34,9 +34,10 @@ function send(change: GoalChange, goalId: string): Promise<SetGoalStatusOutcome>
 
 /**
  * `focusAfter` names where keyboard focus goes once a change or Undo is over: the row or button
- * that had it may be gone (a finding left by #73).
+ * that had it may be gone (a finding left by #73). `changing` is true when the page is about to
+ * show a new status, so a page can wait for it before moving focus.
  */
-export function useGoalChanges(focusAfter: () => HTMLElement | null = nowhere) {
+export function useGoalChanges(focusAfter: (changing: boolean) => HTMLElement | null = nowhere) {
   const router = useRouter();
   const [toast, setToast] = useState<GoalToast | null>(null);
   const [busy, setBusy] = useState(false);
@@ -46,7 +47,7 @@ export function useGoalChanges(focusAfter: () => HTMLElement | null = nowhere) {
       setBusy(true);
       const outcome = await send(kind, goalId).catch(() => failed);
       setBusy(false);
-      focusAfter()?.focus();
+      focusAfter(outcome.status === "ok")?.focus();
       if (outcome.status !== "ok") {
         setToast({ text: CHANGE_FAILED, undo: null, failed: true });
         return false;
@@ -65,7 +66,7 @@ export function useGoalChanges(focusAfter: () => HTMLElement | null = nowhere) {
     const current = toast;
     setToast(null);
     // Undo itself goes away with the toast.
-    focusAfter()?.focus();
+    focusAfter(Boolean(current?.undo))?.focus();
     if (!current?.undo) return;
     const { goalId, previous, parkedSessionId } = current.undo;
     const outcome = await setGoalStatusAction({
@@ -73,7 +74,10 @@ export function useGoalChanges(focusAfter: () => HTMLElement | null = nowhere) {
       status: undoStatusFor(previous),
       sessionId: parkedSessionId,
     }).catch(() => failed);
-    if (outcome.status !== "ok") setToast({ ...current, text: UNDO_FAILED, failed: true });
+    if (outcome.status !== "ok") {
+      setToast({ ...current, text: UNDO_FAILED, failed: true });
+      focusAfter(false)?.focus();
+    }
     router.refresh();
   }, [focusAfter, router, toast]);
 
