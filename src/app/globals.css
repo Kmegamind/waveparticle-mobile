@@ -18,7 +18,7 @@ body {
   margin: 0;
   /*
    * At large text sizes a word longer than its line breaks instead of pushing the page wider
-   * (#100). Rows wrap first (flex-wrap below), so this only splits a word that is wider than the
+   * (issue 100). Rows wrap first (flex-wrap below), so this only splits a word that is wider than the
    * whole line.
    */
   overflow-wrap: anywhere;
@@ -143,7 +143,7 @@ a {
   }
 
   /*
-   * #100 AC4: when the device asks for reduced motion, nothing animates or transitions anywhere,
+   * Issue 100 AC4: when the device asks for reduced motion, nothing animates or transitions anywhere,
    * including parts added later. Things still appear and change state, just without movement.
    */
   *,
@@ -184,7 +184,7 @@ a {
 }
 
 .app-content {
-  /* The query container for the large-text layout at the end of this file (#100). */
+  /* The query container for the large-text layout at the end of this file (issue 100). */
   container: content / inline-size;
   min-height: calc(100svh - var(--target));
   padding-bottom: env(safe-area-inset-bottom);
@@ -198,7 +198,7 @@ a {
 }
 
 .app-screen {
-  /* One column that can shrink below its widest content (#100: 200% text on 320 px). */
+  /* One column that can shrink below its widest content (issue 100: 200% text on 320 px). */
   grid-template-columns: minmax(0, 1fr);
   min-height: calc(100svh - var(--target));
   min-width: 0;
@@ -248,7 +248,7 @@ a {
   line-height: 1.1;
   min-height: var(--tab-item-height);
   /* No side padding: a label like "Companions" uses the whole tab and, with large text, wraps
-     inside it instead of running into the next tab (#100). */
+     inside it instead of running into the next tab (issue 100). */
   padding: var(--tab-item-pad-block) 0;
   position: relative;
   text-align: center;
@@ -522,7 +522,7 @@ a {
 /* Sign-in-free test path, issue 208. The colour is set here so a skin's ink is inherited. */
 .try-shell {
   color: var(--ink);
-  /* The session pages' query container for the large-text layout (#100). */
+  /* The session pages' query container for the large-text layout (issue 100). */
   container: content / inline-size;
   margin-inline: auto;
   max-width: var(--layout-phone-max);
@@ -582,7 +582,7 @@ a {
   display: grid;
   /*
    * The middle keeps room for a card; on a short screen with large text the seam, the middle and
-   * Done | Pause no longer fit, and the page scrolls as a whole so Done stays reachable (#100).
+   * Done | Pause no longer fit, and the page scrolls as a whole so Done stays reachable (issue 100).
    */
   grid-template-rows: auto minmax(min(6rem, 100%), 1fr) auto;
   height: calc(100svh - var(--target) - var(--space-small-gap) * 2);
@@ -960,7 +960,7 @@ a {
 
 /*
  * Done and Pause at 62:38 side by side: their bases keep that ratio and add up to 14rem, so with
- * large text they no longer fit on one line and stack, each full width (#100 AC2).
+ * large text they no longer fit on one line and stack, each full width (issue 100 AC2).
  */
 .focus-actions {
   display: flex;
@@ -2406,7 +2406,7 @@ a {
   align-items: center;
   border-bottom: 1px solid var(--hairline);
   display: flex;
-  /* With large text the name, email and date go under the initials (#100). */
+  /* With large text the name, email and date go under the initials (issue 100). */
   flex-wrap: wrap;
   gap: var(--space-screen-bottom);
   padding-bottom: var(--space-screen-bottom);
@@ -2860,7 +2860,7 @@ a {
   align-items: center;
   border-bottom: 1px solid var(--hairline);
   display: flex;
-  /* At large text sizes the row's buttons move under the title instead of off the screen (#100). */
+  /* At large text sizes the row's buttons move under the title instead of off the screen (issue 100). */
   flex-wrap: wrap;
   gap: var(--space-small-gap);
   justify-content: flex-end;
@@ -3113,7 +3113,7 @@ a {
 }
 
 /*
- * Large text (#100). The query is in em, so it follows the text size, not the screen: it holds
+ * Large text (issue 100). The query is in em, so it follows the text size, not the screen: it holds
  * when fewer than 16 body-size characters fit across the content, which happens from about 150%
  * text on a 320 px screen and never at normal size on a phone. Rows that put text beside a
  * portrait or a button then stack, instead of squeezing the text into a column a few letters wide.
