@@ -8,9 +8,8 @@ vi.mock("@/app/me/actions", () => ({
   setKeepClockRunningAction: async () => ({ status: "failed" }),
 }));
 
-const { SignalsScreen, lockScreenAfterPermission } = await import(
-  "@/app/me/signals/signals-screen"
-);
+const { SignalsScreen, lockScreenAfterPermission } =
+  await import("@/app/me/signals/signals-screen");
 
 // #74 (and #71's setting): the Signals sub-page of prototype v4.
 
