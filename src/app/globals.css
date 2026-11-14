@@ -2628,3 +2628,35 @@ a {
   color: var(--ink-2);
   font-size: var(--text-caption-size);
 }
+
+.sig-rows {
+  border-top: 1px solid var(--hairline);
+  display: grid;
+}
+
+.sig-row {
+  align-items: center;
+  display: flex;
+  gap: var(--space-screen-bottom);
+  justify-content: space-between;
+  padding: var(--space-small-gap) 0;
+}
+
+.sig-text {
+  display: grid;
+  gap: var(--space-row-after);
+}
+
+.sig-text p {
+  margin: 0;
+}
+
+.sig-title {
+  font-size: var(--text-body-size);
+}
+
+.sig-help,
+.sig-reason {
+  color: var(--ink-2);
+  font-size: var(--text-link-size);
+}
