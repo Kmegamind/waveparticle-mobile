@@ -1,29 +1,26 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
-import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
-import { LifePathProgress } from "../progress-view";
+import { CompanionsList } from "./companions-list";
 
 export const instant = false;
 
+/** COMP (#268, #93): choose who sits at the desk; Enter on Oppenheimer opens his Life Path. */
 export default function Companions() {
   return <CompanionsContent />;
 }
 
 async function CompanionsContent() {
   await connection();
-  const client = await createSupabaseServerClient();
-  const user = await getCurrentUser(client);
+  const user = await getCurrentUser(await createSupabaseServerClient());
   if (!user) redirect("/auth/sign-in");
-  const progress = await createSupabaseProgressStore(client).read(user.id, user.id);
 
   return (
-    <main className="app-screen">
+    <main className="app-screen comp-page">
       <h1>Companions</h1>
-      <Link href="/companions/oppenheimer">Oppenheimer</Link>
-      <LifePathProgress progress={progress} />
+      <p className="comp-subtitle">Choose who sits at the desk with you.</p>
+      <CompanionsList />
     </main>
   );
 }

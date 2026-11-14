@@ -1776,3 +1776,95 @@ a {
 .home-sheet p {
   margin: 0;
 }
+
+/* Companions list COMP (issue 268), prototype v4: rows with portrait, name, tags and his line. */
+.comp-page {
+  align-content: start;
+  display: grid;
+  gap: var(--space-control-gap);
+  padding-bottom: var(--space-screen-bottom);
+}
+
+.comp-subtitle {
+  color: var(--ink-2);
+  font-size: var(--text-body-size);
+  margin: 0;
+}
+
+.comp-list {
+  border-top: 1px solid var(--hairline);
+  display: grid;
+}
+
+.comp-row {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  gap: var(--space-screen-bottom);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: var(--target);
+  padding: var(--space-screen-bottom) 0;
+  text-align: left;
+}
+
+.comp-row[aria-checked="true"] {
+  background: var(--tint);
+}
+
+.comp-row:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: -3px;
+}
+
+.comp-portrait {
+  background: var(--tag-fill);
+  border: 1px solid var(--tag-edge);
+  border-radius: 50%;
+  height: 4rem;
+  width: 4rem;
+}
+
+.comp-text {
+  display: grid;
+  gap: var(--space-row-after);
+  min-width: 0;
+}
+
+.comp-name {
+  font-family: var(--type-display);
+  font-size: var(--text-sheet-title-size);
+  font-weight: 800;
+}
+
+.comp-tags {
+  color: var(--ink-2);
+  font-size: var(--text-link-size);
+}
+
+.comp-line {
+  font-family: var(--type-voice);
+  font-size: var(--text-slip-small-size);
+  line-height: var(--text-slip-small-leading);
+}
+
+.comp-check {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.comp-enter {
+  display: grid;
+  gap: var(--space-small-gap);
+  margin-top: var(--space-control-gap);
+}
+
+.comp-reason {
+  color: var(--ink-2);
+  font-size: var(--text-caption-size);
+  margin: 0;
+}

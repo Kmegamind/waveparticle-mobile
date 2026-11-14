@@ -42,7 +42,8 @@ describe("#258 AC10 a signed-in run plays the Life Path's current story", () => 
 describe("#258 AC7 AC8 the Life Path", () => {
   it("is a child page of Companions with the tab bar", () => {
     expect(showsTabBar("/companions/oppenheimer")).toBe(true);
-    expect(read("src/app/companions/page.tsx")).toContain('href="/companions/oppenheimer"');
+    // #268: the Companions list opens it with Enter; the address comes from the companion data.
+    expect(read("src/content/companions.ts")).toContain('enterHref: "/companions/oppenheimer"');
   });
 
   it("Begin opens the goal dialogue", () => {
