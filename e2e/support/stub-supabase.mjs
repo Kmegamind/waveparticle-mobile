@@ -166,6 +166,8 @@ createServer(async (request, response) => {
 
     if (request.method === "GET" || request.method === "HEAD") {
       let found = ordered(rows.filter(hit), url.searchParams.get("order"));
+      const offset = Number(url.searchParams.get("offset") ?? "0");
+      if (offset > 0) found = found.slice(offset);
       const limit = url.searchParams.get("limit");
       if (limit) found = found.slice(0, Number(limit));
       if ((request.headers.accept ?? "").includes("vnd.pgrst.object")) {

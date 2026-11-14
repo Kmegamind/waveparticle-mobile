@@ -29,7 +29,7 @@ export function DeleteAccountScreen() {
         Delete your account
       </h1>
       <p>
-        This deletes your account and everything in it: your Goals, Steps and history, and the lines
+        This deletes your account and the data in it: your Goals, Steps and history, and the lines
         he showed you. It cannot be undone.
       </p>
       {error ? <p role="alert">{error}</p> : null}

@@ -6,7 +6,8 @@
 - Stored on our server (Supabase), tied to the account: profile (display name, "Keep the clock running"); Goals (title, the text written, time, status, type); Steps (title, description, minutes); sessions (story, when each Step was opened and marked done, his background card, closing line and key moments); the lines he showed (cards, pause messages, return pop-ups).
 - Not stored on our server: the rest conversation (both sides) and the clocks stay on the device (decision 0014). Appearance, Plain text, Signals and the History view are on the device.
 - Sent to the language model: the Goal text with the time when the Plan is split; each message written in the rest conversation. Nothing the user wrote goes into his story cards, stuck story, return pop-up or closing line (#216).
-- Safety: the safety check is a word list run by our app; nothing is sent anywhere for it. The model gateway log records only which checks failed and how long calls took, never words.
+- Safety: the safety check is a word list run by our app; nothing is sent anywhere for it. The app keeps no separate record of model calls: the gateway supports a log callback, but no caller passes one (corrected after review).
+- Supabase Auth and Vercel keep their own technical records (IP address, sign-in times, requests); deleting the account does not reach them (added after review).
 - Provider retention is not decided (A7b); the notice says so and does not name terms it cannot confirm.
 - Hosting: Supabase (sign-in and data) and Vercel (the web app).
 

@@ -37,17 +37,18 @@ export function PrivacyNotice({ back }: { back: "me" | "sign-in" }) {
         We keep your display name and whether you want the clock to keep running when you leave.
       </p>
       <p>
-        For each Goal you write, we keep its title, the text you wrote, the time you chose, its
-        status and its type. For each Step of a Plan, we keep its title, its description and its
-        minutes.
+        For each Goal you write, we keep its title, the text you wrote, the time you chose, whether
+        you asked for finer Steps, its status, its type, and when it was created and last changed.
+        For each Step of a Plan, we keep its title, its description and its minutes.
       </p>
       <p>
-        We keep your history: which story each session played, when each Step was opened and when
-        you marked it done.
+        We keep your history: which story each session played, when the session started, was last
+        active and was finished, when each Step was opened and when you marked it done.
       </p>
       <p>
-        We keep the lines he showed you: his story cards, his pause messages, his return lines and
-        the closing line of a finished story.
+        We keep the lines he showed you: the background card, his story cards, his pause messages
+        and which pause each belonged to, his return lines, the closing line of a finished story and
+        the key moments of that story.
       </p>
       <p>
         All of this is tied to your account, so that your Goals and history are the same on every
@@ -66,9 +67,11 @@ export function PrivacyNotice({ back }: { back: "me" | "sign-in" }) {
         His lines are written by a language model that another company runs, the model provider.
       </p>
       <p>
-        When you split a Goal into Steps, the Goal you write and the time you chose are sent to the
-        language model. In the rest conversation, each message you write in the rest conversation is
-        sent to the language model, so that he can answer you.
+        When you split a Goal into Steps, the Goal you write, the time you chose and whether you
+        asked for finer Steps are sent to the language model. In the rest conversation, each message
+        you write in the rest conversation is sent to the language model, so that he can answer you.
+        With each new message, your last few messages and his replies are sent again, so that he can
+        follow the conversation.
       </p>
       <p>
         Nothing else you write is sent. His story cards, pause messages, return lines and closing
@@ -86,18 +89,24 @@ export function PrivacyNotice({ back }: { back: "me" | "sign-in" }) {
         it shows you where to find help, and that text is not sent to the language model.
       </p>
       <p>
-        Our records about the language model note which checks a line did not pass and how long a
-        request took, never your words.
+        Our app does not keep a separate record of what is sent to the language model or of what it
+        answers, apart from his lines listed above.
       </p>
 
       <h2>Who stores it</h2>
       <p>Your account and your data are stored with Supabase. The app is served by Vercel.</p>
+      <p>
+        Both services keep their own technical records, such as your IP address, when you signed in
+        and which pages were requested. Deleting your account does not remove those records; each
+        service keeps them under its own terms.
+      </p>
 
       <h2>Your choices</h2>
       <p>
         You can download everything your account holds with{" "}
         <Link href="/me/export">Export my data</Link>. You can delete your account and everything in
-        it with <Link href="/me/delete-account">Delete my data</Link>. Deleting cannot be undone.
+        it with <Link href="/me/delete-account">Delete my data</Link>: that removes your account and
+        everything listed under &ldquo;What we keep on our server&rdquo;. Deleting cannot be undone.
       </p>
 
       <h2>Changes</h2>

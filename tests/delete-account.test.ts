@@ -110,7 +110,9 @@ describe("#103 AC2 ACCOUNT-DELETE asks on its own screen", () => {
 
   it("shows the prototype card with Keep my account first", () => {
     expect(html).toContain("Delete your account");
-    expect(html).toContain("This deletes your account and everything in it");
+    // Review: the sign-in and hosting services keep their own records, so not "everything".
+    expect(html).toContain("This deletes your account and the data in it");
+    expect(html).not.toContain("everything in it");
     expect(html).toMatch(/href="\/me\/data"[^>]*>Keep my account</);
     expect(html).toMatch(/<button[^>]*>Delete account</);
     expect(html.indexOf("Keep my account")).toBeLessThan(html.indexOf("Delete account<"));
@@ -120,6 +122,9 @@ describe("#103 AC2 ACCOUNT-DELETE asks on its own screen", () => {
     const page = read("src/app/me/delete-account/page.tsx");
     expect(page).toContain('redirect("/auth/sign-in")');
     expect(page).toContain("app-screen");
+    // The back link's name matches what it shows (WCAG 2.5.3).
+    expect(page).toContain('aria-label="Back to Data"');
+    expect(page).toMatch(/className="focus-label">Data</);
     expect(html).toMatch(/<h1[^>]*>Delete your account</);
   });
 });

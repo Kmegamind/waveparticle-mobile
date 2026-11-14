@@ -20,7 +20,7 @@ async function DeleteAccountContent() {
     <main className="app-screen me-page delete-page">
       <Link aria-label="Back to Data" className="life-back" href="/me/data">
         <span aria-hidden="true">‹</span>
-        <span className="focus-label">Me</span>
+        <span className="focus-label">Data</span>
       </Link>
       <DeleteAccountScreen />
     </main>

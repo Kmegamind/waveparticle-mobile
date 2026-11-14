@@ -12,6 +12,14 @@ const USER = { id: "u1", email: "ada@example.test" };
 
 type Call = { table: string; filters: [string, string, unknown][] };
 
+/** Applies a recorded `.range(from, to)` like the API does (its page size cap is 1000). */
+function pageOf(rows: Record<string, unknown>[], filters: [string, string, unknown][]) {
+  const range = filters.find(([kind]) => kind === "range");
+  if (!range) return rows.slice(0, 1000);
+  const from = Number(range[1]);
+  return rows.slice(from, Math.min(Number(range[2]) + 1, from + 1000));
+}
+
 /** A fake client that records each table read and answers from `data`. */
 function fakeClient(data: Record<string, Record<string, unknown>[]>, failOn?: string) {
   const calls: Call[] = [];
@@ -22,11 +30,12 @@ function fakeClient(data: Record<string, Record<string, unknown>[]>, failOn?: st
       select: () => query,
       eq: (column: string, value: string) => (call.filters.push(["eq", column, value]), query),
       in: (column: string, values: string[]) => (call.filters.push(["in", column, values]), query),
+      range: (from: number, to: number) => (call.filters.push(["range", String(from), to]), query),
       then: (resolve: (value: { data: unknown; error: unknown }) => unknown) =>
         Promise.resolve(
           failOn === table
             ? { data: null, error: { message: "boom" } }
-            : { data: data[table] ?? [], error: null },
+            : { data: pageOf(data[table] ?? [], call.filters), error: null },
         ).then(resolve),
     };
     return query;
@@ -55,7 +64,8 @@ describe("#103 AC1 the export file", () => {
       sessionSteps: [{ id: "ss1", session_id: "x1" }],
       sessionLines: [{ id: "l1", session_id: "x1", text: "The desert is quiet." }],
     });
-    const filterOf = (table: string) => calls.find((call) => call.table === table)?.filters;
+    const filterOf = (table: string) =>
+      calls.find((call) => call.table === table)?.filters.filter(([kind]) => kind !== "range");
     expect(filterOf("profiles")).toEqual([["eq", "user_id", "u1"]]);
     expect(filterOf("goals")).toEqual([["eq", "user_id", "u1"]]);
     expect(filterOf("sessions")).toEqual([["eq", "user_id", "u1"]]);
@@ -84,8 +94,21 @@ describe("#103 AC1 the export file", () => {
     await readAccountExport(client, USER, NOW);
     const sizes = calls
       .filter((call) => call.table === "steps")
-      .map((call) => (call.filters[0][2] as string[]).length);
+      .map((call) => (call.filters.find(([kind]) => kind === "in")![2] as string[]).length);
     expect(sizes).toEqual([100, 100, 30]);
+  });
+
+  it("reads past the API's 1000-row page limit instead of silently dropping rows", async () => {
+    const lines = Array.from({ length: 2500 }, (_, index) => ({
+      id: `l${index}`,
+      session_id: "x1",
+    }));
+    const { client } = fakeClient({
+      sessions: [{ id: "x1", user_id: "u1" }],
+      session_lines: lines,
+    });
+    const file = await readAccountExport(client, USER, NOW);
+    expect(file.sessionLines).toHaveLength(2500);
   });
 
   it("fails instead of giving a partial file when a read fails", async () => {

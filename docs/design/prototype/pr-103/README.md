@@ -12,4 +12,5 @@ test-only Supabase stub (`scripts/design/capture-account.mjs`, then `compose-com
 Differences on purpose:
 - The app header ("WaveParticle") shows above these pages, as on every signed-in page (#244), so the delete card sits a little lower.
 - The prototype's dashed "OPEN" box on ACCOUNT-DELETE is a design annotation, not app copy; it is not built.
-- The delete card's sentence also names "the lines he showed you" and says "It cannot be undone.", because those are true and the user should know before confirming.
+- The delete card says "the data in it" (not "everything in it"), names "the lines he showed you" and says "It cannot be undone.": the sign-in and hosting services keep their own records, so "everything" would not be true.
+- The back row reads "Data", because the page opens from Data and Keep my account goes back there; the prototype reaches it from a Me row and reads "Me".

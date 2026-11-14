@@ -12,6 +12,7 @@ type Query = PromiseLike<Result> & {
   select(columns: string): Query;
   eq(column: string, value: string): Query;
   in(column: string, values: string[]): Query;
+  range(from: number, to: number): Query;
 };
 
 export type AccountExport = {
@@ -28,10 +29,19 @@ export type AccountExport = {
 /** Ids per `in` filter, so a long history never makes one request URL too long. */
 const CHUNK = 100;
 
-async function rows(query: Query): Promise<Row[]> {
-  const result = await query;
-  if (result.error) throw new Error("export read failed");
-  return Array.isArray(result.data) ? (result.data as Row[]) : [];
+/** The API returns at most this many rows per request; longer results are read page by page. */
+const PAGE = 1000;
+
+/** Reads every page of one query, so a large history is never cut off at the API's row limit. */
+async function rows(query: () => Query): Promise<Row[]> {
+  const all: Row[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const result = await query().range(from, from + PAGE - 1);
+    if (result.error) throw new Error("export read failed");
+    const page = Array.isArray(result.data) ? (result.data as Row[]) : [];
+    all.push(...page);
+    if (page.length < PAGE) return all;
+  }
 }
 
 async function rowsIn(
@@ -42,13 +52,8 @@ async function rowsIn(
 ): Promise<Row[]> {
   const parts: Promise<Row[]>[] = [];
   for (let start = 0; start < ids.length; start += CHUNK) {
-    parts.push(
-      rows(
-        table(name)
-          .select("*")
-          .in(column, ids.slice(start, start + CHUNK)),
-      ),
-    );
+    const chunk = ids.slice(start, start + CHUNK);
+    parts.push(rows(() => table(name).select("*").in(column, chunk)));
   }
   return (await Promise.all(parts)).flat();
 }
@@ -63,9 +68,9 @@ export async function readAccountExport(
 ): Promise<AccountExport> {
   const table = (name: string) => client.from(name) as unknown as Query;
   const [profiles, goals, sessions] = await Promise.all([
-    rows(table("profiles").select("*").eq("user_id", user.id)),
-    rows(table("goals").select("*").eq("user_id", user.id)),
-    rows(table("sessions").select("*").eq("user_id", user.id)),
+    rows(() => table("profiles").select("*").eq("user_id", user.id)),
+    rows(() => table("goals").select("*").eq("user_id", user.id)),
+    rows(() => table("sessions").select("*").eq("user_id", user.id)),
   ]);
   const sessionIds = idsOf(sessions);
   const [steps, sessionSteps, sessionLines] = await Promise.all([

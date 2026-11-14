@@ -46,9 +46,27 @@ describe("#102 AC1 AC3 #8 AC3 the privacy notice", () => {
     expect(words).toMatch(/Nothing else you write is sent/i);
   });
 
-  it("says the safety check sends nothing and the logs hold no words", () => {
+  it("says the safety check sends nothing, and claims no model records that do not exist", () => {
     expect(words).toMatch(/safety check runs in our app[^.]*nothing is sent/i);
-    expect(words).toMatch(/never your words/i);
+    expect(words).not.toMatch(/records about the language model|which checks a line did not pass/i);
+    expect(words).toMatch(/does not keep a separate record of what is sent to the language model/i);
+  });
+
+  it("names what the sign-in and hosting services keep, and what deletion does not reach", () => {
+    expect(words).toMatch(/IP address/);
+    expect(words).toMatch(/Deleting your account does not remove those records/i);
+  });
+
+  it("lists every kind of thing stored for a Goal and a session", () => {
+    expect(words).toMatch(/whether you asked for finer Steps/i);
+    expect(words).toMatch(/when the session started, was last active and was finished/i);
+    expect(words).toMatch(/background card/i);
+    expect(words).toMatch(/key moments/i);
+  });
+
+  it("says earlier rest messages go with each new one, and the split choice is sent", () => {
+    expect(words).toMatch(/your last few messages and his replies are sent again/i);
+    expect(words).toMatch(/whether you asked for finer Steps are sent to the language model/i);
   });
 
   it("says retention by the provider is not decided, without inventing terms", () => {
