@@ -3037,3 +3037,81 @@ a {
   gap: var(--space-screen-bottom);
   justify-content: center;
 }
+
+/* Account and privacy pages (issues 102, 103 and 104): plain reading pages in the Me style. */
+.account-page {
+  align-content: start;
+  display: grid;
+  gap: var(--space-control-gap);
+  padding-bottom: var(--space-screen-bottom);
+}
+
+.account-text {
+  display: grid;
+  gap: var(--space-control-gap);
+  max-width: 60ch;
+}
+
+.account-text h2 {
+  font-family: var(--type-display);
+  font-size: var(--text-sheet-title-size);
+  font-weight: 800;
+  line-height: 1.2;
+  margin: var(--space-button-before) 0 0;
+}
+
+.account-text p,
+.account-page > p {
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-leading);
+  margin: 0;
+}
+
+.account-text a:not(.life-back),
+.account-page > p a {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.account-date {
+  color: var(--ink-2);
+  font-size: var(--text-caption-size);
+}
+
+/* ACCOUNT-DELETE as in prototype v4: one card in the middle of the screen. */
+.delete-page {
+  align-content: stretch;
+  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
+}
+
+.delete-card {
+  align-self: center;
+  border-color: var(--edge);
+  gap: var(--space-control-gap);
+}
+
+.delete-card p {
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-leading);
+}
+
+.delete-title {
+  font-family: var(--type-display);
+  font-size: var(--text-card-title-size);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  margin: 0;
+}
+
+.delete-actions {
+  display: grid;
+  gap: var(--space-control-gap);
+  margin-top: var(--space-button-before);
+}
+
+.delete-actions > * {
+  width: 100%;
+}

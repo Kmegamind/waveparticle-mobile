@@ -135,3 +135,33 @@ test("#103 the export route refuses a signed-out request", async ({ request }) =
   expect([302, 303, 307, 401]).toContain(response.status());
   expect(await response.text()).not.toContain("goals");
 });
+
+test("#102 AC2 #103 Me → Data → Privacy notice, and back to Data", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await signIn(context, baseURL!, accountRows);
+  await page.goto("/me");
+  await page.getByRole("link", { name: "Data" }).click();
+  await expect(page.getByRole("heading", { name: "Data", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Privacy notice" }).click();
+  await expect(page.getByRole("heading", { name: "Privacy notice" })).toBeVisible();
+  await page.getByRole("link", { name: "Back to Data" }).click();
+  await expect(page).toHaveURL(/\/me\/data$/);
+});
+
+test("#104 Me → About the stories → Terms", async ({ page, context, baseURL }) => {
+  await signIn(context, baseURL!, accountRows);
+  await page.goto("/me");
+  await page.getByRole("link", { name: "About the stories" }).click();
+  await expect(page.getByText("The Companion's first-person lines are imagined.")).toBeVisible();
+  await page.getByRole("link", { name: "Terms", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Terms", exact: true })).toBeVisible();
+});
+
+test("#104 the Terms open without signing in", async ({ page }) => {
+  await page.goto("/terms");
+  await expect(page).toHaveURL(/\/terms$/);
+  await expect(page.getByText(/not a medical or crisis service/).first()).toBeVisible();
+});

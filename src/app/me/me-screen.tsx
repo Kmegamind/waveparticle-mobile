@@ -281,6 +281,20 @@ export function MeScreen({
 
       <p className="me-quiet">Nothing is sent unless you turn it on.</p>
 
+      <Link className="me-row me-row-button" href="/me/about">
+        About the stories
+        <span aria-hidden="true" className="me-caret">
+          ›
+        </span>
+      </Link>
+
+      <Link className="me-row me-row-button" href="/me/data">
+        Data
+        <span aria-hidden="true" className="me-caret">
+          ›
+        </span>
+      </Link>
+
       <div className="me-signout">
         <SignOutButton />
       </div>
