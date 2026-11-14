@@ -70,7 +70,13 @@ describe("authentication flow", () => {
     const config = await readWorkspaceFile("playwright.config.ts");
 
     expect(config).toContain("playwright-placeholder");
-    expect(config).toContain("127.0.0.1:9");
+    // #73: the e2e app talks only to the local, test-only stub (e2e/support/stub-supabase.mjs),
+    // never to a real Supabase project.
+    expect(config).toMatch(
+      /NEXT_PUBLIC_SUPABASE_URL: `http:\/\/127\.0\.0\.1:\$\{supabaseStubPort\}`/,
+    );
+    expect(config).toContain('command: "node e2e/support/stub-supabase.mjs"');
+    expect(config).not.toMatch(/supabase\.co/);
   });
 
   it("returns a clear proxy configuration error", async () => {
