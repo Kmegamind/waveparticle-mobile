@@ -36,13 +36,21 @@ import {
   commitTitle,
   countLine,
   fromPlan,
+  MAX_MINUTES,
+  MIN_MINUTES,
+  MINUTES_CEILING_HINT,
+  MINUTES_FLOOR_HINT,
+  MINUTES_STEP,
   moveStep,
+  NEW_STEP_MINUTES,
+  PLAN_TITLE_MAX,
+  planTitleFor,
   removeStep,
   setDescription,
+  setMinutes as setStepMinutes,
   toSavedSteps,
   totalMinutes,
   type EditableStep,
-  MINUTES_STEP,
   STEP_DESCRIPTION_MAX,
   STEP_TITLE_MAX,
 } from "@/lib/prototype/plan-edit";
@@ -122,9 +130,9 @@ export function GoalDialogue({
   const [waitLine, setWaitLine] = useState("");
   const [planTitle, setPlanTitle] = useState("");
   const [steps, setSteps] = useState<EditableStep[]>([]);
-  const [editing, setEditing] = useState<{ id: string; title: string; description: string } | null>(
-    null,
-  );
+  const [editing, setEditing] = useState<Editing>(null);
+  // The Goal field on the Plan card (#237): what Start saves as the title.
+  const [titleDraft, setTitleDraft] = useState("");
   const [crisisBack, setCrisisBack] = useState<Phase>("goal");
   // One Goal id per Plan from a split: Start again for the same Plan updates that one Goal.
   const [goalId, setGoalId] = useState("");
@@ -158,6 +166,7 @@ export function GoalDialogue({
       setPhase("failed");
     } else {
       setPlanTitle(outcome.plan.title);
+      setTitleDraft(outcome.plan.title || input.goal);
       setGoalId(crypto.randomUUID());
       setSaveFailed(false);
       setSteps(fromPlan(outcome.plan.steps));
@@ -261,6 +270,7 @@ export function GoalDialogue({
   function useOneStep() {
     const total = minutes ?? DEFAULT_MINUTES;
     setPlanTitle(goal);
+    setTitleDraft(goal);
     setGoalId(crypto.randomUUID());
     setSaveFailed(false);
     setSteps(fromPlan([{ title: goal.slice(0, 80), description: "", minutes: total }]));
@@ -280,13 +290,18 @@ export function GoalDialogue({
     else if (phase === "plan" || phase === "failed") setPhase(cameFrom);
   }
 
-  // ----- Plan editing (#37) -----
+  // ----- Plan editing (#37, #237, #249) -----
   function openEditor(step: EditableStep) {
     const committed = editing ? finishEditing() : steps;
     if (committed === null) return;
     const current = committed.find((item) => item.id === step.id);
     if (!current) return;
-    setEditing({ id: current.id, title: current.title, description: current.description });
+    setEditing({
+      id: current.id,
+      title: current.title,
+      description: current.description,
+      minutes: String(current.minutes),
+    });
   }
 
   /** Commits the open editor. Returns the new list, or null when the safety page opened. */
@@ -301,25 +316,53 @@ export function GoalDialogue({
       openCrisis("plan");
       return null;
     }
-    let next = setDescription(steps, editing.id, editing.description.trim());
+    let next = setStepMinutes(steps, editing.id, editing.minutes);
+    next = setDescription(next, editing.id, editing.description.trim());
     next = commitTitle(next, editing.id, editing.title);
     setSteps(next);
     setEditing(null);
     return next;
   }
 
+  /** The minutes buttons (±5) and the typed field both act on the open Step (#249). */
+  function applyMinutes(next: EditableStep[]) {
+    if (!editing) return;
+    const step = next.find((item) => item.id === editing.id);
+    setSteps(next);
+    if (step) setEditing({ ...editing, minutes: String(step.minutes) });
+  }
+
+  function onMinutes(delta: number) {
+    if (!editing) return;
+    applyMinutes(
+      changeMinutes(setStepMinutes(steps, editing.id, editing.minutes), editing.id, delta),
+    );
+  }
+
+  function onCommitMinutes() {
+    if (!editing) return;
+    applyMinutes(setStepMinutes(steps, editing.id, editing.minutes));
+  }
+
   function onAddStep() {
+    const openId = editing?.id;
     const committed = editing ? finishEditing() : steps;
     if (committed === null) return;
-    const added = addStep(committed);
+    const added = addStep(committed, openId);
     setSteps(added.steps);
-    setEditing({ id: added.id, title: "", description: "" });
+    setEditing({ id: added.id, title: "", description: "", minutes: String(NEW_STEP_MINUTES) });
+  }
+
+  function onMoveStep(id: string, by: -1 | 1) {
+    const committed = editing ? finishEditing() : steps;
+    if (committed === null) return;
+    setSteps(moveStep(committed, id, by));
   }
 
   function openFocus(saved: StartInput["steps"]) {
     update({
       ...state,
-      goal: { text: planTitle || goal, minutes: totalMinutes(saved) },
+      goal: { text: planTitleFor(titleDraft, goal), minutes: totalMinutes(saved) },
       steps: saved,
       currentStep: 0,
     });
@@ -330,6 +373,12 @@ export function GoalDialogue({
     if (saving) return;
     const committed = editing ? finishEditing() : steps;
     if (committed === null) return;
+    // The Goal field is the user's own text: it passes the same safety gate as a Step (#237).
+    if (gateFreeText(titleDraft).action === "crisis-page") {
+      setTitleDraft(planTitle || goal);
+      openCrisis("plan");
+      return;
+    }
     const saved = toSavedSteps(committed);
     if (saved.length === 0) return;
     if (!start) {
@@ -344,7 +393,7 @@ export function GoalDialogue({
       outcome = await start({
         goalId,
         goalText: goal,
-        title: planTitle || goal,
+        title: planTitleFor(titleDraft, goal),
         splitFiner,
         steps: saved,
       });
@@ -458,17 +507,19 @@ export function GoalDialogue({
               editing={editing}
               onAdd={onAddStep}
               onChangeEditing={setEditing}
+              onCommitMinutes={onCommitMinutes}
               onDone={() => void finishEditing()}
-              onMinutes={(id, delta) => setSteps(changeMinutes(steps, id, delta))}
-              onMove={(id, by) => setSteps(moveStep(steps, id, by))}
+              onMinutes={onMinutes}
+              onMove={onMoveStep}
               onOpen={openEditor}
               onRemove={(id) => {
                 setSteps(removeStep(steps, id));
                 setEditing(null);
               }}
               onSplitAgain={splitAgain}
+              onTitle={setTitleDraft}
               steps={steps}
-              title={planTitle || goal}
+              title={titleDraft}
             />
           </>
         ) : null}
@@ -606,16 +657,19 @@ function SendButton(props: { disabled?: boolean }) {
   );
 }
 
-type Editing = { id: string; title: string; description: string } | null;
+/** The open Step editor; `minutes` is the typed field's text until it is committed (#249). */
+type Editing = { id: string; title: string; description: string; minutes: string } | null;
 
 function PlanCard(props: {
   title: string;
+  onTitle: (value: string) => void;
   steps: EditableStep[];
   editing: Editing;
   onOpen: (step: EditableStep) => void;
   onChangeEditing: (next: Editing) => void;
   onDone: () => void;
-  onMinutes: (id: string, delta: number) => void;
+  onMinutes: (delta: number) => void;
+  onCommitMinutes: () => void;
   onMove: (id: string, by: -1 | 1) => void;
   onRemove: (id: string) => void;
   onAdd: () => void;
@@ -623,19 +677,38 @@ function PlanCard(props: {
 }) {
   const { steps, editing } = props;
   return (
-    <section aria-label="Plan" className="try-card try-plan">
-      <h2>{props.title}</h2>
+    <section aria-labelledby="plan-over" className="try-card try-plan" role="group">
+      <p className="try-over" id="plan-over">
+        Your steps
+      </p>
+      <label className="try-plan-goal">
+        <span className="try-caption-line">Goal</span>
+        <input
+          className="try-field try-field-plan"
+          maxLength={PLAN_TITLE_MAX}
+          onChange={(event) => props.onTitle(event.target.value)}
+          value={props.title}
+        />
+      </label>
       <ol className="try-steps">
         {steps.map((step, index) => {
           const open = editing?.id === step.id;
-          return (
-            <li className="try-step" key={step.id}>
-              {open && editing ? (
+          if (open && editing) {
+            const atFloor = step.minutes <= MIN_MINUTES;
+            const atCeiling = step.minutes >= MAX_MINUTES;
+            return (
+              <li className="try-step" key={step.id}>
+                <div className="try-step-open">
+                  <span className="try-step-number">{index + 1}</span>
+                  <span className="try-step-title">Editing</span>
+                  <span className="try-minutes">{minutesLabel(step.minutes)}</span>
+                </div>
                 <div className="try-step-editor">
                   <label>
-                    Title
+                    <span className="try-caption-line">Step title</span>
                     <input
                       autoFocus
+                      className="try-field"
                       maxLength={STEP_TITLE_MAX}
                       onChange={(event) =>
                         props.onChangeEditing({ ...editing, title: event.target.value })
@@ -644,8 +717,9 @@ function PlanCard(props: {
                     />
                   </label>
                   <label>
-                    Description
+                    <span className="try-caption-line">Description</span>
                     <textarea
+                      className="try-field try-field-area"
                       maxLength={STEP_DESCRIPTION_MAX}
                       onChange={(event) =>
                         props.onChangeEditing({ ...editing, description: event.target.value })
@@ -654,88 +728,114 @@ function PlanCard(props: {
                       value={editing.description}
                     />
                   </label>
-                  <div className="try-stepper-row">
-                    <div className="try-stepper">
-                      <button
-                        aria-label="15 minutes less"
-                        disabled={step.minutes <= MINUTES_STEP}
-                        onClick={() => props.onMinutes(step.id, -MINUTES_STEP)}
-                        type="button"
-                      >
-                        −
-                      </button>
-                      <button
-                        aria-label="15 minutes more"
-                        onClick={() => props.onMinutes(step.id, MINUTES_STEP)}
-                        type="button"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <span className="try-minutes">{minutesLabel(step.minutes)}</span>
+                  <div aria-label="Minutes" className="try-stepper" role="group">
+                    <button
+                      aria-describedby={atFloor ? "try-minutes-hint" : undefined}
+                      aria-disabled={atFloor ? true : undefined}
+                      aria-label="Five minutes fewer"
+                      onClick={() => {
+                        if (!atFloor) props.onMinutes(-MINUTES_STEP);
+                      }}
+                      type="button"
+                    >
+                      −
+                    </button>
+                    <input
+                      aria-label="Minutes"
+                      className="try-field try-stepper-field"
+                      inputMode="numeric"
+                      max={MAX_MINUTES}
+                      min={MIN_MINUTES}
+                      onBlur={props.onCommitMinutes}
+                      onChange={(event) =>
+                        props.onChangeEditing({ ...editing, minutes: event.target.value })
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") props.onCommitMinutes();
+                      }}
+                      type="number"
+                      value={editing.minutes}
+                    />
+                    <button
+                      aria-describedby={atCeiling ? "try-minutes-hint" : undefined}
+                      aria-disabled={atCeiling ? true : undefined}
+                      aria-label="Five minutes more"
+                      onClick={() => {
+                        if (!atCeiling) props.onMinutes(MINUTES_STEP);
+                      }}
+                      type="button"
+                    >
+                      +
+                    </button>
                   </div>
+                  {atFloor || atCeiling ? (
+                    <p className="try-hint" id="try-minutes-hint">
+                      {atFloor ? MINUTES_FLOOR_HINT : MINUTES_CEILING_HINT}
+                    </p>
+                  ) : null}
                   <div className="try-step-tools">
-                    {index > 0 ? (
-                      <button
-                        className="button-plain button-small"
-                        onClick={() => props.onMove(step.id, -1)}
-                        type="button"
-                      >
-                        Move up
-                      </button>
-                    ) : null}
-                    {index < steps.length - 1 ? (
-                      <button
-                        className="button-plain button-small"
-                        onClick={() => props.onMove(step.id, 1)}
-                        type="button"
-                      >
-                        Move down
-                      </button>
-                    ) : null}
+                    <button
+                      className="button-gray button-small"
+                      onClick={props.onDone}
+                      type="button"
+                    >
+                      Done editing
+                    </button>
                     {canRemove(steps) ? (
                       <button
-                        className="button-gray button-small"
+                        className="try-link"
                         onClick={() => props.onRemove(step.id)}
                         type="button"
                       >
                         Remove step
                       </button>
                     ) : null}
-                    <button
-                      className="button-tinted button-small"
-                      onClick={props.onDone}
-                      type="button"
-                    >
-                      Done
-                    </button>
                   </div>
                 </div>
-              ) : (
+              </li>
+            );
+          }
+          return (
+            <li className="try-step try-step-row" key={step.id}>
+              <button
+                aria-expanded="false"
+                className="try-step-button"
+                onClick={() => props.onOpen(step)}
+                type="button"
+              >
+                <span className="try-step-number">{index + 1}</span>
+                <span className="try-step-title">{step.title}</span>
+                <span className="try-minutes">{minutesLabel(step.minutes)}</span>
+              </button>
+              <span className="try-move">
                 <button
-                  aria-expanded="false"
-                  className="try-step-button"
-                  onClick={() => props.onOpen(step)}
+                  aria-label={`Move up: ${step.title}`}
+                  disabled={index === 0}
+                  onClick={() => props.onMove(step.id, -1)}
                   type="button"
                 >
-                  <span className="try-step-head">
-                    <span className="try-step-title">{step.title}</span>
-                    <span className="try-minutes">{minutesLabel(step.minutes)}</span>
-                  </span>
-                  {step.description ? (
-                    <span className="try-step-description">{step.description}</span>
-                  ) : null}
+                  ↑
                 </button>
-              )}
+                <button
+                  aria-label={`Move down: ${step.title}`}
+                  disabled={index === steps.length - 1}
+                  onClick={() => props.onMove(step.id, 1)}
+                  type="button"
+                >
+                  ↓
+                </button>
+              </span>
             </li>
           );
         })}
       </ol>
-      <p className="try-count">{countLine(steps)}</p>
-      <button className="button-gray button-small" onClick={props.onAdd} type="button">
-        Add a step
-      </button>
-      <button className="try-link" onClick={props.onSplitAgain} type="button">
+      <div className="try-plan-foot">
+        <button className="try-link" onClick={props.onAdd} type="button">
+          + Add a step
+        </button>
+        <span className="try-caption-line">{countLine(steps)}</span>
+      </div>
+      <button className="try-link try-link-centre" onClick={props.onSplitAgain} type="button">
         Split again
       </button>
     </section>

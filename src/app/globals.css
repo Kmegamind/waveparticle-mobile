@@ -1161,135 +1161,226 @@ a {
   width: 100%;
 }
 
+/* The Plan card of prototype v4 (issue 237): "Your steps", the Goal field, numbered rows. */
 .try-plan {
+  border: 1px solid var(--hairline);
   display: grid;
-  gap: var(--space-control-gap);
+  gap: var(--space-small-gap);
   min-width: 0;
+  padding: var(--space-card-pad);
 }
 
-.try-plan h2 {
-  font-family: var(--type-display);
-  font-size: var(--text-body-size);
-  font-weight: 800;
+.try-over {
+  color: var(--ink-2);
+  font-family: var(--type-shell);
+  font-size: var(--text-overline-size);
+  font-weight: 700;
+  letter-spacing: var(--overline-tracking);
   margin: 0;
+  text-transform: uppercase;
+}
+
+.try-plan-goal {
+  display: grid;
+  gap: var(--space-row-after);
+}
+
+.try-field-plan {
+  min-height: var(--field-height-plan);
 }
 
 .try-steps {
   display: grid;
-  gap: var(--space-small-gap);
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.try-step-button {
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--hairline);
-  color: var(--ink);
-  cursor: pointer;
-  display: grid;
-  font: inherit;
-  gap: 0.25rem;
-  padding: var(--space-small-gap) 0;
-  text-align: left;
-  width: 100%;
-}
-
-.try-step-head {
+.try-step-row {
+  align-items: center;
   display: flex;
   gap: var(--space-small-gap);
-  justify-content: space-between;
+}
+
+.try-step-button,
+.try-step-open {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--hairline);
+  color: var(--ink);
+  display: flex;
+  flex: 1 1 auto;
+  font: inherit;
+  gap: var(--space-control-gap);
+  min-height: var(--step-row-height);
+  min-width: 0;
+  padding: var(--space-small-gap) 2px;
+  text-align: left;
+}
+
+.try-step-button {
+  cursor: pointer;
+}
+
+.try-step-button:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: -3px;
+}
+
+.try-step-number {
+  background: var(--tag-fill);
+  border-radius: 50%;
+  color: var(--tag-ink);
+  flex: none;
+  font-family: var(--type-shell);
+  font-size: var(--text-step-number-size);
+  font-weight: 800;
+  height: var(--step-number-size);
+  line-height: var(--step-number-size);
+  text-align: center;
+  width: var(--step-number-size);
 }
 
 .try-step-title {
-  font-weight: 700;
+  flex: 1 1 auto;
+  font-family: var(--type-shell);
+  font-size: var(--text-step-size);
+  font-weight: 500;
+  line-height: 1.3;
   min-width: 0;
 }
 
-.try-step-description {
-  color: var(--ink-2);
-}
-
 .try-minutes {
+  color: var(--ink-2);
   font-family: var(--type-mono);
+  font-size: var(--text-step-minutes-size);
   font-variant-numeric: tabular-nums;
+  font-weight: 600;
   white-space: nowrap;
 }
 
+/* Move up and move down (STEP-EDIT): 40 by 26 drawn, 44 by 44 to touch. */
+.try-move {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.try-move button {
+  background: var(--raised);
+  border: var(--line-strong) solid var(--edge);
+  border-radius: var(--r-mini);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--type-shell);
+  font-size: var(--text-step-number-size);
+  height: var(--move-height);
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+  position: relative;
+  width: var(--move-width);
+}
+
+.try-move button::before {
+  content: "";
+  inset: calc((var(--target) - var(--move-height)) / -2)
+    calc((var(--target) - var(--move-width)) / -2);
+  position: absolute;
+}
+
+.try-move button:first-child::before {
+  bottom: 0;
+}
+
+.try-move button:last-child::before {
+  top: 0;
+}
+
+.try-move button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.try-move button:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 2px;
+}
+
+.try-plan-foot {
+  align-items: center;
+  border-top: 1px solid var(--hairline);
+  display: flex;
+  gap: var(--space-small-gap);
+  justify-content: space-between;
+  padding-top: var(--space-small-gap);
+}
+
+/* The open Step editor (prototype .edit). */
 .try-step-editor,
 .try-step-editor label {
   display: grid;
-  gap: var(--space-small-gap);
+  gap: var(--space-row-after);
 }
 
 .try-step-editor {
   gap: var(--space-control-gap);
-  padding: var(--space-small-gap) 0;
+  padding: 6px 2px var(--button-small-padding);
 }
 
-.try-step-editor input,
-.try-step-editor textarea {
+.try-field-area {
+  min-height: var(--editor-description-height);
+  padding-block: var(--space-control-gap);
+  resize: vertical;
+}
+
+.try-stepper {
+  align-items: center;
+  display: flex;
+  gap: var(--space-small-gap);
+}
+
+.try-stepper button {
   background: var(--raised);
-  border: 0;
-  border-radius: var(--r-field);
-  box-shadow: inset 0 0 0 1px var(--edge);
+  border: var(--line-strong) solid var(--edge);
+  border-radius: var(--r-chip);
   color: var(--ink);
-  font-family: var(--type-sans);
-  font-size: var(--text-body-size);
-  min-height: 3.125rem;
-  min-width: 0;
-  padding: var(--space-small-gap) var(--space-control-gap);
-  width: 100%;
+  cursor: pointer;
+  font-family: var(--type-shell);
+  font-size: var(--text-sys-title-size);
+  font-weight: 700;
+  height: var(--target);
+  width: var(--target);
 }
 
-.try-step-editor input:focus-visible,
-.try-step-editor textarea:focus-visible {
+.try-stepper button[aria-disabled="true"] {
+  border-style: dashed;
+  color: var(--faint);
+  cursor: not-allowed;
+}
+
+.try-stepper button:focus-visible {
   outline: 3px solid var(--control);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 
-.try-stepper-row,
+.try-stepper-field {
+  border-radius: var(--r-chip);
+  flex: none;
+  min-height: var(--target);
+  padding: 0 var(--space-small-gap);
+  text-align: center;
+  width: var(--stepper-field-width);
+}
+
 .try-step-tools {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-control-gap);
-}
-
-/* Stepper: one capsule, two 56 by 44 halves, value outside (DESIGN.md 6.3). */
-.try-stepper {
-  background: var(--gray);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-capsule);
-  display: inline-flex;
-  overflow: hidden;
-}
-
-.try-stepper button {
-  background: transparent;
-  border: 0;
-  color: var(--ink);
-  cursor: pointer;
-  font-family: var(--type-shell);
-  font-size: var(--text-button-size);
-  font-weight: 600;
-  height: var(--target);
-  width: 3.5rem;
-}
-
-.try-stepper button + button {
-  border-left: 1px solid var(--edge);
-}
-
-.try-stepper button:disabled {
-  cursor: not-allowed;
-  opacity: 0.35;
-}
-
-.try-stepper button:focus-visible {
-  outline: 3px solid var(--control);
-  outline-offset: -3px;
+  justify-content: space-between;
 }
 
 /* The focus page content sits under the return pop-up and is inert while it is open (#68, #69). */

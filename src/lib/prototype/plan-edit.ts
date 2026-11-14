@@ -19,6 +19,8 @@ const clampMinutes = (minutes: number) => Math.min(MAX_MINUTES, Math.max(MIN_MIN
 /** The longest Step title and description the editor allows; the account save refuses longer (#32). */
 export const STEP_TITLE_MAX = 200;
 export const STEP_DESCRIPTION_MAX = 1000;
+/** The Goal field on the Plan card (#237); the account save allows a title this long. */
+export const PLAN_TITLE_MAX = 1000;
 
 export type EditableStep = PlanStep & {
   id: string;
