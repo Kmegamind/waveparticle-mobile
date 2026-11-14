@@ -12,6 +12,8 @@ import type {
   PlanSplitResult,
   RestReplyInput,
   ReturnPopupInput,
+  ClosingLineInput,
+  ClosingLineResult,
   ReturnTrigger,
   StepCardsInput,
   StepCardsResult,
@@ -171,6 +173,9 @@ export function createModelGateway(options: {
         }),
       );
     },
+    writeClosingLine(input): Promise<ClosingLineResult> {
+      return run("closing_line", closingPrompt(input), (raw) => acceptClosing(raw, input));
+    },
   };
 }
 
@@ -212,7 +217,7 @@ function acceptCards(
 function acceptLine(
   raw: string,
   key: string,
-  kind: "stuck_story" | "rest_reply" | "return_popup",
+  kind: "stuck_story" | "rest_reply" | "return_popup" | "closing_line",
   forbidTerms: string[],
   runList: { earlierLines: string[]; lastCard?: string } | null,
 ): Attempt<{ source: "generated"; text: string }> {
@@ -229,6 +234,36 @@ function acceptLine(
     if (rules.length > 0) return { ok: false, rejectedRules: rules };
   }
   return { ok: true, value: { source: "generated", text: checked.text } };
+}
+
+/** Both lines pass the existing one-way line checks; the carried line may not repeat the closing one. */
+function acceptClosing(
+  raw: string,
+  input: ClosingLineInput,
+): Attempt<Extract<ClosingLineResult, { source: "generated" }>> {
+  const parsed = parseModelJson(raw);
+  if (!isRecord(parsed)) return { ok: false, rejectedRules: ["parse"] };
+  const earlierLines = input.earlierLines ?? [];
+  const closing = acceptLine(
+    JSON.stringify({ line: parsed.closing_line }),
+    "line",
+    "closing_line",
+    input.forbidTerms ?? [],
+    { earlierLines },
+  );
+  if (!closing.ok) return closing;
+  const carry = acceptLine(
+    JSON.stringify({ line: parsed.carry_line }),
+    "line",
+    "closing_line",
+    input.forbidTerms ?? [],
+    { earlierLines: [...earlierLines, closing.value.text] },
+  );
+  if (!carry.ok) return carry;
+  return {
+    ok: true,
+    value: { source: "generated", closingLine: closing.value.text, carryLine: carry.value.text },
+  };
 }
 
 function parseModelJson(raw: string): unknown | null {
@@ -372,5 +407,20 @@ function returnPrompt(input: ReturnPopupInput): string {
     `Return trigger: ${input.trigger}`,
     `Facts already known: ${input.facts}`,
     `Minutes away, for context only and never written out: ${input.awayMinutes}`,
+  ].join("\n");
+}
+
+/** The closing line (docs/ai/AI_07 section 4, changed for END-TONE on 2026-11-12). */
+function closingPrompt(input: ClosingLineInput): string {
+  return [
+    'Return JSON only: {"closing_line":"...","carry_line":"..."}',
+    "This is the end of this stretch of your own life. Nothing after this moment has happened.",
+    "closing_line: one to three short first-person sentences. Tell what happened to you that day and how you feel about it now.",
+    "Feel it from what happened to you. Do not default to proud or wise. Draw no lesson, praise no one, give no advice.",
+    "Never count anything and never mention pauses, minutes, the reader or their work.",
+    "carry_line: one short first-person sentence about one thing about yourself that is still unresolved.",
+    "Use only what is in the facts below; quote at most one short phrase.",
+    `What happened: ${input.facts}`,
+    `The last moment: ${input.lastMoment}`,
   ].join("\n");
 }
