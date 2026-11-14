@@ -26,10 +26,14 @@ verified. Moving to Node 26 is a later, separate change (`docs/decisions/0003`).
    `README.md` with the HTTPS URL.
 
 ## Test path flag
-`PROTOTYPE_ENABLED=1` turns on the sign-in-free test path `/try` (`docs/decisions/0011`). Set it in
+`PROTOTYPE_ENABLED=1` turns on the sign-in-free test path `/try` (`docs/decisions/0011`). Only `/try`
+depends on it: the signed-in session pages (`/goal`, `/focus`, `/rest`, `/end`) and every link to them
+exist in every environment for signed-in users (`docs/DECISIONS.md`, SESSION-PAGES-OPEN). Set it in
 Vercel for **Preview only** (Project → Settings → Environment Variables, scope Preview), never for
 Production. It is server-only: never give it the `NEXT_PUBLIC_` prefix. Keep Vercel Deployment
-Protection on for previews, because the test path can call the paid model.
+Protection on for previews, because the test path can call the paid model. Production also calls the
+paid model for signed-in sessions, with no per-account cap (#256 is in "Later"); the owner monitors
+usage in the model provider's dashboard.
 
 ## Secrets
 Real values live in the platform's environment settings or CI secrets. `.env.example` lists the names.
