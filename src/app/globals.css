@@ -2695,3 +2695,7 @@ a {
 .rec-chapter {
   justify-self: start;
 }
+
+.me-history .me-segmented {
+  justify-self: start;
+}
