@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { baseUrlOf, signIn } from "./support/account";
-import { GOAL, sampleGoals } from "./support/goals-seed";
+import { GOAL, SESSION, sampleGoals } from "./support/goals-seed";
 import { largeText, overflowReport } from "./support/large-text";
 
 // #100: large text, narrow screens and short screens. The e2e app talks to the test-only Supabase
@@ -52,6 +52,8 @@ const signedInPages = [
   "/goals?tab=history",
   `/goals/${GOAL.methods}`,
   "/me",
+  "/me/signals",
+  `/me/history/${SESSION.methods}`,
   "/companions",
   "/companions/oppenheimer",
   "/goal",
