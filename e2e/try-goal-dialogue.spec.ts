@@ -28,7 +28,7 @@ async function noHorizontalScroll(page: Page) {
   expect(width).toBeLessThanOrEqual(320);
 }
 
-const plan = (page: Page) => page.getByRole("region", { name: "Plan" });
+const plan = (page: Page) => page.getByRole("group", { name: "Your steps" });
 
 const timeSlider = (page: Page) => page.getByRole("slider", { name: "Your time" });
 
@@ -106,12 +106,13 @@ test("#33 #34 #35 #36 the walk-through: goal, time, split question, plan, Start"
 
   // #36 AC1, AC3: the Plan card, the count line, the input gone.
   await expect(plan(page)).toBeVisible();
-  await expect(plan(page)).toContainText("2 steps · 1 hour");
-  await expect(plan(page).getByRole("heading")).toHaveText(
+  await expect(plan(page)).toContainText("2 steps · 60 min");
+  await expect(plan(page).getByLabel("Goal", { exact: true })).toHaveValue(
     "Write the methods section of my lab report",
   );
-  await expect(page.getByText("argue with it now, in ink, where it's cheap")).toBeVisible();
-  await expect(page.getByRole("textbox")).toHaveCount(0);
+  await expect(page.getByText("argue with it now, in ink, where it’s cheap")).toBeVisible();
+  await expect(page.getByLabel("Your goal")).toHaveCount(0);
+  await expect(page.getByRole("textbox")).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Split again" })).toBeVisible();
   await noHorizontalScroll(page);
 
@@ -130,7 +131,7 @@ test("#33 AC2 Split it finer gives more Steps", async ({ page }) => {
   await sendGoal(page, "Write the methods section of my lab report");
   await setTime(page, 60);
   await page.getByRole("button", { name: "Split it finer" }).click();
-  await expect(plan(page)).toContainText("4 steps · 1 hour");
+  await expect(plan(page)).toContainText("4 steps · 60 min");
 });
 
 test("#35 AC3 #33 AC3 Just split it makes a 30 minute Plan without the split question", async ({
@@ -148,7 +149,7 @@ test("#35 AC2 Not sure sets 30 minutes with one reason", async ({ page }) => {
   await openDialogue(page);
   await sendGoal(page, "Write the methods section of my lab report");
   await page.getByRole("button", { name: "Not sure" }).click();
-  await expect(page.getByText(/Thirty minutes, then/)).toBeVisible();
+  await expect(page.getByText(/Then thirty minutes\./)).toBeVisible();
   await page.getByRole("button", { name: "Keep it broad" }).click();
   await expect(plan(page)).toContainText("· 30 min");
 });
@@ -160,19 +161,19 @@ test("TIME-SLIDER any time from 5 minutes to 3 hours makes a Plan of that length
   await sendGoal(page, "Write the methods section of my lab report");
   await setTime(page, 95);
   await page.getByRole("button", { name: "Keep it broad" }).click();
-  await expect(plan(page)).toContainText("1 hour 35 min");
+  await expect(plan(page)).toContainText("· 95 min");
 });
 
 test("GOAL-TIME a stated length skips the time question and can be changed", async ({ page }) => {
   await openDialogue(page);
   await sendGoal(page, "study chemistry for one hour");
   await expect(page.getByText("How long do you have?")).toHaveCount(0);
-  await expect(page.getByText("Time: 1 hour")).toBeVisible();
+  await expect(page.getByText("Time I understood from your line: 60 min.")).toBeVisible();
   await page.getByRole("button", { name: "Change time" }).click();
   await expect(timeSlider(page)).toHaveValue("60");
   await setTime(page, 120);
   await page.getByRole("button", { name: "Keep it broad" }).click();
-  await expect(plan(page)).toContainText("· 2 hours");
+  await expect(plan(page)).toContainText("· 120 min");
 });
 
 test("#30 AC5 stepping back keeps the typed text", async ({ page }) => {
@@ -190,40 +191,45 @@ test("#37 editing the Plan: title, description, minutes, add, remove", async ({ 
   await setTime(page, 60);
   await page.getByRole("button", { name: "Keep it broad" }).click();
   const card = plan(page);
-  await expect(card).toContainText("2 steps · 1 hour");
+  await expect(card).toContainText("2 steps · 60 min");
   const slipsBefore = await page.locator(".try-slip").count();
 
-  // AC1: tap a Step to edit; the stepper changes minutes by 15 with 44 by 44 controls.
-  await card.getByRole("button", { name: /Gather what you need/ }).click();
+  // AC1: tap a Step to edit; the stepper changes minutes by 5 (#249) with 44 by 44 controls.
+  const row = (name: string) => card.getByRole("button", { name: new RegExp(`^\\d+ ${name}`) });
+  await row("Gather what you need").click();
   // #32: the editor cannot go past what the server accepts.
-  await expect(card.getByLabel("Title")).toHaveAttribute("maxlength", "200");
+  await expect(card.getByLabel("Step title")).toHaveAttribute("maxlength", "200");
   await expect(card.getByLabel("Description")).toHaveAttribute("maxlength", "1000");
-  const more = card.getByRole("button", { name: "15 minutes more" });
+  const more = card.getByRole("button", { name: "Five minutes more" });
   const box = await more.boundingBox();
   expect(box!.width).toBeGreaterThanOrEqual(44);
   expect(box!.height).toBeGreaterThanOrEqual(44);
   await more.click();
-  await expect(card).toContainText("2 steps · 1 hour 15 min");
+  await expect(card).toContainText("2 steps · 65 min");
 
-  // AC4: emptying an existing title brings it back.
-  await card.getByLabel("Title").fill("");
+  // AC4: emptying an existing title brings it back. The description is kept but not listed
+  // (#237: descriptions are not shown in the list); it is back when the Step is opened again.
+  await card.getByLabel("Step title").fill("");
   await card.getByLabel("Description").fill("Find the protocol sheet.");
-  await card.getByRole("button", { name: "Done" }).click();
-  await expect(card.getByRole("button", { name: /Gather what you need/ })).toBeVisible();
-  await expect(card).toContainText("Find the protocol sheet.");
+  await card.getByRole("button", { name: "Done editing" }).click();
+  await expect(row("Gather what you need")).toBeVisible();
+  await expect(card).not.toContainText("Find the protocol sheet.");
+  await row("Gather what you need").click();
+  await expect(card.getByLabel("Description")).toHaveValue("Find the protocol sheet.");
+  await card.getByRole("button", { name: "Done editing" }).click();
 
   // AC2: Add a step focuses its title with 15 minutes; left empty, it is removed.
-  await card.getByRole("button", { name: "Add a step" }).click();
-  await expect(card.getByLabel("Title")).toBeFocused();
-  await expect(card).toContainText("3 steps · 1 hour 30 min");
-  await card.getByRole("button", { name: "Done" }).click();
-  await expect(card).toContainText("2 steps · 1 hour 15 min");
+  await card.getByRole("button", { name: "+ Add a step" }).click();
+  await expect(card.getByLabel("Step title")).toBeFocused();
+  await expect(card).toContainText("3 steps · 80 min");
+  await card.getByRole("button", { name: "Done editing" }).click();
+  await expect(card).toContainText("2 steps · 65 min");
 
   // AC3: Remove disappears when one Step remains.
-  await card.getByRole("button", { name: /Check it through/ }).click();
+  await row("Check it through").click();
   await card.getByRole("button", { name: "Remove step" }).click();
-  await expect(card).toContainText("1 step · 45 min");
-  await card.getByRole("button", { name: /Gather what you need/ }).click();
+  await expect(card).toContainText("1 step · 35 min");
+  await row("Gather what you need").click();
   await expect(card.getByRole("button", { name: "Remove step" })).toHaveCount(0);
   await noHorizontalScroll(page);
 
@@ -238,8 +244,10 @@ test("#38 GD-F a failed split speaks in the system voice and offers ways forward
   await page.getByLabel("Your goal").fill("Write the report [fail-split]");
   await page.getByRole("button", { name: "Just split it" }).click();
 
-  const alert = page.getByRole("alert").filter({ hasText: "The split did not work" });
-  await expect(alert).toContainText("The split did not work");
+  const alert = page.getByRole("alert").filter({ hasText: "That one wouldn’t split." });
+  await expect(alert).toContainText(
+    "Nothing is lost. Your words are kept: “Write the report [fail-split]”.",
+  );
   await expect(alert.locator(".try-slip")).toHaveCount(0);
   await expect(plan(page)).toHaveCount(0);
   for (const name of ["Try again", "Use one step", "Change my line"]) {
@@ -262,7 +270,7 @@ test("#36 AC4 GD-N1 a one-Step Plan has no Step 1 of 1, no Remove and no nudge",
   const card = plan(page);
   await expect(card).toContainText("1 step · 30 min");
   await expect(page.getByText(/Step 1 of 1/)).toHaveCount(0);
-  await card.getByRole("button", { name: /Write the report/ }).click();
+  await card.getByRole("button", { name: /^1 Write the report/ }).click();
   await expect(card.getByRole("button", { name: "Remove step" })).toHaveCount(0);
   await card.getByRole("button", { name: "Done" }).click();
   await page.getByRole("button", { name: "Start", exact: true }).click();

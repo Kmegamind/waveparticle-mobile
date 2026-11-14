@@ -45,7 +45,7 @@ test("#254 AC8 bohr-difficulties: start, the first card is generated, one Step i
 
   await page.getByLabel("Your goal").fill("Read the paper on scattering");
   await page.getByRole("button", { name: "Just split it" }).click();
-  await expect(page.getByRole("region", { name: "Plan" })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Your steps" })).toBeVisible();
   await page.getByRole("button", { name: "Start", exact: true }).click();
   await expect(page).toHaveURL(/\/try\/focus/);
   const focus = page.locator('main.focus-page[data-ready="true"]');

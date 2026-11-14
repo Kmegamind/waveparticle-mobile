@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Puts the prototype picture, the app before and the app after side by side (issue #240).
+// Puts the prototype picture, the app before and the app after side by side (issues #240, #263).
+// A screen whose prototype state has no picture (null) gets a blank first column with a note.
 // Usage: node scripts/design/compose-compare.mjs <folder with <screen>-<scheme>-before/after.png>
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
@@ -14,8 +15,14 @@ const PROTOTYPE = {
   s1: ["s1", "s1"],
   cpage: ["cpage-day", "cpage-night"],
   gd1: ["gd1", "gd1"],
+  gd2: ["gd2", "gd2"],
+  gd3: ["gd3", "gd3"],
   gd4: ["gd4", "gd4"],
+  "gd4-edit": [null, null],
+  "gd3-understood": [null, null],
+  "gd-f": ["gd-f", "gd-f"],
   f1: ["f1", "f1"],
+  "f1-you": ["f1-you", "f1-you"],
 };
 const dataUrl = (file) => `data:image/png;base64,${readFileSync(file).toString("base64")}`;
 
@@ -27,21 +34,25 @@ for (const [screen, [day, night]] of Object.entries(PROTOTYPE)) {
     ["dark", night],
   ]) {
     const files = [
-      [`Prototype v4 (${proto})`, path.join(reference, `${proto}.png`)],
+      proto
+        ? [`Prototype v4 (${proto})`, path.join(reference, `${proto}.png`)]
+        : ["Prototype v4: no picture of this state", null],
       ["App before (main)", path.join(folder, `${screen}-${scheme}-before.png`)],
       ["App after (this pull request)", path.join(folder, `${screen}-${scheme}-after.png`)],
     ];
-    if (!files.every(([, file]) => existsSync(file))) continue;
+    if (!files.every(([, file]) => file === null || existsSync(file))) continue;
     const cells = files
       .map(
         ([label, file]) =>
-          `<figure><figcaption>${label}</figcaption><img src="${dataUrl(file)}"></figure>`,
+          `<figure><figcaption>${label}</figcaption>${
+            file ? `<img src="${dataUrl(file)}">` : '<div class="none"></div>'
+          }</figure>`,
       )
       .join("");
     await page.setContent(
       `<style>body{margin:0;background:#fff;font:600 16px system-ui;display:flex;gap:15px;padding:15px}
        figure{margin:0;width:390px}img{width:390px;height:800px;object-fit:cover;object-position:top;border:1px solid #999}
-       figcaption{margin-bottom:6px}</style>${cells}`,
+       figcaption{margin-bottom:6px}.none{width:390px;height:800px;border:1px dashed #999}</style>${cells}`,
     );
     await page.screenshot({
       path: path.join(folder, `compare-${screen}-${scheme}.png`),

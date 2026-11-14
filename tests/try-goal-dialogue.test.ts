@@ -10,8 +10,10 @@ import {
   READ_STATUS,
   RETURNING_OPENINGS,
   SPLIT_QUESTION,
-  TIME_ACKS,
   TIME_QUESTION,
+  SPLIT_FAILED_TITLE,
+  splitFailedLine,
+  timeQuestionSlip,
   classifyGoalShape,
   pickReturningOpening,
   reactionFor,
@@ -21,6 +23,7 @@ import {
   TIME_HINT,
   findTimeInGoal,
   formatMinutes,
+  minutesLabel,
   parseTypedTime,
   SLIDER_MAX_MINUTES,
   SLIDER_STEP_MINUTES,
@@ -35,7 +38,12 @@ import {
   commitTitle,
   countLine,
   fromPlan,
+  MAX_MINUTES,
+  MINUTES_CEILING_HINT,
+  MINUTES_FLOOR_HINT,
   moveStep,
+  planTitleFor,
+  setMinutes,
   removeStep,
   setDescription,
   totalMinutes,
@@ -223,9 +231,20 @@ describe("#35 the time lines", () => {
     expect(NOT_SURE_LINE).not.toMatch(/worry|okay|fine|it's alright|no problem/i);
   });
 
-  it("#35 AC4 acknowledges a set time in at most two sentences", () => {
-    expect(TIME_ACKS.length).toBeGreaterThan(0);
-    for (const line of TIME_ACKS) expect(sentences(line).length).toBeLessThanOrEqual(2);
+  it("#235 AC1 his reaction and the time question share one slip", () => {
+    expect(REACTIONS.specific[0]).toBe("That has a clear edge to it.");
+    expect(timeQuestionSlip("That has a clear edge to it.")).toBe(
+      "That has a clear edge to it. How long do you have?",
+    );
+  });
+
+  it("#235 Not sure reads as the prototype", () => {
+    expect(NOT_SURE_LINE).toBe("Then thirty minutes. Long enough to start, short enough to keep.");
+  });
+
+  it("#236 AC1 a time answer reads N min", () => {
+    expect(minutesLabel(60)).toBe("60 min");
+    expect(minutesLabel(95)).toBe("95 min");
   });
 });
 
@@ -235,7 +254,19 @@ describe("#33 AC1 the split question and #36 the plan introduction", () => {
   });
 
   it("keeps the line about arguing in ink", () => {
-    expect(PLAN_INTRO).toContain("argue with it now, in ink, where it's cheap");
+    expect(PLAN_INTRO.toLowerCase()).toContain("argue with it now, in ink, where it’s cheap");
+  });
+
+  it("#236 AC1 #237 AC5 the split question and the plan introduction read as the prototype", () => {
+    expect(SPLIT_QUESTION).toBe("Do you want it cut fine, or kept in a few broad pieces?");
+    expect(PLAN_INTRO).toBe(
+      "Here is how I would cut it. Argue with it now, in ink, where it’s cheap.",
+    );
+  });
+
+  it("GD-F the failed split keeps the goal in words", () => {
+    expect(SPLIT_FAILED_TITLE).toBe("That one wouldn’t split.");
+    expect(splitFailedLine("Methods")).toBe("Nothing is lost. Your words are kept: “Methods”.");
   });
 
   it("NO-STEP-COUNT none of his lines states a number of Steps", () => {
@@ -461,20 +492,51 @@ describe("#37 editing the Plan", () => {
       { title: "Draft", description: "Write it.", minutes: 30 },
     ]);
 
-  it("#37 AC1 changes the title, the description and the minutes in steps of 15", () => {
+  it("#37 AC1 #249 AC1 changes the title, the description and the minutes in steps of 5", () => {
     let steps = start();
     const id = steps[0].id;
     steps = commitTitle(steps, id, "Plan the sections");
     steps = setDescription(steps, id, "Write the headings only.");
-    steps = changeMinutes(steps, id, 15);
+    steps = changeMinutes(steps, id, 5);
     expect(steps[0]).toMatchObject({
       title: "Plan the sections",
       description: "Write the headings only.",
-      minutes: 30,
+      minutes: 20,
     });
-    steps = changeMinutes(steps, id, -15);
-    steps = changeMinutes(steps, id, -15);
+    steps = changeMinutes(steps, id, -5);
     expect(steps[0].minutes).toBe(15);
+  });
+
+  it("#249 AC1 takes any typed whole number of minutes from 1", () => {
+    const steps = start();
+    const id = steps[0].id;
+    for (const bad of ["", "0", "-3", "2.5", "abc"]) {
+      expect(setMinutes(steps, id, bad)[0].minutes).toBe(15);
+    }
+    expect(setMinutes(steps, id, "7")[0].minutes).toBe(7);
+    expect(setMinutes(steps, id, " 42 ")[0].minutes).toBe(42);
+    expect(setMinutes(steps, id, "2000")[0].minutes).toBe(MAX_MINUTES);
+  });
+
+  it("#249 AC2 minutes never go below 1 or above 24 hours, with the reasons in words", () => {
+    const steps = start();
+    const id = steps[0].id;
+    expect(changeMinutes(setMinutes(steps, id, "3"), id, -5)[0].minutes).toBe(1);
+    expect(changeMinutes(setMinutes(steps, id, "1438"), id, 5)[0].minutes).toBe(1440);
+    expect(MINUTES_FLOOR_HINT).toBe("A Step is at least 1 minute.");
+    expect(MINUTES_CEILING_HINT).toBe("A Step is at most 24 hours.");
+  });
+
+  it("#237 Add a step goes after the open Step", () => {
+    const steps = start();
+    const added = addStep(steps, steps[0].id);
+    expect(added.steps.map((step) => step.id)).toEqual([steps[0].id, added.id, steps[1].id]);
+    expect(added.steps[1].minutes).toBe(15);
+  });
+
+  it("#237 AC1 an empty Goal field saves the typed goal as the title", () => {
+    expect(planTitleFor("   ", "Methods section for Friday")).toBe("Methods section for Friday");
+    expect(planTitleFor(" Methods ", "Methods section for Friday")).toBe("Methods");
   });
 
   it("#37 AC2 adds a Step with 15 minutes and removes it when its title stays empty", () => {
@@ -522,7 +584,7 @@ describe("#37 editing the Plan", () => {
   it("#36 AC1 the count line names Steps and minutes, singular for one", () => {
     expect(countLine(start())).toBe("2 steps · 45 min");
     expect(countLine(fromPlan([{ title: "A", description: "", minutes: 60 }]))).toBe(
-      "1 step · 1 hour",
+      "1 step · 60 min",
     );
   });
 });

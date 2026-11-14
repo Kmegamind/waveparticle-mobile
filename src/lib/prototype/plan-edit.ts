@@ -3,13 +3,24 @@
  * Pure functions: the dialogue keeps the list in React state and saves it on Start.
  */
 import type { PlanStep } from "@/lib/model-gateway";
-import { formatMinutes } from "./goal-time";
+import { minutesLabel } from "./goal-time";
 
-export const MINUTES_STEP = 15;
+/** STEP-EDIT and #249: any whole number of minutes from 1; the buttons move by 5 (prototype v4). */
+export const MINUTES_STEP = 5;
+export const MIN_MINUTES = 1;
+/** The account save refuses a longer Step (`LIMITS.stepMinutes` in src/lib/goals). */
+export const MAX_MINUTES = 24 * 60;
+export const NEW_STEP_MINUTES = 15;
+export const MINUTES_FLOOR_HINT = "A Step is at least 1 minute.";
+export const MINUTES_CEILING_HINT = "A Step is at most 24 hours.";
+
+const clampMinutes = (minutes: number) => Math.min(MAX_MINUTES, Math.max(MIN_MINUTES, minutes));
 
 /** The longest Step title and description the editor allows; the account save refuses longer (#32). */
 export const STEP_TITLE_MAX = 200;
 export const STEP_DESCRIPTION_MAX = 1000;
+/** The Goal field on the Plan card (#237); the account save allows a title this long. */
+export const PLAN_TITLE_MAX = 1000;
 
 export type EditableStep = PlanStep & {
   id: string;
@@ -46,19 +57,36 @@ export function setDescription(
 
 export function changeMinutes(steps: EditableStep[], id: string, delta: number): EditableStep[] {
   return steps.map((step) =>
-    step.id === id ? { ...step, minutes: Math.max(MINUTES_STEP, step.minutes + delta) } : step,
+    step.id === id ? { ...step, minutes: clampMinutes(step.minutes + delta) } : step,
   );
 }
 
-export function addStep(steps: EditableStep[]): { steps: EditableStep[]; id: string } {
+/** A typed number of minutes: a whole number of at least 1 is taken (capped at 24 hours). */
+export function setMinutes(steps: EditableStep[], id: string, typed: string): EditableStep[] {
+  const text = typed.trim();
+  if (!/^\d+$/.test(text) || Number(text) < MIN_MINUTES) return steps;
+  return steps.map((step) =>
+    step.id === id ? { ...step, minutes: clampMinutes(Number(text)) } : step,
+  );
+}
+
+/** Adds an empty Step after `afterId` (the open Step), or at the end. */
+export function addStep(
+  steps: EditableStep[],
+  afterId?: string,
+): { steps: EditableStep[]; id: string } {
   const id = newId();
-  return {
+  const fresh: EditableStep = {
     id,
-    steps: [
-      ...steps,
-      { id, title: "", description: "", minutes: MINUTES_STEP, savedTitle: "", isNew: true },
-    ],
+    title: "",
+    description: "",
+    minutes: NEW_STEP_MINUTES,
+    savedTitle: "",
+    isNew: true,
   };
+  const after = afterId === undefined ? -1 : steps.findIndex((step) => step.id === afterId);
+  const at = after < 0 ? steps.length : after + 1;
+  return { id, steps: [...steps.slice(0, at), fresh, ...steps.slice(at)] };
 }
 
 export function canRemove(steps: EditableStep[]): boolean {
@@ -86,7 +114,12 @@ export function totalMinutes(steps: Pick<PlanStep, "minutes">[]): number {
 /** "3 steps · 60 min"; singular "1 step". */
 export function countLine(steps: Pick<PlanStep, "minutes">[]): string {
   const noun = steps.length === 1 ? "step" : "steps";
-  return `${steps.length} ${noun} · ${formatMinutes(totalMinutes(steps))}`;
+  return `${steps.length} ${noun} · ${minutesLabel(totalMinutes(steps))}`;
+}
+
+/** The Goal field on the Plan card (#237): its text, or the typed goal when it is left empty. */
+export function planTitleFor(field: string, goal: string): string {
+  return field.trim() || goal;
 }
 
 /** The Steps to save on Start: titled Steps only, without editing fields. */

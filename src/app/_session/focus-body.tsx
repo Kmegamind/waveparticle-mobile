@@ -29,6 +29,8 @@ import {
   type SessionPlan,
 } from "@/lib/prototype/session";
 import { fullPageLoad } from "../try/full-page-load";
+import { cardLabel } from "./card-label";
+import { COMPANION } from "./companion";
 import type { SessionPaths } from "./paths";
 
 const TICK_MS = 250;
@@ -367,20 +369,23 @@ export function FocusBody({ host }: { host: FocusHost }) {
       <div className="focus-frame" inert={returnPending !== null}>
         <header className="focus-seam">
           {total > 1 ? (
-            <>
+            <div className="focus-seam-row">
               <p className="focus-step-label">{`Step ${index + 1} of ${total}`}</p>
-              {/* The paired Step marks (FLOW 3.7): one per Step, the current one on. */}
-              <span aria-hidden="true" className="focus-seam-marks">
+              {/* The paired Step marks (FLOW 3.7, prototype v4 ticks): one pair per Step. */}
+              <span aria-hidden="true" className="focus-ticks">
                 {steps.map((item, position) => (
                   <span
                     className={`focus-mark focus-mark-${
                       position < session.current ? "done" : position === index ? "now" : "to-do"
                     }`}
                     key={`${position}-${item.title}`}
-                  />
+                  >
+                    <i />
+                    <i />
+                  </span>
                 ))}
               </span>
-            </>
+            </div>
           ) : null}
           <p aria-label="Time left" className="focus-clock" role="timer">
             {formatClock(remaining)}
@@ -389,10 +394,20 @@ export function FocusBody({ host }: { host: FocusHost }) {
 
         <div className="focus-middle" key={index}>
           <section aria-labelledby="his-side" className="focus-his">
-            <h2 className="focus-label" id="his-side">
-              My goal
-            </h2>
-            <p className="focus-goal-line">{goalLine}</p>
+            <div className="focus-mygoal">
+              <span aria-hidden="true" className="focus-avatar">
+                <span className="try-avatar">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- a decorative portrait */}
+                  <img alt="" src={COMPANION.portrait} />
+                </span>
+              </span>
+              <div>
+                <h2 className="focus-label" id="his-side">
+                  My goal
+                </h2>
+                <p className="focus-goal-line">{goalLine}</p>
+              </div>
+            </div>
             {isTestData ? <p className="try-caption">Test data: chapter 8 cards</p> : null}
 
             {showFailure ? (
@@ -403,33 +418,27 @@ export function FocusBody({ host }: { host: FocusHost }) {
                 </button>
               </div>
             ) : cards.length > 0 ? (
-              <>
-                <div
-                  aria-label="Story cards"
-                  className="focus-stack"
-                  onKeyDown={(event) => {
-                    if (event.key === "ArrowLeft" && shown > 0) earlier();
-                    if (event.key === "ArrowRight" && shown < cards.length - 1) newer();
-                  }}
-                  onPointerDown={onPointerDown}
-                  onPointerUp={onPointerUp}
-                  role="group"
-                  tabIndex={0}
+              <div
+                aria-label="Story cards"
+                className="focus-stack"
+                onKeyDown={(event) => {
+                  if (event.key === "ArrowLeft" && shown > 0) earlier();
+                  if (event.key === "ArrowRight" && shown < cards.length - 1) newer();
+                }}
+                onPointerDown={onPointerDown}
+                onPointerUp={onPointerUp}
+                role="group"
+                tabIndex={0}
+              >
+                <figure
+                  className={cards.length > 1 ? "focus-slip focus-slip-stacked" : "focus-slip"}
+                  data-testid="story-card"
                 >
-                  <figure className="focus-slip" data-testid="story-card">
-                    <span aria-hidden="true" className="focus-tape" />
+                  <span aria-hidden="true" className="focus-tape" />
+                  <span className="focus-card-label">{cardLabel(index, shown, cards.length)}</span>
+                  <div className="focus-card-text">
                     <p>{cards[shown]}</p>
-                  </figure>
-                </div>
-                <div className="focus-pager">
-                  <button
-                    className="button-plain button-small"
-                    disabled={shown === 0}
-                    onClick={earlier}
-                    type="button"
-                  >
-                    ‹ Earlier card
-                  </button>
+                  </div>
                   <span aria-hidden="true" className="focus-dots">
                     {cards.map((card, position) => (
                       <span
@@ -438,51 +447,73 @@ export function FocusBody({ host }: { host: FocusHost }) {
                       />
                     ))}
                   </span>
-                  <button
-                    className="button-plain button-small"
-                    disabled={shown >= cards.length - 1}
-                    onClick={newer}
-                    type="button"
-                  >
-                    Newer card ›
-                  </button>
-                </div>
-              </>
+                  <div className="focus-pager">
+                    <button
+                      aria-label="Earlier card"
+                      disabled={shown === 0}
+                      onClick={earlier}
+                      type="button"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      aria-label="Newer card"
+                      disabled={shown >= cards.length - 1}
+                      onClick={newer}
+                      type="button"
+                    >
+                      ›
+                    </button>
+                  </div>
+                </figure>
+              </div>
             ) : null}
           </section>
 
           <section aria-labelledby="your-side" className="focus-yours">
-            <h2 className="focus-label" id="your-side">
-              Your goal
-            </h2>
-            <p>{plan.goal?.text}</p>
-            <h2 className="focus-label">Now</h2>
-            <p className="focus-step-title">{step.title}</p>
-            {step.description ? <p className="focus-step-description">{step.description}</p> : null}
+            <div className="focus-panel-head">
+              <h2 className="focus-label" id="your-side">
+                Your goal
+              </h2>
+              <p className="focus-panel-goal">{plan.goal?.text}</p>
+              <p className="focus-panel-now">
+                <span className="focus-label">Now</span> {step.title}
+              </p>
+              {step.description ? (
+                <p className="focus-panel-now focus-step-description">{step.description}</p>
+              ) : null}
+            </div>
             {total > 1 ? (
               <>
                 <button
                   aria-controls="your-steps"
                   aria-expanded={stepsOpen}
-                  className="button-gray button-small"
+                  className="focus-more"
                   onClick={() => setStepsOpen((open) => !open)}
                   type="button"
                 >
-                  Your Steps
+                  {stepsOpen ? "Your steps ▴" : "Your steps ▾"}
                 </button>
                 {stepsOpen ? (
-                  <ol className="focus-steps" id="your-steps">
+                  <ol aria-label="Your steps" className="focus-steps" id="your-steps">
                     {steps.map((item, position) => {
                       const status =
                         position < session.current ? "done" : position === index ? "now" : "to do";
                       return (
-                        <li className="focus-steps-row" key={`${position}-${item.title}`}>
-                          <span
-                            aria-hidden="true"
-                            className={`focus-mark focus-mark-${status.replace(" ", "-")}`}
-                          />
-                          <span>{item.title}</span>
-                          <span className="sr-only">{`, ${status}`}</span>
+                        <li
+                          className={`focus-steps-row focus-steps-${status.replace(" ", "-")}`}
+                          key={`${position}-${item.title}`}
+                        >
+                          <span aria-hidden="true" className="focus-steps-mark">
+                            {status === "done" ? "✓" : status === "now" ? "●" : "○"}
+                          </span>
+                          <span>
+                            {item.title}
+                            <span className="sr-only">{`, ${status}`}</span>
+                            {status === "now" && item.description ? (
+                              <span className="focus-steps-description">{item.description}</span>
+                            ) : null}
+                          </span>
                         </li>
                       );
                     })}

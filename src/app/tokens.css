@@ -98,6 +98,58 @@
   --r-sheet: 1.75rem;
   --r-toast: 0.75rem;
 
+  /* Session screens of prototype v4 (#263), measured in docs/design/prototype/. */
+  --space-thread-gap: 1.125rem;
+  --space-thread-top: 1.375rem;
+  --pad-slip: 0.9375rem 1rem 0.875rem;
+  --pad-card-slip: 0.875rem 0.875rem 0.625rem;
+  --pad-bubble: 0.625rem 0.875rem;
+  --slip-max: 94%;
+  --bubble-max: 84%;
+  --r-bubble: 1rem;
+  --r-bubble-tail: 0.25rem;
+  --r-panel: 0.875rem;
+  --r-mini: 0.5rem;
+  --r-sys: 1.125rem;
+  --line-strong: 1.5px;
+  --avatar-size: 2.5rem;
+  --avatar-large: 3rem;
+  --avatar-zoom: 118%;
+  --send-size: 3.25rem;
+  --field-height-chat: 3.25rem;
+  --field-height-plan: 3rem;
+  --text-you-size: 1.03125rem;
+  --text-you-leading: 1.4;
+  --text-name-size: 0.9375rem;
+  --text-sys-title-size: 1.5rem;
+  --text-stepper-size: 1.25rem;
+  --text-step-size: 1.03125rem;
+  --text-step-number-size: 0.8125rem;
+  --text-step-minutes-size: 0.875rem;
+  --text-card-text-size: 0.9375rem;
+  --text-card-text-leading: 1.45;
+  --text-panel-goal-size: 0.96875rem;
+  --text-panel-line-size: 0.84375rem;
+  --text-panel-list-size: 0.90625rem;
+  --text-more-size: 0.78125rem;
+  --text-pager-size: 1.5rem;
+  --text-focus-timer-size: 2.875rem;
+  --text-focus-goal-size: 0.9375rem;
+  --step-row-height: 3.5rem;
+  --step-number-size: 1.625rem;
+  --move-width: 2.5rem;
+  --move-height: 1.625rem;
+  --stepper-field-width: 5.25rem;
+  --editor-description-height: 4.75rem;
+  --card-text-height: 7.75rem;
+  --dot-size: 0.4375rem;
+  --tick-width: 3px;
+  --tick-height: 1rem;
+  --tick-now-width: 5px;
+  --tick-now-height: 1.5rem;
+  --tick-gap: 0.5625rem;
+  --tick-pair-gap: 3px;
+
   --shadow-paper: 0 0.625rem 1.25rem -0.875rem color-mix(in srgb, var(--ink) 45%, transparent);
 }
 

@@ -543,7 +543,11 @@ a {
   margin: 0;
 }
 
-/* Focus page of the test path (/try/focus), issues 12, 14, 15, 18, 24, 26, 27. */
+/*
+ * Focus page (/try/focus and /focus), issues 12, 14, 15, 18, 24, 26, 27; prototype v4 layout from
+ * issue 238: a seam with the Step label, the ticks and the clock; a scrolling middle; Done and
+ * Pause pinned at the bottom.
+ */
 .focus-page {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
@@ -552,46 +556,81 @@ a {
 }
 
 .focus-seam {
-  align-items: baseline;
+  display: grid;
+  gap: 2px;
+  padding: 2px calc(var(--space-screen-inline) + env(safe-area-inset-right)) var(--space-row-after)
+    calc(var(--space-screen-inline) + env(safe-area-inset-left));
+}
+
+.focus-seam-row {
+  align-items: center;
   display: flex;
-  flex-wrap: wrap;
   gap: var(--space-control-gap);
   justify-content: space-between;
-  padding: 0 calc(var(--space-screen-inline) + env(safe-area-inset-right)) var(--space-small-gap)
-    calc(var(--space-screen-inline) + env(safe-area-inset-left));
 }
 
 .focus-step-label {
   color: var(--ink-2);
   font-family: var(--type-shell);
-  font-size: var(--text-caption-size);
-  font-weight: 600;
+  font-size: var(--text-overline-size);
+  font-weight: 700;
+  letter-spacing: var(--overline-tracking);
   margin: 0;
+  text-transform: uppercase;
 }
 
-.focus-seam-marks {
-  align-items: center;
+/* The paired Step ticks (prototype .ticks): two bars per Step, the current pair taller. */
+.focus-ticks {
+  align-items: flex-end;
   display: flex;
-  gap: var(--space-small-gap);
+  gap: var(--tick-gap);
+  height: var(--tick-now-height);
+}
+
+.focus-ticks .focus-mark {
+  align-items: flex-end;
+  display: flex;
+  gap: var(--tick-pair-gap);
+}
+
+.focus-ticks .focus-mark i {
+  background: var(--ink-2);
+  border-radius: 1px;
+  display: block;
+  height: var(--tick-height);
+  width: var(--tick-width);
+}
+
+.focus-ticks .focus-mark-now i {
+  background: var(--mark);
+  height: var(--tick-now-height);
+  width: var(--tick-now-width);
+}
+
+.focus-ticks .focus-mark-to-do i {
+  background: none;
+  border: 1px dashed var(--faint);
 }
 
 .focus-clock {
   font-family: var(--type-mono);
-  font-size: calc(var(--text-timer-size) * 0.75);
+  font-size: var(--text-focus-timer-size);
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-  line-height: 1;
-  margin: 0 0 0 auto;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  margin: 2px 0 0;
+  text-align: center;
 }
 
 .focus-middle {
-  display: grid;
-  gap: var(--space-screen-top);
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-control-gap);
   min-width: 0;
   overflow-y: auto;
-  padding: var(--space-small-gap) calc(var(--space-screen-inline) + env(safe-area-inset-right))
-    var(--space-screen-bottom) calc(var(--space-screen-inline) + env(safe-area-inset-left));
+  padding: 6px calc(var(--space-screen-inline) + env(safe-area-inset-right)) 2px
+    calc(var(--space-screen-inline) + env(safe-area-inset-left));
   animation: focus-fade 200ms ease-out;
 }
 
@@ -617,17 +656,34 @@ a {
   text-transform: uppercase;
 }
 
-.focus-goal-line {
-  font-family: var(--type-voice);
+/* "My goal" beside his portrait (prototype .mygoal). */
+.focus-mygoal {
+  align-items: center;
+  display: flex;
+  gap: var(--space-control-gap);
 }
 
-.focus-step-title {
-  font-weight: 700;
+/* A 48 px ring around the 40 px portrait (prototype .mygoal .pn-i holding .av). */
+.focus-avatar {
+  border: 1px solid var(--hairline);
+  border-radius: 50%;
+  display: grid;
+  flex: none;
+  height: var(--avatar-large);
+  place-items: center;
+  width: var(--avatar-large);
+}
+
+.focus-goal-line {
+  font-family: var(--type-voice);
+  font-size: var(--text-focus-goal-size);
+  font-weight: 600;
+  line-height: 1.35;
 }
 
 .focus-stack {
   border-radius: var(--r-note);
-  padding-top: var(--space-control-gap);
+  margin-top: var(--space-small-gap);
   touch-action: pan-y;
 }
 
@@ -650,6 +706,46 @@ a {
   font-family: var(--type-voice);
   font-size: var(--text-slip-size);
   line-height: var(--text-slip-leading);
+}
+
+/* His card on the focus page (prototype .cslip): the label, the text box and the pager inside. */
+.focus-stack .focus-slip {
+  border: 1px solid var(--hairline);
+  display: grid;
+  padding: var(--pad-card-slip);
+  transform: none;
+}
+
+.focus-stack .focus-slip-stacked {
+  box-shadow:
+    0 5px 0 -1px var(--raised),
+    0 6px 0 -1px var(--hairline),
+    0 10px 0 -2px var(--raised),
+    0 11px 0 -2px var(--hairline);
+}
+
+.focus-card-label {
+  color: var(--ink-2);
+  font-family: var(--type-voice);
+  font-size: var(--text-overline-size);
+  font-weight: 700;
+  letter-spacing: var(--overline-tracking);
+  text-transform: uppercase;
+}
+
+.focus-card-text {
+  height: var(--card-text-height);
+  margin-top: var(--space-row-after);
+  mask-image: linear-gradient(var(--ink) 88%, transparent);
+  overflow-y: auto;
+  padding-right: 6px;
+  scrollbar-color: var(--edge) transparent;
+  scrollbar-width: thin;
+}
+
+.focus-stack .focus-card-text p {
+  font-size: var(--text-card-text-size);
+  line-height: var(--text-card-text-leading);
 }
 
 /* Tape of prototype version 4 (issue 240 C11): top left of the slip, rotated -4 degrees. */
@@ -675,33 +771,51 @@ a {
   display: none;
 }
 
-.focus-pager {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-small-gap);
-  justify-content: space-between;
-}
-
-.focus-pager .button-plain {
-  padding-inline: var(--space-small-gap);
-}
-
 .focus-dots {
   display: flex;
-  gap: var(--space-small-gap);
+  gap: var(--dot-size);
+  justify-content: center;
+  margin-top: var(--space-small-gap);
 }
 
 .focus-dot {
-  border: 1px solid var(--edge);
-  border-radius: var(--r-capsule);
-  height: var(--space-small-gap);
-  width: var(--space-small-gap);
+  border: var(--line-strong) solid var(--ink-2);
+  border-radius: 50%;
+  height: var(--dot-size);
+  width: var(--dot-size);
 }
 
 .focus-dot-on {
-  background: var(--ink-2);
-  border-color: var(--ink-2);
+  background: var(--ink);
+  border-color: var(--ink);
+}
+
+.focus-pager {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+
+.focus-pager button {
+  background: none;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--type-shell);
+  font-size: var(--text-pager-size);
+  min-height: var(--target);
+  min-width: var(--target);
+}
+
+.focus-pager button:disabled {
+  cursor: default;
+  opacity: 0.3;
+}
+
+.focus-pager button:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: -3px;
 }
 
 .focus-failure {
@@ -711,55 +825,107 @@ a {
   justify-items: start;
 }
 
-.focus-steps {
+/* "Your goal" panel (prototype .pn.you). */
+.focus-yours {
+  background: var(--raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-panel);
+  gap: 0;
+}
+
+.focus-panel-head {
   display: grid;
-  gap: var(--space-small-gap);
+  gap: 3px;
+  padding: var(--space-control-gap) var(--space-button-before);
+}
+
+.focus-panel-goal {
+  font-family: var(--type-shell);
+  font-size: var(--text-panel-goal-size);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.focus-panel-now {
+  color: var(--ink-2);
+  font-family: var(--type-shell);
+  font-size: var(--text-panel-line-size);
+  line-height: 1.35;
+}
+
+.focus-panel-now .focus-label {
+  color: var(--ink);
+}
+
+.focus-panel-now.focus-step-description {
+  color: var(--faint);
+}
+
+.focus-more {
+  align-items: center;
+  background: none;
+  border: 0;
+  color: var(--ink-2);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: var(--type-shell);
+  font-size: var(--text-more-size);
+  font-weight: 600;
+  justify-self: start;
+  padding: 0 var(--space-button-before) var(--space-small-gap);
+  text-decoration: underline;
+}
+
+.focus-more:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: -3px;
+}
+
+.focus-steps {
+  border-top: 1px solid var(--hairline);
+  display: grid;
+  gap: 6px;
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 2px var(--space-button-before) var(--space-control-gap);
 }
 
 .focus-steps-row {
-  align-items: center;
+  color: var(--ink-2);
   display: flex;
-  gap: var(--space-small-gap);
-  min-height: var(--target);
+  font-family: var(--type-shell);
+  font-size: var(--text-panel-list-size);
+  gap: 9px;
+  line-height: 1.35;
+  padding-top: 6px;
 }
 
-.focus-mark {
-  border-radius: var(--r-capsule);
+.focus-steps-now {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.focus-steps-mark {
+  color: var(--mark);
   flex: none;
-  height: var(--space-control-gap);
-  width: var(--space-control-gap);
+  text-align: center;
+  width: 1rem;
 }
 
-.focus-mark-done {
-  background: var(--ink-2);
-}
-
-.focus-mark-now {
-  border: 2px solid var(--ink);
-}
-
-.focus-mark-to-do {
-  border: 1px dotted var(--edge);
+.focus-steps-description {
+  color: var(--ink-2);
+  display: block;
+  font-size: var(--text-caption-size);
+  font-weight: 400;
 }
 
 .focus-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: var(--space-control-gap);
+  grid-template-columns: 62fr 38fr;
   padding: var(--space-small-gap) calc(var(--space-screen-inline) + env(safe-area-inset-right))
     calc(var(--space-screen-bottom) + env(safe-area-inset-bottom))
     calc(var(--space-screen-inline) + env(safe-area-inset-left));
-}
-
-.focus-actions .button-filled {
-  flex: 62 1 auto;
-}
-
-.focus-actions .button-gray {
-  flex: 38 1 auto;
 }
 
 .focus-toast {
@@ -813,33 +979,109 @@ a {
   text-decoration: none;
 }
 
+/*
+ * Goal dialogue of prototype v4 (issues 263 and 234 to 237): the header and the dock stay in place
+ * and the thread between them scrolls, as in the prototype's .scr and .scroll. The shell is exactly
+ * one screen high.
+ */
+.try-shell:has(.try-dialogue) {
+  display: flex;
+  flex-direction: column;
+  height: 100svh;
+}
+
 .try-dialogue {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
   min-width: 0;
+  padding-bottom: 0;
 }
 
 .try-dialogue-bar {
+  align-items: center;
   display: flex;
+  gap: var(--space-control-gap);
   min-height: var(--target);
 }
 
 .try-back {
-  font-size: var(--text-display-size);
-  justify-content: flex-start;
+  font-size: var(--text-back-size);
+  justify-content: center;
+  min-width: var(--target);
   padding-inline: 0;
   text-decoration: none;
 }
 
+.try-avatar {
+  background: var(--tag-fill);
+  border: var(--line-strong) solid var(--tag-edge);
+  border-radius: 50%;
+  display: grid;
+  flex: none;
+  height: var(--avatar-size);
+  overflow: hidden;
+  place-items: center;
+  width: var(--avatar-size);
+}
+
+.try-avatar img {
+  height: var(--avatar-zoom);
+  object-fit: cover;
+  object-position: 50% 20%;
+  width: var(--avatar-zoom);
+}
+
+.try-companion-name {
+  color: var(--ink-2);
+  font-family: var(--type-shell);
+  font-size: var(--text-name-size);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+/* Only the thread scrolls (prototype .scroll); it runs to the screen edges so the bar sits there. */
+.try-thread {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--space-thread-gap);
+  margin: 0 calc((var(--space-screen-inline) + env(safe-area-inset-right)) * -1) 0
+    calc((var(--space-screen-inline) + env(safe-area-inset-left)) * -1);
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-thread-top) calc(var(--space-screen-inline) + env(safe-area-inset-right))
+    var(--space-screen-bottom) calc(var(--space-screen-inline) + env(safe-area-inset-left));
+  scrollbar-width: thin;
+}
+
+.try-dock {
+  display: grid;
+  flex: none;
+  gap: var(--space-small-gap);
+  padding: var(--space-control-gap) 0 calc(var(--space-screen-bottom) + env(safe-area-inset-bottom));
+}
+
+.try-dock:empty {
+  display: none;
+}
+
+/* His words on a slip (prototype .note.m.him). */
 .try-slip {
+  align-self: flex-start;
   background: var(--raised);
+  border: 1px solid var(--hairline);
   border-radius: var(--r-note);
   box-shadow: var(--shadow-paper);
   color: var(--ink);
   font-family: var(--type-voice);
-  font-size: var(--text-body-size);
-  line-height: var(--text-body-leading);
-  margin: var(--space-small-gap) 0 0;
-  max-width: 100%;
-  padding: var(--space-screen-inline) var(--space-screen-inline) var(--space-control-gap);
+  font-size: var(--text-slip-size);
+  line-height: var(--text-slip-leading);
+  margin: 0;
+  max-width: var(--slip-max);
+  padding: var(--pad-slip);
   position: relative;
 }
 
@@ -857,22 +1099,37 @@ a {
   content: "";
 }
 
+/* The user's own words (prototype .me). */
 .try-you {
-  background: var(--control);
-  border-radius: var(--r-note);
-  color: var(--on-control);
+  align-self: flex-end;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-bubble) var(--r-bubble) var(--r-bubble-tail) var(--r-bubble);
+  color: var(--ink);
   font-family: var(--type-shell);
-  justify-self: end;
+  font-size: var(--text-you-size);
+  line-height: var(--text-you-leading);
   margin: 0;
-  max-width: 85%;
-  padding: var(--space-small-gap) var(--space-control-gap);
+  max-width: var(--bubble-max);
+  padding: var(--pad-bubble);
 }
 
 .try-system-row {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-small-gap);
+  gap: 0 var(--space-small-gap);
+}
+
+.try-caption-line {
+  color: var(--ink-2);
+  font-family: var(--type-shell);
+  font-size: var(--text-caption-size);
+  margin: 0;
+}
+
+.try-caption-line b {
+  color: var(--ink);
 }
 
 .try-system,
@@ -886,48 +1143,51 @@ a {
   color: var(--ink-2);
 }
 
-.try-composer {
+/* The composer: a rectangular field and a separate paper-tag Send (prototype .composer). */
+.try-composer,
+.try-time {
   align-items: center;
-  background: var(--raised);
-  border-radius: var(--r-capsule);
-  box-shadow: inset 0 0 0 1px var(--edge);
   display: flex;
   gap: var(--space-small-gap);
   min-width: 0;
-  padding: 0.1875rem 0.1875rem 0.1875rem var(--space-control-gap);
 }
 
-.try-composer input {
-  background: transparent;
-  border: 0;
+.try-field {
+  background: var(--raised);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-field);
   color: var(--ink);
   flex: 1 1 auto;
   font-family: var(--type-sans);
   font-size: var(--text-body-size);
+  min-height: var(--field-height-chat);
   min-width: 0;
+  padding: 0 var(--button-small-padding);
 }
 
-.try-composer:focus-within {
+.try-field::placeholder {
+  color: var(--faint);
+}
+
+.try-field:focus-visible {
   outline: 3px solid var(--control);
   outline-offset: 3px;
 }
 
-.try-composer input:focus-visible {
-  outline: none;
-}
-
 .try-send {
   align-items: center;
-  background: var(--control);
-  border: 0;
-  border-radius: var(--r-capsule);
-  color: var(--on-control);
+  background: var(--tag-fill);
+  border: 1px solid var(--tag-edge);
+  border-radius: var(--r-field);
+  box-shadow: 0 2px 0 0 var(--tag-edge);
+  color: var(--tag-ink);
   cursor: pointer;
   display: inline-flex;
-  flex: 0 0 var(--target);
-  height: var(--target);
+  flex: 0 0 var(--send-size);
+  height: var(--send-size);
   justify-content: center;
-  width: var(--target);
+  padding: 0;
+  width: var(--send-size);
 }
 
 .try-send svg {
@@ -936,8 +1196,13 @@ a {
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2.4;
+  stroke-width: 2.2;
   width: 1.25rem;
+}
+
+.try-send:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 3px;
 }
 
 .try-send[aria-disabled="true"] {
@@ -945,13 +1210,9 @@ a {
   opacity: 0.35;
 }
 
-/* TIME-SLIDER (issue 32): the time question is a slider from 0 to 3 hours. Placement on the
-   GD2 screen belongs to issue 235. */
+/* TIME-SLIDER (issue 32) at the bottom of GD2 (issue 235): slider, its value, Send. */
 .try-time {
-  align-items: center;
-  display: flex;
   flex-wrap: wrap;
-  gap: var(--space-small-gap);
 }
 
 .try-time-slider {
@@ -978,10 +1239,16 @@ a {
   font-size: var(--text-link-size);
   font-weight: 700;
   justify-self: start;
+  min-height: var(--target);
   padding: 0;
   text-decoration: underline;
 }
 
+.try-link-centre {
+  justify-self: center;
+}
+
+/* Chips (prototype .chip): 12 px radius, raised, a 1.5 px edge. */
 .try-chips {
   display: flex;
   flex-wrap: wrap;
@@ -989,15 +1256,23 @@ a {
 }
 
 .try-chip {
-  background: transparent;
-  border: 1px solid var(--edge);
-  border-radius: var(--r-capsule);
+  align-items: center;
+  background: var(--raised);
+  border: var(--line-strong) solid var(--edge);
+  border-radius: var(--r-chip);
   color: var(--ink);
   cursor: pointer;
+  display: inline-flex;
   font-family: var(--type-shell);
-  font-size: var(--text-body-size);
+  font-size: var(--text-link-size);
   font-weight: 600;
-  padding-inline: var(--space-screen-inline);
+  min-height: var(--target);
+  padding: 0 var(--button-small-padding);
+}
+
+.try-chip:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 3px;
 }
 
 .try-actions {
@@ -1006,170 +1281,278 @@ a {
   gap: var(--space-control-gap);
 }
 
-.try-actions > :first-child {
-  flex: 62 1 auto;
-}
-
-.try-actions > :last-child {
-  flex: 38 1 auto;
-}
-
-.try-dots {
-  display: flex;
-  gap: var(--space-small-gap);
-}
-
-.try-dots span {
-  background: var(--mark);
-  border-radius: var(--r-capsule);
-  height: var(--space-small-gap);
-  width: var(--space-small-gap);
-}
-
-/* System voice: bold border and text, not red (FLOW GD-F). */
-.try-failure {
-  border: 2px solid var(--ink);
+/* Splitting: his typing dots (prototype .typing). */
+.try-typing {
+  align-self: flex-start;
+  background: var(--raised);
+  border: 1px solid var(--hairline);
   border-radius: var(--r-note);
+  display: inline-flex;
+  gap: 5px;
+  padding: var(--space-control-gap) var(--space-screen-bottom);
+}
+
+.try-typing > span[aria-hidden] {
+  background: var(--ink-2);
+  border-radius: 50%;
+  height: 6px;
+  opacity: 0.6;
+  width: 6px;
+}
+
+/* System voice boxes: the split failed (GD-F) and the save failed. */
+.try-sys {
+  background: var(--raised);
+  border: var(--line-strong) solid var(--edge);
+  border-radius: var(--r-sys);
   display: grid;
   font-family: var(--type-shell);
   gap: var(--space-control-gap);
-  padding: var(--space-screen-inline);
+  padding: var(--space-card-pad);
 }
 
-.try-failure p {
-  font-weight: 700;
-  margin: 0;
-}
-
-.try-plan {
-  display: grid;
-  gap: var(--space-control-gap);
-  min-width: 0;
-}
-
-.try-plan h2 {
+.try-sys h2 {
   font-family: var(--type-display);
-  font-size: var(--text-body-size);
+  font-size: var(--text-sys-title-size);
   font-weight: 800;
+  line-height: 1.2;
   margin: 0;
+}
+
+.try-sys p {
+  margin: 0;
+}
+
+.try-save-failed {
+  display: grid;
+  font-family: var(--type-shell);
+  gap: var(--space-small-gap);
+}
+
+.try-start {
+  width: 100%;
+}
+
+/* The Plan card of prototype v4 (issue 237): "Your steps", the Goal field, numbered rows. */
+.try-plan {
+  border: 1px solid var(--hairline);
+  display: grid;
+  gap: var(--space-small-gap);
+  min-width: 0;
+  padding: var(--space-card-pad);
+}
+
+.try-over {
+  color: var(--ink-2);
+  font-family: var(--type-shell);
+  font-size: var(--text-overline-size);
+  font-weight: 700;
+  letter-spacing: var(--overline-tracking);
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.try-plan-goal {
+  display: grid;
+  gap: var(--space-row-after);
+}
+
+.try-field-plan {
+  min-height: var(--field-height-plan);
 }
 
 .try-steps {
   display: grid;
-  gap: var(--space-small-gap);
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.try-step-button {
-  background: transparent;
-  border: 0;
-  border-bottom: 1px solid var(--hairline);
-  color: var(--ink);
-  cursor: pointer;
-  display: grid;
-  font: inherit;
-  gap: 0.25rem;
-  padding: var(--space-small-gap) 0;
-  text-align: left;
-  width: 100%;
-}
-
-.try-step-head {
+.try-step-row {
+  align-items: center;
   display: flex;
   gap: var(--space-small-gap);
-  justify-content: space-between;
+}
+
+.try-step-button,
+.try-step-open {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--hairline);
+  color: var(--ink);
+  display: flex;
+  flex: 1 1 auto;
+  font: inherit;
+  gap: var(--space-control-gap);
+  min-height: var(--step-row-height);
+  min-width: 0;
+  padding: var(--space-small-gap) 2px;
+  text-align: left;
+}
+
+.try-step-button {
+  cursor: pointer;
+}
+
+.try-step-button:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: -3px;
+}
+
+.try-step-number {
+  background: var(--tag-fill);
+  border-radius: 50%;
+  color: var(--tag-ink);
+  flex: none;
+  font-family: var(--type-shell);
+  font-size: var(--text-step-number-size);
+  font-weight: 800;
+  height: var(--step-number-size);
+  line-height: var(--step-number-size);
+  text-align: center;
+  width: var(--step-number-size);
 }
 
 .try-step-title {
-  font-weight: 700;
+  flex: 1 1 auto;
+  font-family: var(--type-shell);
+  font-size: var(--text-step-size);
+  font-weight: 500;
+  line-height: 1.3;
   min-width: 0;
 }
 
-.try-step-description {
-  color: var(--ink-2);
-}
-
 .try-minutes {
+  color: var(--ink-2);
   font-family: var(--type-mono);
+  font-size: var(--text-step-minutes-size);
   font-variant-numeric: tabular-nums;
+  font-weight: 600;
   white-space: nowrap;
 }
 
+/* Move up and move down (STEP-EDIT): 40 by 26 drawn, 44 by 44 to touch. */
+.try-move {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.try-move button {
+  background: var(--raised);
+  border: var(--line-strong) solid var(--edge);
+  border-radius: var(--r-mini);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--type-shell);
+  font-size: var(--text-step-number-size);
+  height: var(--move-height);
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+  position: relative;
+  width: var(--move-width);
+}
+
+.try-move button::before {
+  content: "";
+  inset: calc((var(--target) - var(--move-height)) / -2)
+    calc((var(--target) - var(--move-width)) / -2);
+  position: absolute;
+}
+
+.try-move button:first-child::before {
+  bottom: 0;
+}
+
+.try-move button:last-child::before {
+  top: 0;
+}
+
+.try-move button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.try-move button:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 2px;
+}
+
+.try-plan-foot {
+  align-items: center;
+  border-top: 1px solid var(--hairline);
+  display: flex;
+  gap: var(--space-small-gap);
+  justify-content: space-between;
+  padding-top: var(--space-small-gap);
+}
+
+/* The open Step editor (prototype .edit). */
 .try-step-editor,
 .try-step-editor label {
   display: grid;
-  gap: var(--space-small-gap);
+  gap: var(--space-row-after);
 }
 
 .try-step-editor {
   gap: var(--space-control-gap);
-  padding: var(--space-small-gap) 0;
+  padding: 6px 2px var(--button-small-padding);
 }
 
-.try-step-editor input,
-.try-step-editor textarea {
+.try-field-area {
+  min-height: var(--editor-description-height);
+  padding-block: var(--space-control-gap);
+  resize: vertical;
+}
+
+.try-stepper {
+  align-items: center;
+  display: flex;
+  gap: var(--space-small-gap);
+}
+
+.try-stepper button {
   background: var(--raised);
-  border: 0;
-  border-radius: var(--r-field);
-  box-shadow: inset 0 0 0 1px var(--edge);
+  border: var(--line-strong) solid var(--edge);
+  border-radius: var(--r-chip);
   color: var(--ink);
-  font-family: var(--type-sans);
-  font-size: var(--text-body-size);
-  min-height: 3.125rem;
-  min-width: 0;
-  padding: var(--space-small-gap) var(--space-control-gap);
-  width: 100%;
+  cursor: pointer;
+  font-family: var(--type-shell);
+  font-size: var(--text-stepper-size);
+  font-weight: 700;
+  height: var(--target);
+  width: var(--target);
 }
 
-.try-step-editor input:focus-visible,
-.try-step-editor textarea:focus-visible {
+.try-stepper button[aria-disabled="true"] {
+  border-style: dashed;
+  color: var(--faint);
+  cursor: not-allowed;
+}
+
+.try-stepper button:focus-visible {
   outline: 3px solid var(--control);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 
-.try-stepper-row,
+.try-stepper-field {
+  border-radius: var(--r-chip);
+  flex: none;
+  min-height: var(--target);
+  padding: 0 var(--space-small-gap);
+  text-align: center;
+  width: var(--stepper-field-width);
+}
+
 .try-step-tools {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-control-gap);
-}
-
-/* Stepper: one capsule, two 56 by 44 halves, value outside (DESIGN.md 6.3). */
-.try-stepper {
-  background: var(--gray);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-capsule);
-  display: inline-flex;
-  overflow: hidden;
-}
-
-.try-stepper button {
-  background: transparent;
-  border: 0;
-  color: var(--ink);
-  cursor: pointer;
-  font-family: var(--type-shell);
-  font-size: var(--text-button-size);
-  font-weight: 600;
-  height: var(--target);
-  width: 3.5rem;
-}
-
-.try-stepper button + button {
-  border-left: 1px solid var(--edge);
-}
-
-.try-stepper button:disabled {
-  cursor: not-allowed;
-  opacity: 0.35;
-}
-
-.try-stepper button:focus-visible {
-  outline: 3px solid var(--control);
-  outline-offset: -3px;
+  justify-content: space-between;
 }
 
 /* The focus page content sits under the return pop-up and is inert while it is open (#68, #69). */

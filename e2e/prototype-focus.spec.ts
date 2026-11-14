@@ -46,9 +46,9 @@ test("#12 AC1 and #17 AC3 Step 1 opens with the background card as its only card
   await seed(page, threeSteps);
   await expect(slip(page)).toContainText(background);
   await expect(dots(page)).toHaveCount(1);
-  await expect(page.getByRole("button", { name: "‹ Earlier card" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Earlier card" })).toBeDisabled();
   await expect(page.getByText("Step 1 of 3", { exact: true })).toBeVisible();
-  await expect(page.getByText("Outline", { exact: true })).toBeVisible();
+  await expect(page.locator(".focus-panel-now").first()).toHaveText("Now Outline");
   await expect(page.getByText("List the sections.")).toBeVisible();
   await expect(page.getByText("Test data: chapter 8 cards")).toBeVisible();
 });
@@ -60,9 +60,9 @@ test("#14 AC1 to AC3 a new card arrives on top and Earlier and Newer browse the 
   await expect(dots(page)).toHaveCount(2, { timeout: 15_000 });
   await expect(slip(page)).toContainText(step1First);
 
-  await page.getByRole("button", { name: "‹ Earlier card" }).click();
+  await page.getByRole("button", { name: "Earlier card" }).click();
   await expect(slip(page)).toContainText(background);
-  await page.getByRole("button", { name: "Newer card ›" }).click();
+  await page.getByRole("button", { name: "Newer card" }).click();
   await expect(slip(page)).toContainText(step1First);
 });
 

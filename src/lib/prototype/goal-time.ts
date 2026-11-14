@@ -57,6 +57,11 @@ export function formatMinutes(minutes: number): string {
   return rest === 0 ? hourText : `${hourText} ${rest} min`;
 }
 
+/** Minutes as the goal dialogue shows them after an answer: always "N min" (prototype v4, #236). */
+export function minutesLabel(minutes: number): string {
+  return `${minutes} min`;
+}
+
 /** The time question is a slider from 0 to 3 hours with no fixed example times (TIME-SLIDER). */
 export const SLIDER_MAX_MINUTES = 180;
 export const SLIDER_STEP_MINUTES = 5;
