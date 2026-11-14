@@ -5,11 +5,14 @@ const port = 3100;
 // test-only stub model (e2e/support/stub-model.mjs), which is never part of the app bundle.
 const livePort = 3101;
 const stubPort = 3199;
+// A test-only stand-in for Supabase (e2e/support/stub-supabase.mjs, #73): signed-in pages can be
+// tested with seeded data. A visitor without its cookie is still signed out.
+const supabaseStubPort = 3198;
 // Set E2E_BASE_URL to test a deployed site; otherwise the app is built and started locally.
 const deployed = process.env.E2E_BASE_URL;
 
 const appEnv = {
-  NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:9",
+  NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${supabaseStubPort}`,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: "playwright-placeholder",
   // Turns on the sign-in-free test path (#208) for the e2e servers only.
   PROTOTYPE_ENABLED: "1",
@@ -35,6 +38,13 @@ export default defineConfig({
   webServer: deployed
     ? undefined
     : [
+        {
+          command: "node e2e/support/stub-supabase.mjs",
+          url: `http://127.0.0.1:${supabaseStubPort}/health`,
+          env: { STUB_SUPABASE_PORT: String(supabaseStubPort) },
+          reuseExistingServer: !process.env.CI,
+          timeout: 30_000,
+        },
         {
           command: "node e2e/support/stub-model.mjs",
           url: `http://127.0.0.1:${stubPort}/health`,
