@@ -35,6 +35,10 @@ const EMPTY: Record<GoalsTab, string> = {
 
 const EPOCH = { now: new Date(0), timeZone: "UTC" };
 
+/** After a change or Undo, keyboard focus goes to the selected tab: the row may have moved away. */
+const selectedTab = () =>
+  document.querySelector<HTMLElement>('.goals-tabs [role="tab"][aria-selected="true"]');
+
 export function GoalsScreen({ data, initialTab }: { data: GoalsData; initialTab: GoalsTab }) {
   const router = useRouter();
   const local = useLocalNow();
@@ -56,7 +60,7 @@ export function GoalsScreen({ data, initialTab }: { data: GoalsData; initialTab:
     setOpenings((count) => count + 1);
     setNewGoal({ draft: keptDraft(), opened: openings + 1, opener: event.currentTarget });
   };
-  const { toast, busy, change, undo, close } = useGoalChanges();
+  const { toast, busy, change, undo, close } = useGoalChanges(selectedTab);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const lists = useMemo(() => goalsLists(data, local ?? EPOCH), [data, local]);

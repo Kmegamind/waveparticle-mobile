@@ -137,6 +137,70 @@ test("#18 the focus page fits 320 px and every control is at least 44 px", async
   }
 });
 
+test("#5 AC1 the timer has the timer role with live announcements off", async ({ page }) => {
+  await seed(page, threeSteps);
+  const clock = page.getByRole("timer", { name: "Time left" });
+  await expect(clock).toHaveAttribute("aria-live", "off");
+  // The Step label is plain text, not a live region.
+  const label = page.getByText("Step 1 of 3", { exact: true });
+  expect(await label.evaluate((element) => element.closest("[aria-live]"))).toBeNull();
+});
+
+test("finding: the Your steps toggle is named without the arrow glyph", async ({ page }) => {
+  await seed(page, threeSteps);
+  const toggle = page.getByRole("button", { name: "Your steps", exact: true });
+  await expect(toggle).toBeVisible();
+  await toggle.click();
+  await expect(page.getByRole("button", { name: "Your steps", exact: true })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+});
+
+test("#101 AC1 the card stack says which card of how many and marks the newest current", async ({
+  page,
+}) => {
+  await seed(page, threeSteps);
+  await expect(slip(page)).toContainText("Card 1 of 1");
+  await expect(slip(page)).toHaveAttribute("aria-current", "true");
+  await expect(dots(page)).toHaveCount(2, { timeout: 15_000 });
+  await expect(slip(page)).toContainText("Card 2 of 2");
+  await expect(slip(page)).toHaveAttribute("aria-current", "true");
+  await page.getByRole("button", { name: "Earlier card" }).click();
+  await expect(slip(page)).toContainText("Card 1 of 2");
+  await expect(slip(page)).not.toHaveAttribute("aria-current", /.+/);
+});
+
+test("#5 AC4 no screen-reader text on the focus page says Paused", async ({ page }) => {
+  await seed(page, threeSteps);
+  await expect(page.locator("main")).not.toContainText(/paused/i);
+});
+
+test("#101 AC5 the focus page reads the seam, his side, the Step name, Done, then Pause", async ({
+  page,
+}) => {
+  await seed(page, threeSteps);
+  const order = await page.evaluate(() => {
+    const marks = [
+      document.querySelector(".focus-seam"),
+      document.querySelector("#his-side"),
+      document.querySelector(".focus-panel-now"),
+      Array.from(document.querySelectorAll("button")).find((b) => b.textContent === "Done"),
+      Array.from(document.querySelectorAll("button")).find((b) => b.textContent === "Pause"),
+    ];
+    return marks.map((node, index) =>
+      index === 0
+        ? true
+        : Boolean(
+            marks[index - 1] &&
+            node &&
+            marks[index - 1]!.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING,
+          ),
+    );
+  });
+  expect(order).toEqual([true, true, true, true, true]);
+});
+
 test("the focus page without a Goal shows a calm line and a way back", async ({ page }) => {
   await page.goto("/try");
   await expect(page.locator('[data-ready="true"]')).toBeVisible();

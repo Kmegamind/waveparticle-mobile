@@ -1,4 +1,16 @@
 import { expect, test } from "@playwright/test";
+import { baseUrlOf, signIn } from "./support/account";
+
+test("#5 AC3 the signed-in dialogue's first ‹ is named Back to Home and opens Home", async ({
+  page,
+  context,
+}) => {
+  await signIn(context, baseUrlOf(page));
+  await page.goto("/goal");
+  await expect(page.locator('main.try-dialogue[data-ready="true"]')).toBeVisible();
+  const back = page.locator(".try-dialogue-bar").getByRole("link", { name: "Back to Home" });
+  await expect(back).toHaveAttribute("href", "/");
+});
 
 // The e2e server has PROTOTYPE_ENABLED=1 and placeholder Supabase values, so nobody is signed in.
 // The signed-in save itself is covered by tests/start-goal.test.ts (CI has no account).

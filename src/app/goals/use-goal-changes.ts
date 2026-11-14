@@ -24,6 +24,7 @@ const TEXT: Record<GoalChange, string> = {
 const CHANGE_FAILED = "Could not change the Goal. Please try again.";
 const UNDO_FAILED = "Could not undo. Please try again.";
 const failed: SetGoalStatusOutcome = { status: "failed" };
+const nowhere = () => null;
 
 function send(change: GoalChange, goalId: string): Promise<SetGoalStatusOutcome> {
   if (change === "resume") return resumeGoalAction({ goalId });
@@ -31,7 +32,12 @@ function send(change: GoalChange, goalId: string): Promise<SetGoalStatusOutcome>
   return setGoalStatusAction({ goalId, status });
 }
 
-export function useGoalChanges() {
+/**
+ * `focusAfter` names where keyboard focus goes once a change or Undo is over: the row or button
+ * that had it may be gone (a finding left by #73). `changing` is true when the page is about to
+ * show a new status, so a page can wait for it before moving focus.
+ */
+export function useGoalChanges(focusAfter: (changing: boolean) => HTMLElement | null = nowhere) {
   const router = useRouter();
   const [toast, setToast] = useState<GoalToast | null>(null);
   const [busy, setBusy] = useState(false);
@@ -41,6 +47,7 @@ export function useGoalChanges() {
       setBusy(true);
       const outcome = await send(kind, goalId).catch(() => failed);
       setBusy(false);
+      focusAfter(outcome.status === "ok")?.focus();
       if (outcome.status !== "ok") {
         setToast({ text: CHANGE_FAILED, undo: null, failed: true });
         return false;
@@ -52,12 +59,14 @@ export function useGoalChanges() {
       router.refresh();
       return true;
     },
-    [router],
+    [focusAfter, router],
   );
 
   const undo = useCallback(async () => {
     const current = toast;
     setToast(null);
+    // Undo itself goes away with the toast.
+    focusAfter(Boolean(current?.undo))?.focus();
     if (!current?.undo) return;
     const { goalId, previous, parkedSessionId } = current.undo;
     const outcome = await setGoalStatusAction({
@@ -65,9 +74,12 @@ export function useGoalChanges() {
       status: undoStatusFor(previous),
       sessionId: parkedSessionId,
     }).catch(() => failed);
-    if (outcome.status !== "ok") setToast({ ...current, text: UNDO_FAILED, failed: true });
+    if (outcome.status !== "ok") {
+      setToast({ ...current, text: UNDO_FAILED, failed: true });
+      focusAfter(false)?.focus();
+    }
     router.refresh();
-  }, [router, toast]);
+  }, [focusAfter, router, toast]);
 
   const close = useCallback(() => setToast(null), []);
 

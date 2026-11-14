@@ -185,6 +185,16 @@ test("#30 AC5 stepping back keeps the typed text", async ({ page }) => {
   );
 });
 
+test("#5 AC3 each ‹ in the dialogue names where it goes", async ({ page }) => {
+  await openDialogue(page);
+  const bar = page.locator(".try-dialogue-bar");
+  await expect(
+    bar.getByRole("link", { name: "Back to the test home", exact: true }),
+  ).toHaveAttribute("href", "/try");
+  await sendGoal(page, "Write the methods section of my lab report");
+  await expect(bar.getByRole("button", { name: "Back to your goal", exact: true })).toBeVisible();
+});
+
 test("#37 editing the Plan: title, description, minutes, add, remove", async ({ page }) => {
   await openDialogue(page);
   await sendGoal(page, "Write the methods section of my lab report");
