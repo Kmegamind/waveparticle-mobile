@@ -74,9 +74,19 @@ type GoalDialogueProps = {
   start?: (input: StartInput) => Promise<StartOutcome>;
   /** The test path's stories (#254): the first opening comes from the chosen story's inputs. */
   stories?: { id: string; opening: string }[];
+  /**
+   * The signed-in focus page (#257). When set, Start opens it for the saved Goal and nothing is
+   * written to the browser store: the account holds the Plan.
+   */
+  focusPath?: string;
 };
 
-export function GoalDialogue({ split = splitGoalAction, start, stories }: GoalDialogueProps = {}) {
+export function GoalDialogue({
+  split = splitGoalAction,
+  start,
+  stories,
+  focusPath,
+}: GoalDialogueProps = {}) {
   const router = useRouter();
   const { ready, state, update } = usePrototypeState();
   const returning = state.goal !== null;
@@ -336,7 +346,9 @@ export function GoalDialogue({ split = splitGoalAction, start, stories }: GoalDi
       outcome = { status: "failed" };
     }
     setSaving(false);
-    if (outcome.status === "saved") openFocus(outcome.steps);
+    if (outcome.status === "saved" && focusPath) {
+      router.push(`${focusPath}?goal=${encodeURIComponent(outcome.goalId)}`);
+    } else if (outcome.status === "saved") openFocus(outcome.steps);
     else if (outcome.status === "crisis") openCrisis("plan");
     else if (outcome.status === "signed-out") router.push("/auth/sign-in");
     else setSaveFailed(true);

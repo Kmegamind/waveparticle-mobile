@@ -17,5 +17,7 @@ async function GoalContent() {
   if (!isPrototypeEnabled()) notFound();
   const user = await getCurrentUser(await createSupabaseServerClient());
   if (!user) redirect("/auth/sign-in");
-  return <GoalDialogue split={splitGoalForAccountAction} start={startGoalAction} />;
+  return (
+    <GoalDialogue focusPath="/focus" split={splitGoalForAccountAction} start={startGoalAction} />
+  );
 }

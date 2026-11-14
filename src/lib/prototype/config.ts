@@ -24,3 +24,18 @@ export function isGoalPath(pathname: string): boolean {
 export function goalPathIsHidden(pathname: string, enabled: boolean): boolean {
   return !enabled && isGoalPath(pathname);
 }
+
+/**
+ * The signed-in session pages: the goal dialogue (#32), focus and rest (#257). They exist only
+ * while the test path is on, until the per-account daily cap on model calls (#256) lands.
+ */
+const ACCOUNT_SESSION_PATHS = ["/goal", "/focus", "/rest"] as const;
+
+export function isAccountSessionPath(pathname: string): boolean {
+  return ACCOUNT_SESSION_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
+
+/** True when the request is for a signed-in session page while the test path is off: 404. */
+export function accountSessionPathIsHidden(pathname: string, enabled: boolean): boolean {
+  return !enabled && isAccountSessionPath(pathname);
+}
