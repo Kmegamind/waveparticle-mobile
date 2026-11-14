@@ -24,6 +24,7 @@ const TEXT: Record<GoalChange, string> = {
 const CHANGE_FAILED = "Could not change the Goal. Please try again.";
 const UNDO_FAILED = "Could not undo. Please try again.";
 const failed: SetGoalStatusOutcome = { status: "failed" };
+const nowhere = () => null;
 
 function send(change: GoalChange, goalId: string): Promise<SetGoalStatusOutcome> {
   if (change === "resume") return resumeGoalAction({ goalId });
@@ -31,7 +32,11 @@ function send(change: GoalChange, goalId: string): Promise<SetGoalStatusOutcome>
   return setGoalStatusAction({ goalId, status });
 }
 
-export function useGoalChanges() {
+/**
+ * `focusAfter` names where keyboard focus goes once a change or Undo is over: the row or button
+ * that had it may be gone (a finding left by #73).
+ */
+export function useGoalChanges(focusAfter: () => HTMLElement | null = nowhere) {
   const router = useRouter();
   const [toast, setToast] = useState<GoalToast | null>(null);
   const [busy, setBusy] = useState(false);
@@ -41,6 +46,7 @@ export function useGoalChanges() {
       setBusy(true);
       const outcome = await send(kind, goalId).catch(() => failed);
       setBusy(false);
+      focusAfter()?.focus();
       if (outcome.status !== "ok") {
         setToast({ text: CHANGE_FAILED, undo: null, failed: true });
         return false;
@@ -52,12 +58,14 @@ export function useGoalChanges() {
       router.refresh();
       return true;
     },
-    [router],
+    [focusAfter, router],
   );
 
   const undo = useCallback(async () => {
     const current = toast;
     setToast(null);
+    // Undo itself goes away with the toast.
+    focusAfter()?.focus();
     if (!current?.undo) return;
     const { goalId, previous, parkedSessionId } = current.undo;
     const outcome = await setGoalStatusAction({
@@ -67,7 +75,7 @@ export function useGoalChanges() {
     }).catch(() => failed);
     if (outcome.status !== "ok") setToast({ ...current, text: UNDO_FAILED, failed: true });
     router.refresh();
-  }, [router, toast]);
+  }, [focusAfter, router, toast]);
 
   const close = useCallback(() => setToast(null), []);
 

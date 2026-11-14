@@ -2366,14 +2366,18 @@ a {
 
 .comp-enter {
   display: grid;
-  gap: var(--space-small-gap);
   margin-top: var(--space-control-gap);
 }
 
+/* Always present (a live region must exist before its text arrives); it takes no room empty. */
 .comp-reason {
   color: var(--ink-2);
   font-size: var(--text-caption-size);
   margin: 0;
+}
+
+.comp-reason:not(:empty) {
+  margin-bottom: var(--space-small-gap);
 }
 
 /* Links drawn as paper-tag buttons on Home carry no underline (issue 268). */

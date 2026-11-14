@@ -12,6 +12,9 @@ import { useLocalNow } from "../use-local-now";
 
 const EPOCH = { now: new Date(0), timeZone: "UTC" };
 
+/** After a change or Undo, keyboard focus goes to the status line: the button may be gone. */
+const statusLine = () => document.getElementById("goal-status");
+
 const KINDS: { id: GoalKind; label: string }[] = [
   { id: "one_time", label: "One-time" },
   { id: "ongoing", label: "Ongoing" },
@@ -34,7 +37,7 @@ export function GoalDetailScreen({
     () => goalDetail(data, goalId, { ...(local ?? EPOCH), sessionPagesEnabled }),
     [data, goalId, local, sessionPagesEnabled],
   );
-  const { toast, busy, change, undo, close, setToast } = useGoalChanges();
+  const { toast, busy, change, undo, close, setToast } = useGoalChanges(statusLine);
   const [title, setTitle] = useState(detail?.title ?? "");
   const [savedTitle, setSavedTitle] = useState(detail?.title ?? "");
   const [kind, setKind] = useState<GoalKind>(detail?.kind ?? "one_time");
@@ -121,7 +124,7 @@ export function GoalDetailScreen({
           }}
           value={title}
         />
-        <p className="goals-caption goal-status">
+        <p className="goals-caption goal-status" id="goal-status" tabIndex={-1}>
           {detail.statusLabel} · with {detail.companion}
         </p>
         {problem ? (

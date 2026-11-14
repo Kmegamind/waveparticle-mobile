@@ -92,6 +92,10 @@ export function HomeGoalOptions({
       <dialog
         aria-labelledby="goal-options-title"
         className="home-sheet"
+        onCancel={(event) => {
+          // Esc waits while a change is saving, so its error shows in the open sheet.
+          if (busy) event.preventDefault();
+        }}
         onClose={() => opener.current?.focus()}
         ref={dialog}
       >
@@ -140,7 +144,8 @@ export function HomeToast({
     if (held) return;
     const id = window.setTimeout(onClose, TOAST_MS);
     return () => window.clearTimeout(id);
-  }, [held, onClose]);
+    // A new toast gets its own five seconds.
+  }, [held, onClose, toast]);
 
   async function undo() {
     onClose();
