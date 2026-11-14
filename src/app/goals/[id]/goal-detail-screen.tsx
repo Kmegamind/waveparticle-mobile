@@ -19,21 +19,10 @@ const KINDS: { id: GoalKind; label: string }[] = [
 
 const TAB_OF = { planned: "", in_progress: "", on_hold: "?tab=hold", done: "?tab=done" } as const;
 
-export function GoalDetailScreen({
-  data,
-  goalId,
-  sessionPagesEnabled,
-}: {
-  data: GoalsData;
-  goalId: string;
-  sessionPagesEnabled: boolean;
-}) {
+export function GoalDetailScreen({ data, goalId }: { data: GoalsData; goalId: string }) {
   const router = useRouter();
   const local = useLocalNow();
-  const detail = useMemo(
-    () => goalDetail(data, goalId, { ...(local ?? EPOCH), sessionPagesEnabled }),
-    [data, goalId, local, sessionPagesEnabled],
-  );
+  const detail = useMemo(() => goalDetail(data, goalId, local ?? EPOCH), [data, goalId, local]);
   const { toast, busy, change, undo, close, setToast } = useGoalChanges();
   const [title, setTitle] = useState(detail?.title ?? "");
   const [savedTitle, setSavedTitle] = useState(detail?.title ?? "");

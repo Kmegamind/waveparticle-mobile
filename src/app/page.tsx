@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { homeView } from "@/lib/home/home-view";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
-import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { continueHref } from "./continue-link";
@@ -23,11 +22,8 @@ async function HomeContent() {
   const progress = await createSupabaseProgressStore(client).read(user.id, user.id);
   const view = homeView(progress);
 
-  // Continue (issue 69) and the links to /goal exist only while the session pages do (test builds).
-  const enabled = isPrototypeEnabled();
+  // Continue (issue 69) and the links to /goal show in every environment (issue 278).
   const href =
-    view.kind === "goal"
-      ? continueHref({ id: view.card.goalId, status: view.card.status }, enabled)
-      : null;
-  return <ProtectedHome continueHref={href} sessionPagesEnabled={enabled} view={view} />;
+    view.kind === "goal" ? continueHref({ id: view.card.goalId, status: view.card.status }) : null;
+  return <ProtectedHome continueHref={href} view={view} />;
 }

@@ -7,11 +7,8 @@ import type { ProgressGoal } from "@/lib/progress/account-progress";
  * page loads fresh and reads this device's clock (the session pages move with full page loads).
  * Kept small so the Home Goal card (#86) can reuse it.
  */
-export function continueHref(
-  goal: Pick<ProgressGoal, "id" | "status">,
-  sessionPagesEnabled: boolean,
-): string | null {
-  if (!sessionPagesEnabled || goal.status !== "in_progress") return null;
+export function continueHref(goal: Pick<ProgressGoal, "id" | "status">): string | null {
+  if (goal.status !== "in_progress") return null;
   return `/focus?goal=${encodeURIComponent(goal.id)}`;
 }
 

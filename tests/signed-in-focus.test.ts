@@ -15,8 +15,7 @@ import {
   accountReturnLine,
   accountStepCards,
 } from "@/lib/progress/account-lines";
-import {
-} from "@/lib/prototype/config";
+import {} from "@/lib/prototype/config";
 import { isSessionPath } from "@/app/try/session-paths";
 import {
   completeStep,

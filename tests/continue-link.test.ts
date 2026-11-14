@@ -22,12 +22,11 @@ const read = (file: string) => readFileSync(path.join(root, file), "utf8");
 const GOAL = "4f0a7c2e-8d1b-4c3a-9e2f-1a2b3c4d5e6f";
 
 describe("#69 AC3 the Continue link", () => {
-  it("opens /focus for an in-progress Goal, only while the signed-in session pages exist", () => {
-    expect(continueHref({ id: GOAL, status: "in_progress" }, true)).toBe(`/focus?goal=${GOAL}`);
-    expect(continueHref({ id: GOAL, status: "done" }, true)).toBeNull();
-    expect(continueHref({ id: GOAL, status: "on_hold" }, true)).toBeNull();
-    expect(continueHref({ id: GOAL, status: "planned" }, true)).toBeNull();
-    expect(continueHref({ id: GOAL, status: "in_progress" }, false)).toBeNull();
+  it("opens /focus for an in-progress Goal in every environment (#278)", () => {
+    expect(continueHref({ id: GOAL, status: "in_progress" })).toBe(`/focus?goal=${GOAL}`);
+    expect(continueHref({ id: GOAL, status: "done" })).toBeNull();
+    expect(continueHref({ id: GOAL, status: "on_hold" })).toBeNull();
+    expect(continueHref({ id: GOAL, status: "planned" })).toBeNull();
   });
 
   it("is a plain link, so the focus page loads fresh and reads this device's clock", () => {
@@ -54,7 +53,6 @@ describe("#69 AC3 the Continue link", () => {
           inProgress: [{ goalId: GOAL, title: "Write the report", companion: "Oppenheimer" }],
         },
         continueHref: `/focus?goal=${GOAL}`,
-        sessionPagesEnabled: true,
       }),
     );
     expect(html).toContain("Write the report");
@@ -77,20 +75,20 @@ describe("#69 AC3 the Continue link", () => {
         { id: "g2", title: "Old goal", text: "", status: "done" as const, steps: [] },
       ],
     };
-    const html = renderToStaticMarkup(
-      createElement(GoalsProgress, { progress, canContinue: true }),
-    );
+    const html = renderToStaticMarkup(createElement(GoalsProgress, { progress }));
     expect(html).toContain(`href="/focus?goal=${GOAL}">Continue</a>`);
     expect(html.match(/>Continue</g)).toHaveLength(1);
-    const off = renderToStaticMarkup(
-      createElement(GoalsProgress, { progress, canContinue: false }),
-    );
-    expect(off).not.toContain("Continue");
   });
 
-  it("Home and Goals decide it on the server with the test-build switch", () => {
-    for (const file of ["src/app/page.tsx", "src/app/goals/page.tsx"]) {
-      expect(read(file), file).toContain("isPrototypeEnabled()");
+  it("#278 no screen outside /try asks the test-build switch whether to show a link", () => {
+    for (const file of [
+      "src/app/page.tsx",
+      "src/app/goals/page.tsx",
+      "src/app/goals/[id]/page.tsx",
+      "src/app/me/page.tsx",
+      "src/app/companions/oppenheimer/page.tsx",
+    ]) {
+      expect(read(file), file).not.toContain("isPrototypeEnabled");
     }
   });
 });

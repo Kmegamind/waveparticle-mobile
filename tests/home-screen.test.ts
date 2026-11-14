@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -9,6 +11,9 @@ vi.mock("@/app/home-actions", () => ({ setGoalStatusAction: async () => ({ statu
 const { ProtectedHome } = await import("@/app/protected-home");
 
 // #268: the Home states of prototype v4, rendered from a HomeView.
+
+const read = (file: string) =>
+  readFileSync(path.join(path.resolve(import.meta.dirname, ".."), file), "utf8");
 
 const GOAL = "4f0a7c2e-8d1b-4c3a-9e2f-1a2b3c4d5e6f";
 const FOCUS = `/focus?goal=${GOAL}`;
@@ -37,10 +42,8 @@ const noneView: HomeView = {
   companions: ["oppenheimer"],
 };
 
-const render = (view: HomeView, continueHref: string | null = FOCUS, enabled = true) =>
-  renderToStaticMarkup(
-    createElement(ProtectedHome, { view, continueHref, sessionPagesEnabled: enabled }),
-  );
+const render = (view: HomeView, continueHref: string | null = FOCUS) =>
+  renderToStaticMarkup(createElement(ProtectedHome, { view, continueHref }));
 
 describe("#268 AC2 HOME-0", () => {
   it("HOME-0 shows one card and nothing else", () => {
@@ -75,10 +78,11 @@ describe("#268 AC3 HOME-1", () => {
     expect(html).not.toContain("focus-slip");
   });
 
-  it("HOME-1 hides the session links when the test-build switch is off", () => {
-    const html = render(goalView, null, false);
-    expect(html).not.toContain(">Continue<");
-    expect(html).not.toContain("Start something else");
+  it("#278 HOME-1 always links Start something else to the goal dialogue", () => {
+    const html = render(goalView);
+    expect(html).toMatch(/href="\/goal"[^>]*>Start something else</);
+    expect(html).toContain(`href="${FOCUS}">Continue<`);
+    expect(read("src/app/protected-home.tsx")).not.toContain("sessionPagesEnabled");
   });
 });
 
@@ -97,9 +101,6 @@ describe("#268 AC5 AC6 HOME-NONE", () => {
     const html = render({ ...noneView, carriedLine: null, replay: [] }, null);
     expect(html).not.toContain("Quick Replay");
     expect(html).not.toContain("focus-slip");
-    const off = render(noneView, null, false);
-    expect(off).not.toContain("New session");
-    expect(off).not.toContain('href="/goal"');
   });
 });
 
@@ -109,5 +110,14 @@ describe("#268 AC1 no counts or sample data", () => {
       expect(html).not.toMatch(/\d+%|\d+ of \d+|days ago|away for|streak|all caught up/i);
       expect(html).not.toMatch(/No Companions yet/i);
     }
+  });
+});
+
+describe("#278 HOME-NONE links always show", () => {
+  it("New session and every Quick Replay chip open the goal dialogue", () => {
+    const html = render(noneView, null);
+    expect(html).toMatch(/href="\/goal"[^>]*>New session</);
+    expect(html).toMatch(/href="\/goal"[^>]*>Read chapter four</);
+    expect(html).toMatch(/href="\/goal"[^>]*>Methods section</);
   });
 });

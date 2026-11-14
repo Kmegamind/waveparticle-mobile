@@ -38,7 +38,7 @@ const view: LifePathView = {
   ],
 };
 
-const html = renderToStaticMarkup(createElement(LifePathList, { view, canBegin: true }));
+const html = renderToStaticMarkup(createElement(LifePathList, { view }));
 const rowOf = (id: string) => {
   const match = html.match(new RegExp(`<li[^>]*data-id="${id}"[^>]*>[\\s\\S]*?</li>`));
   if (!match) throw new Error(`no row ${id}`);
@@ -106,5 +106,12 @@ describe("#272 PERIODS no dates or ages", () => {
   it("shows the period names and no year or age", () => {
     expect(html).toContain("His youth");
     expect(html).not.toMatch(/\b1[89]\d\d\b|\bage\b/i);
+  });
+});
+
+describe("#278 Begin always shows on the current story", () => {
+  it("links Begin to the goal dialogue, with no test-build caption", () => {
+    expect(rowOf("site-search")).toMatch(/href="\/goal"[^>]*>Begin</);
+    expect(html).not.toContain("test builds only");
   });
 });

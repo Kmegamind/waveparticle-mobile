@@ -1,14 +1,7 @@
 import { screenState, type AccountProgress } from "@/lib/progress/account-progress";
 import { ContinueLink, continueHref } from "./continue-link";
 
-export function GoalsProgress({
-  progress,
-  canContinue = false,
-}: {
-  progress: AccountProgress;
-  /** Continue (#69 AC3) exists only while the signed-in focus page does (test builds). */
-  canContinue?: boolean;
-}) {
+export function GoalsProgress({ progress }: { progress: AccountProgress }) {
   if (progress.goals.length === 0) return null;
 
   return (
@@ -17,7 +10,7 @@ export function GoalsProgress({
         <li key={goal.id}>
           {goal.title}
           {(() => {
-            const href = continueHref(goal, canContinue);
+            const href = continueHref(goal);
             return href ? (
               <>
                 {" "}
