@@ -460,6 +460,12 @@ a {
   margin: 0;
 }
 
+.focus-seam-marks {
+  align-items: center;
+  display: flex;
+  gap: var(--space-small-gap);
+}
+
 .focus-clock {
   font-family: var(--type-mono);
   font-size: calc(var(--text-timer-size) * 0.75);

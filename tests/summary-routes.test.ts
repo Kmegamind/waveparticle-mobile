@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { endPathIsHidden } from "@/lib/prototype/config";
+import { accountSessionPathIsHidden } from "@/lib/prototype/config";
 import { isSessionPath } from "@/app/try/session-paths";
 import { showsHeader, showsTabBar } from "@/app/shell-rules";
 
@@ -26,9 +26,9 @@ describe("#258 AC1 the summary is a session page, signed in, in test builds", ()
   });
 
   it("is hidden while the test path is off, like /goal", () => {
-    expect(endPathIsHidden("/end", false)).toBe(true);
-    expect(endPathIsHidden("/end", true)).toBe(false);
-    expect(endPathIsHidden("/ending", false)).toBe(false);
+    expect(accountSessionPathIsHidden("/end", false)).toBe(true);
+    expect(accountSessionPathIsHidden("/end", true)).toBe(false);
+    expect(accountSessionPathIsHidden("/ending", false)).toBe(false);
   });
 
   it("sends a signed-in user from the focus page's /try/end to /end", () => {

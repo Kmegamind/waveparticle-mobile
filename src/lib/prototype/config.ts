@@ -25,7 +25,18 @@ export function goalPathIsHidden(pathname: string, enabled: boolean): boolean {
   return !enabled && isGoalPath(pathname);
 }
 
-/** The signed-in summary (#258) ends a run of the test focus page, so it exists only with it. */
-export function endPathIsHidden(pathname: string, enabled: boolean): boolean {
-  return !enabled && (pathname === "/end" || pathname.startsWith("/end/"));
+/**
+ * The signed-in session pages: the goal dialogue (#32), focus and rest (#257), and the summary
+ * (#258). They exist only
+ * while the test path is on, until the per-account daily cap on model calls (#256) lands.
+ */
+const ACCOUNT_SESSION_PATHS = ["/goal", "/focus", "/rest", "/end"] as const;
+
+export function isAccountSessionPath(pathname: string): boolean {
+  return ACCOUNT_SESSION_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
+
+/** True when the request is for a signed-in session page while the test path is off: 404. */
+export function accountSessionPathIsHidden(pathname: string, enabled: boolean): boolean {
+  return !enabled && isAccountSessionPath(pathname);
 }

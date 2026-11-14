@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { goalPathIsHidden, isGoalPath } from "@/lib/prototype/config";
+import { accountSessionPathIsHidden, goalPathIsHidden, isGoalPath } from "@/lib/prototype/config";
 import { setStepCards, syncSession } from "@/lib/prototype/session";
 import { isSessionPath } from "@/app/try/session-paths";
 
@@ -26,7 +26,9 @@ describe("#32 /goal exists only when the test path is on", () => {
   });
 
   it("the proxy answers 404 for a hidden /goal", () => {
-    expect(read("src/proxy.ts")).toContain("goalPathIsHidden(");
+    // #257: one check now hides /goal, /focus and /rest together.
+    expect(accountSessionPathIsHidden("/goal", false)).toBe(true);
+    expect(read("src/proxy.ts")).toContain("accountSessionPathIsHidden(");
   });
 
   it("is a session page, so it uses the Oppenheimer skin", () => {
