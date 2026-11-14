@@ -21,5 +21,6 @@ export function showsTabBar(pathname: string): boolean {
 
 // The prototype has no app header on the sign-in pages and the safety page.
 export function showsHeader(pathname: string): boolean {
-  return !within(pathname, "/auth") && !within(pathname, "/safety");
+  // The summary (END, #258) is a session page with no header in the prototype.
+  return !within(pathname, "/auth") && !within(pathname, "/safety") && !within(pathname, "/end");
 }

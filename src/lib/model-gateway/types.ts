@@ -1,5 +1,5 @@
 export type GatewayCall =
-  "plan_split" | "step_cards" | "stuck_story" | "rest_reply" | "return_popup";
+  "plan_split" | "step_cards" | "stuck_story" | "rest_reply" | "return_popup" | "closing_line";
 
 export type LineSource = "generated" | "failed";
 
@@ -113,13 +113,31 @@ export type LineResult =
     }
   | GatewayFailure;
 
+/**
+ * The closing call at the end of a run (#258, #41, END-TONE): what happened to him that day and
+ * how he feels, plus one thing he still carries. Built from the story only, never from user text.
+ */
+export type ClosingLineInput = {
+  /** Who he is, the place, the story's goal sentence and the facts of the run. */
+  facts: string;
+  /** The facts of the last moment of the run. */
+  lastMoment: string;
+  forbidTerms?: string[];
+  /** One-way lines already shown in this run, oldest first (per-run list, US-AI-8). */
+  earlierLines?: string[];
+};
+
+export type ClosingLineResult =
+  { source: "generated"; closingLine: string; carryLine: string } | GatewayFailure;
+
 export type ModelGateway = {
   splitPlan(input: PlanSplitInput): Promise<PlanSplitResult>;
   writeStepCards(input: StepCardsInput): Promise<StepCardsResult>;
   writeStuckStory(input: StuckStoryInput): Promise<LineResult>;
   writeRestReply(input: RestReplyInput): Promise<LineResult>;
   writeReturnPopup(input: ReturnPopupInput): Promise<LineResult>;
+  writeClosingLine(input: ClosingLineInput): Promise<ClosingLineResult>;
 };
 
 export type CompanionKind =
-  "step_card" | "background_card" | "stuck_story" | "rest_reply" | "return_popup";
+  "step_card" | "background_card" | "stuck_story" | "rest_reply" | "return_popup" | "closing_line";

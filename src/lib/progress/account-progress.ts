@@ -17,6 +17,8 @@ export type ProgressGoal = {
   title: string;
   text: string;
   status: "planned" | "in_progress" | "on_hold" | "done";
+  /** When the Goal was created, when the database gives it (#258: the newest matching Goal). */
+  createdAt?: string;
   steps: ProgressStep[];
 };
 
