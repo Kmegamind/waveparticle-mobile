@@ -14,7 +14,7 @@ Browser (installed web app, mobile first)
 ## Components
 | Component | Path | Responsibility |
 |---|---|---|
-| Home page | `src/app/page.tsx` | Placeholder page with the product name |
+| Home page | `src/app/page.tsx`, `src/app/protected-home.tsx` | Signed-in Home: the account's Goal titles. In test builds an in-progress Goal has a Continue link (`src/app/continue-link.tsx`, #69 AC3) to `/focus?goal=<id>`, where the return pop-up rule applies before the clock restarts. The same link is on `/goals` |
 | Root layout | `src/app/layout.tsx` | Page shell, install metadata and the phone viewport |
 | Typefaces | `src/app/fonts.ts` | Loads Atkinson Hyperlegible Next and Mono, Bricolage Grotesque and Newsreader with `next/font` (served from this site) and passes them to the `--type-*` tokens |
 | App shell | `src/app/shell.tsx`, `src/app/shell-rules.ts` | Header and tab bar. Where each shows follows prototype version 4 (#240) |

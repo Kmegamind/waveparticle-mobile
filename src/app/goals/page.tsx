@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
+import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { GoalsProgress } from "../progress-view";
 
 export const instant = false;
@@ -21,7 +22,7 @@ async function GoalsContent() {
   return (
     <main className="app-screen">
       <h1>Goals</h1>
-      <GoalsProgress progress={progress} />
+      <GoalsProgress canContinue={isPrototypeEnabled()} progress={progress} />
     </main>
   );
 }
