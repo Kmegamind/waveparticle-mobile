@@ -2527,3 +2527,147 @@ a {
 .goals-sheet-close {
   justify-self: stretch;
 }
+
+/* Goal detail (prototype v4 G4, G4-N, G4-H; issues 78 and 79): the footer stays at the bottom. */
+.goal-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-small-gap);
+  min-height: 100svh;
+  padding-bottom: calc(var(--space-screen-bottom) + env(safe-area-inset-bottom));
+}
+
+.goal-back {
+  align-items: center;
+  align-self: flex-start;
+  color: var(--ink);
+  display: inline-flex;
+  font-size: var(--text-back-size);
+  gap: var(--space-control-gap);
+  min-height: var(--target);
+  text-decoration: none;
+}
+
+.goal-back .goals-group {
+  margin: 0;
+}
+
+.goal-back:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 2px;
+}
+
+.goal-detail-body {
+  display: grid;
+  flex: 1 1 auto;
+  gap: var(--space-small-gap);
+}
+
+.goal-detail-body .goals-group {
+  margin-bottom: 0;
+}
+
+.goal-title {
+  width: 100%;
+}
+
+.goal-status {
+  margin: 0;
+}
+
+.goal-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-small-gap);
+}
+
+.goal-chip {
+  align-items: center;
+  background: var(--raised);
+  border: var(--line-strong) solid var(--edge);
+  border-radius: var(--r-capsule);
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: var(--type-sans);
+  font-size: var(--text-goals-tab-size);
+  font-weight: 500;
+  min-height: var(--target);
+  padding: 0 var(--button-small-padding);
+}
+
+.goal-chip[aria-checked="true"] {
+  background: var(--tag-fill);
+  color: var(--tag-ink);
+  font-weight: 700;
+}
+
+.goal-chip:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 2px;
+}
+
+.goal-steps {
+  display: grid;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.goal-step {
+  align-items: flex-start;
+  background: none;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: var(--space-control-gap);
+  min-height: var(--target);
+  padding: var(--space-small-gap) 0;
+  text-align: left;
+  width: 100%;
+}
+
+.goal-step:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 2px;
+}
+
+.goal-step-mark {
+  flex: none;
+  width: 1rem;
+}
+
+.goal-step-text {
+  display: grid;
+  gap: 2px;
+}
+
+.goal-step-title {
+  font-size: var(--text-goals-step-size);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.goal-see-all {
+  justify-self: start;
+}
+
+.goal-footer {
+  display: grid;
+  gap: var(--space-row-after);
+  padding-top: var(--space-small-gap);
+}
+
+.goal-primary {
+  text-decoration: none;
+  width: 100%;
+}
+
+.goal-footer-links {
+  display: flex;
+  gap: var(--space-screen-bottom);
+  justify-content: center;
+}

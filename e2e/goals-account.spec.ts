@@ -255,3 +255,171 @@ test.describe("the Goals page", () => {
     await expect(page.getByText("Your sessions will show up here.")).toBeVisible();
   });
 });
+
+test.describe("the Goal detail", () => {
+  const detail = (page: Page, baseURL: string, id: string, tables = sampleGoals) =>
+    openGoals(page, baseURL, tables, `/goals/${id}`);
+
+  test("#78 AC1 the detail shows the title, status, Companion, type, Steps and Continue", async ({
+    page,
+    baseURL,
+  }) => {
+    await detail(page, baseURL!, GOAL.methods);
+    await expect(page.getByRole("textbox", { name: "Goal" })).toHaveValue(
+      "Methods section for Friday",
+    );
+    await expect(page.getByText("In progress · with Oppenheimer")).toBeVisible();
+    const type = page.getByRole("radiogroup", { name: "Type" });
+    await expect(type.getByRole("radio", { name: /One-time/ })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    await expect(type.getByRole("radio", { name: /Ongoing/ })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    await expect(page.locator(".goal-steps .goal-step-title")).toHaveText([
+      "Gather what you need",
+      "Rough first pass",
+      "Second pass",
+      "Check and tidy",
+    ]);
+    const go = page.getByRole("link", { name: "Continue", exact: true });
+    await expect(go).toHaveAttribute("href", `/focus?goal=${GOAL.methods}`);
+    await expect(page.getByRole("link", { name: "Back to Goals" })).toHaveAttribute(
+      "href",
+      "/goals",
+    );
+  });
+
+  test("#78 AC2 #39 AC2 each Step shows its title and description; tapping one says how Steps get done", async ({
+    page,
+    baseURL,
+  }) => {
+    await detail(page, baseURL!, GOAL.methods);
+    const first = page.locator(".goal-steps li").first();
+    await expect(first).toContainText(
+      "Collect the notes and sources you will use; watch for anything missing before you start writing.",
+    );
+    await expect(first).toContainText("(done)");
+    await expect(page.locator(".goal-steps li").nth(2)).toContainText("(not done)");
+    await first.getByRole("button").click();
+    await expect(
+      page.getByRole("status").filter({ hasText: "Complete steps in your session." }),
+    ).toBeVisible();
+    for (const word of [/add a step/i, /remove/i, /rename/i]) {
+      await expect(page.getByRole("button", { name: word })).toHaveCount(0);
+    }
+  });
+
+  test("#78 AC3 nothing open: Nothing open right now. and Start", async ({ page, baseURL }) => {
+    await detail(page, baseURL!, GOAL.ielts);
+    await expect(page.getByText("Nothing open right now.")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Start", exact: true })).toHaveAttribute(
+      "href",
+      `/goal?line=${encodeURIComponent("IELTS listening, section 3")}`,
+    );
+  });
+
+  test("#78 AC4 on hold: Resume, and the Steps exactly as they were left", async ({
+    page,
+    baseURL,
+  }) => {
+    const account = await detail(page, baseURL!, GOAL.portfolio);
+    await expect(page.getByText("On hold · with Oppenheimer")).toBeVisible();
+    await expect(page.locator(".goal-steps li").first()).toContainText("(done)");
+    await expect(page.locator(".goal-steps li").nth(1)).toContainText("(not done)");
+    await expect(page.getByRole("button", { name: "Put on hold" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Resume", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Back in progress." })).toBeVisible();
+    await expect.poll(() => sessionState(account, SESSION.portfolio)).toBe("open");
+    await expect(page.getByText("In progress · with Oppenheimer")).toBeVisible();
+  });
+
+  test("#78 AC5 the detail shows no total minutes, Step x of N or last-active date", async ({
+    page,
+    baseURL,
+  }) => {
+    await detail(page, baseURL!, GOAL.methods);
+    const main = page.locator("main");
+    await expect(main).not.toContainText(/Step \d+ of \d+|last active|total/i);
+    await expect(main.locator(".goal-steps")).not.toContainText(/\d+ min/);
+  });
+
+  test("#77 AC4 the type chip saves Ongoing", async ({ page, baseURL }) => {
+    const account = await detail(page, baseURL!, GOAL.methods);
+    await page.getByRole("radio", { name: /Ongoing/ }).click();
+    await expect(page.getByRole("radio", { name: /Ongoing/ })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    await expect
+      .poll(
+        async () =>
+          (await stubTables(account)).goals.find((goal) => goal.id === GOAL.methods)?.kind,
+      )
+      .toBe("ongoing");
+  });
+
+  test("#78 renaming saves on blur; an empty field brings the old title back; crisis words open the safety page", async ({
+    page,
+    baseURL,
+  }) => {
+    const account = await detail(page, baseURL!, GOAL.methods);
+    const title = page.getByRole("textbox", { name: "Goal" });
+    const stored = async () =>
+      (await stubTables(account)).goals.find((goal) => goal.id === GOAL.methods)?.title;
+    await title.fill("Methods, first draft");
+    await title.blur();
+    await expect.poll(stored).toBe("Methods, first draft");
+    await title.fill("   ");
+    await title.blur();
+    await expect(title).toHaveValue("Methods, first draft");
+    await title.fill("I want to kill myself");
+    await title.press("Enter");
+    await expect(page).toHaveURL(/\/safety/);
+    expect(await stored()).toBe("Methods, first draft");
+  });
+
+  test("#79 AC1 AC4 the footer puts on hold and marks done, each with Undo", async ({
+    page,
+    baseURL,
+  }) => {
+    const account = await detail(page, baseURL!, GOAL.methods);
+    await page.getByRole("button", { name: "Put on hold" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Put on hold." })).toBeVisible();
+    await expect.poll(() => goalStatus(account, GOAL.methods)).toBe("on_hold");
+    await expect(page.getByRole("button", { name: "Resume", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect.poll(() => goalStatus(account, GOAL.methods)).toBe("in_progress");
+    await page.getByRole("button", { name: "Mark done" }).click();
+    await expect.poll(() => goalStatus(account, GOAL.methods)).toBe("done");
+    await expect(page.getByRole("button", { name: "Reopen", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Mark done" })).toHaveCount(0);
+  });
+
+  test("#80 recent sessions on the detail, with See all", async ({ page, baseURL }) => {
+    await detail(page, baseURL!, GOAL.lab);
+    await expect(page.locator(".goals-history li")).toHaveCount(1);
+    await expect(page.getByRole("link", { name: "See all" })).toHaveAttribute(
+      "href",
+      "/goals?tab=history",
+    );
+    await page.goto(`/goals/${GOAL.ielts}`);
+    await expect(page.getByText("None yet.")).toBeVisible();
+  });
+
+  test("#78 another account's Goal and a bad id are not found", async ({ page, baseURL }) => {
+    await signIn(page.context(), baseURL!, sampleGoals);
+    // Next 16 streams the shell first, so the not-found page comes with status 200; what matters
+    // is that it is the not-found page and shows nothing of any Goal.
+    for (const path of ["/goals/99999999-9999-4999-8999-999999999999", "/goals/not-a-uuid"]) {
+      await page.goto(path);
+      await expect(
+        page.getByRole("heading", { name: "This page could not be found." }),
+      ).toBeVisible();
+      await expect(page.locator("main")).toHaveCount(0);
+      await expect(page.getByText("Methods section for Friday")).toHaveCount(0);
+    }
+  });
+});
