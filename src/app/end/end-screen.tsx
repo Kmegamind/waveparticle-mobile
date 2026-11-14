@@ -104,10 +104,12 @@ function EndBody({
             <span aria-hidden="true" className="focus-tape" />
             <p>{view.shown.closingLine}</p>
           </figure>
-          <figure className="focus-slip end-slip end-carry" data-testid="carry-line">
-            <span aria-hidden="true" className="focus-tape" />
-            <p>{view.shown.carryLine}</p>
-          </figure>
+          {view.shown.carryLine ? (
+            <figure className="focus-slip end-slip end-carry" data-testid="carry-line">
+              <span aria-hidden="true" className="focus-tape" />
+              <p>{view.shown.carryLine}</p>
+            </figure>
+          ) : null}
         </>
       ) : null}
       {view.kind === "waiting" ? (

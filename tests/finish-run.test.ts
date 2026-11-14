@@ -12,6 +12,7 @@ import {
   finishRun,
   normaliseFinishInput,
 } from "@/lib/summary/finish-run";
+import { createMemoryRunWriter } from "@/lib/summary/run-writer";
 
 // Issue #258: a finished run is saved on the account with its live closing line.
 
@@ -120,6 +121,7 @@ describe("#258 AC4 AC5 AC6 finishing a run", () => {
   const deps = (store: Awaited<ReturnType<typeof storeWith>>, gateway: ModelGateway | null) => ({
     userId: USER,
     store,
+    writer: createMemoryRunWriter(store, USER),
     gateway,
     nowIso: NOW,
   });

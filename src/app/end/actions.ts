@@ -4,6 +4,7 @@ import { createServerModelGateway } from "@/lib/model-gateway/server";
 import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
 import { finishRun, type FinishOutcome } from "@/lib/summary/finish-run";
+import { createSupabaseRunWriter } from "@/lib/summary/run-writer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 
@@ -19,6 +20,7 @@ export async function finishRunAction(input: unknown): Promise<FinishOutcome> {
     return await finishRun(input, {
       userId: user?.id ?? null,
       store: createSupabaseProgressStore(client),
+      writer: createSupabaseRunWriter(client),
       gateway: createServerModelGateway(),
       nowIso: new Date().toISOString(),
     });

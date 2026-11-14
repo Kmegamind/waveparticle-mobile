@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { oppenheimerStories } from "@/content/oppenheimer";
 import { LIMITS } from "@/lib/goals/start-goal";
 import type { ClosingLineInput, ModelGateway } from "@/lib/model-gateway";
@@ -6,10 +7,12 @@ import type {
   ProgressGoal,
   ProgressSession,
   ProgressStore,
+  SessionStep,
 } from "@/lib/progress/account-progress";
 import { STORY_IDS, generationInputs, isStoryId } from "@/lib/prototype/story-inputs";
 import { startStory } from "@/lib/story/start";
 import type { FinishShown } from "./run";
+import { RUN_COMPANION_ID, type RunWriter } from "./run-writer";
 
 /**
  * Finishing a signed-in run (issue #258). The run itself happened in the browser (the test focus
@@ -18,7 +21,7 @@ import type { FinishShown } from "./run";
  * the user wrote reaches the model.
  */
 
-export const COMPANION_ID = "oppenheimer";
+export const COMPANION_ID = RUN_COMPANION_ID;
 
 type PlanStepInput = { title: string; description: string; minutes: number };
 
@@ -112,7 +115,11 @@ export function findGoalForPlan(
     const saved = [...goal.steps].sort((left, right) => left.position - right.position);
     return saved.length === steps.length && saved.every((step, i) => sameStep(step, steps[i]));
   });
-  return matches.at(-1) ?? null;
+  // The newest Goal wins: by creation time when the database gives it, otherwise the read order.
+  const newest = [...matches].sort((left, right) =>
+    (left.createdAt ?? "").localeCompare(right.createdAt ?? ""),
+  );
+  return newest.at(-1) ?? null;
 }
 
 function storyRecord(storyId: string) {
@@ -167,35 +174,76 @@ export function nextStoryAfter(before: AccountProgress, storyId: string): string
   return index >= 0 && index + 1 < STORY_IDS.length ? STORY_IDS[index + 1] : null;
 }
 
-function shownFrom(session: ProgressSession, next: string | null): FinishShown | null {
-  const carry = session.lines.find((line) => line.kind === "closing")?.text;
-  if (!session.closingLine || !carry) return null;
-  return { closingLine: session.closingLine, carryLine: carry, next };
+const WAIT_FOR_OTHER_TAB_MS = 200;
+const WAIT_FOR_OTHER_TAB_TRIES = 10;
+
+/** Fixed ids for one run's rows, so a retry writes the same rows again (ignored as duplicates). */
+function rowId(runId: string, part: string): string {
+  const hex = createHash("sha256").update(`${runId}:${part}`).digest("hex");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-a${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
 }
 
-export async function finishRun(
-  raw: unknown,
-  deps: {
-    userId: string | null;
-    store: ProgressStore;
-    gateway: ModelGateway | null;
-    nowIso: string;
-  },
+type Deps = {
+  userId: string | null;
+  store: ProgressStore;
+  writer: RunWriter;
+  gateway: ModelGateway | null;
+  nowIso: string;
+  wait?: (ms: number) => Promise<void>;
+};
+
+function stepRows(runId: string, goal: ProgressGoal, nowIso: string): SessionStep[] {
+  return [...goal.steps]
+    .sort((left, right) => left.position - right.position)
+    .map((step) => ({
+      id: rowId(runId, `step-${step.position}`),
+      stepId: step.id,
+      position: step.position,
+      openedAt: null,
+      doneAt: nowIso,
+    }));
+}
+
+/**
+ * A run that is already saved: finish what a failed write left undone (its Steps and the Goal's
+ * Done, both safe to write again) and show the lines that were saved. Nothing is generated again.
+ */
+async function showSaved(
+  saved: ProgressSession,
+  progress: AccountProgress,
+  deps: Deps,
 ): Promise<FinishOutcome> {
+  const goal = progress.goals.find((item) => item.id === saved.goalId);
+  try {
+    if (goal) {
+      await deps.writer.insertSteps(saved.id, stepRows(saved.id, goal, deps.nowIso));
+      if (goal.status !== "done") await deps.writer.markGoalDone(goal.id);
+    }
+  } catch {
+    return { status: "failed" };
+  }
+  const others = { ...progress, sessions: progress.sessions.filter((item) => item !== saved) };
+  return {
+    status: "ok",
+    shown: {
+      closingLine: saved.closingLine ?? "",
+      // Empty only when the write of the carried line failed; END then shows the closing line alone.
+      carryLine: saved.lines.find((line) => line.kind === "closing")?.text ?? "",
+      next: nextStoryAfter(others, saved.storyId),
+    },
+  };
+}
+
+export async function finishRun(raw: unknown, deps: Deps): Promise<FinishOutcome> {
   if (!deps.userId) return { status: "signed-out" };
+  const userId = deps.userId;
   const input = normaliseFinishInput(raw);
   if (!input) return { status: "invalid" };
-  const progress = await deps.store.read(deps.userId, deps.userId);
+  const progress = await deps.store.read(userId, userId);
 
-  // A reload or a second tab: this run is already saved, so its lines come back unchanged.
-  const saved = progress.sessions.find(
-    (session) => session.id === input.runId && session.state === "completed",
-  );
-  if (saved) {
-    const others = { ...progress, sessions: progress.sessions.filter((s) => s.id !== saved.id) };
-    const shown = shownFrom(saved, nextStoryAfter(others, saved.storyId));
-    return shown ? { status: "ok", shown } : { status: "failed" };
-  }
+  // A reload or a retry: this run is already saved, so its lines come back unchanged.
+  const saved = progress.sessions.find((session) => session.id === input.runId);
+  if (saved) return showSaved(saved, progress, deps);
 
   const goal = findGoalForPlan(progress, input.steps);
   if (!goal) return { status: "no-goal" };
@@ -210,49 +258,54 @@ export async function finishRun(
   );
   if (result.source !== "generated") return { status: "failed" };
 
-  const next = nextStoryAfter(progress, input.storyId);
-  const steps = [...goal.steps].sort((left, right) => left.position - right.position);
-  const session: ProgressSession = {
-    id: input.runId,
-    goalId: goal.id,
-    companionId: COMPANION_ID,
-    storyId: input.storyId,
-    state: "completed",
-    backgroundCard: null,
-    backgroundCardSource: null,
-    // The merged key moments list on END is not built yet (#52 AC4).
-    mergedKeyMoments: [],
-    closingLine: result.closingLine,
-    steps: steps.map((step) => ({
-      id: crypto.randomUUID(),
-      stepId: step.id,
-      position: step.position,
-      openedAt: null,
-      doneAt: deps.nowIso,
-    })),
-    lines: [
-      {
-        id: crypto.randomUUID(),
-        sessionStepId: null,
-        seq: 0,
-        kind: "closing",
-        cardId: null,
-        source: "generated",
-        text: result.carryLine,
-        pauseNumber: null,
-        shownAt: deps.nowIso,
-      },
-    ],
-  };
-  await deps.store.write(deps.userId, {
-    ...progress,
-    goals: progress.goals.map((item) =>
-      item.id === goal.id ? { ...item, status: "done" as const } : item,
-    ),
-    sessions: [...progress.sessions, session],
-  });
+  try {
+    const claim = await deps.writer.insertSession({
+      id: input.runId,
+      userId,
+      goalId: goal.id,
+      storyId: input.storyId,
+      closingLine: result.closingLine,
+      stepCount: goal.steps.length,
+      completedAt: deps.nowIso,
+    });
+    if (claim === "exists") return await waitForOtherTab(input.runId, deps);
+    await deps.writer.insertClosingLine(input.runId, {
+      id: rowId(input.runId, "closing"),
+      sessionStepId: null,
+      seq: 0,
+      kind: "closing",
+      cardId: null,
+      source: "generated",
+      text: result.carryLine,
+      pauseNumber: null,
+      shownAt: deps.nowIso,
+    });
+    await deps.writer.insertSteps(input.runId, stepRows(input.runId, goal, deps.nowIso));
+    await deps.writer.markGoalDone(goal.id);
+  } catch {
+    return { status: "failed" };
+  }
   return {
     status: "ok",
-    shown: { closingLine: result.closingLine, carryLine: result.carryLine, next },
+    shown: {
+      closingLine: result.closingLine,
+      carryLine: result.carryLine,
+      next: nextStoryAfter(progress, input.storyId),
+    },
   };
+}
+
+/** Another tab saved this run first: show its lines once its carried line is written. */
+async function waitForOtherTab(runId: string, deps: Deps): Promise<FinishOutcome> {
+  const wait = deps.wait ?? ((ms: number) => new Promise<void>((done) => setTimeout(done, ms)));
+  const userId = deps.userId as string;
+  for (let attempt = 0; attempt < WAIT_FOR_OTHER_TAB_TRIES; attempt += 1) {
+    const progress = await deps.store.read(userId, userId);
+    const saved = progress.sessions.find((session) => session.id === runId);
+    if (saved && saved.lines.some((line) => line.kind === "closing")) {
+      return showSaved(saved, progress, deps);
+    }
+    await wait(WAIT_FOR_OTHER_TAB_MS);
+  }
+  return { status: "failed" };
 }
