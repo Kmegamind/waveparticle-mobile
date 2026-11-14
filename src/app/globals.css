@@ -2699,3 +2699,341 @@ a {
 .me-history .me-segmented {
   justify-self: start;
 }
+
+/*
+ * The Goals area of prototype v4 (issues 73, 77, 78, 79, 80): the header with New goal, the search
+ * field, four tabs, Goal rows, the history list, and the Goal detail.
+ */
+.goals-page {
+  align-content: start;
+  display: grid;
+  gap: var(--space-small-gap);
+  padding-bottom: var(--space-screen-bottom);
+}
+
+.goals-head {
+  align-items: center;
+  display: flex;
+  gap: var(--space-control-gap);
+  justify-content: space-between;
+}
+
+.goals-search {
+  background: var(--raised);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-field);
+  color: var(--ink);
+  font-family: var(--type-sans);
+  font-size: var(--text-body-size);
+  min-height: var(--target);
+  padding: 0 var(--button-small-padding);
+  width: 100%;
+}
+
+.goals-search::placeholder {
+  color: var(--faint);
+}
+
+.goals-search:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 3px;
+}
+
+.goals-tabs {
+  border-bottom: 1px solid var(--hairline);
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+}
+
+.goals-tabs [role="tab"] {
+  background: none;
+  border: 0;
+  border-bottom: var(--goals-tab-line) solid transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  font-family: var(--type-sans);
+  font-size: var(--text-goals-tab-size);
+  font-weight: 500;
+  min-height: var(--target);
+  padding: 0 var(--space-control-gap);
+  white-space: nowrap;
+}
+
+.goals-tabs [role="tab"][aria-selected="true"] {
+  border-bottom-color: var(--ink);
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.goals-tabs [role="tab"]:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: -3px;
+}
+
+.goals-panel {
+  display: grid;
+}
+
+.goals-group {
+  color: var(--ink-2);
+  font-family: var(--type-shell);
+  font-size: var(--text-overline-size);
+  font-weight: 700;
+  letter-spacing: var(--overline-tracking);
+  margin: var(--space-control-gap) 0 var(--space-row-after);
+  text-transform: uppercase;
+}
+
+.goals-row {
+  align-items: center;
+  border-bottom: 1px solid var(--hairline);
+  display: flex;
+  gap: var(--space-small-gap);
+  min-height: var(--goals-row-height);
+}
+
+.goals-row-open {
+  align-items: center;
+  color: var(--ink);
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--space-control-gap);
+  min-width: 0;
+  padding: 6px 0;
+  text-decoration: none;
+}
+
+.goals-row-open:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 2px;
+}
+
+.goals-row-text {
+  display: grid;
+  min-width: 0;
+}
+
+.goals-row-title {
+  font-size: var(--text-goals-row-size);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.goals-row-text small {
+  color: var(--faint);
+  font-size: var(--text-goals-sub-size);
+  line-height: 1.3;
+}
+
+.goals-action {
+  flex: none;
+  text-decoration: none;
+}
+
+.goals-more {
+  justify-self: start;
+}
+
+.goals-empty {
+  color: var(--ink-2);
+  font-size: var(--text-caption-size);
+  margin: var(--space-screen-bottom) 2px;
+}
+
+.goals-caption {
+  color: var(--ink-2);
+  font-size: var(--text-caption-size);
+  line-height: 1.4;
+}
+
+.goals-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.goals-history li {
+  align-items: center;
+  border-bottom: 1px solid var(--hairline);
+  display: flex;
+  font-size: var(--text-goals-history-size);
+  gap: var(--space-control-gap);
+  justify-content: space-between;
+  line-height: 1.3;
+  min-height: var(--target);
+  padding: var(--space-control-gap) 0;
+}
+
+.goals-history-main {
+  display: grid;
+  min-width: 0;
+}
+
+.goals-history-title {
+  font-weight: 700;
+}
+
+.goals-sheet-head {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.goals-new {
+  display: grid;
+  gap: var(--space-small-gap);
+}
+
+.goals-sheet-close {
+  justify-self: stretch;
+}
+
+/* Goal detail (prototype v4 G4, G4-N, G4-H; issues 78 and 79): the footer stays at the bottom. */
+.goal-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-small-gap);
+  min-height: calc(100svh - var(--target) - var(--space-small-gap) * 2);
+  padding-bottom: 0;
+}
+
+.goal-back {
+  align-items: center;
+  align-self: flex-start;
+  color: var(--ink);
+  display: inline-flex;
+  font-size: var(--text-back-size);
+  gap: var(--space-control-gap);
+  min-height: var(--target);
+  text-decoration: none;
+}
+
+.goal-back .goals-group {
+  margin: 0;
+}
+
+.goal-back:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 2px;
+}
+
+.goal-detail-body {
+  align-content: start;
+  display: grid;
+  flex: 1 1 auto;
+  gap: var(--space-small-gap);
+}
+
+.goal-detail-body .goals-group {
+  margin-bottom: 0;
+}
+
+.goal-title {
+  width: 100%;
+}
+
+.goal-status {
+  margin: 0;
+}
+
+.goal-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-small-gap);
+}
+
+.goal-chip {
+  align-items: center;
+  background: var(--raised);
+  border: var(--line-strong) solid var(--edge);
+  border-radius: var(--r-capsule);
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: var(--type-sans);
+  font-size: var(--text-goals-tab-size);
+  font-weight: 500;
+  min-height: var(--target);
+  padding: 0 var(--button-small-padding);
+}
+
+.goal-chip[aria-checked="true"] {
+  background: var(--tag-fill);
+  color: var(--tag-ink);
+  font-weight: 700;
+}
+
+.goal-chip:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 2px;
+}
+
+.goal-steps {
+  display: grid;
+  gap: 2px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.goal-step {
+  align-items: flex-start;
+  background: none;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: var(--space-control-gap);
+  min-height: var(--target);
+  padding: var(--space-small-gap) 0;
+  text-align: left;
+  width: 100%;
+}
+
+.goal-step:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 2px;
+}
+
+.goal-step-mark {
+  flex: none;
+  width: 1rem;
+}
+
+.goal-step-text {
+  display: grid;
+  gap: 2px;
+}
+
+.goal-step-title {
+  font-size: var(--text-goals-step-size);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.goal-see-all {
+  justify-self: start;
+}
+
+/* The footer stays on screen while the Steps scroll under it (prototype .scr bottom block). */
+.goal-footer {
+  background: var(--bg);
+  bottom: 0;
+  display: grid;
+  gap: var(--space-row-after);
+  padding: var(--space-small-gap) 0 calc(var(--space-screen-bottom) + env(safe-area-inset-bottom));
+  position: sticky;
+}
+
+.goal-primary {
+  text-decoration: none;
+  width: 100%;
+}
+
+.goal-footer-links {
+  display: flex;
+  gap: var(--space-screen-bottom);
+  justify-content: center;
+}

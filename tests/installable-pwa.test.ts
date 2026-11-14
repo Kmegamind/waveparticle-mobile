@@ -57,7 +57,8 @@ describe("US-PLAT-1 installable web app that fits a phone", () => {
     const screens = [
       "src/app/protected-home.tsx",
       "src/app/companions/page.tsx",
-      "src/app/goals/page.tsx",
+      // #73: the Goals page is drawn by its client screen, as Home is by protected-home.tsx.
+      "src/app/goals/goals-screen.tsx",
       "src/app/me/page.tsx",
       "src/app/auth/auth-form.tsx",
     ];

@@ -1,28 +1,30 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { readGoalsData } from "@/lib/goals/goals-reader";
+import { parseTab } from "@/lib/goals/goals-view";
+import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
-import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
-import { isPrototypeEnabled } from "@/lib/prototype/config";
-import { GoalsProgress } from "../progress-view";
+import { GoalsScreen } from "./goals-screen";
 
 export const instant = false;
 
-export default function Goals() {
-  return <GoalsContent />;
+/** Goals (#73, #77, #79, #80): read once from the account, drawn by the client screen. */
+export default function Goals(props: PageProps<"/goals">) {
+  return <GoalsContent {...props} />;
 }
 
-async function GoalsContent() {
+async function GoalsContent({ searchParams }: PageProps<"/goals">) {
   await connection();
   const client = await createSupabaseServerClient();
   const user = await getCurrentUser(client);
   if (!user) redirect("/auth/sign-in");
-  const progress = await createSupabaseProgressStore(client).read(user.id, user.id);
-
+  const [data, params] = await Promise.all([readGoalsData(client, user.id), searchParams]);
   return (
-    <main className="app-screen">
-      <h1>Goals</h1>
-      <GoalsProgress canContinue={isPrototypeEnabled()} progress={progress} />
-    </main>
+    <GoalsScreen
+      data={data}
+      initialTab={parseTab(params.tab)}
+      sessionPagesEnabled={isPrototypeEnabled()}
+    />
   );
 }
