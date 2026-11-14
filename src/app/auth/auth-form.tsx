@@ -7,12 +7,29 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type AuthMode = "sign-in" | "sign-up" | "forgot-password" | "update-password";
 
-const copy: Record<AuthMode, { title: string; submit: string }> = {
-  "sign-in": { title: "Sign in", submit: "Sign in" },
-  "sign-up": { title: "Create an account", submit: "Create account" },
-  "forgot-password": { title: "Reset your password", submit: "Send reset email" },
-  "update-password": { title: "Choose a new password", submit: "Update password" },
+// Wording of prototype v4 (#262, #229 to #232). The actions behind each button are unchanged.
+const copy: Record<AuthMode, { title: string; submit: string; lead?: string; password: string }> = {
+  "sign-in": {
+    title: "Sign in",
+    submit: "Sign in",
+    lead: "An account keeps your Goals and Steps on every device.",
+    password: "Password",
+  },
+  "sign-up": { title: "Create an account", submit: "Create account", password: "Password" },
+  "forgot-password": {
+    title: "Forgot your password",
+    submit: "Send link",
+    lead: "Enter your email. We will send a link to choose a new password.",
+    password: "Password",
+  },
+  "update-password": {
+    title: "Choose a new password",
+    submit: "Save password",
+    password: "New password",
+  },
 };
+
+const hasBackRow = (mode: AuthMode) => mode === "sign-up" || mode === "forgot-password";
 
 export function AuthForm({ mode, notice = "" }: { mode: AuthMode; notice?: string }) {
   const router = useRouter();
@@ -62,40 +79,66 @@ export function AuthForm({ mode, notice = "" }: { mode: AuthMode; notice?: strin
 
   return (
     <main className="auth-page">
-      <h1>{copy[mode].title}</h1>
-      <form onSubmit={submit}>
-        {mode !== "update-password" && (
-          <label>
-            Email
-            <input
-              autoComplete="email"
-              onChange={(event) => setEmail(event.target.value)}
-              required
-              type="email"
-              value={email}
-            />
-          </label>
-        )}
-        {mode !== "forgot-password" && (
-          <label>
-            Password
-            <input
-              autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
-              minLength={8}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              type="password"
-              value={password}
-            />
-          </label>
-        )}
-        <button className="button-filled" disabled={pending} type="submit">
-          {copy[mode].submit}
-        </button>
-      </form>
-      {message && <p role="status">{message}</p>}
-      {error && <p role="alert">{error}</p>}
-      <AuthLinks mode={mode} />
+      <div className="auth-body">
+        {hasBackRow(mode) ? (
+          <div className="auth-back">
+            <Link aria-label="Back to Sign in" className="auth-back-link" href="/auth/sign-in">
+              <span aria-hidden="true">‹</span>
+            </Link>
+            <span aria-hidden="true" className="auth-back-label">
+              Sign in
+            </span>
+          </div>
+        ) : null}
+        <h1>
+          {mode === "update-password" ? (
+            // The prototype breaks this title after "a".
+            <>
+              Choose a <span className="auth-title-line">new password</span>
+            </>
+          ) : (
+            copy[mode].title
+          )}
+        </h1>
+        {copy[mode].lead ? (
+          <p className={mode === "forgot-password" ? "auth-lead auth-lead-spaced" : "auth-lead"}>
+            {copy[mode].lead}
+          </p>
+        ) : null}
+        <form onSubmit={submit}>
+          {mode !== "update-password" && (
+            <label>
+              Email
+              <input
+                autoComplete="email"
+                onChange={(event) => setEmail(event.target.value)}
+                required
+                type="email"
+                value={email}
+              />
+            </label>
+          )}
+          {mode !== "forgot-password" && (
+            <label>
+              {copy[mode].password}
+              <input
+                autoComplete={mode === "sign-in" ? "current-password" : "new-password"}
+                minLength={8}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                type="password"
+                value={password}
+              />
+            </label>
+          )}
+          <button className="button-filled" disabled={pending} type="submit">
+            {copy[mode].submit}
+          </button>
+        </form>
+        {message && <p role="status">{message}</p>}
+        {error && <p role="alert">{error}</p>}
+        <AuthLinks mode={mode} />
+      </div>
     </main>
   );
 }
@@ -103,17 +146,25 @@ export function AuthForm({ mode, notice = "" }: { mode: AuthMode; notice?: strin
 function AuthLinks({ mode }: { mode: AuthMode }) {
   if (mode === "sign-in") {
     return (
-      <p>
-        <Link href="/auth/sign-up">Create an account</Link>
-        {" · "}
-        <Link href="/auth/forgot-password">Reset your password</Link>
-      </p>
+      <div className="auth-links">
+        <p>
+          <Link href="/auth/forgot-password">Forgot your password?</Link>
+        </p>
+        <p>
+          <span className="auth-caption">New here?</span>{" "}
+          <Link href="/auth/sign-up">Create an account</Link>
+        </p>
+        <p>
+          <Link href="/privacy">Privacy notice</Link>
+        </p>
+      </div>
     );
   }
-  if (mode === "sign-up" || mode === "forgot-password") {
+  if (mode === "sign-up") {
     return (
-      <p>
-        <Link href="/auth/sign-in">Sign in</Link>
+      <p className="auth-privacy">
+        What is stored and what is sent to the language model:{" "}
+        <Link href="/privacy">Privacy notice</Link>
       </p>
     );
   }

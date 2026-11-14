@@ -275,7 +275,7 @@ test("a crisis goal opens the safety page and is not kept", async ({ page }) => 
   await sendGoal(page, "I want to kill myself");
   await expect(page.getByRole("heading", { name: "This is outside the story." })).toBeVisible();
   await expect(page.getByText("I want to kill myself")).toHaveCount(0);
-  await page.getByRole("button", { name: "Back to my Step" }).click();
+  await page.getByRole("button", { name: "Back to my Goal" }).click();
   await expect(page.getByLabel("Your goal")).toHaveValue("");
 });
 

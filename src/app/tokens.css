@@ -76,6 +76,15 @@
   --space-screen-bottom: 1rem;
   --space-control-gap: 0.625rem;
   --space-small-gap: 0.5rem;
+  /* Account screens and the Safety card, measured in prototype v4 (#262). */
+  --space-title-after: 0.375rem;
+  --space-button-before: 0.875rem;
+  --space-row-after: 0.25rem;
+  --space-link-rows: 0.125rem;
+  --space-card-pad: 1.25rem;
+  --text-back-size: 1.375rem;
+  --text-card-title-size: 1.5625rem;
+  --text-note-size: 0.9375rem;
   --target: 2.75rem;
   --logo-width: 3.375rem;
   --logo-height: 1.25rem;

@@ -43,7 +43,7 @@ test("a crisis message opens the system page and back clears the field", async (
     ),
   ).toBeVisible();
 
-  const back = crisis.getByRole("button", { name: "Back to my Step" });
+  const back = crisis.getByRole("button", { name: "Back to my Goal" });
   await expect(back).toHaveClass(/button-tinted/);
   const backBox = await back.boundingBox();
   expect(backBox?.height).toBeGreaterThanOrEqual(44);
