@@ -114,3 +114,35 @@ describe("#258 AC10 a new signed-in run plays the current story", () => {
     ).toBe("fermi-award");
   });
 });
+
+describe("#272 AC4 (#97 AC2) memory rows before the account's starting point", () => {
+  it("marks the stories before a later start as his memory, never playable", () => {
+    const view = lifePath(account([]), "site-search");
+    const all = rows(view);
+    const index = all.findIndex((row) => row.id === "site-search");
+    expect(all.slice(0, index).every((row) => row.state === "memory")).toBe(true);
+    expect(all[0]).toEqual({
+      id: "bohr-difficulties",
+      title: "The Trade of a Theorist",
+      state: "memory",
+      line: storyProfile("bohr-difficulties").goalShort,
+    });
+    expect(view.currentId).toBe("site-search");
+    expect(all[index].state).toBe("current");
+  });
+
+  it("keeps a finished story finished even before the start", () => {
+    const view = lifePath(
+      account([session("tolman-lecture", "completed", "I taught it whole.")]),
+      "site-search",
+    );
+    expect(rows(view).find((row) => row.id === "tolman-lecture")).toMatchObject({
+      state: "finished",
+      line: "I taught it whole.",
+    });
+  });
+
+  it("has no memory rows for the default start, chapter 1 (M1)", () => {
+    expect(rows(lifePath(account([]))).some((row) => row.state === "memory")).toBe(false);
+  });
+});

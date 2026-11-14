@@ -46,7 +46,10 @@ describe("#258 AC7 AC8 the Life Path", () => {
   });
 
   it("Begin opens the goal dialogue", () => {
-    expect(read("src/app/companions/oppenheimer/page.tsx")).toMatch(/href="\/goal"[^>]*>\s*Begin/);
+    // #272: the rows moved into the list component.
+    expect(read("src/app/companions/oppenheimer/life-path-list.tsx")).toMatch(
+      /href="\/goal"[^>]*>\s*Begin/,
+    );
   });
 });
 
@@ -56,6 +59,7 @@ describe("#258 AC4 no stored line on the new pages", () => {
     "src/app/end/actions.ts",
     "src/app/end/page.tsx",
     "src/app/companions/oppenheimer/page.tsx",
+    "src/app/companions/oppenheimer/life-path-list.tsx",
   ])("%s reads no stored card and no fixed story", (file) => {
     const source = read(file);
     expect(source).not.toMatch(/authoredCards|generated\.json|stage0\.json|loadTestStory/);
