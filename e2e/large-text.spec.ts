@@ -135,6 +135,7 @@ test("#100 AC2 on the focus page with large text Done and Pause stack", async ({
   await page.setViewportSize(NARROW);
   await seedPlan(page, twoSteps);
   await page.goto("/try/focus");
+  await expect(page.getByTestId("story-card")).toBeVisible();
   await largeText(page);
   const done = await page.getByRole("button", { name: "Done" }).boundingBox();
   const pause = await page.getByRole("button", { name: "Pause" }).boundingBox();
@@ -147,6 +148,7 @@ test("#100 AC2 at normal size Done and Pause sit side by side at about 62 to 38"
   await page.setViewportSize(NARROW);
   await seedPlan(page, twoSteps);
   await page.goto("/try/focus");
+  await expect(page.getByTestId("story-card")).toBeVisible();
   const done = await page.getByRole("button", { name: "Done" }).boundingBox();
   const pause = await page.getByRole("button", { name: "Pause" }).boundingBox();
   expect(Math.abs(done!.y - pause!.y)).toBeLessThan(1);
@@ -159,6 +161,7 @@ test("finding: the Step ticks wrap with 15 Steps", async ({ page }) => {
   await page.setViewportSize(NARROW);
   await seedPlan(page, fifteenSteps);
   await page.goto("/try/focus");
+  await expect(page.locator(".focus-mark")).toHaveCount(15);
   for (const scale of ["100%", "200%"]) {
     if (scale === "200%") await largeText(page);
     const rights = await page
@@ -175,6 +178,7 @@ test("finding: on a short landscape screen at 200% his card, Done and Pause can 
   await page.setViewportSize({ width: 640, height: 320 });
   await seedPlan(page, twoSteps);
   await page.goto("/try/focus?speed=60");
+  await expect(page.getByTestId("story-card")).toBeVisible();
   await largeText(page);
   expect(await overflowReport(page)).toEqual([]);
   const targets = [
