@@ -23,6 +23,7 @@ async function GoalContent({ searchParams }: PageProps<"/goal">) {
   return (
     <GoalDialogue
       focusPath="/focus"
+      home={{ href: "/", label: "Back to Home" }}
       initialDraft={parseLine(line)}
       split={splitGoalForAccountAction}
       start={startGoalAction}
