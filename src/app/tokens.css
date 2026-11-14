@@ -122,6 +122,14 @@
   --r-sys: 1.125rem;
   --line-strong: 1.5px;
   --avatar-size: 2.5rem;
+  /* The Goals area of prototype v4 (#73): tabs, rows, chips and the history list. */
+  --goals-row-height: 4rem;
+  --text-goals-tab-size: 0.875rem;
+  --text-goals-row-size: 1rem;
+  --text-goals-sub-size: 0.8125rem;
+  --text-goals-history-size: 0.9375rem;
+  --text-goals-step-size: 0.96875rem;
+  --goals-tab-line: 2px;
   --avatar-large: 3rem;
   --avatar-zoom: 118%;
   --send-size: 3.25rem;

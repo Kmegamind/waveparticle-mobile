@@ -14,7 +14,8 @@ describe("app shell", () => {
       [
         "src/app/page.tsx",
         "src/app/companions/page.tsx",
-        "src/app/goals/page.tsx",
+        // #73: the Goals page is drawn by its client screen, as Home is by protected-home.tsx.
+        "src/app/goals/goals-screen.tsx",
         "src/app/me/page.tsx",
       ].map(readWorkspaceFile),
     );
