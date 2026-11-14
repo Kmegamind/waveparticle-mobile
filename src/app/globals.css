@@ -2338,3 +2338,364 @@ a {
 .home-page a.button-filled {
   text-decoration: none;
 }
+
+/* Me (issue 81), prototype v4 ME, ME-CAL, SIG and ME-REC. */
+.me-page {
+  align-content: start;
+  display: grid;
+  gap: var(--space-control-gap);
+  padding-bottom: var(--space-screen-bottom);
+}
+
+.me-account {
+  align-items: center;
+  border-bottom: 1px solid var(--hairline);
+  display: flex;
+  gap: var(--space-screen-bottom);
+  padding-bottom: var(--space-screen-bottom);
+}
+
+.me-avatar {
+  align-items: center;
+  background: var(--tag-fill);
+  border: 1px solid var(--tag-edge);
+  border-radius: 50%;
+  color: var(--tag-ink);
+  display: inline-flex;
+  flex: none;
+  font-weight: 800;
+  height: 4rem;
+  justify-content: center;
+  width: 4rem;
+}
+
+.me-account-text,
+.me-name-edit {
+  display: grid;
+  gap: var(--space-row-after);
+  min-width: 0;
+}
+
+.me-account-text p,
+.me-name p {
+  margin: 0;
+}
+
+.me-name-show {
+  align-items: center;
+  display: flex;
+  gap: var(--space-small-gap);
+}
+
+.me-name-text,
+.me-current-title {
+  font-size: var(--text-body-size);
+  font-weight: 800;
+}
+
+.me-email,
+.me-since,
+.me-current-companion,
+.me-quiet {
+  color: var(--ink-2);
+  font-size: var(--text-link-size);
+  margin: 0;
+}
+
+.me-text-button,
+.me-signout button {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--type-sans);
+  font-size: var(--text-link-size);
+  font-weight: 700;
+  min-height: var(--target);
+  padding: 0 var(--space-small-gap);
+  text-decoration: underline;
+}
+
+.me-signout button {
+  justify-content: flex-start;
+}
+
+.me-text-button:focus-visible,
+.me-signout button:focus-visible,
+.me-row-button:focus-visible,
+.me-segment:focus-visible,
+.me-toggle:focus-visible,
+.me-day:focus-visible,
+.me-row-link:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 2px;
+}
+
+.me-field {
+  background: var(--raised);
+  border: 0;
+  border-radius: var(--r-field);
+  box-shadow: inset 0 0 0 1px var(--edge);
+  color: var(--ink);
+  font: inherit;
+  min-height: var(--target);
+  padding: 0 var(--space-screen-bottom);
+}
+
+.me-name-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-control-gap);
+}
+
+.me-current {
+  margin: var(--space-small-gap) 0;
+}
+
+.me-row {
+  border-bottom: 1px solid var(--hairline);
+  color: var(--ink);
+  min-height: var(--target);
+}
+
+.me-setting {
+  align-items: center;
+  display: flex;
+  font-size: var(--text-body-size);
+  justify-content: space-between;
+  padding: var(--space-small-gap) 0;
+}
+
+.me-row-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: var(--text-body-size);
+  justify-content: space-between;
+  min-height: calc(var(--target) + var(--space-screen-bottom));
+  padding: 0 var(--space-small-gap);
+  text-decoration: none;
+  width: 100%;
+}
+
+.me-caret {
+  color: var(--ink);
+  font-size: var(--text-caption-size);
+}
+
+.me-disclosure-body {
+  padding-bottom: var(--space-screen-bottom);
+}
+
+.me-hold-list,
+.me-rows,
+.me-list {
+  display: grid;
+  gap: var(--space-small-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.me-segmented {
+  border: 1px solid var(--edge);
+  border-radius: var(--r-chip);
+  display: inline-flex;
+  overflow: hidden;
+}
+
+.me-segment {
+  background: var(--raised);
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: var(--type-sans);
+  font-size: var(--text-link-size);
+  font-weight: 700;
+  min-height: var(--target);
+  padding: 0 var(--space-screen-bottom);
+}
+
+.me-segment[aria-pressed="true"] {
+  background: var(--tag-fill);
+  color: var(--tag-ink);
+}
+
+.me-toggle {
+  background: var(--raised);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-field);
+  color: var(--ink);
+  cursor: pointer;
+  flex: none;
+  font-family: var(--type-sans);
+  font-size: var(--text-button-size);
+  font-weight: 700;
+  min-height: var(--target);
+  min-width: calc(var(--target) * 2);
+}
+
+.me-toggle[aria-checked="true"] {
+  background: var(--tag-fill);
+  border-color: var(--tag-edge);
+  color: var(--tag-ink);
+}
+
+.me-history {
+  display: grid;
+  gap: var(--space-control-gap);
+}
+
+.me-month {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.me-month-name {
+  color: var(--ink-2);
+  font-weight: 700;
+  margin: 0;
+}
+
+.me-calendar {
+  display: grid;
+  gap: var(--space-row-after);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  text-align: center;
+}
+
+.me-weekday {
+  color: var(--ink-2);
+  font-size: var(--text-caption-size);
+  font-weight: 700;
+}
+
+.me-day {
+  align-items: center;
+  display: inline-flex;
+  flex-direction: column;
+  font-family: var(--type-mono);
+  justify-content: center;
+  min-height: var(--target);
+}
+
+.me-day-quiet {
+  color: var(--ink-2);
+}
+
+.me-day-marked {
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-chip);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: inherit;
+  font-weight: 800;
+}
+
+.me-day-marked[aria-pressed="true"] {
+  background: var(--tint);
+  box-shadow: inset 0 0 0 1px var(--control);
+}
+
+.me-dot {
+  background: var(--mark);
+  border-radius: 50%;
+  height: var(--space-small-gap);
+  width: var(--space-small-gap);
+}
+
+.me-row-link {
+  border-bottom: 1px solid var(--hairline);
+  color: var(--ink);
+  display: grid;
+  min-height: var(--target);
+  padding: var(--space-small-gap) 0;
+  text-decoration: none;
+}
+
+.me-row-goal {
+  font-weight: 700;
+}
+
+.me-row-meta {
+  color: var(--ink-2);
+  font-size: var(--text-caption-size);
+}
+
+.sig-rows {
+  border-top: 1px solid var(--hairline);
+  display: grid;
+}
+
+.sig-row {
+  align-items: center;
+  display: flex;
+  gap: var(--space-screen-bottom);
+  justify-content: space-between;
+  padding: var(--space-small-gap) 0;
+}
+
+.sig-text {
+  display: grid;
+  gap: var(--space-row-after);
+}
+
+.sig-text p {
+  margin: 0;
+}
+
+.sig-title {
+  font-size: var(--text-body-size);
+}
+
+.sig-help,
+.sig-reason {
+  color: var(--ink-2);
+  font-size: var(--text-link-size);
+}
+
+/* ME-REC and the Story record (issue 81). */
+.rec-meta {
+  margin-top: calc(var(--space-small-gap) * -1);
+}
+
+.rec-section {
+  display: grid;
+  gap: var(--space-control-gap);
+  margin-top: var(--space-control-gap);
+}
+
+.rec-steps,
+.rec-moments {
+  display: grid;
+  gap: var(--space-small-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rec-steps li {
+  display: flex;
+  font-size: var(--text-body-size);
+  gap: var(--space-control-gap);
+}
+
+.rec-moments li {
+  font-family: var(--type-voice);
+  font-size: var(--text-slip-small-size);
+}
+
+.rec-chapter {
+  justify-self: start;
+}
+
+.me-history .me-segmented {
+  justify-self: start;
+}
