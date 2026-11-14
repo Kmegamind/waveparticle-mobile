@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { COMPANION } from "@/app/_session/companion";
 import { CrisisPage } from "@/app/safety/crisis-page";
 import {
@@ -139,10 +139,11 @@ export function GoalDialogue({
   const [saving, setSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
 
-  // The thread grows downward; each new turn scrolls to its end, with no smooth scrolling.
+  // The thread grows downward; each new turn scrolls it to its end, with no smooth scrolling.
+  const thread = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (phase === "crisis") return;
-    window.scrollTo(0, document.documentElement.scrollHeight);
+    const element = thread.current;
+    if (element) element.scrollTop = element.scrollHeight;
   }, [phase]);
 
   function openCrisis(back: Phase) {
@@ -450,7 +451,7 @@ export function GoalDialogue({
         <span className="try-companion-name">{COMPANION.name}</span>
       </div>
 
-      <div className="try-thread">
+      <div className="try-thread" ref={thread}>
         {ready ? <Slip>{opening}</Slip> : null}
 
         {afterGoal && goal ? <p className="try-you">{goal}</p> : null}

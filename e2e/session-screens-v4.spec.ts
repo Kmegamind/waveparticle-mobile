@@ -200,6 +200,21 @@ test.describe("the plan", () => {
     expect(Math.abs(again.x + again.width / 2 - (cardBox.x + cardBox.width / 2))).toBeLessThan(4);
   });
 
+  test("#234 AC1 the header stays at the top while the thread scrolls", async ({ page }) => {
+    await toPlan(page);
+    const bar = await box(page.locator(".try-dialogue-bar"));
+    expect(bar.y).toBeGreaterThanOrEqual(0);
+    expect(bar.y).toBeLessThan(120);
+    const back = await box(page.getByRole("button", { name: "Back" }));
+    const glyph = await page.getByRole("button", { name: "Back" }).evaluate((element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const rect = range.getBoundingClientRect();
+      return rect.x + rect.width / 2;
+    });
+    expect(Math.abs(glyph - (back.x + back.width / 2))).toBeLessThan(3);
+  });
+
   test("#237 AC4 AC5 his line, then Start as a full-width paper tag pinned at the bottom", async ({
     page,
   }) => {
@@ -340,8 +355,23 @@ test.describe("focus page", () => {
   test("#238 AC2 MY GOAL sits beside his round portrait", async ({ page }) => {
     await openFocus(page);
     const row = page.locator(".focus-mygoal");
-    const portrait = await box(row.locator(".focus-avatar"));
-    expect(Math.round(portrait.width)).toBe(48);
+    const ring = await box(row.locator(".focus-avatar"));
+    expect(Math.round(ring.width)).toBe(48);
+    // Inside the 48 px ring, the same 40 px portrait on the pale green tag fill as the dialogue.
+    const portrait = row.locator(".focus-avatar .try-avatar");
+    expect(Math.round((await box(portrait)).width)).toBe(40);
+    const fill = await page
+      .locator(".try-shell")
+      .evaluate((element) => getComputedStyle(element).getPropertyValue("--tag-fill").trim());
+    const asRgb = await page.evaluate((colour) => {
+      const probe = document.createElement("span");
+      probe.style.color = colour;
+      document.body.append(probe);
+      const value = getComputedStyle(probe).color;
+      probe.remove();
+      return value;
+    }, fill);
+    await expect(portrait).toHaveCSS("background-color", asRgb);
     await expect(row.locator(".focus-avatar img")).toHaveAttribute("alt", "");
     await expect(row.getByRole("heading", { name: "My goal" })).toBeVisible();
   });

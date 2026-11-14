@@ -663,21 +663,15 @@ a {
   gap: var(--space-control-gap);
 }
 
+/* A 48 px ring around the 40 px portrait (prototype .mygoal .pn-i holding .av). */
 .focus-avatar {
   border: 1px solid var(--hairline);
   border-radius: 50%;
+  display: grid;
   flex: none;
   height: var(--avatar-large);
-  overflow: hidden;
+  place-items: center;
   width: var(--avatar-large);
-}
-
-.focus-avatar img {
-  display: block;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 20%;
-  width: 100%;
 }
 
 .focus-goal-line {
@@ -986,18 +980,19 @@ a {
 }
 
 /*
- * Goal dialogue of prototype v4 (issues 263 and 234 to 237): a header, a thread that grows downward and a
- * dock pinned to the bottom of the screen. The shell is a full-height column so the dock sits at
- * the bottom when the thread is short and stays in view (sticky) when the thread is long.
+ * Goal dialogue of prototype v4 (issues 263 and 234 to 237): the header and the dock stay in place
+ * and the thread between them scrolls, as in the prototype's .scr and .scroll. The shell is exactly
+ * one screen high.
  */
 .try-shell:has(.try-dialogue) {
   display: flex;
   flex-direction: column;
+  height: 100svh;
 }
 
 .try-dialogue {
   display: flex;
-  flex: 1 0 auto;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 0;
   min-height: 0;
@@ -1014,7 +1009,7 @@ a {
 
 .try-back {
   font-size: var(--text-back-size);
-  justify-content: flex-start;
+  justify-content: center;
   min-width: var(--target);
   padding-inline: 0;
   text-decoration: none;
@@ -1047,21 +1042,26 @@ a {
   letter-spacing: 0.01em;
 }
 
+/* Only the thread scrolls (prototype .scroll); it runs to the screen edges so the bar sits there. */
 .try-thread {
   display: flex;
-  flex: 1 0 auto;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: var(--space-thread-gap);
-  padding: var(--space-thread-top) 0 var(--space-screen-bottom);
+  margin: 0 calc((var(--space-screen-inline) + env(safe-area-inset-right)) * -1) 0
+    calc((var(--space-screen-inline) + env(safe-area-inset-left)) * -1);
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-thread-top) calc(var(--space-screen-inline) + env(safe-area-inset-right))
+    var(--space-screen-bottom) calc(var(--space-screen-inline) + env(safe-area-inset-left));
+  scrollbar-width: thin;
 }
 
 .try-dock {
-  background: var(--bg);
-  bottom: 0;
   display: grid;
+  flex: none;
   gap: var(--space-small-gap);
   padding: var(--space-control-gap) 0 calc(var(--space-screen-bottom) + env(safe-area-inset-bottom));
-  position: sticky;
 }
 
 .try-dock:empty {
@@ -1521,7 +1521,7 @@ a {
   color: var(--ink);
   cursor: pointer;
   font-family: var(--type-shell);
-  font-size: var(--text-sys-title-size);
+  font-size: var(--text-stepper-size);
   font-weight: 700;
   height: var(--target);
   width: var(--target);

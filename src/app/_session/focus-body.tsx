@@ -396,8 +396,10 @@ export function FocusBody({ host }: { host: FocusHost }) {
           <section aria-labelledby="his-side" className="focus-his">
             <div className="focus-mygoal">
               <span aria-hidden="true" className="focus-avatar">
-                {/* eslint-disable-next-line @next/next/no-img-element -- a decorative portrait */}
-                <img alt="" src={COMPANION.portrait} />
+                <span className="try-avatar">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- a decorative portrait */}
+                  <img alt="" src={COMPANION.portrait} />
+                </span>
               </span>
               <div>
                 <h2 className="focus-label" id="his-side">
