@@ -8,7 +8,7 @@ import {
   type AccountFocusPlan,
 } from "@/lib/progress/focus-session";
 import { FocusBody, NoPlan } from "../_session/focus-body";
-import { ACCOUNT_PATHS } from "../_session/paths";
+import { ACCOUNT_PATHS, accountPathsFor } from "../_session/paths";
 import { loadAccountReturnLine, loadAccountStepCards } from "./actions";
 import { useAccountRecorder } from "./use-account-recorder";
 
@@ -38,7 +38,7 @@ export function AccountFocus({
   return (
     <FocusBody
       host={{
-        paths: ACCOUNT_PATHS,
+        paths: accountPathsFor(plan.sessionId),
         storageKey: accountSessionKey(plan.sessionId),
         goalLine,
         plan: sessionPlanOf(plan),

@@ -4,53 +4,77 @@ import {
   createMemoryProgressStore,
   type AccountProgress,
   type ProgressGoal,
+  type ProgressSession,
+  type ProgressStore,
 } from "@/lib/progress/account-progress";
 import { generationInputs } from "@/lib/prototype/story-inputs";
-import {
-  closingInputFor,
-  findGoalForPlan,
-  finishRun,
-  normaliseFinishInput,
-} from "@/lib/summary/finish-run";
+import { closingInputFor, finishAccountRun, summaryOf } from "@/lib/summary/finish-run";
 import { createMemoryRunWriter } from "@/lib/summary/run-writer";
 
-// Issue #258: a finished run is saved on the account with its live closing line.
+// Issue #258 on #257: END reads the account's completed session and adds his live closing line.
 
 const USER = "user-1";
-const RUN = "4f0a7c2e-8d1b-4c3a-9e2f-1a2b3c4d5e6f";
+const SESSION = "4f0a7c2e-8d1b-4c3a-9e2f-1a2b3c4d5e6f";
+const OTHER = "9f0a7c2e-8d1b-4c3a-9e2f-1a2b3c4d5e6f";
 const NOW = "2026-11-13T12:00:00.000Z";
 const STEP_TITLE = "SECRET_STEP_TITLE";
 const GOAL_TEXT = "SECRET_GOAL_TEXT";
 
-const planSteps = [
-  { title: STEP_TITLE, description: "", minutes: 10 },
-  { title: "Draft", description: "Rough pass", minutes: 20 },
-];
-
-function goal(id: string, status: ProgressGoal["status"] = "in_progress"): ProgressGoal {
+function goal(): ProgressGoal {
   return {
-    id,
+    id: "g1",
     title: GOAL_TEXT,
     text: GOAL_TEXT,
-    status,
-    steps: planSteps.map((step, position) => ({
-      id: `${id}-step-${position}`,
-      position,
-      title: step.title,
-      description: step.description === "" ? null : step.description,
-      minutes: step.minutes,
-    })),
+    status: "done",
+    steps: [
+      { id: "s1", position: 1, title: "Draft", description: null, minutes: 20 },
+      { id: "s0", position: 0, title: STEP_TITLE, description: null, minutes: 10 },
+    ],
   };
 }
 
-const input = (overrides: Record<string, unknown> = {}) => ({
-  runId: RUN,
-  storyId: "bohr-difficulties",
-  steps: planSteps,
-  focusSeconds: [600, 1300],
-  earlierLines: ["I open the notebook."],
-  ...overrides,
-});
+function line(id: string, step: string, kind: "background" | "story_card", text: string) {
+  return {
+    id,
+    sessionStepId: step,
+    seq: 0,
+    kind,
+    cardId: null,
+    source: "generated" as const,
+    text,
+    pauseNumber: null,
+    shownAt: NOW,
+  };
+}
+
+function session(overrides: Partial<ProgressSession> = {}): ProgressSession {
+  return {
+    id: SESSION,
+    goalId: "g1",
+    companionId: "oppenheimer",
+    storyId: "bohr-difficulties",
+    state: "completed",
+    backgroundCard: null,
+    backgroundCardSource: null,
+    mergedKeyMoments: [],
+    closingLine: null,
+    steps: [
+      { id: "ss0", stepId: "s0", position: 0, openedAt: NOW, doneAt: NOW },
+      { id: "ss1", stepId: "s1", position: 1, openedAt: NOW, doneAt: NOW },
+    ],
+    lines: [
+      line("l1", "ss1", "story_card", "I sit down again."),
+      line("l0", "ss0", "background", "I open the notebook."),
+    ],
+    ...overrides,
+  };
+}
+
+async function storeWith(progress: Partial<AccountProgress>) {
+  const store = createMemoryProgressStore();
+  await store.write(USER, { userId: USER, goals: [goal()], sessions: [session()], ...progress });
+  return store;
+}
 
 function gatewayWith(result: unknown) {
   const writeClosingLine = vi.fn<(input: ClosingLineInput) => Promise<unknown>>(async () => result);
@@ -59,48 +83,33 @@ function gatewayWith(result: unknown) {
 
 const ok = { source: "generated", closingLine: "I sent the paper off.", carryLine: "I wonder." };
 
-async function storeWith(progress: Partial<AccountProgress>) {
-  const store = createMemoryProgressStore();
-  await store.write(USER, { userId: USER, goals: [], sessions: [], ...progress });
-  return store;
-}
-
-describe("#258 the finishRun input is checked (public endpoint)", () => {
-  it("refuses malformed input", () => {
-    expect(normaliseFinishInput(input())).not.toBeNull();
-    expect(normaliseFinishInput(input({ runId: "nope" }))).toBeNull();
-    expect(normaliseFinishInput(input({ storyId: "nope" }))).toBeNull();
-    expect(
-      normaliseFinishInput(input({ steps: Array.from({ length: 51 }, () => planSteps[0]) })),
-    ).toBeNull();
-    expect(normaliseFinishInput(input({ focusSeconds: [-1, 10] }))).toBeNull();
-    expect(normaliseFinishInput(input({ focusSeconds: [10] }))).toBeNull();
-    expect(normaliseFinishInput(null)).toBeNull();
-  });
-
-  it("caps his earlier lines", () => {
-    const many = Array.from({ length: 80 }, (_, i) => `I line ${i}.`);
-    expect(normaliseFinishInput(input({ earlierLines: many }))?.earlierLines).toHaveLength(60);
-  });
+const deps = (store: ProgressStore, gateway: ModelGateway | null) => ({
+  userId: USER,
+  store,
+  writer: createMemoryRunWriter(store, USER),
+  gateway,
+  wait: async () => undefined,
+  nowIso: NOW,
 });
 
-describe("#258 AC5 the run is matched to the account Goal by its Plan", () => {
-  it("finds the in-progress Goal with the same Steps, ignoring spaces at the ends", () => {
-    const progress = { userId: USER, goals: [goal("g1")], sessions: [] };
-    const spaced = planSteps.map((step) => ({ ...step, title: ` ${step.title} ` }));
-    expect(findGoalForPlan(progress, spaced)?.id).toBe("g1");
-    expect(findGoalForPlan(progress, [planSteps[0]])).toBeNull();
-    expect(findGoalForPlan(progress, [planSteps[0], { ...planSteps[1], minutes: 21 }])).toBeNull();
+describe("#258 AC2 what END shows of the account's session", () => {
+  it("gives the story title, the Goal, the Steps in order and the plan length", async () => {
+    const store = await storeWith({});
+    expect(summaryOf(await store.read(USER, USER), SESSION)).toEqual({
+      sessionId: SESSION,
+      storyTitle: "The Trade of a Theorist",
+      goalTitle: GOAL_TEXT,
+      steps: [STEP_TITLE, "Draft"],
+      planMinutes: 30,
+      finished: true,
+    });
   });
 
-  it("picks the last matching Goal", () => {
-    const progress = { userId: USER, goals: [goal("g1"), goal("g2")], sessions: [] };
-    expect(findGoalForPlan(progress, planSteps)?.id).toBe("g2");
-  });
-
-  it("ignores a Goal that is not in progress", () => {
-    const progress = { userId: USER, goals: [goal("g1", "on_hold")], sessions: [] };
-    expect(findGoalForPlan(progress, planSteps)).toBeNull();
+  it("is null for an unknown session and says when the session is not finished", async () => {
+    const store = await storeWith({ sessions: [session({ state: "open" })] });
+    const progress = await store.read(USER, USER);
+    expect(summaryOf(progress, OTHER)).toBeNull();
+    expect(summaryOf(progress, SESSION)?.finished).toBe(false);
   });
 });
 
@@ -111,129 +120,93 @@ describe("#258 AC3 the closing call gets no text from the user", () => {
     expect(sent).toContain(generationInputs("bohr-difficulties").who);
     expect(closing.lastMoment.length).toBeGreaterThan(0);
     expect(closing.forbidTerms).toEqual(generationInputs("bohr-difficulties").forbidTerms);
-    expect(closing.earlierLines).toEqual(["I open the notebook."]);
     expect(sent).not.toContain(STEP_TITLE);
     expect(sent).not.toContain(GOAL_TEXT);
   });
+
+  it("sends his shown lines in Step order and the Plan's minutes, no user text", async () => {
+    const store = await storeWith({});
+    const { gateway, writeClosingLine } = gatewayWith(ok);
+    await finishAccountRun({ sessionId: SESSION }, deps(store, gateway));
+    const sent = writeClosingLine.mock.calls[0][0];
+    expect(sent.earlierLines).toEqual(["I open the notebook.", "I sit down again."]);
+    expect(JSON.stringify(sent)).not.toContain(STEP_TITLE);
+    expect(JSON.stringify(sent)).not.toContain(GOAL_TEXT);
+  });
 });
 
-describe("#258 AC4 AC5 AC6 finishing a run", () => {
-  const deps = (store: Awaited<ReturnType<typeof storeWith>>, gateway: ModelGateway | null) => ({
-    userId: USER,
-    store,
-    writer: createMemoryRunWriter(store, USER),
-    gateway,
-    nowIso: NOW,
-  });
-
-  it("is refused when signed out", async () => {
-    const store = await storeWith({ goals: [goal("g1")] });
+describe("#258 AC4 AC5 AC6 finishing a run on the account", () => {
+  it("is refused when signed out or for a malformed id", async () => {
+    const store = await storeWith({});
     const { gateway } = gatewayWith(ok);
-    expect(await finishRun(input(), { ...deps(store, gateway), userId: null })).toEqual({
-      status: "signed-out",
-    });
-  });
-
-  it("is invalid for malformed input", async () => {
-    const store = await storeWith({ goals: [goal("g1")] });
-    expect(await finishRun(input({ runId: 1 }), deps(store, gatewayWith(ok).gateway))).toEqual({
+    expect(
+      await finishAccountRun({ sessionId: SESSION }, { ...deps(store, gateway), userId: null }),
+    ).toEqual({ status: "signed-out" });
+    expect(await finishAccountRun({ sessionId: "nope" }, deps(store, gateway))).toEqual({
       status: "invalid",
     });
+    expect(await finishAccountRun(null, deps(store, gateway))).toEqual({ status: "invalid" });
   });
 
-  it("says no-goal without calling the model when no Goal matches", async () => {
-    const store = await storeWith({ goals: [] });
+  it("says not-finished, without a call, for an open or unknown session", async () => {
+    const store = await storeWith({ sessions: [session({ state: "open" })] });
     const { gateway, writeClosingLine } = gatewayWith(ok);
-    expect(await finishRun(input(), deps(store, gateway))).toEqual({ status: "no-goal" });
+    expect(await finishAccountRun({ sessionId: SESSION }, deps(store, gateway))).toEqual({
+      status: "not-finished",
+    });
+    expect(await finishAccountRun({ sessionId: OTHER }, deps(store, gateway))).toEqual({
+      status: "not-finished",
+    });
     expect(writeClosingLine).not.toHaveBeenCalled();
   });
 
-  it("fails without a gateway and saves nothing", async () => {
-    const store = await storeWith({ goals: [goal("g1")] });
-    expect(await finishRun(input(), deps(store, null))).toEqual({ status: "failed" });
-    expect((await store.read(USER, USER)).sessions).toHaveLength(0);
+  it("fails without a gateway or when generation fails, and stores nothing", async () => {
+    const store = await storeWith({});
+    expect(await finishAccountRun({ sessionId: SESSION }, deps(store, null))).toEqual({
+      status: "failed",
+    });
+    const failing = gatewayWith({ source: "failed", reason: "checks" });
+    expect(await finishAccountRun({ sessionId: SESSION }, deps(store, failing.gateway))).toEqual({
+      status: "failed",
+    });
+    expect((await store.read(USER, USER)).sessions[0].closingLine).toBeNull();
   });
 
-  it("fails when generation fails and saves nothing", async () => {
-    const store = await storeWith({ goals: [goal("g1")] });
-    const { gateway } = gatewayWith({ source: "failed", reason: "checks" });
-    expect(await finishRun(input(), deps(store, gateway))).toEqual({ status: "failed" });
-    const after = await store.read(USER, USER);
-    expect(after.sessions).toHaveLength(0);
-    expect(after.goals[0].status).toBe("in_progress");
-  });
-
-  it("saves a completed session with his lines, moves the Goal to Done and offers the next story", async () => {
-    const store = await storeWith({ goals: [goal("g1")] });
+  it("stores both lines on the session and offers the next story", async () => {
+    const store = await storeWith({});
     const { gateway } = gatewayWith(ok);
-    expect(await finishRun(input(), deps(store, gateway))).toEqual({
+    expect(await finishAccountRun({ sessionId: SESSION }, deps(store, gateway))).toEqual({
       status: "ok",
       shown: { closingLine: ok.closingLine, carryLine: ok.carryLine, next: "tolman-lecture" },
     });
-    const after = await store.read(USER, USER);
-    expect(after.goals[0].status).toBe("done");
-    expect(after.sessions).toHaveLength(1);
-    const session = after.sessions[0];
-    expect(session).toMatchObject({
-      id: RUN,
-      goalId: "g1",
-      companionId: "oppenheimer",
-      storyId: "bohr-difficulties",
-      state: "completed",
-      closingLine: ok.closingLine,
-    });
-    expect(session.steps.map((step) => [step.stepId, step.doneAt])).toEqual([
-      ["g1-step-0", NOW],
-      ["g1-step-1", NOW],
-    ]);
-    expect(session.lines).toEqual([
-      expect.objectContaining({ kind: "closing", source: "generated", text: ok.carryLine }),
+    const saved = (await store.read(USER, USER)).sessions[0];
+    expect(saved.closingLine).toBe(ok.closingLine);
+    expect(saved.lines.filter((item) => item.kind === "closing")).toEqual([
+      expect.objectContaining({ source: "generated", text: ok.carryLine, sessionStepId: null }),
     ]);
   });
 
-  it("reuses the stored lines for a Goal that is already finished", async () => {
-    const store = await storeWith({ goals: [goal("g1")] });
-    const first = gatewayWith(ok);
-    await finishRun(input(), deps(store, first.gateway));
-    // The Goal is Done now; a reload sends the same run again.
-    const second = gatewayWith({ ...ok, closingLine: "I am someone else." });
-    expect(await finishRun(input(), deps(store, second.gateway))).toEqual({
+  it("never generates again: a reload shows the stored lines", async () => {
+    const store = await storeWith({});
+    await finishAccountRun({ sessionId: SESSION }, deps(store, gatewayWith(ok).gateway));
+    const again = gatewayWith({ ...ok, closingLine: "I am someone else." });
+    expect(await finishAccountRun({ sessionId: SESSION }, deps(store, again.gateway))).toEqual({
       status: "ok",
       shown: { closingLine: ok.closingLine, carryLine: ok.carryLine, next: "tolman-lecture" },
     });
-    expect(second.writeClosingLine).not.toHaveBeenCalled();
-    expect((await store.read(USER, USER)).sessions).toHaveLength(1);
+    expect(again.writeClosingLine).not.toHaveBeenCalled();
   });
 
   it("offers no next story after the last one or for a story finished before", async () => {
-    const last = await storeWith({ goals: [goal("g1")] });
-    const result = await finishRun(
-      input({ storyId: "fermi-award" }),
-      deps(last, gatewayWith(ok).gateway),
-    );
-    expect(result).toMatchObject({ status: "ok", shown: { next: null } });
+    const last = await storeWith({ sessions: [session({ storyId: "fermi-award" })] });
+    expect(
+      await finishAccountRun({ sessionId: SESSION }, deps(last, gatewayWith(ok).gateway)),
+    ).toMatchObject({ status: "ok", shown: { next: null } });
 
-    const store = await storeWith({ goals: [goal("old", "done"), goal("g1")] });
-    const earlier = await store.read(USER, USER);
-    await store.write(USER, {
-      ...earlier,
-      sessions: [
-        {
-          id: "9f0a7c2e-8d1b-4c3a-9e2f-1a2b3c4d5e6f",
-          goalId: "old",
-          companionId: "oppenheimer",
-          storyId: "bohr-difficulties",
-          state: "completed",
-          backgroundCard: null,
-          backgroundCardSource: null,
-          mergedKeyMoments: [],
-          closingLine: "I was here before.",
-          steps: [],
-          lines: [],
-        },
-      ],
-    });
-    const again = await finishRun(input(), deps(store, gatewayWith(ok).gateway));
-    expect(again).toMatchObject({ status: "ok", shown: { next: null } });
+    const before = session({ id: OTHER, closingLine: "I was here before.", lines: [], steps: [] });
+    const replay = await storeWith({ sessions: [before, session()] });
+    expect(
+      await finishAccountRun({ sessionId: SESSION }, deps(replay, gatewayWith(ok).gateway)),
+    ).toMatchObject({ status: "ok", shown: { next: null } });
   });
 });

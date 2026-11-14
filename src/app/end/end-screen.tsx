@@ -1,102 +1,83 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { loadSession, planKey } from "@/lib/prototype/session";
-import type { FinishOutcome } from "@/lib/summary/finish-run";
-import {
-  finishedRun,
-  focusLabel,
-  loadSummaryRecord,
-  planMinutesOf,
-  saveSummaryRecord,
-  type FinishShown,
-  type FinishedRun,
-} from "@/lib/summary/run";
-import { usePrototypeState } from "../try/use-prototype-state";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { accountSessionKey, snapshotOf } from "@/lib/progress/focus-session";
+import { isFinished, loadSession } from "@/lib/prototype/session";
+import type { FinishOutcome, SummaryView } from "@/lib/summary/finish-run";
+import { focusLabel, focusSecondsOf, type FinishShown } from "@/lib/summary/run";
+import { recordFocusProgress } from "../focus/actions";
 import { finishRunAction } from "./actions";
 
 const FAILURE_TEXT = "He is not here right now. Please try again.";
+const NO_SUMMARY_TEXT = "There is no finished Step to sum up.";
 
 type View =
   | { kind: "waiting" }
   | { kind: "shown"; shown: FinishShown }
   | { kind: "failed" }
-  | { kind: "no-goal" };
+  | { kind: "none" };
 
-/** END (#258, prototype v4): his closing line, what he still carries, the Steps and the record. */
-export function EndScreen({ titles }: { titles: Record<string, string> }) {
-  const { ready, state } = usePrototypeState();
-  if (!ready) return <main className="app-screen end-page" data-ready="false" />;
-  const run = finishedRun(state, loadSession(window.localStorage));
-  if (!run || !state.goal) {
-    return (
-      <main className="app-screen end-page" data-ready="true">
-        <p>There is no finished Step to sum up.</p>
-        <Link href="/">Home</Link>
-      </main>
-    );
-  }
+const noSubscription = () => () => {};
+
+export function NoSummary() {
   return (
-    <EndBody
-      goal={state.goal.text}
-      keyOfPlan={planKey(state)}
-      run={run}
-      title={titles[run.storyId] ?? ""}
-    />
+    <main className="app-screen end-page" data-ready="true">
+      <p>{NO_SUMMARY_TEXT}</p>
+      <Link href="/">Home</Link>
+    </main>
   );
 }
 
-function EndBody({
-  goal,
-  keyOfPlan,
-  run,
-  title,
-}: {
-  goal: string;
-  keyOfPlan: string;
-  run: FinishedRun;
-  title: string;
-}) {
-  const [view, setView] = useState<View>(() => {
-    const shown = loadSummaryRecord(window.localStorage, keyOfPlan)?.shown;
-    return shown ? { kind: "shown", shown } : { kind: "waiting" };
-  });
+/** END (#258, prototype v4): his closing line, what he still carries, the Steps and the record. */
+export function EndScreen({ view: summary }: { view: SummaryView }) {
+  const ready = useSyncExternalStore(
+    noSubscription,
+    () => true,
+    () => false,
+  );
+  if (!ready) return <main className="app-screen end-page" data-ready="false" />;
+  return <EndBody summary={summary} />;
+}
+
+function EndBody({ summary }: { summary: SummaryView }) {
+  const [view, setView] = useState<View>({ kind: "waiting" });
+  const [focusSeconds] = useState(() =>
+    focusSecondsOf(loadSession(window.localStorage, accountSessionKey(summary.sessionId))),
+  );
   const requested = useRef(false);
 
   useEffect(() => {
     if (view.kind !== "waiting" || requested.current) return;
     requested.current = true;
-    // One run id per finished run, kept so a reload saves and shows the same run (never twice).
-    const record = loadSummaryRecord(window.localStorage, keyOfPlan) ?? {
-      runId: crypto.randomUUID(),
-    };
-    saveSummaryRecord(window.localStorage, keyOfPlan, record);
-    finishRunAction({ runId: record.runId, ...run })
+    const device = loadSession(window.localStorage, accountSessionKey(summary.sessionId));
+    // The last Done's progress may still be on its way: send this device's state first, so the
+    // account knows the session is complete (#257 records it the same way).
+    const recorded =
+      device && isFinished(device)
+        ? recordFocusProgress(snapshotOf(summary.sessionId, device)).catch(() => false)
+        : Promise.resolve(false);
+    recorded
+      .then(() => finishRunAction({ sessionId: summary.sessionId }))
       .catch((): FinishOutcome => ({ status: "failed" }))
       .then((outcome) => {
         requested.current = false;
-        if (outcome.status === "ok") {
-          saveSummaryRecord(window.localStorage, keyOfPlan, { ...record, shown: outcome.shown });
-          setView({ kind: "shown", shown: outcome.shown });
-        } else if (outcome.status === "no-goal") {
-          setView({ kind: "no-goal" });
-        } else {
-          setView({ kind: "failed" });
-        }
+        if (outcome.status === "ok") setView({ kind: "shown", shown: outcome.shown });
+        else if (outcome.status === "failed") setView({ kind: "failed" });
+        else setView({ kind: "none" });
       });
-  }, [keyOfPlan, run, view.kind]);
+  }, [summary.sessionId, view.kind]);
 
-  const focusSeconds = run.focusSeconds.reduce((total, seconds) => total + seconds, 0);
+  if (view.kind === "none") return <NoSummary />;
 
   return (
     <main
+      aria-busy={view.kind === "waiting"}
       className="app-screen end-page"
       data-ready="true"
       data-state={view.kind}
-      aria-busy={view.kind === "waiting"}
     >
-      {title ? <p className="focus-label">{title}</p> : null}
+      <p className="focus-label">{summary.storyTitle}</p>
 
       {view.kind === "shown" ? (
         <>
@@ -131,13 +112,12 @@ function EndBody({
           </button>
         </div>
       ) : null}
-      {view.kind === "no-goal" ? <p>This Goal is not on your account.</p> : null}
 
       <section aria-labelledby="end-goal" className="end-card">
         <h2 className="focus-label" id="end-goal">
           Your goal
         </h2>
-        <p>{goal}</p>
+        <p>{summary.goalTitle}</p>
       </section>
 
       <section aria-labelledby="end-steps" className="end-card">
@@ -145,12 +125,12 @@ function EndBody({
           Your steps
         </h2>
         <ul className="end-steps">
-          {run.steps.map((step, index) => (
+          {summary.steps.map((title, index) => (
             <li key={index}>
               <span aria-hidden="true" className="end-check">
                 ✓
               </span>
-              {step.title}
+              {title}
             </li>
           ))}
         </ul>
@@ -163,11 +143,11 @@ function EndBody({
         <dl className="end-record">
           <div>
             <dt>Plan length</dt>
-            <dd>{planMinutesOf(run.steps)} min</dd>
+            <dd>{summary.planMinutes} min</dd>
           </div>
           <div>
             <dt>Focus time</dt>
-            <dd>{focusLabel(focusSeconds)}</dd>
+            <dd>{focusSeconds === null ? "Not on this device" : focusLabel(focusSeconds)}</dd>
           </div>
         </dl>
       </section>

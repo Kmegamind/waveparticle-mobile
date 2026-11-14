@@ -23,3 +23,8 @@ export const ACCOUNT_PATHS: SessionPaths = {
   rest: "/rest",
   end: null,
 };
+
+/** The signed-in pages of one account session: the last Done opens its summary (#258). */
+export function accountPathsFor(sessionId: string): SessionPaths {
+  return { ...ACCOUNT_PATHS, end: `/end?session=${encodeURIComponent(sessionId)}` };
+}

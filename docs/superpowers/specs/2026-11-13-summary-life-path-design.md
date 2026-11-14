@@ -134,3 +134,14 @@ Life Path header (use the prototype's image if it is embedded, otherwise a plain
 4. **`finishRun` returns `{status: "invalid"}` for a malformed input or an unknown `storyId`.** END then shows the plain message "There is no finished Step to sum up." After chapter 26, `next` is null, so END shows Home only.
 5. **The Plan match compares Steps in order.** Titles are compared after trimming, minutes must be equal, and an empty description equals a missing one. The goal dialogue cannot edit Steps after Start, so the saved Steps and the browser's Steps come from the same answer.
 6. **"no-goal" makes no model call.** END shows the Goal, the Steps and the record with the plain note "This Goal is not on your account.", plus a Home link. It shows no line from him and saves nothing.
+
+## Revised after #257 (approved by Yue on 2026-11-13)
+
+#257 moved signed-in runs onto the account: Start on `/goal` opens `/focus?goal=<id>`, and the last Done completes the session and the Goal there. Matching a browser Plan (approach 1) no longer applies. Yue allowed two small changes in the focus page's code.
+
+- `accountPathsFor(sessionId)` in `src/app/_session/paths.ts` makes the last Done open `/end?session=<id>`. `src/app/focus/account-focus.tsx` uses it.
+- `src/app/focus/account-progress.ts` gives a new session the Life Path's current story (`storyForNewSession`) instead of chapter 8. Begin is therefore a plain link to `/goal`.
+
+`/end` reads that completed session and its Goal. Before asking for the lines, it sends the device's snapshot through `recordFocusProgress`, so the completion is on the account even if the last Done's own request was cut off by the page change. It then writes the closing line onto the session (only while the session has none) and the carried line as a `closing` row. The focus time comes from this device's clocks. On another device it reads "Not on this device".
+
+`/try/end` stays a plain page with no summary.

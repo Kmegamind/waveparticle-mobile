@@ -8,7 +8,6 @@ import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
 import { lifePath, type LifePathRow } from "@/lib/summary/life-path";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
-import { BeginButton } from "./begin-button";
 
 export const instant = false;
 
@@ -70,7 +69,10 @@ function Row({ row, canBegin }: { row: LifePathRow; canBegin: boolean }) {
           <h3>{row.title}</h3>
           <p className="life-line">{row.line}</p>
           {canBegin ? (
-            <BeginButton storyId={row.id} />
+            // The signed-in run plays this story: a new session takes the current story (#258).
+            <Link className="button-filled" href="/goal">
+              Begin
+            </Link>
           ) : (
             <p className="try-caption">The goal dialogue is in test builds only.</p>
           )}

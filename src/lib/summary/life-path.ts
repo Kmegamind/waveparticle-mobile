@@ -42,3 +42,8 @@ export function lifePath(progress: AccountProgress): LifePathView {
     currentId,
   };
 }
+
+/** The story a new signed-in session plays (#258 AC10): the current one, or the last story. */
+export function storyForNewSession(progress: AccountProgress): string {
+  return lifePath(progress).currentId ?? STORY_IDS[STORY_IDS.length - 1];
+}

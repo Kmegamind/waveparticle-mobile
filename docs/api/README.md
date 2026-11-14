@@ -15,25 +15,22 @@ The public code interfaces today are:
 
   **Per-run list.** `writeStepCards`, `writeStuckStory` and `writeReturnPopup` take `earlierLines?: string[]`: the one-way lines already shown in this run, oldest first. The caller supplies them (for example from `session_lines`); the gateway keeps no state. A line is rejected (`repeat`) if it equals an earlier line ignoring case, punctuation and spacing; (`opening`) if its first three words equal those of one of the last four lines; (`similar`) if its content-word Jaccard similarity with any earlier line is 0.5 or more. Cards in one answer are also checked against the cards before them. `writeStuckStory` also takes `lastCard?: string`, the last card shown in the same Step; the stuck story may not reuse its nouns (`card_nouns`). Nouns are found by a heuristic: the one or two words after a determiner or possessive, plural "s" removed. The rest reply is a conversation turn and is not checked against the run list. `similarity`, `checkRunList` and `cardNouns` are exported from `run-list.ts`.
 - `writeClosingLine({ facts, lastMoment, forbidTerms?, earlierLines? })` (#258, #41, END-TONE) returns `{ source: "generated", closingLine, carryLine }` or a failure. The model answers `{"closing_line","carry_line"}`. Both lines pass the existing one-way line checks (`CompanionKind` `closing_line` uses the default length: at most 3 sentences and 40 words) and the per-run list. The carry line is also checked against the closing line. The prompt says what happened to him that day and how he feels, never counts anything and never mentions pauses or the reader.
-- `src/lib/summary/run.ts` (client-safe): `finishedRun(plan, session)` gives `{ storyId, steps, focusSeconds, earlierLines }` once every Step is done and the session belongs to the Plan, otherwise `null`. Focus seconds are the clock's real elapsed time at Done, overtime included. `planMinutesOf(steps)` and `focusLabel(seconds)` give "Under 1 min" or "N min". `loadSummaryRecord`, `saveSummaryRecord` and `clearSummaryRecord` keep `{ runId, shown? }` under `waveparticle.summary`, keyed by the Plan.
-- `src/lib/summary/finish-run.ts` (server): `finishRun(raw, { userId, store, gateway, nowIso })` returns one of:
-  - `{ status: "ok", shown: { closingLine, carryLine, next } }`;
-  - `{ status: "signed-out" | "invalid" | "no-goal" | "failed" }`.
-
-  The rules:
-  - `normaliseFinishInput` checks the public input: a uuid `runId`, a known story, 1 to 50 Steps within the `start-goal.ts` limits, one focus value per Step from 0 to 86400 seconds, and at most 60 earlier lines.
-  - `findGoalForPlan` finds the last `in_progress` Goal whose Steps match in order: trimmed title, equal minutes, and an empty description equal to a missing one.
-  - A saved run (the session id is `runId`) returns its stored lines without a new call.
-  - The model call gets only `closingInputFor(storyId, minutes, earlierLines)`: the story's inputs and the facts of the run, never Goal or Step text.
-  - On success it saves a `completed` session for `oppenheimer` with `closing_line`, one `session_steps` row per Step and the carry line as a `closing` line, and moves the Goal to `done`.
+- `src/lib/summary/run.ts` (client-safe): `focusSecondsOf(session)` gives the real seconds on the device's clocks at Done, overtime included, or `null` before the last Done; `focusLabel(seconds)` gives "Under 1 min" or "N min".
+- `src/lib/summary/finish-run.ts` (server):
+  - `summaryOf(progress, sessionId)` gives `{ sessionId, storyTitle, goalTitle, steps, planMinutes, finished }` for the account's own Oppenheimer session, or `null`.
+  - `finishAccountRun({ sessionId }, { userId, store, writer, gateway, nowIso })` returns `{ status: "ok", shown: { closingLine, carryLine, next } }` or `{ status: "signed-out" | "invalid" | "not-finished" | "failed" }`. The session must be `completed`.
+  - When the session already has its closing line, that line comes back with no call.
+  - Otherwise the model gets `closingInputFor(storyId, minutes, earlierLines)`: the story's inputs, the facts of the run and his shown cards in order, never Goal or Step text.
   - `nextStoryAfter` gives the next story only on a story's first completion.
-- `src/app/end/actions.ts`: server action `finishRunAction(input)` for `/end`. It answers `failed` when the test path is off or on any error.
+- `src/lib/summary/run-writer.ts`: `claimClosingLine(sessionId, line)` sets `closing_line` only while it is empty (`claimed` or `taken`). A second tab that finds it taken waits for the stored lines. `insertClosingLine` writes the carried line as a `closing` row with a fixed id, ignoring duplicates. Nothing else on the account is written.
+- `src/app/end/actions.ts`: server action `finishRunAction({ sessionId })` for `/end`. It answers `failed` when the test path is off, when the model is not configured, or on any error. Before calling it, `/end` sends the device's snapshot through `recordFocusProgress` (#257), so the account knows the session is complete.
+- `src/app/_session/paths.ts`: `accountPathsFor(sessionId)` is `ACCOUNT_PATHS` with `end` set to `/end?session=<id>`.
 - `src/lib/summary/life-path.ts`: `lifePath(progress)` gives `{ periods: [{ name, rows }], currentId }`. Each row is `{ id, title, state, line }`, where `state` is `finished`, `current` or `later`.
   - A finished row's `line` is the closing line of its first completed run.
   - The current row's `line` is the story's goal sentence.
   - A later row has no line.
 
-  The current story is the first story with no completion. The periods are `PERIOD_DRAFTS` in `src/content/oppenheimer/periods.ts`, drafts until PERIOD-NAMES is approved.
+  The current story is the first story with no completion; `storyForNewSession(progress)` is the story a new signed-in session plays (the current one, or the last). The periods are `PERIOD_DRAFTS` in `src/content/oppenheimer/periods.ts`, drafts until PERIOD-NAMES is approved.
 - `src/lib/prototype/config.ts`: `isPrototypeEnabled(env)` is true only when `PROTOTYPE_ENABLED` is `1`. `isTryPath(pathname)` and `tryPathIsHidden(pathname, enabled)` decide the 404 for `/try` in `src/proxy.ts`; `goalPathIsHidden` and `endPathIsHidden` do the same for `/goal` and `/end`.
 - `src/lib/supabase/session.ts`: `isPublicPath(pathname, prototypeEnabled)` lists the paths a signed-out visitor may open: `/auth/*`, `/safety`, and `/try` only while the test path is on.
 - `src/lib/prototype/store.ts`: browser-only test-path state `{ version, goal, steps, currentStep, storyId? }` (`storyId`: the chosen story, #254) with `loadPrototypeState`, `savePrototypeState` and `resetPrototypeState(storage)`. Broken or blocked storage gives the empty state and never throws.

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { PERIOD_DRAFTS, PERIOD_STATUS } from "@/content/oppenheimer/periods";
 import type { AccountProgress, ProgressSession } from "@/lib/progress/account-progress";
 import { STORY_IDS, storyProfile } from "@/lib/prototype/story-inputs";
-import { lifePath } from "@/lib/summary/life-path";
+import { lifePath, storyForNewSession } from "@/lib/summary/life-path";
 
 // Issue #258 (#50, #51): the Life Path with named periods and one current Story.
 
@@ -97,5 +97,20 @@ describe("#258 AC8 AC9 one current story (#50, #51)", () => {
   it("has no current story once every story is finished", () => {
     const view = lifePath(account(STORY_IDS.map((id) => session(id, "completed", "Done."))));
     expect(view.currentId).toBeNull();
+  });
+});
+
+describe("#258 AC10 a new signed-in run plays the current story", () => {
+  it("is chapter 1 for a new account and the next one after a finished story", () => {
+    expect(storyForNewSession(account([]))).toBe("bohr-difficulties");
+    expect(
+      storyForNewSession(account([session("bohr-difficulties", "completed", "I sent it off.")])),
+    ).toBe("tolman-lecture");
+  });
+
+  it("stays on the last story once the path is finished", () => {
+    expect(
+      storyForNewSession(account(STORY_IDS.map((id) => session(id, "completed", "Done.")))),
+    ).toBe("fermi-award");
   });
 });
