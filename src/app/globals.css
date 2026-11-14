@@ -260,14 +260,22 @@ a {
   width: var(--logo-width);
 }
 
+/* Account screens of prototype v4 (issue 262): the form sits in the vertical middle. */
 .auth-page {
-  display: grid;
-  gap: var(--space-small-gap);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   margin: 0 auto;
   max-width: 100%;
+  min-height: 100svh;
   min-width: 0;
   padding: var(--space-screen-top) calc(var(--space-screen-inline) + env(safe-area-inset-right))
     var(--space-screen-bottom) calc(var(--space-screen-inline) + env(safe-area-inset-left));
+}
+
+.auth-body {
+  display: grid;
+  min-width: 0;
 }
 
 .auth-page h1 {
@@ -276,43 +284,129 @@ a {
   font-weight: 800;
   letter-spacing: -0.025em;
   line-height: var(--text-display-leading);
-  margin: 0;
+  margin: 0 0 var(--space-title-after);
+}
+
+.auth-lead,
+.auth-caption,
+.auth-privacy,
+.auth-page label {
+  color: var(--ink-2);
+  font-size: var(--text-caption-size);
+  line-height: 1.4;
+}
+
+.auth-lead {
+  margin: 0 0 var(--space-small-gap);
+}
+
+.auth-lead-spaced {
+  margin: var(--space-button-before) 0;
+}
+
+.auth-title-line {
+  display: block;
+}
+
+.auth-back {
+  align-items: center;
+  display: flex;
+  gap: var(--space-control-gap);
+  margin-bottom: var(--space-row-after);
+}
+
+.auth-back-link {
+  font-size: var(--text-back-size);
+  justify-content: center;
+  min-width: var(--target);
+  text-decoration: none;
+}
+
+.auth-back-label {
+  color: var(--ink-2);
+  font-size: var(--text-overline-size);
+  font-weight: 700;
+  letter-spacing: var(--overline-tracking);
+  text-transform: uppercase;
 }
 
 .auth-page form,
 .auth-page label {
   display: grid;
-  gap: var(--space-small-gap);
   min-width: 0;
 }
 
-.auth-page form {
-  gap: var(--space-control-gap);
+.auth-page label {
+  margin-top: var(--space-control-gap);
 }
 
 .auth-page input,
 .auth-page button {
   max-width: 100%;
-  min-height: 3.5rem;
-  padding: 0 var(--space-small-gap);
+  min-height: var(--button-height);
   width: 100%;
 }
 
 .auth-page input {
   background: var(--raised);
-  border: 1.5px solid var(--edge);
+  border: 1px solid var(--edge);
   border-radius: var(--r-field);
   color: var(--ink);
+  font-size: var(--text-body-size);
+  padding: 0 var(--button-small-padding);
 }
 
-.crisis-page {
+.auth-page form button {
+  margin-top: var(--space-button-before);
+}
+
+.auth-page [role="status"],
+.auth-page [role="alert"] {
+  margin: var(--space-control-gap) 0 0;
+}
+
+.auth-links {
   display: grid;
+  justify-items: center;
+  margin: 0;
+}
+
+.auth-links p {
+  align-items: center;
+  display: flex;
+  gap: var(--space-small-gap);
+  justify-content: center;
+  margin: var(--space-link-rows) 0;
+}
+
+.auth-privacy {
+  margin: var(--space-control-gap) 0 0;
+}
+
+.auth-links a,
+.auth-privacy a {
+  padding: 0 var(--space-small-gap);
+}
+
+/* Safety page S1 of prototype v4 (issue 262): one white card in the vertical middle. */
+.crisis-page {
+  display: flex;
+  flex-direction: column;
   font-family: var(--type-shell);
-  gap: var(--space-control-gap);
+  justify-content: center;
   min-height: calc(100svh - var(--target));
   min-width: 0;
-  padding: var(--space-screen-top) calc(var(--space-screen-inline) + env(safe-area-inset-right)) 0
-    calc(var(--space-screen-inline) + env(safe-area-inset-left));
+  padding: var(--space-screen-top) calc(var(--space-screen-inline) + env(safe-area-inset-right))
+    var(--space-screen-bottom) calc(var(--space-screen-inline) + env(safe-area-inset-left));
+}
+
+.crisis-card {
+  background: var(--raised);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-card);
+  display: grid;
+  gap: var(--space-screen-top);
+  padding: var(--space-card-pad);
 }
 
 .crisis-page h1,
@@ -322,30 +416,45 @@ a {
 }
 
 .crisis-page h1 {
-  font-size: var(--text-display-size);
-  font-weight: 600;
-  letter-spacing: -0.022em;
-  line-height: var(--text-display-leading);
+  font-family: var(--type-display);
+  font-size: var(--text-card-title-size);
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
 }
 
-.crisis-page p {
+.crisis-lead {
+  color: var(--ink);
   font-size: var(--text-body-size);
   line-height: var(--text-body-leading);
 }
 
+.crisis-placeholder {
+  border: 1px dashed var(--edge);
+  border-radius: var(--r-field);
+  color: var(--ink-2);
+  display: grid;
+  gap: var(--space-small-gap);
+  padding: var(--space-button-before);
+}
+
+.crisis-page .crisis-placeholder p {
+  font-size: var(--text-note-size);
+  line-height: var(--text-body-leading);
+}
+
 .crisis-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: var(--space-control-gap);
+  /* The prototype keeps the buttons close to the box above them. */
+  margin-top: calc(var(--space-button-before) - var(--space-screen-top));
 }
 
-.crisis-actions .button-filled {
-  flex: 62 1 auto;
-  text-decoration: none;
-}
-
+.crisis-actions .button-filled,
 .crisis-actions .button-tinted {
-  flex: 38 1 auto;
+  min-height: var(--button-height);
+  text-decoration: none;
+  width: 100%;
 }
 
 .step-screen form,

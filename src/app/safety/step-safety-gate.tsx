@@ -25,7 +25,7 @@ export function StepSafetyGate() {
   }
 
   if (screen === "crisis") {
-    // Back to my Step mounts a new, empty field.
+    // Back to my Goal mounts a new, empty field.
     return <CrisisPage onBack={() => setScreen(backToStep().screen)} />;
   }
 

@@ -15,6 +15,8 @@ export async function getCurrentUser(client: SupabaseClient): Promise<User | nul
 export function isPublicPath(pathname: string, prototypeEnabled: boolean): boolean {
   if (pathname.startsWith("/auth/")) return true;
   if (pathname === "/safety" || pathname.startsWith("/safety/")) return true;
+  // The privacy notice placeholder is linked from Sign in and Create an account (#262).
+  if (pathname === "/privacy") return true;
   if (prototypeEnabled && isTryPath(pathname)) return true;
   return false;
 }

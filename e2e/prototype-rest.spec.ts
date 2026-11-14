@@ -97,7 +97,7 @@ test("#67 AC4 a crisis message opens the safety page and is never kept", async (
   await expect(page.getByText("I want to kill myself")).toHaveCount(0);
   expect(JSON.stringify(await storedSession(page))).not.toContain("kill myself");
 
-  await page.getByRole("button", { name: "Back to my Step" }).click();
+  await page.getByRole("button", { name: "Back to my Goal" }).click();
   await expect(page.getByLabel("Message")).toHaveValue("");
   await expect(slips(page)).toHaveCount(1);
   await expect(page.getByTestId("your-message")).toHaveCount(0);
