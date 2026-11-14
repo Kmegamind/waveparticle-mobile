@@ -9,6 +9,8 @@ export const STUB_SUPABASE = "http://127.0.0.1:3198";
 const COOKIE = "sb-127-auth-token";
 
 export type StubTables = {
+  profiles?: Record<string, unknown>[];
+  session_lines?: Record<string, unknown>[];
   goals?: Record<string, unknown>[];
   steps?: Record<string, unknown>[];
   sessions?: Record<string, unknown>[];
@@ -26,6 +28,7 @@ export async function signIn(
   context: BrowserContext,
   baseURL: string,
   tables: (userId: string) => StubTables = () => ({}),
+  options: { missingFunctions?: string[] } = {},
 ): Promise<StubAccount> {
   const token = `stub-${randomUUID()}`;
   const userId = randomUUID();
@@ -36,6 +39,7 @@ export async function signIn(
       token,
       user: { id: userId, email: `${userId}@example.invalid` },
       tables: tables(userId),
+      missingFunctions: options.missingFunctions ?? [],
     }),
   });
   if (!seeded.ok) throw new Error(`stub seed failed: ${seeded.status}`);
@@ -66,11 +70,13 @@ export async function signIn(
 }
 
 /** The stub's tables for this account, after the app's writes. */
-export async function stubTables(account: StubAccount): Promise<Required<StubTables>> {
+export async function stubTables(
+  account: StubAccount,
+): Promise<Required<StubTables> & { auth_users: unknown[] }> {
   const response = await fetch(
     `${STUB_SUPABASE}/__tables?token=${encodeURIComponent(account.token)}`,
   );
-  return (await response.json()) as Required<StubTables>;
+  return (await response.json()) as Required<StubTables> & { auth_users: unknown[] };
 }
 
 export function baseUrlOf(page: Page): string {

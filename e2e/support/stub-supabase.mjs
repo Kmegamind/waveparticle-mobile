@@ -2,11 +2,15 @@
 // Never imported by the app: the e2e app's NEXT_PUBLIC_SUPABASE_URL points here.
 //
 // Each test signs in with its own access token, so parallel tests never share data:
-//   POST /__seed   { token, user: { id, email }, tables: { goals, steps, sessions, session_steps } }
-//   GET  /__tables?token=…   the dataset after the app's writes
+//   POST /__seed   { token, user: { id, email }, tables: { profiles, goals, steps, sessions,
+//                  session_steps, session_lines }, missingFunctions?: ["delete_my_account"] }
+//   GET  /__tables?token=…   the dataset after the app's writes, with auth_users ([] once deleted)
 //   GET  /health
 //   GET  /auth/v1/user                (Authorization: Bearer <token>)
 //   GET|PATCH /rest/v1/<table>?…      eq., in.(…), order, limit, select (all columns returned)
+//   POST /rest/v1/rpc/delete_my_account   mirrors the migration (#103): the caller's rows, then
+//                                          the auth user
+//   POST /auth/v1/logout              204
 import { createServer } from "node:http";
 
 const port = Number(process.env.STUB_SUPABASE_PORT ?? "3198");
@@ -22,6 +26,21 @@ const tokenOf = (request) => {
   const header = request.headers.authorization ?? "";
   return header.startsWith("Bearer ") ? header.slice(7) : null;
 };
+
+/** The same deletes as public.delete_my_account(), for the caller's user id only. */
+function deleteOwnRows(dataset) {
+  const uid = dataset.user.id;
+  const t = dataset.tables;
+  const sessions = new Set(t.sessions.filter((row) => row.user_id === uid).map((row) => row.id));
+  const goals = new Set(t.goals.filter((row) => row.user_id === uid).map((row) => row.id));
+  t.session_lines = t.session_lines.filter((row) => !sessions.has(row.session_id));
+  t.session_steps = t.session_steps.filter((row) => !sessions.has(row.session_id));
+  t.sessions = t.sessions.filter((row) => row.user_id !== uid);
+  t.steps = t.steps.filter((row) => !goals.has(row.goal_id));
+  t.goals = t.goals.filter((row) => row.user_id !== uid);
+  t.profiles = t.profiles.filter((row) => row.user_id !== uid);
+  dataset.deleted = true;
+}
 
 function readBody(request) {
   return new Promise((resolve) => {
@@ -81,21 +100,39 @@ createServer(async (request, response) => {
   if (path === "/__seed" && request.method === "POST") {
     const body = await readBody(request);
     if (!body?.token || !body.user?.id) return json(response, 400, { error: "token and user" });
-    const tables = { goals: [], steps: [], sessions: [], session_steps: [], session_lines: [] };
+    const tables = {
+      profiles: [],
+      goals: [],
+      steps: [],
+      sessions: [],
+      session_steps: [],
+      session_lines: [],
+    };
     for (const [name, rows] of Object.entries(body.tables ?? {})) tables[name] = rows;
-    datasets.set(body.token, { user: body.user, tables });
+    datasets.set(body.token, {
+      user: body.user,
+      tables,
+      deleted: false,
+      missingFunctions: body.missingFunctions ?? [],
+    });
     return json(response, 200, { ok: true });
   }
 
   if (path === "/__tables") {
     const dataset = datasets.get(url.searchParams.get("token"));
-    return json(response, dataset ? 200 : 404, dataset?.tables ?? {});
+    if (!dataset) return json(response, 404, {});
+    return json(response, 200, {
+      ...dataset.tables,
+      auth_users: dataset.deleted ? [] : [dataset.user],
+    });
   }
 
   const dataset = datasets.get(tokenOf(request));
 
+  if (path === "/auth/v1/logout" && request.method === "POST") return json(response, 204);
+
   if (path === "/auth/v1/user") {
-    if (!dataset) return json(response, 401, { code: 401, msg: "invalid JWT" });
+    if (!dataset || dataset.deleted) return json(response, 401, { code: 401, msg: "invalid JWT" });
     const { id, email } = dataset.user;
     return json(response, 200, {
       id,
@@ -110,8 +147,17 @@ createServer(async (request, response) => {
 
   if (path.startsWith("/auth/v1/")) return json(response, 400, { error: "not supported by stub" });
 
+  if (path === "/rest/v1/rpc/delete_my_account" && request.method === "POST") {
+    if (!dataset || dataset.deleted) return json(response, 401, { message: "JWT required" });
+    if (dataset.missingFunctions.includes("delete_my_account")) {
+      return json(response, 404, { code: "PGRST202", message: "function not found" });
+    }
+    deleteOwnRows(dataset);
+    return json(response, 204);
+  }
+
   if (path.startsWith("/rest/v1/")) {
-    if (!dataset) return json(response, 401, { message: "JWT required" });
+    if (!dataset || dataset.deleted) return json(response, 401, { message: "JWT required" });
     const table = path.slice("/rest/v1/".length);
     const rows = dataset.tables[table];
     if (!rows) return json(response, 404, { message: `no table ${table}` });
