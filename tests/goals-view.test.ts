@@ -7,6 +7,7 @@ import {
   parseLine,
   parseTab,
   startHref,
+  undoStatusFor,
   type GoalsData,
   type ViewOptions,
 } from "@/lib/goals/goals-view";
@@ -318,6 +319,21 @@ describe("#78 the Goal detail (G4, G4-N, G4-H)", () => {
       canDone: true,
     });
     expect(detail.steps?.map((step) => step.done)).toEqual([true, false]);
+  });
+
+  it("#79 AC3 a Done Goal's detail shows no Steps, so no unfinished Step is shown", () => {
+    const input = data();
+    // Marked done with one of two Steps finished: Mark done parked the open session.
+    input.goals.find((goal) => goal.id === G.methods)!.status = "done";
+    input.sessions.find((session) => session.id === "x-m")!.state = "on_hold";
+    expect(goalDetail(input, G.methods, on)!.steps).toBeNull();
+  });
+
+  it("#79 Undo of a change to a planned Goal brings it back to In progress", () => {
+    expect(undoStatusFor("planned")).toBe("in_progress");
+    expect(undoStatusFor("on_hold")).toBe("on_hold");
+    expect(undoStatusFor("done")).toBe("done");
+    expect(undoStatusFor("in_progress")).toBe("in_progress");
   });
 
   it("#79 a Done Goal's detail offers Reopen and no Mark done", () => {

@@ -214,6 +214,27 @@ test.describe("the Goals page", () => {
     ).toHaveCount(0);
   });
 
+  test("#77 #79 Close on a sheet returns focus to the button that opened it", async ({
+    page,
+    baseURL,
+  }) => {
+    await openGoals(page, baseURL!);
+    const opener = page.getByRole("button", { name: "New goal" });
+    await opener.click();
+    await page
+      .getByRole("dialog", { name: "New goal" })
+      .getByRole("button", { name: "Close" })
+      .click();
+    await expect(opener).toBeFocused();
+    const more = page.getByRole("button", { name: "More actions for Methods section for Friday" });
+    await more.click();
+    await page
+      .getByRole("dialog", { name: "Goal menu" })
+      .getByRole("button", { name: "Close" })
+      .click();
+    await expect(more).toBeFocused();
+  });
+
   test("#77 AC2 the arrow opens the goal dialogue with the line; Close keeps the draft", async ({
     page,
     baseURL,

@@ -53,19 +53,23 @@ export function Toast({
   );
 }
 
-function useModal(open: boolean, onClose: () => void) {
+/**
+ * `returnTo` is the button that opened the sheet. Safari does not focus a button on click, so the
+ * active element at opening time is not a reliable opener.
+ */
+function useModal(open: boolean, onClose: () => void, returnTo: HTMLElement | null) {
   const dialog = useRef<HTMLDialogElement>(null);
   const opener = useRef<Element | null>(null);
   useEffect(() => {
     const element = dialog.current;
     if (!element) return;
     if (open && !element.open) {
-      opener.current = document.activeElement;
+      opener.current = returnTo ?? document.activeElement;
       element.showModal();
     } else if (!open && element.open) {
       element.close();
     }
-  }, [open]);
+  }, [open, returnTo]);
   const onDialogClose = () => {
     onClose();
     if (opener.current instanceof HTMLElement) opener.current.focus();
@@ -79,13 +83,15 @@ export function GoalMenu({
   busy,
   onChoose,
   onClose,
+  returnTo,
 }: {
   status: GoalStatus | null;
   busy: boolean;
   onChoose: (status: "on_hold" | "done") => void;
   onClose: () => void;
+  returnTo: HTMLElement | null;
 }) {
-  const { dialog, onDialogClose } = useModal(status !== null, onClose);
+  const { dialog, onDialogClose } = useModal(status !== null, onClose, returnTo);
   return (
     <dialog
       aria-labelledby="goal-menu-title"
@@ -116,7 +122,11 @@ export function GoalMenu({
           Mark done
         </button>
       ) : null}
-      <button className="button-plain goals-sheet-close" onClick={() => onClose()} type="button">
+      <button
+        className="button-plain goals-sheet-close"
+        onClick={() => dialog.current?.close()}
+        type="button"
+      >
         Close
       </button>
     </dialog>
@@ -152,12 +162,14 @@ export function NewGoalSheet({
   open,
   initialDraft,
   onClose,
+  returnTo,
 }: {
   open: boolean;
   initialDraft: string;
   onClose: () => void;
+  returnTo: HTMLElement | null;
 }) {
-  const { dialog, onDialogClose } = useModal(open, onClose);
+  const { dialog, onDialogClose } = useModal(open, onClose, returnTo);
   const [draft, setDraft] = useState(initialDraft);
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -179,7 +191,7 @@ export function NewGoalSheet({
         <h2 className="home-sheet-title" id="new-goal-title">
           New goal
         </h2>
-        <button className="try-link" onClick={() => onClose()} type="button">
+        <button className="try-link" onClick={() => dialog.current?.close()} type="button">
           Close
         </button>
       </div>

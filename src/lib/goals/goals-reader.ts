@@ -29,6 +29,28 @@ const number = (value: unknown) => (typeof value === "number" ? value : Number(v
 const STATUSES: GoalStatus[] = ["planned", "in_progress", "on_hold", "done"];
 const STATES = ["open", "on_hold", "completed", "restarted"] as const;
 
+/** Ids per `in` filter: a long history never makes one request URL too long for the gateway. */
+const CHUNK = 100;
+
+async function rowsIn(
+  table: (name: string) => Query,
+  name: string,
+  column: string,
+  ids: string[],
+): Promise<Row[]> {
+  const parts: Promise<Row[]>[] = [];
+  for (let start = 0; start < ids.length; start += CHUNK) {
+    parts.push(
+      rows(
+        table(name)
+          .select("*")
+          .in(column, ids.slice(start, start + CHUNK)),
+      ),
+    );
+  }
+  return (await Promise.all(parts)).flat();
+}
+
 async function rows(query: Query): Promise<Row[]> {
   const result = await query;
   if (result.error) throw new Error("goals read failed");
@@ -43,14 +65,11 @@ export async function readGoalsData(
   const goalRows = await rows(from("goals").select("*").eq("user_id", userId));
   const goalIds = goalRows.map((row) => text(row.id));
   const [stepRows, sessionRows] = await Promise.all([
-    goalIds.length > 0 ? rows(from("steps").select("*").in("goal_id", goalIds)) : [],
+    rowsIn(from, "steps", "goal_id", goalIds),
     rows(from("sessions").select("*").eq("user_id", userId)),
   ]);
   const sessionIds = sessionRows.map((row) => text(row.id));
-  const sessionStepRows =
-    sessionIds.length > 0
-      ? await rows(from("session_steps").select("*").in("session_id", sessionIds))
-      : [];
+  const sessionStepRows = await rowsIn(from, "session_steps", "session_id", sessionIds);
 
   return {
     goals: goalRows.map((row) => ({

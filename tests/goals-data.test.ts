@@ -135,6 +135,45 @@ describe("the Goals reader", () => {
     for (const value of ["not-a-uuid", "", 3, null, `${ID}x`]) expect(isGoalId(value)).toBe(false);
   });
 
+  it("#73 reads a long history in chunks, so no request URL grows with the account", async () => {
+    const goals = Array.from({ length: 3 }, (_, index) => ({
+      id: `11111111-1111-4111-8111-${String(index).padStart(12, "0")}`,
+      user_id: USER,
+      title: `Goal ${index}`,
+      status: "in_progress",
+      created_at: "2026-11-01T09:00:00Z",
+    }));
+    const sessions = Array.from({ length: 250 }, (_, index) => ({
+      id: `22222222-2222-4222-8222-${String(index).padStart(12, "0")}`,
+      goal_id: goals[0].id,
+      user_id: USER,
+      state: "completed",
+      companion_id: "oppenheimer",
+    }));
+    const inSizes: number[] = [];
+    const client = {
+      from(table: string) {
+        const query = {
+          select: () => query,
+          eq: () => query,
+          in: (_column: string, values: string[]) => {
+            inSizes.push(values.length);
+            return query;
+          },
+          then: (resolve: (value: { data: unknown[]; error: null }) => void) =>
+            resolve({
+              data: table === "goals" ? goals : table === "sessions" ? sessions : [],
+              error: null,
+            }),
+        };
+        return query;
+      },
+    };
+    await readGoalsData(client as never, USER);
+    expect(Math.max(...inSizes)).toBeLessThanOrEqual(100);
+    expect(inSizes.reduce((sum, size) => sum + size, 0)).toBe(3 + 250);
+  });
+
   it("#73 reads the account's rows; a missing kind is one_time", async () => {
     const tables: Record<string, unknown[]> = {
       goals: [

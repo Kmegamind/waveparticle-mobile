@@ -139,6 +139,14 @@ export function parseTab(raw: string | string[] | undefined): GoalsTab {
   return TABS.includes(value as GoalsTab) ? (value as GoalsTab) : "progress";
 }
 
+/**
+ * The status Undo sends back. Main's status rule takes `in_progress`, `on_hold` and `done`; a
+ * `planned` Goal shows as In progress, so Undo returns it to In progress (#79).
+ */
+export function undoStatusFor(previous: GoalStatus): Exclude<GoalStatus, "planned"> {
+  return previous === "planned" ? "in_progress" : previous;
+}
+
 export function matchesSearch(query: string, title: string): boolean {
   const needle = query.trim().toLowerCase();
   return needle.length === 0 || title.toLowerCase().includes(needle);
@@ -321,8 +329,9 @@ export function goalDetail(
     kind: goal.kind,
     statusLabel: STATUS_LABEL[goal.status],
     companion: row.companion,
+    // A Done Goal has no open Plan: its unfinished Steps are not shown (#79 AC3).
     steps:
-      steps.length === 0
+      steps.length === 0 || goal.status === "done"
         ? null
         : steps.map((step) => ({
             id: step.id,

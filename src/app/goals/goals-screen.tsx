@@ -49,12 +49,20 @@ export function GoalsScreen({
   const [tab, setTab] = useState<GoalsTab>(initialTab);
   const [query, setQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
-  const [menu, setMenu] = useState<{ goalId: string; status: GoalStatus } | null>(null);
-  const [newGoal, setNewGoal] = useState<{ draft: string; opened: number } | null>(null);
+  const [menu, setMenu] = useState<{
+    goalId: string;
+    status: GoalStatus;
+    opener: HTMLElement | null;
+  } | null>(null);
+  const [newGoal, setNewGoal] = useState<{
+    draft: string;
+    opened: number;
+    opener: HTMLElement | null;
+  } | null>(null);
   const [openings, setOpenings] = useState(0);
-  const openNewGoal = () => {
+  const openNewGoal = (event: { currentTarget: HTMLElement }) => {
     setOpenings((count) => count + 1);
-    setNewGoal({ draft: keptDraft(), opened: openings + 1 });
+    setNewGoal({ draft: keptDraft(), opened: openings + 1, opener: event.currentTarget });
   };
   const { toast, busy, change, undo, close } = useGoalChanges();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -90,7 +98,7 @@ export function GoalsScreen({
         busy={busy}
         key={row.id}
         onChange={(kind) => void change(kind, row.id)}
-        onMenu={() => setMenu({ goalId: row.id, status: row.status })}
+        onMenu={(opener) => setMenu({ goalId: row.id, status: row.status, opener })}
         ready={ready}
         row={row}
       />
@@ -185,6 +193,7 @@ export function GoalsScreen({
           if (target) void change(status, target.goalId);
         }}
         onClose={() => setMenu(null)}
+        returnTo={menu?.opener ?? null}
         status={menu?.status ?? null}
       />
       <NewGoalSheet
@@ -192,6 +201,7 @@ export function GoalsScreen({
         key={newGoal?.opened ?? 0}
         onClose={() => setNewGoal(null)}
         open={newGoal !== null}
+        returnTo={newGoal?.opener ?? null}
       />
       {toast ? <Toast onClose={close} onUndo={() => void undo()} toast={toast} /> : null}
     </main>
@@ -209,7 +219,7 @@ function Row({
   ready: boolean;
   busy: boolean;
   onChange: (kind: "resume" | "reopen") => void;
-  onMenu: () => void;
+  onMenu: (opener: HTMLElement) => void;
 }) {
   return (
     <div className="goals-row">
@@ -248,7 +258,7 @@ function Row({
         aria-haspopup="dialog"
         aria-label={`More actions for ${row.title}`}
         className="home-more"
-        onClick={onMenu}
+        onClick={(event) => onMenu(event.currentTarget)}
         type="button"
       >
         <span aria-hidden="true">⋯</span>
@@ -264,7 +274,7 @@ function Empty({
 }: {
   tab: GoalsTab;
   query: string;
-  onNew: (() => void) | null;
+  onNew: ((event: { currentTarget: HTMLElement }) => void) | null;
 }) {
   if (query.trim()) return <p className="goals-empty">No matches.</p>;
   return (

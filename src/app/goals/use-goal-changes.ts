@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+import { undoStatusFor } from "@/lib/goals/goals-view";
 import type { SetGoalStatusOutcome } from "@/lib/home/goal-status";
 import { resumeGoalAction, setGoalStatusAction } from "./actions";
 import type { GoalToast } from "./goal-sheets";
@@ -61,7 +62,7 @@ export function useGoalChanges() {
     const { goalId, previous, parkedSessionId } = current.undo;
     const outcome = await setGoalStatusAction({
       goalId,
-      status: previous,
+      status: undoStatusFor(previous),
       sessionId: parkedSessionId,
     }).catch(() => failed);
     if (outcome.status !== "ok") setToast({ ...current, text: UNDO_FAILED, failed: true });
