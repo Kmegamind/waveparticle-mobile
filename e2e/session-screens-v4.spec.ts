@@ -266,7 +266,9 @@ test.describe("the plan", () => {
     await expect(page.getByRole("heading", { name: "This is outside the story." })).toBeVisible();
   });
 
-  test("GD-F the failed split is a system box with three ways forward", async ({ page }) => {
+  test("GD-F the failed split is a system box with three ways forward (prototype v4)", async ({
+    page,
+  }) => {
     await openDialogue(page);
     await page.getByLabel("Your goal").fill("Write the report [fail-split]");
     await page.getByRole("button", { name: "Just split it" }).click();
@@ -276,5 +278,123 @@ test.describe("the plan", () => {
     await expect(alert.getByRole("button", { name: "Try again" })).toHaveClass(/button-filled/);
     await expect(alert.getByRole("button", { name: "Use one step" })).toHaveClass(/button-gray/);
     await expect(alert.getByRole("button", { name: "Change my line" })).toHaveClass(/try-link/);
+  });
+});
+
+const FOUR_STEPS = [
+  { title: "Gather what you need", description: "Collect the notes and sources.", minutes: 9 },
+  { title: "Do the first part", description: "", minutes: 10 },
+  { title: "Do the middle part", description: "", minutes: 10 },
+  { title: "Check it through", description: "", minutes: 10 },
+];
+
+async function openFocus(page: Page) {
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto("/try");
+  await expect(page.locator('[data-ready="true"]')).toBeVisible();
+  await page.evaluate((steps) => {
+    window.localStorage.removeItem("waveparticle.prototype.session");
+    window.localStorage.setItem(
+      "waveparticle.prototype",
+      JSON.stringify({
+        version: 1,
+        goal: { text: "Methods section for Friday", minutes: 39 },
+        steps,
+        currentStep: 0,
+      }),
+    );
+  }, FOUR_STEPS);
+  await page.goto("/try/focus");
+  await expect(page.locator('main.focus-page[data-ready="true"]')).toBeVisible();
+}
+
+test.describe("focus page", () => {
+  test("#238 AC1 a top row with Step 1 of 4 and the ticks, then the timer centred", async ({
+    page,
+  }) => {
+    await openFocus(page);
+    const label = page.locator(".focus-step-label");
+    await expect(label).toHaveText("Step 1 of 4");
+    await expect(label).toHaveCSS("text-transform", "uppercase");
+    const ticks = page.locator(".focus-ticks");
+    await expect(ticks.locator(".focus-mark")).toHaveCount(4);
+    await expect(ticks.locator(".focus-mark-now")).toHaveCount(1);
+    const labelBox = await box(label);
+    const ticksBox = await box(ticks);
+    expect(ticksBox.x).toBeGreaterThan(labelBox.x + labelBox.width);
+    expect(ticksBox.x + ticksBox.width).toBeGreaterThan(360);
+    const clock = page.getByRole("timer", { name: "Time left" });
+    await expect(clock).toHaveCSS("font-size", "46px");
+    await expect(clock).toHaveCSS("font-family", /Atkinson Hyperlegible Mono/);
+    const clockBox = await box(clock);
+    expect(clockBox.y).toBeGreaterThan(labelBox.y + labelBox.height - 1);
+    const text = await clock.evaluate((element) => {
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const rect = range.getBoundingClientRect();
+      return rect.x + rect.width / 2;
+    });
+    expect(Math.abs(text - 195)).toBeLessThan(4);
+  });
+
+  test("#238 AC2 MY GOAL sits beside his round portrait", async ({ page }) => {
+    await openFocus(page);
+    const row = page.locator(".focus-mygoal");
+    const portrait = await box(row.locator(".focus-avatar"));
+    expect(Math.round(portrait.width)).toBe(48);
+    await expect(row.locator(".focus-avatar img")).toHaveAttribute("alt", "");
+    await expect(row.getByRole("heading", { name: "My goal" })).toBeVisible();
+  });
+
+  test("#238 AC3 his slip holds the label, the dots and the chevrons", async ({ page }) => {
+    await openFocus(page);
+    const slip = page.getByTestId("story-card");
+    await expect(slip.locator(".focus-card-label")).toHaveText("Where I am");
+    const earlier = slip.getByRole("button", { name: "Earlier card" });
+    const newer = slip.getByRole("button", { name: "Newer card" });
+    await expect(earlier).toHaveText("‹");
+    await expect(newer).toHaveText("›");
+    await expect(earlier).toBeDisabled();
+    await expect(slip.locator(".focus-dot")).toHaveCount(1);
+    await expect(slip.locator(".focus-card-text")).toHaveCSS("height", "124px");
+  });
+
+  test("#238 AC4 the YOUR GOAL panel with Now, the description and Your steps", async ({
+    page,
+  }) => {
+    await openFocus(page);
+    const panel = page.locator("section[aria-labelledby=your-side]");
+    await expect(panel).toHaveCSS("border-radius", "14px");
+    await expect(panel.locator(".focus-panel-goal")).toHaveText("Methods section for Friday");
+    await expect(panel.locator(".focus-panel-now").first()).toHaveText("Now Gather what you need");
+    await expect(panel).toContainText("Collect the notes and sources.");
+    const more = panel.getByRole("button", { name: "Your steps ▾" });
+    await expect(more).toHaveAttribute("aria-expanded", "false");
+    await more.click();
+    await expect(panel.getByRole("button", { name: "Your steps ▴" })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+  });
+
+  test("#238 F1 the open list marks done, now and to do with ✓ ● ○", async ({ page }) => {
+    await openFocus(page);
+    await page.getByRole("button", { name: "Your steps ▾" }).click();
+    const rows = page.locator("#your-steps li");
+    await expect(rows).toHaveCount(4);
+    await expect(rows.nth(0).locator(".focus-steps-mark")).toHaveText("●");
+    await expect(rows.nth(1).locator(".focus-steps-mark")).toHaveText("○");
+    await expect(rows.nth(0)).toContainText("Collect the notes and sources.");
+    await expect(rows.nth(0)).toHaveCSS("font-weight", "700");
+  });
+
+  test("#238 AC5 Done and Pause are 56 px paper tags pinned at the bottom", async ({ page }) => {
+    await openFocus(page);
+    const done = await box(page.getByRole("button", { name: "Done", exact: true }));
+    const pause = await box(page.getByRole("button", { name: "Pause" }));
+    expect(Math.round(done.height)).toBe(56);
+    expect(Math.round(pause.height)).toBe(56);
+    expect(done.width).toBeGreaterThan(pause.width);
+    expect(done.y + done.height).toBeGreaterThan(750);
   });
 });
