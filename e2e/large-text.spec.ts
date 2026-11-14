@@ -233,6 +233,35 @@ test("finding: on a short landscape screen at 200% his card, Done and Pause can 
   }
 });
 
+test("#100 AC3 body text is 17 px with a 1.5 line height, left aligned, at most about 60 characters a line", async ({
+  page,
+  context,
+}) => {
+  // Pins what main already does; his three-sentence limit is checked in tests/live-step-cards.test.ts.
+  await page.setViewportSize({ width: 1024, height: 800 });
+  await signIn(context, baseUrlOf(page), sampleGoals);
+  await page.goto("/me");
+  const body = await page.evaluate(() => {
+    const style = getComputedStyle(document.body);
+    const probe = document.createElement("span");
+    probe.textContent = "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789";
+    document.body.append(probe);
+    const perChar = probe.getBoundingClientRect().width / probe.textContent.length;
+    probe.remove();
+    const column = document.querySelector(".app-shell")!.getBoundingClientRect().width;
+    return {
+      size: style.fontSize,
+      leading: style.lineHeight,
+      align: style.textAlign,
+      perLine: Math.round(column / perChar),
+    };
+  });
+  expect(body).toMatchObject({ size: "17px", leading: "25.5px" });
+  expect(["start", "left"]).toContain(body.align);
+  // Even on a wide screen the app keeps its phone column.
+  expect(body.perLine).toBeLessThanOrEqual(62);
+});
+
 /** Every element whose animation or transition still lasts longer than a hundredth of a second. */
 async function movingElements(page: Page): Promise<string[]> {
   return page.evaluate(() => {
