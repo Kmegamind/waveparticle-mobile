@@ -1,0 +1,32 @@
+"use server";
+
+import { createServerModelGateway } from "@/lib/model-gateway/server";
+import { accountPauseMessage, accountRestReply } from "@/lib/progress/account-lines";
+import { isPrototypeEnabled } from "@/lib/prototype/config";
+import { modelIsConfigured } from "@/lib/prototype/focus-cards";
+import type { LineResponse, RestReplyResponse } from "@/lib/prototype/rest-lines";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/supabase/session";
+
+// Server actions of the signed-in rest page (#257). No test data: without the model they fail.
+
+async function isSignedIn() {
+  if (!isPrototypeEnabled()) return false;
+  return (await getCurrentUser(await createSupabaseServerClient())) !== null;
+}
+
+function gateway() {
+  return modelIsConfigured() ? createServerModelGateway() : null;
+}
+
+/** His first message for this Pause. Nothing about the request is logged. */
+export async function loadAccountPauseMessage(request: unknown): Promise<LineResponse> {
+  if (!(await isSignedIn())) return { status: "failed" };
+  return accountPauseMessage(request, gateway());
+}
+
+/** His reply on the rest page. The safety gate runs first, before any model call. */
+export async function loadAccountRestReply(request: unknown): Promise<RestReplyResponse> {
+  if (!(await isSignedIn())) return { status: "failed" };
+  return accountRestReply(request, gateway());
+}

@@ -391,9 +391,10 @@ function withRestFields(session: FocusSession): FocusSession {
   };
 }
 
-export function loadSession(storage: SessionStorage): FocusSession | null {
+/** `key` is the test path's own key unless a signed-in session passes its own (#257). */
+export function loadSession(storage: SessionStorage, key = SESSION_KEY): FocusSession | null {
   try {
-    const raw = storage.getItem(SESSION_KEY);
+    const raw = storage.getItem(key);
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     return isSession(parsed) ? withRestFields(parsed) : null;
@@ -402,9 +403,13 @@ export function loadSession(storage: SessionStorage): FocusSession | null {
   }
 }
 
-export function saveSession(storage: SessionStorage, session: FocusSession): void {
+export function saveSession(
+  storage: SessionStorage,
+  session: FocusSession,
+  key = SESSION_KEY,
+): void {
   try {
-    storage.setItem(SESSION_KEY, JSON.stringify(session));
+    storage.setItem(key, JSON.stringify(session));
   } catch {
     // Storage is unavailable; the page keeps working for this visit only.
   }
