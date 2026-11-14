@@ -1921,3 +1921,338 @@ a {
   color: var(--ink-2);
   font-style: italic;
 }
+
+/* Home (issue 268), prototype v4 HOME-0, HOME-1, HOME-MENU and HOME-NONE. */
+.home-page {
+  align-content: start;
+  display: grid;
+  gap: var(--space-screen-top);
+  padding-bottom: var(--space-screen-bottom);
+}
+
+.home-desk {
+  align-items: center;
+  display: flex;
+  gap: var(--space-control-gap);
+}
+
+.home-desk p {
+  color: var(--ink-2);
+  font-size: var(--text-body-size);
+  font-weight: 700;
+  margin: 0;
+}
+
+.home-desk-portrait,
+.home-portrait,
+.home-trace-portrait {
+  background: var(--tag-fill);
+  border: 1px solid var(--tag-edge);
+  border-radius: 50%;
+}
+
+.home-desk-portrait {
+  height: 2.5rem;
+  width: 2.5rem;
+}
+
+.home-card {
+  background: var(--raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-paper);
+  display: grid;
+  gap: var(--space-control-gap);
+  padding: var(--space-card-pad);
+}
+
+.home-card p,
+.home-card h2 {
+  margin: 0;
+}
+
+.home-card-top {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.home-card-title {
+  font-family: var(--type-display);
+  font-size: var(--text-card-title-size);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+}
+
+.home-card-title-large {
+  font-size: var(--text-display-size);
+  letter-spacing: -0.025em;
+  line-height: var(--text-display-leading);
+}
+
+.home-card-text,
+.home-step {
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-leading);
+}
+
+.home-slip {
+  border: 1px solid var(--hairline);
+  margin-top: var(--space-control-gap);
+  transform: none;
+}
+
+.home-slip p {
+  margin: 0;
+}
+
+.home-card .continue-link {
+  align-items: center;
+  background: var(--tag-fill);
+  border: 1px solid var(--tag-edge);
+  border-radius: var(--r-field);
+  box-shadow: 0 2px 0 0 var(--tag-edge);
+  color: var(--tag-ink);
+  display: flex;
+  font-size: var(--text-button-size);
+  font-weight: 700;
+  justify-content: center;
+  min-height: var(--button-height);
+  text-decoration: none;
+}
+
+.home-card .continue-link:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 3px;
+}
+
+.home-link {
+  align-items: center;
+  align-self: center;
+  color: var(--ink);
+  display: inline-flex;
+  font-size: var(--text-link-size);
+  font-weight: 700;
+  justify-self: center;
+  min-height: var(--target);
+  padding-inline: var(--space-small-gap);
+  text-decoration: underline;
+}
+
+.home-more {
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  font-size: var(--text-sheet-title-size);
+  font-weight: 700;
+  min-height: var(--target);
+  min-width: var(--target);
+}
+
+.home-more:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 2px;
+}
+
+.home-section {
+  display: grid;
+  gap: var(--space-control-gap);
+}
+
+.home-portraits,
+.home-list,
+.home-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-control-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.home-list {
+  display: grid;
+}
+
+.home-list p {
+  margin: 0;
+}
+
+.home-list-title {
+  font-size: var(--text-body-size);
+  font-weight: 700;
+}
+
+.home-list-companion {
+  color: var(--ink-2);
+  font-size: var(--text-caption-size);
+}
+
+.home-portrait {
+  height: 4rem;
+  width: 4rem;
+}
+
+.home-trace {
+  align-items: center;
+  display: flex;
+  gap: var(--space-control-gap);
+}
+
+.home-trace-portrait {
+  height: 6rem;
+  width: 6rem;
+}
+
+.home-chip {
+  align-items: center;
+  background: var(--raised);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-chip);
+  color: var(--ink);
+  display: inline-flex;
+  font-size: var(--text-link-size);
+  font-weight: 600;
+  min-height: var(--target);
+  padding-inline: var(--button-small-padding);
+  text-decoration: none;
+}
+
+.home-chip:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 2px;
+}
+
+.home-sheet {
+  background: var(--raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
+  bottom: 0;
+  color: var(--ink);
+  gap: var(--space-control-gap);
+  margin: auto auto 0;
+  max-height: 80svh;
+  max-width: var(--layout-phone-max);
+  padding: var(--space-screen-top) var(--space-screen-inline)
+    calc(var(--space-screen-top) + env(safe-area-inset-bottom));
+  top: auto;
+  width: 100%;
+}
+
+.home-sheet[open] {
+  display: grid;
+}
+
+.home-sheet::backdrop {
+  background: var(--shade);
+}
+
+.home-sheet-title {
+  font-family: var(--type-display);
+  font-size: var(--text-sheet-title-size);
+  font-weight: 800;
+  margin: 0;
+}
+
+.home-sheet p {
+  margin: 0;
+}
+
+/* Companions list COMP (issue 268), prototype v4: rows with portrait, name, tags and his line. */
+.comp-page {
+  align-content: start;
+  display: grid;
+  gap: var(--space-control-gap);
+  padding-bottom: var(--space-screen-bottom);
+}
+
+.comp-subtitle {
+  color: var(--ink-2);
+  font-size: var(--text-body-size);
+  margin: 0;
+}
+
+.comp-list {
+  border-top: 1px solid var(--hairline);
+  display: grid;
+}
+
+.comp-row {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--hairline);
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  gap: var(--space-screen-bottom);
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: var(--target);
+  padding: var(--space-screen-bottom) 0;
+  text-align: left;
+}
+
+.comp-row[aria-checked="true"] {
+  background: var(--tint);
+}
+
+.comp-row:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: -3px;
+}
+
+.comp-portrait {
+  background: var(--tag-fill);
+  border: 1px solid var(--tag-edge);
+  border-radius: 50%;
+  height: 4rem;
+  width: 4rem;
+}
+
+.comp-text {
+  display: grid;
+  gap: var(--space-row-after);
+  min-width: 0;
+}
+
+.comp-name {
+  font-family: var(--type-display);
+  font-size: var(--text-sheet-title-size);
+  font-weight: 800;
+}
+
+.comp-tags {
+  color: var(--ink-2);
+  font-size: var(--text-link-size);
+}
+
+.comp-line {
+  font-family: var(--type-voice);
+  font-size: var(--text-slip-small-size);
+  line-height: var(--text-slip-small-leading);
+}
+
+.comp-check {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.comp-enter {
+  display: grid;
+  gap: var(--space-small-gap);
+  margin-top: var(--space-control-gap);
+}
+
+.comp-reason {
+  color: var(--ink-2);
+  font-size: var(--text-caption-size);
+  margin: 0;
+}
+
+/* Links drawn as paper-tag buttons on Home carry no underline (issue 268). */
+.home-page a.button-filled {
+  text-decoration: none;
+}
