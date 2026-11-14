@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
 import { isGoalId, readGoalsData } from "@/lib/goals/goals-reader";
-import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { GoalDetailScreen } from "./goal-detail-screen";
@@ -20,5 +19,5 @@ export default async function GoalDetailPage({ params }: PageProps<"/goals/[id]"
   // Row-level security keeps the read to this account: another account's Goal is simply absent.
   const data = await readGoalsData(client, user.id);
   if (!data.goals.some((goal) => goal.id === id)) notFound();
-  return <GoalDetailScreen data={data} goalId={id} sessionPagesEnabled={isPrototypeEnabled()} />;
+  return <GoalDetailScreen data={data} goalId={id} />;
 }

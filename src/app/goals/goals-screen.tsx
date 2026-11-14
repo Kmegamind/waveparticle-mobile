@@ -35,15 +35,7 @@ const EMPTY: Record<GoalsTab, string> = {
 
 const EPOCH = { now: new Date(0), timeZone: "UTC" };
 
-export function GoalsScreen({
-  data,
-  initialTab,
-  sessionPagesEnabled,
-}: {
-  data: GoalsData;
-  initialTab: GoalsTab;
-  sessionPagesEnabled: boolean;
-}) {
+export function GoalsScreen({ data, initialTab }: { data: GoalsData; initialTab: GoalsTab }) {
   const router = useRouter();
   const local = useLocalNow();
   const [tab, setTab] = useState<GoalsTab>(initialTab);
@@ -67,10 +59,7 @@ export function GoalsScreen({
   const { toast, busy, change, undo, close } = useGoalChanges();
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  const lists = useMemo(
-    () => goalsLists(data, { ...(local ?? EPOCH), sessionPagesEnabled }),
-    [data, local, sessionPagesEnabled],
-  );
+  const lists = useMemo(() => goalsLists(data, local ?? EPOCH), [data, local]);
   const ready = local !== null;
 
   function choose(next: GoalsTab) {
@@ -91,7 +80,7 @@ export function GoalsScreen({
 
   function rowsPanel(rows: GoalRow[], grouped: boolean) {
     const filtered = rows.filter(visible);
-    if (filtered.length === 0) return <Empty tab={tab} query={query} onNew={newGoalLink} />;
+    if (filtered.length === 0) return <Empty tab={tab} query={query} onNew={openNewGoal} />;
     const shown = grouped && !showAll ? filtered.slice(0, SHOW_FIRST) : filtered;
     const render = (row: GoalRow) => (
       <Row
@@ -121,22 +110,18 @@ export function GoalsScreen({
     );
   }
 
-  const newGoalLink = sessionPagesEnabled ? openNewGoal : null;
-
   return (
     <main className="app-screen goals-page" data-ready={ready ? "true" : "false"}>
       <div className="goals-head">
         <h1>Goals</h1>
-        {sessionPagesEnabled ? (
-          <button
-            aria-label="New goal"
-            className="button-gray button-small"
-            onClick={openNewGoal}
-            type="button"
-          >
-            + New goal
-          </button>
-        ) : null}
+        <button
+          aria-label="New goal"
+          className="button-gray button-small"
+          onClick={openNewGoal}
+          type="button"
+        >
+          + New goal
+        </button>
       </div>
       <input
         aria-label="Search goals and history"
@@ -274,13 +259,13 @@ function Empty({
 }: {
   tab: GoalsTab;
   query: string;
-  onNew: ((event: { currentTarget: HTMLElement }) => void) | null;
+  onNew: (event: { currentTarget: HTMLElement }) => void;
 }) {
   if (query.trim()) return <p className="goals-empty">No matches.</p>;
   return (
     <p className="goals-empty">
       {EMPTY[tab]}
-      {tab === "progress" && onNew ? (
+      {tab === "progress" ? (
         <>
           {" "}
           <button className="try-link" onClick={onNew} type="button">

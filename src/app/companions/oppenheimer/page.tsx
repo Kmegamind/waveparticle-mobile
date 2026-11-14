@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { PERIOD_STATUS } from "@/content/oppenheimer/periods";
-import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
 import { lifePath } from "@/lib/summary/life-path";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -24,7 +23,6 @@ async function LifePathContent() {
   const user = await getCurrentUser(client);
   if (!user) redirect("/auth/sign-in");
   const view = lifePath(await createSupabaseProgressStore(client).read(user.id, user.id));
-  const canBegin = isPrototypeEnabled();
 
   return (
     <main className="app-screen life-path">
@@ -48,7 +46,7 @@ async function LifePathContent() {
         </header>
       </div>
       <p className="try-caption">Period names are a {PERIOD_STATUS}.</p>
-      <LifePathList canBegin={canBegin} view={view} />
+      <LifePathList view={view} />
       <OpenOnCurrent />
     </main>
   );

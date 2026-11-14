@@ -14,8 +14,7 @@ import {
 
 // Wednesday 2026-11-11, 15:00 in Berlin.
 const NOW = new Date("2026-11-11T14:00:00Z");
-const on: ViewOptions = { now: NOW, timeZone: "Europe/Berlin", sessionPagesEnabled: true };
-const off: ViewOptions = { ...on, sessionPagesEnabled: false };
+const on: ViewOptions = { now: NOW, timeZone: "Europe/Berlin" };
 
 const G = {
   methods: "11111111-1111-4111-8111-111111111111",
@@ -213,7 +212,7 @@ describe("the Goals lists (prototype v4 G1, G5, G5-D)", () => {
     expect(goalsLists(input, on).oneTime[0].activity).toBe("1 done today");
   });
 
-  it("#73 AC3 a row offers Continue with Steps, Start without, and nothing when the session pages are off", () => {
+  it("#73 AC3 #278 a row always offers Continue with Steps and Start without", () => {
     const lists = goalsLists(data(), on);
     expect(lists.oneTime[0]).toMatchObject({
       action: "continue",
@@ -223,17 +222,12 @@ describe("the Goals lists (prototype v4 G1, G5, G5-D)", () => {
       action: "start",
       actionHref: startHref("IELTS listening, section 3"),
     });
-    const quiet = goalsLists(data(), off);
-    expect(quiet.oneTime[0].action).toBeNull();
-    expect(quiet.ongoing[0].action).toBeNull();
   });
 
-  it("#79 AC2 AC5 On hold rows offer Resume and Done rows Reopen, also with the session pages off", () => {
-    for (const options of [on, off]) {
-      const lists = goalsLists(data(), options);
-      expect(lists.hold[0].action).toBe("resume");
-      expect(lists.done[0].action).toBe("reopen");
-    }
+  it("#79 AC2 AC5 On hold rows offer Resume and Done rows Reopen", () => {
+    const lists = goalsLists(data(), on);
+    expect(lists.hold[0].action).toBe("resume");
+    expect(lists.done[0].action).toBe("reopen");
   });
 
   it("#73 a row shows the Companion of the Goal's newest session; an unknown one is Oppenheimer", () => {

@@ -1,18 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
-import {
-  accountSessionPathIsHidden,
-  isPrototypeEnabled,
-  tryPathIsHidden,
-} from "./lib/prototype/config";
+import { isPrototypeEnabled, tryPathIsHidden } from "./lib/prototype/config";
 import { updateSession } from "./lib/supabase/session";
 
 export async function proxy(request: NextRequest) {
   // The sign-in-free test path exists only when PROTOTYPE_ENABLED is 1 (#208).
-  // The signed-in /goal, /focus and /rest (#32, #257) are hidden with it until the per-account
-  // daily cap on model calls (#256) lands.
+  // The signed-in /goal, /focus, /rest and /end exist in every environment (#278).
   const enabled = isPrototypeEnabled();
   const pathname = request.nextUrl.pathname;
-  if (tryPathIsHidden(pathname, enabled) || accountSessionPathIsHidden(pathname, enabled)) {
+  if (tryPathIsHidden(pathname, enabled)) {
     return new NextResponse("Not found", { status: 404 });
   }
   try {

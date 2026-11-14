@@ -2,7 +2,6 @@
 
 import { createServerModelGateway } from "@/lib/model-gateway/server";
 import { accountPauseMessage, accountRestReply } from "@/lib/progress/account-lines";
-import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { modelIsConfigured } from "@/lib/prototype/focus-cards";
 import type { LineResponse, RestReplyResponse } from "@/lib/prototype/rest-lines";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -11,7 +10,6 @@ import { getCurrentUser } from "@/lib/supabase/session";
 // Server actions of the signed-in rest page (#257). No test data: without the model they fail.
 
 async function isSignedIn() {
-  if (!isPrototypeEnabled()) return false;
   return (await getCurrentUser(await createSupabaseServerClient())) !== null;
 }
 

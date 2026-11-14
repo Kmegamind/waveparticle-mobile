@@ -1,6 +1,5 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { loadFocusPlan } from "../focus/account-progress";
@@ -16,7 +15,6 @@ export default function RestPage() {
 
 async function RestContent() {
   await connection();
-  if (!isPrototypeEnabled()) notFound();
   const client = await createSupabaseServerClient();
   const user = await getCurrentUser(client);
   if (!user) redirect("/auth/sign-in");

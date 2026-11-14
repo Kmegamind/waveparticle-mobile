@@ -7,7 +7,7 @@ import type { LifePathRow, LifePathView } from "@/lib/summary/life-path";
  * ring, italic), current (heavy ring and the card) and later (dotted circle, title only, not
  * focusable, read as "Later, not available"). No dates or ages (PERIODS).
  */
-export function LifePathList({ view, canBegin }: { view: LifePathView; canBegin: boolean }) {
+export function LifePathList({ view }: { view: LifePathView }) {
   return (
     <ol className="life-periods">
       {view.periods.map((period) => (
@@ -15,7 +15,7 @@ export function LifePathList({ view, canBegin }: { view: LifePathView; canBegin:
           <h2 className="life-period">{period.name}</h2>
           <ol className="life-rows">
             {period.rows.map((row) => (
-              <Row canBegin={canBegin} key={row.id} row={row} />
+              <Row key={row.id} row={row} />
             ))}
           </ol>
         </li>
@@ -30,7 +30,7 @@ const NAMES: Record<Exclude<LifePathRow["state"], "later">, string> = {
   current: "Current story: ",
 };
 
-function Row({ row, canBegin }: { row: LifePathRow; canBegin: boolean }) {
+function Row({ row }: { row: LifePathRow }) {
   const node = <span aria-hidden="true" className={`life-node life-node-${row.state}`} />;
 
   if (row.state === "later") {
@@ -58,14 +58,10 @@ function Row({ row, canBegin }: { row: LifePathRow; canBegin: boolean }) {
             {row.title}
           </h3>
           <p className="life-line">{row.line}</p>
-          {canBegin ? (
-            // The signed-in run plays this story: a new session takes the current story (#258).
-            <Link className="button-filled" href="/goal">
-              Begin
-            </Link>
-          ) : (
-            <p className="try-caption">The goal dialogue is in test builds only.</p>
-          )}
+          {/* The signed-in run plays this story: a new session takes the current story (#258). */}
+          <Link className="button-filled" href="/goal">
+            Begin
+          </Link>
         </div>
       </li>
     );

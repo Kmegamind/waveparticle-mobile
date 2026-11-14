@@ -1,7 +1,6 @@
 "use server";
 
 import { createServerModelGateway } from "@/lib/model-gateway/server";
-import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { modelIsConfigured } from "@/lib/prototype/focus-cards";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
 import { finishAccountRun, type FinishOutcome } from "@/lib/summary/finish-run";
@@ -15,7 +14,6 @@ import { getCurrentUser } from "@/lib/supabase/session";
  * Nothing about the Goal, the Steps or the lines is logged. Without a model it fails (no test data).
  */
 export async function finishRunAction(input: unknown): Promise<FinishOutcome> {
-  if (!isPrototypeEnabled()) return { status: "failed" };
   try {
     const client = await createSupabaseServerClient();
     const user = await getCurrentUser(client);
