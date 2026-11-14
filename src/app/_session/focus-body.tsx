@@ -500,8 +500,10 @@ export function FocusBody({ host }: { host: FocusHost }) {
                   onClick={() => setStepsOpen((open) => !open)}
                   type="button"
                 >
-                  Your steps
-                  <span aria-hidden="true">{stepsOpen ? " ▴" : " ▾"}</span>
+                  {/* One inline run, so the space before the arrow survives the flex button. */}
+                  <span>
+                    Your steps<span aria-hidden="true">{stepsOpen ? " ▴" : " ▾"}</span>
+                  </span>
                 </button>
                 {stepsOpen ? (
                   <ol aria-label="Your steps" className="focus-steps" id="your-steps">

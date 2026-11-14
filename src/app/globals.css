@@ -16,7 +16,11 @@ body {
   font-size: var(--text-body-size);
   line-height: var(--text-body-leading);
   margin: 0;
-  /* A long word breaks rather than pushing the page wider at large text sizes (#100). */
+  /*
+   * At large text sizes a word longer than its line breaks instead of pushing the page wider
+   * (#100). Rows wrap first (flex-wrap below), so this only splits a word that is wider than the
+   * whole line.
+   */
   overflow-wrap: anywhere;
   overflow-x: clip;
 }
@@ -164,6 +168,7 @@ a {
 .app-header {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
   min-height: var(--target);
   padding: calc(var(--space-small-gap) + env(safe-area-inset-top))
     calc(var(--space-screen-inline) + env(safe-area-inset-right)) var(--space-small-gap)
@@ -179,6 +184,8 @@ a {
 }
 
 .app-content {
+  /* The query container for the large-text layout at the end of this file (#100). */
+  container: content / inline-size;
   min-height: calc(100svh - var(--target));
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -515,6 +522,8 @@ a {
 /* Sign-in-free test path, issue 208. The colour is set here so a skin's ink is inherited. */
 .try-shell {
   color: var(--ink);
+  /* The session pages' query container for the large-text layout (#100). */
+  container: content / inline-size;
   margin-inline: auto;
   max-width: var(--layout-phone-max);
   min-height: 100svh;
@@ -2773,6 +2782,7 @@ a {
 .goals-head {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-control-gap);
   justify-content: space-between;
 }
@@ -2807,6 +2817,8 @@ a {
 
 .goals-tabs [role="tab"] {
   background: none;
+  /* A label is never split, so tabs cannot run into each other; the strip scrolls instead. */
+  overflow-wrap: normal;
   border: 0;
   border-bottom: var(--goals-tab-line) solid transparent;
   color: var(--ink-2);
@@ -3098,4 +3110,57 @@ a {
   display: flex;
   gap: var(--space-screen-bottom);
   justify-content: center;
+}
+
+/*
+ * Large text (#100). The query is in em, so it follows the text size, not the screen: it holds
+ * when fewer than 16 body-size characters fit across the content, which happens from about 150%
+ * text on a 320 px screen and never at normal size on a phone. Rows that put text beside a
+ * portrait or a button then stack, instead of squeezing the text into a column a few letters wide.
+ */
+@container content (width < 16em) {
+  .goals-tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .goals-tabs [role="tab"] {
+    flex: none;
+  }
+
+  .home-card-top,
+  .life-header,
+  .try-dialogue-bar,
+  .focus-mygoal,
+  .goals-history li {
+    flex-wrap: wrap;
+  }
+
+  /* The Life Path's timeline gives up some of its indent so the current card keeps its words. */
+  .life-periods {
+    --space-screen-inline: var(--space-small-gap);
+    margin-left: var(--space-row-after);
+  }
+
+  .life-current {
+    padding: var(--space-small-gap);
+  }
+
+  .home-card {
+    padding: var(--space-small-gap);
+  }
+
+  /* The dialogue's header keeps its height in the one-screen column instead of being overlapped. */
+  .try-dialogue-bar {
+    flex-shrink: 0;
+  }
+
+  .comp-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .comp-row .comp-text {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
 }

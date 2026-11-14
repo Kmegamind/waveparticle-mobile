@@ -91,6 +91,34 @@ test("#100 AC1 at 200% text on 320 px the tab bar labels stay inside their own t
   expect(spill).toEqual([]);
 });
 
+test("#100 AC1 at 200% text on 320 px the Goals tabs do not run into each other", async ({
+  page,
+  context,
+}) => {
+  await page.setViewportSize(NARROW);
+  await signIn(context, baseUrlOf(page), sampleGoals);
+  await page.goto("/goals");
+  await largeText(page);
+  const boxes = await page
+    .getByRole("tab")
+    .evaluateAll((tabs) => tabs.map((tab) => tab.getBoundingClientRect().toJSON()));
+  const overlaps = boxes.flatMap((a, i) =>
+    boxes
+      .slice(i + 1)
+      .filter(
+        (b) =>
+          a.left < b.right - 1 &&
+          b.left < a.right - 1 &&
+          a.top < b.bottom - 1 &&
+          b.top < a.bottom - 1,
+      )
+      .map(() => i),
+  );
+  expect(overlaps).toEqual([]);
+  // Every tab is on screen, so none is reached only by scrolling sideways.
+  for (const box of boxes) expect(box.right).toBeLessThanOrEqual(NARROW.width);
+});
+
 for (const path of ["/try/goal", "/try/focus", "/try/rest"]) {
   test(`#100 AC1 and AC2 ${path} at 200% text on 320 px cuts nothing off`, async ({ page }) => {
     await page.setViewportSize(NARROW);
