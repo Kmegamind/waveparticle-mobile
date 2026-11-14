@@ -169,3 +169,58 @@ test("finding: on a short landscape screen at 200% his card, Done and Pause can 
     expect(reached).toEqual({ shows: true, hit: true });
   }
 });
+
+/** Every element whose animation or transition still lasts longer than a hundredth of a second. */
+async function movingElements(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const seconds = (value: string) =>
+      Math.max(
+        ...value.split(",").map((part) => {
+          const number = parseFloat(part);
+          return part.trim().endsWith("ms") ? number / 1000 : number;
+        }),
+      );
+    const found: string[] = [];
+    for (const element of Array.from(document.querySelectorAll<HTMLElement>("*"))) {
+      for (const pseudo of [null, "::before", "::after"]) {
+        const style = getComputedStyle(element, pseudo);
+        const animates = style.animationName !== "none" && seconds(style.animationDuration) > 0.01;
+        const transitions =
+          style.transitionProperty !== "none" && seconds(style.transitionDuration) > 0.01;
+        if (animates || transitions) {
+          found.push(`${element.tagName.toLowerCase()}.${element.className}${pseudo ?? ""}`);
+        }
+      }
+    }
+    return found;
+  });
+}
+
+test("#100 AC4 with reduced motion nothing on the session pages animates or transitions", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await seedPlan(page, twoSteps);
+  for (const path of ["/try/goal", "/try/focus", "/try/rest"]) {
+    await page.goto(path);
+    await expect(page.locator('[data-ready="true"]').first()).toBeVisible();
+    expect(await movingElements(page)).toEqual([]);
+  }
+});
+
+test("#100 AC4 with reduced motion nothing on the signed-in pages animates or transitions", async ({
+  page,
+  context,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await signIn(context, baseUrlOf(page), sampleGoals);
+  for (const path of ["/", "/goals", `/goals/${GOAL.methods}`, "/me", "/companions"]) {
+    await page.goto(path);
+    await expect(page.locator("main").first()).toBeVisible();
+    expect(await movingElements(page)).toEqual([]);
+  }
+  // An open sheet and its shade.
+  await page.goto("/goals");
+  await page.getByRole("button", { name: "New goal" }).first().click();
+  expect(await movingElements(page)).toEqual([]);
+});
