@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { signIn, stubTables, type StubTables } from "./support/account";
 
@@ -104,4 +105,33 @@ test("#103 Keep my account goes back to Data", async ({ page, context, baseURL }
     "href",
     "/me/data",
   );
+});
+
+test("#103 AC1 Export my data downloads a readable file of the account's own rows", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const account = await signIn(context, baseURL!, accountRows);
+  await page.goto("/me/export");
+  await expect(page.getByRole("heading", { name: "Export my data" })).toBeVisible();
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("link", { name: "Download my data" }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/^waveparticle-data-\d{4}-\d{2}-\d{2}\.json$/);
+  const file = JSON.parse(await readFile(await download.path(), "utf8"));
+  expect(file.account.id).toBe(account.userId);
+  expect(file.goals.map((goal: { title: string }) => goal.title)).toEqual(["Lab report"]);
+  expect(file.steps.map((step: { title: string }) => step.title)).toEqual(["Outline"]);
+  expect(file.sessionLines.map((line: { text: string }) => line.text)).toEqual([
+    "The desert is quiet tonight.",
+  ]);
+  expect(file.profile.nickname).toBe("Ada");
+});
+
+test("#103 the export route refuses a signed-out request", async ({ request }) => {
+  const response = await request.get("/me/export/download", { maxRedirects: 0 });
+  expect([302, 303, 307, 401]).toContain(response.status());
+  expect(await response.text()).not.toContain("goals");
 });
