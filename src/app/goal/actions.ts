@@ -4,7 +4,6 @@ import { cookies } from "next/headers";
 import { startGoal, type StartGoalInput, type StartGoalOutcome } from "@/lib/goals/start-goal";
 import { createSupabaseGoalWriter } from "@/lib/goals/supabase-goal-writer";
 import { createServerModelGateway } from "@/lib/model-gateway/server";
-import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { COST_CAP_COOKIE } from "@/lib/prototype/cost-cap";
 import { splitGoal, type SplitInput, type SplitOutcome } from "@/lib/prototype/split-goal";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -15,7 +14,6 @@ import { getCurrentUser } from "@/lib/supabase/session";
  * the user's own client (row-level security). The goal and Step text are never logged.
  */
 export async function startGoalAction(input: StartGoalInput): Promise<StartGoalOutcome> {
-  if (!isPrototypeEnabled()) return { status: "failed" };
   const client = await createSupabaseServerClient();
   const user = await getCurrentUser(client);
   return startGoal(input, { userId: user?.id ?? null, writer: createSupabaseGoalWriter(client) });
@@ -23,7 +21,6 @@ export async function startGoalAction(input: StartGoalInput): Promise<StartGoalO
 
 /** The split on /goal: the same rules as /try (docs/decisions/0012), for signed-in users only. */
 export async function splitGoalForAccountAction(input: SplitInput): Promise<SplitOutcome> {
-  if (!isPrototypeEnabled()) return { status: "failed" };
   const user = await getCurrentUser(await createSupabaseServerClient());
   if (!user) return { status: "failed" };
   const jar = await cookies();

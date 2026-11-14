@@ -193,6 +193,12 @@ Yue answered the questions raised by the three audits (AI specifications, produc
 | MORIARTY-5 | 2026-11-12 | There is no "intellectual game with the user". His game is against Holmes. His relationship with the user is trust. | |
 | MORIARTY-6 | 2026-11-12 | Yue first reads the 31 cards of Moriarty story 1 and marks which sound like him and which do not. These become the evaluation baseline. Stories 2 to 7 wait for that. | |
 
+### Decisions of 2026-11-14
+
+| Id | Date | Decision | Consequences |
+|---|---|---|---|
+| SESSION-PAGES-OPEN | 2026-11-14 | The signed-in session pages (`/goal`, `/focus`, `/rest`, `/end`) are no longer gated by `PROTOTYPE_ENABLED`. They exist in every environment for signed-in users. The owner monitors usage and accepts the model-call cost without a per-account cap. | Every link to them always shows. Sign-in is still required. The per-account daily cap (#256) stays in "Later". The sign-in-free test path `/try` stays gated exactly as before (`docs/decisions/0011`). Issue #278. |
+
 ## 2. Superseded rules (do not implement)
 
 | Rule | Replaced by |

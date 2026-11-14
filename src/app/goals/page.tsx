@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { readGoalsData } from "@/lib/goals/goals-reader";
 import { parseTab } from "@/lib/goals/goals-view";
-import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { GoalsScreen } from "./goals-screen";
@@ -20,11 +19,5 @@ async function GoalsContent({ searchParams }: PageProps<"/goals">) {
   const user = await getCurrentUser(client);
   if (!user) redirect("/auth/sign-in");
   const [data, params] = await Promise.all([readGoalsData(client, user.id), searchParams]);
-  return (
-    <GoalsScreen
-      data={data}
-      initialTab={parseTab(params.tab)}
-      sessionPagesEnabled={isPrototypeEnabled()}
-    />
-  );
+  return <GoalsScreen data={data} initialTab={parseTab(params.tab)} />;
 }

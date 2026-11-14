@@ -73,7 +73,7 @@ export type GoalsLists = {
   history: HistoryRow[];
 };
 
-export type ViewOptions = { now: Date; timeZone: string; sessionPagesEnabled: boolean };
+export type ViewOptions = { now: Date; timeZone: string };
 
 export type GoalDetail = {
   id: string;
@@ -215,13 +215,12 @@ function activityOf(goal: Goal, index: Index, options: ViewOptions): string | nu
 
 const inProgress = (goal: Goal) => goal.status === "in_progress" || goal.status === "planned";
 
-/** Continue (Steps exist) or Start (none) for an In progress Goal, while the session pages exist. */
-function openAction(goal: Goal, index: Index, options: ViewOptions) {
-  if (!options.sessionPagesEnabled) return { action: null, actionHref: null };
+/** Continue (Steps exist) or Start (none) for an In progress Goal. */
+function openAction(goal: Goal, index: Index) {
   if ((index.stepsOf.get(goal.id) ?? []).length === 0) {
     return { action: "start" as const, actionHref: startHref(goal.title) };
   }
-  const href = continueHref({ id: goal.id, status: "in_progress" }, true);
+  const href = continueHref({ id: goal.id, status: "in_progress" });
   return { action: href ? ("continue" as const) : null, actionHref: href };
 }
 
@@ -241,7 +240,7 @@ function rowOf(goal: Goal, index: Index, options: ViewOptions): GoalRow {
   return {
     ...base,
     activity: activityOf(goal, index, options),
-    ...openAction(goal, index, options),
+    ...openAction(goal, index),
   };
 }
 

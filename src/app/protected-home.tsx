@@ -16,13 +16,10 @@ import { HomeGoalOptions, HomeToast, type HomeToastState } from "./home-goal-opt
 export function ProtectedHome({
   view,
   continueHref,
-  sessionPagesEnabled,
 }: {
   view: HomeView;
-  /** From #69's `continueHref`: null when the Goal cannot be continued in this build. */
+  /** From #69's `continueHref`: null when the Goal is not in progress. */
   continueHref: string | null;
-  /** True when `/goal` and `/focus` exist (test builds); their links are left out otherwise. */
-  sessionPagesEnabled: boolean;
 }) {
   const [toast, setToast] = useState<HomeToastState | null>(null);
   const closeToast = useCallback(() => setToast(null), []);
@@ -50,11 +47,9 @@ export function ProtectedHome({
               </figure>
             ) : null}
             {continueHref ? <ContinueLink href={continueHref} /> : null}
-            {sessionPagesEnabled ? (
-              <Link className="home-link" href="/goal">
-                Start something else
-              </Link>
-            ) : null}
+            <Link className="home-link" href="/goal">
+              Start something else
+            </Link>
           </section>
           <MyCompanions ids={view.companions} />
           <section aria-labelledby="home-in-progress" className="home-section">
@@ -91,11 +86,9 @@ export function ProtectedHome({
                 <p>{view.carriedLine}</p>
               </figure>
             ) : null}
-            {sessionPagesEnabled ? (
-              <Link className="button-filled" href="/goal">
-                New session
-              </Link>
-            ) : null}
+            <Link className="button-filled" href="/goal">
+              New session
+            </Link>
           </section>
           {view.replay.length > 0 ? (
             <section aria-labelledby="home-replay" className="home-section">
@@ -105,13 +98,9 @@ export function ProtectedHome({
               <ul className="home-chips">
                 {view.replay.map((goal) => (
                   <li key={goal.goalId}>
-                    {sessionPagesEnabled ? (
-                      <Link className="home-chip" href="/goal">
-                        {goal.title}
-                      </Link>
-                    ) : (
-                      <span className="home-chip">{goal.title}</span>
-                    )}
+                    <Link className="home-chip" href="/goal">
+                      {goal.title}
+                    </Link>
                   </li>
                 ))}
               </ul>

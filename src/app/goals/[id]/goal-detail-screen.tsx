@@ -21,21 +21,10 @@ const KINDS: { id: GoalKind; label: string }[] = [
 
 const TAB_OF = { planned: "", in_progress: "", on_hold: "?tab=hold", done: "?tab=done" } as const;
 
-export function GoalDetailScreen({
-  data,
-  goalId,
-  sessionPagesEnabled,
-}: {
-  data: GoalsData;
-  goalId: string;
-  sessionPagesEnabled: boolean;
-}) {
+export function GoalDetailScreen({ data, goalId }: { data: GoalsData; goalId: string }) {
   const router = useRouter();
   const local = useLocalNow();
-  const detail = useMemo(
-    () => goalDetail(data, goalId, { ...(local ?? EPOCH), sessionPagesEnabled }),
-    [data, goalId, local, sessionPagesEnabled],
-  );
+  const detail = useMemo(() => goalDetail(data, goalId, local ?? EPOCH), [data, goalId, local]);
   // After a change or Undo, keyboard focus goes to the status line (the button may be gone),
   // once it shows the new status, so a screen reader reads the new status, not the old one.
   const focusPending = useRef(false);

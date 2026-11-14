@@ -3,7 +3,6 @@ import { connection } from "next/server";
 import { meView } from "@/lib/me/me-view";
 import { readProfile } from "@/lib/me/supabase-profile";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
-import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { continueHref } from "../continue-link";
@@ -28,7 +27,7 @@ async function MeContent() {
   const view = meView(progress);
   const email = user.email ?? "";
   const href = view.current
-    ? continueHref({ id: view.current.goalId, status: "in_progress" }, isPrototypeEnabled())
+    ? continueHref({ id: view.current.goalId, status: "in_progress" })
     : null;
   return (
     <main className="app-screen me-page">
