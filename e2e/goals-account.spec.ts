@@ -119,6 +119,52 @@ test.describe("the Goals page", () => {
     await expect.poll(() => sessionState(account, SESSION.methods)).toBe("open");
   });
 
+  test("finding: after a change from the ⋯ menu, a row button or Undo, focus is on the selected tab", async ({
+    page,
+    baseURL,
+  }) => {
+    const account = await openGoals(page, baseURL!);
+    await row(page, "Methods section for Friday")
+      .getByRole("button", { name: "More actions for Methods section for Friday" })
+      .click();
+    await page
+      .getByRole("dialog", { name: "Goal menu" })
+      .getByRole("button", { name: "Put on hold" })
+      .click();
+    await expect.poll(() => goalStatus(account, GOAL.methods)).toBe("on_hold");
+    await expect(row(page, "Methods section for Friday")).toHaveCount(0);
+    await expect(tab(page, "In progress")).toBeFocused();
+
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect.poll(() => goalStatus(account, GOAL.methods)).toBe("in_progress");
+    await expect(tab(page, "In progress")).toBeFocused();
+
+    await tab(page, "On hold").click();
+    await row(page, "Portfolio case study")
+      .getByRole("button", { name: "Resume Portfolio case study" })
+      .click();
+    await expect.poll(() => goalStatus(account, GOAL.portfolio)).toBe("in_progress");
+    await expect(page.getByText("Nothing on hold.")).toBeVisible();
+    await expect(tab(page, "On hold")).toBeFocused();
+  });
+
+  test("finding: after a change that fails, the error is read and focus is on the selected tab", async ({
+    page,
+    baseURL,
+  }) => {
+    await openGoals(page, baseURL!, sampleGoals, "/goals?tab=hold");
+    await page.route("**/*", (route) =>
+      route.request().method() === "POST" ? route.abort() : route.continue(),
+    );
+    await row(page, "Portfolio case study")
+      .getByRole("button", { name: "Resume Portfolio case study" })
+      .click();
+    await expect(page.locator(".goals-toast[role=alert]")).toHaveText(
+      "Could not change the Goal. Please try again.",
+    );
+    await expect(tab(page, "On hold")).toBeFocused();
+  });
+
   test("#79 Undo is gone after five seconds and cannot be sent twice", async ({
     page,
     baseURL,
@@ -422,6 +468,35 @@ test.describe("the Goal detail", () => {
     await expect.poll(() => goalStatus(account, GOAL.methods)).toBe("done");
     await expect(page.getByRole("button", { name: "Reopen", exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Mark done" })).toHaveCount(0);
+  });
+
+  test("finding: after Put on hold or Undo on the detail, focus is on the status line", async ({
+    page,
+    baseURL,
+  }) => {
+    const account = await detail(page, baseURL!, GOAL.methods);
+    // What a screen reader reads when focus arrives: the line must already say the new status.
+    await page.evaluate(() => {
+      const heard: string[] = [];
+      (window as unknown as { heard: string[] }).heard = heard;
+      document
+        .getElementById("goal-status")!
+        .addEventListener("focus", (event) =>
+          heard.push((event.target as HTMLElement).textContent ?? ""),
+        );
+    });
+    const heard = () => page.evaluate(() => (window as unknown as { heard: string[] }).heard);
+    await page.getByRole("button", { name: "Put on hold" }).focus();
+    await page.keyboard.press("Enter");
+    await expect.poll(() => goalStatus(account, GOAL.methods)).toBe("on_hold");
+    await expect(page.locator(".goal-status")).toBeFocused();
+    expect(await heard()).toEqual([expect.stringMatching(/^On hold/)]);
+    await page.getByRole("button", { name: "Undo" }).click();
+    await expect.poll(() => goalStatus(account, GOAL.methods)).toBe("in_progress");
+    await expect(page.locator(".goal-status")).toBeFocused();
+    await expect
+      .poll(heard)
+      .toEqual([expect.stringMatching(/^On hold/), expect.stringMatching(/^In progress/)]);
   });
 
   test("#78 the footer stays at the bottom of the screen while the Steps scroll", async ({

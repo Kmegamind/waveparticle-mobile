@@ -116,6 +116,11 @@ test("#68 AC1 AC2 AC4 and #69 AC1 AC5 AC7 Back to step opens the pop-up, Start c
   await page.getByRole("button", { name: "Back to step" }).click();
   await expect(page).toHaveURL(/\/try\/focus/);
   await expect(popup(page)).toContainText(returnLine);
+  // #5 AC5: the pop-up is named, his line describes it, and focus is on Start at once.
+  await expect(page.getByRole("dialog", { name: "Back to your step" })).toHaveAttribute(
+    "aria-describedby",
+    "return-line",
+  );
   const start = popup(page).getByRole("button", { name: "Start" });
   await expect(start).toBeFocused();
   await expect(popup(page).getByRole("button")).toHaveCount(1);

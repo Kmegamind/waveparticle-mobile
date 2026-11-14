@@ -112,6 +112,7 @@ export function FocusBody({ host }: { host: FocusHost }) {
   const [returnIsTestData, setReturnIsTestData] = useState(false);
   const returnRequested = useRef(false);
   const startButton = useRef<HTMLButtonElement>(null);
+  const returnPopup = useRef<HTMLDivElement>(null);
 
   const steps = plan.steps;
   const total = steps.length;
@@ -304,9 +305,12 @@ export function FocusBody({ host }: { host: FocusHost }) {
     session.speed,
   ]);
 
-  // Focus moves to Start when his line is there.
+  // #5 AC5: focus moves into the pop-up at once (the page behind it is inert), and to Start when
+  // his line is there.
   useEffect(() => {
-    if (returnPending && returnLine !== null) startButton.current?.focus();
+    if (!returnPending) return;
+    if (returnLine !== null) startButton.current?.focus();
+    else returnPopup.current?.focus();
   }, [returnLine, returnPending]);
 
   function onStart() {
@@ -387,7 +391,8 @@ export function FocusBody({ host }: { host: FocusHost }) {
               </span>
             </div>
           ) : null}
-          <p aria-label="Time left" className="focus-clock" role="timer">
+          {/* #5 AC1: a timer that never announces itself; 00:00 is announced once below. */}
+          <p aria-label="Time left" aria-live="off" className="focus-clock" role="timer">
             {formatClock(remaining)}
           </p>
         </header>
@@ -431,11 +436,14 @@ export function FocusBody({ host }: { host: FocusHost }) {
                 tabIndex={0}
               >
                 <figure
+                  aria-current={shown === cards.length - 1 ? "true" : undefined}
                   className={cards.length > 1 ? "focus-slip focus-slip-stacked" : "focus-slip"}
                   data-testid="story-card"
                 >
                   <span aria-hidden="true" className="focus-tape" />
                   <span className="focus-card-label">{cardLabel(index, shown, cards.length)}</span>
+                  {/* #101 AC1: the position in words; the dots are decoration only. */}
+                  <span className="sr-only">{`, Card ${shown + 1} of ${cards.length}`}</span>
                   <div className="focus-card-text">
                     <p>{cards[shown]}</p>
                   </div>
@@ -492,7 +500,10 @@ export function FocusBody({ host }: { host: FocusHost }) {
                   onClick={() => setStepsOpen((open) => !open)}
                   type="button"
                 >
-                  {stepsOpen ? "Your steps ▴" : "Your steps ▾"}
+                  {/* One inline run, so the space before the arrow survives the flex button. */}
+                  <span>
+                    Your steps<span aria-hidden="true">{stepsOpen ? " ▴" : " ▾"}</span>
+                  </span>
                 </button>
                 {stepsOpen ? (
                   <ol aria-label="Your steps" className="focus-steps" id="your-steps">
@@ -563,9 +574,12 @@ export function FocusBody({ host }: { host: FocusHost }) {
         <div className="return-shade">
           <div
             aria-describedby="return-line"
+            aria-label="Back to your step"
             aria-modal="true"
             className="return-popup"
+            ref={returnPopup}
             role="dialog"
+            tabIndex={-1}
           >
             {returnFailed ? (
               <div className="focus-failure" id="return-line">

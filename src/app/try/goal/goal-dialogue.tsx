@@ -93,6 +93,17 @@ type GoalDialogueProps = {
   focusPath?: string;
   /** The line the composer starts with (/goal?line=, from Goals' New goal and Start; #77). */
   initialDraft?: string;
+  /** Where the first ‹ goes and its name (#5 AC3): the test home on /try, Home on /goal. */
+  home?: { href: string; label: string };
+};
+
+const TEST_HOME = { href: "/try", label: "Back to the test home" };
+
+/** #5 AC3: the ‹ names the step it goes back to. */
+const BACK_LABEL: Partial<Record<Phase, string>> = {
+  goal: "Back to your goal",
+  time: "Back to the time",
+  split: "Back to the split question",
 };
 
 export function GoalDialogue({
@@ -101,6 +112,7 @@ export function GoalDialogue({
   stories,
   focusPath,
   initialDraft = "",
+  home = TEST_HOME,
 }: GoalDialogueProps = {}) {
   const router = useRouter();
   const { ready, state, update } = usePrototypeState();
@@ -288,10 +300,17 @@ export function GoalDialogue({
     setPhase("goal");
   }
 
+  /** The phase ‹ returns to from this one. */
+  function backTarget(): Phase | null {
+    if (phase === "time") return timeMode === "understood" ? "split" : "goal";
+    if (phase === "split") return timeMode === "understood" ? "goal" : "time";
+    if (phase === "plan" || phase === "failed") return cameFrom;
+    return null;
+  }
+
   function back() {
-    if (phase === "time") setPhase(timeMode === "understood" ? "split" : "goal");
-    else if (phase === "split") setPhase(timeMode === "understood" ? "goal" : "time");
-    else if (phase === "plan" || phase === "failed") setPhase(cameFrom);
+    const target = backTarget();
+    if (target) setPhase(target);
   }
 
   // ----- Plan editing (#37, #237, #249) -----
@@ -455,13 +474,18 @@ export function GoalDialogue({
     <main className="app-screen try-screen try-dialogue" data-ready={ready ? "true" : "false"}>
       <div className="try-dialogue-bar">
         {phase === "goal" ? (
-          <Link aria-label="Back" className="button-plain try-back" href="/try">
+          <Link aria-label={home.label} className="button-plain try-back" href={home.href}>
             ‹
           </Link>
         ) : phase === "splitting" ? (
           <span aria-hidden="true" className="try-back" />
         ) : (
-          <button aria-label="Back" className="button-plain try-back" onClick={back} type="button">
+          <button
+            aria-label={BACK_LABEL[backTarget() ?? "goal"] ?? "Back"}
+            className="button-plain try-back"
+            onClick={back}
+            type="button"
+          >
             ‹
           </button>
         )}

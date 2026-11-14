@@ -77,8 +77,12 @@ export function CompanionsList() {
         })}
       </div>
       <div className="comp-enter">
-        {reason ? <p className="comp-reason">{reason}</p> : null}
+        {/* Announced when Moriarty is chosen, and the reason Enter is disabled. */}
+        <p aria-live="polite" className="comp-reason" id="comp-reason">
+          {reason}
+        </p>
         <button
+          aria-describedby={reason ? "comp-reason" : undefined}
           className="button-filled"
           disabled={href === null}
           onClick={() => {
