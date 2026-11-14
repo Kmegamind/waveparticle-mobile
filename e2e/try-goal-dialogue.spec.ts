@@ -106,11 +106,11 @@ test("#33 #34 #35 #36 the walk-through: goal, time, split question, plan, Start"
 
   // #36 AC1, AC3: the Plan card, the count line, the input gone.
   await expect(plan(page)).toBeVisible();
-  await expect(plan(page)).toContainText("2 steps · 1 hour");
+  await expect(plan(page)).toContainText("2 steps · 60 min");
   await expect(plan(page).getByRole("heading")).toHaveText(
     "Write the methods section of my lab report",
   );
-  await expect(page.getByText("argue with it now, in ink, where it's cheap")).toBeVisible();
+  await expect(page.getByText("argue with it now, in ink, where it’s cheap")).toBeVisible();
   await expect(page.getByRole("textbox")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Split again" })).toBeVisible();
   await noHorizontalScroll(page);
@@ -130,7 +130,7 @@ test("#33 AC2 Split it finer gives more Steps", async ({ page }) => {
   await sendGoal(page, "Write the methods section of my lab report");
   await setTime(page, 60);
   await page.getByRole("button", { name: "Split it finer" }).click();
-  await expect(plan(page)).toContainText("4 steps · 1 hour");
+  await expect(plan(page)).toContainText("4 steps · 60 min");
 });
 
 test("#35 AC3 #33 AC3 Just split it makes a 30 minute Plan without the split question", async ({
@@ -148,7 +148,7 @@ test("#35 AC2 Not sure sets 30 minutes with one reason", async ({ page }) => {
   await openDialogue(page);
   await sendGoal(page, "Write the methods section of my lab report");
   await page.getByRole("button", { name: "Not sure" }).click();
-  await expect(page.getByText(/Thirty minutes, then/)).toBeVisible();
+  await expect(page.getByText(/Then thirty minutes\./)).toBeVisible();
   await page.getByRole("button", { name: "Keep it broad" }).click();
   await expect(plan(page)).toContainText("· 30 min");
 });
@@ -160,19 +160,19 @@ test("TIME-SLIDER any time from 5 minutes to 3 hours makes a Plan of that length
   await sendGoal(page, "Write the methods section of my lab report");
   await setTime(page, 95);
   await page.getByRole("button", { name: "Keep it broad" }).click();
-  await expect(plan(page)).toContainText("1 hour 35 min");
+  await expect(plan(page)).toContainText("· 95 min");
 });
 
 test("GOAL-TIME a stated length skips the time question and can be changed", async ({ page }) => {
   await openDialogue(page);
   await sendGoal(page, "study chemistry for one hour");
   await expect(page.getByText("How long do you have?")).toHaveCount(0);
-  await expect(page.getByText("Time: 1 hour")).toBeVisible();
+  await expect(page.getByText("Time I understood from your line: 60 min.")).toBeVisible();
   await page.getByRole("button", { name: "Change time" }).click();
   await expect(timeSlider(page)).toHaveValue("60");
   await setTime(page, 120);
   await page.getByRole("button", { name: "Keep it broad" }).click();
-  await expect(plan(page)).toContainText("· 2 hours");
+  await expect(plan(page)).toContainText("· 120 min");
 });
 
 test("#30 AC5 stepping back keeps the typed text", async ({ page }) => {
@@ -238,8 +238,10 @@ test("#38 GD-F a failed split speaks in the system voice and offers ways forward
   await page.getByLabel("Your goal").fill("Write the report [fail-split]");
   await page.getByRole("button", { name: "Just split it" }).click();
 
-  const alert = page.getByRole("alert").filter({ hasText: "The split did not work" });
-  await expect(alert).toContainText("The split did not work");
+  const alert = page.getByRole("alert").filter({ hasText: "That one wouldn’t split." });
+  await expect(alert).toContainText(
+    "Nothing is lost. Your words are kept: “Write the report [fail-split]”.",
+  );
   await expect(alert.locator(".try-slip")).toHaveCount(0);
   await expect(plan(page)).toHaveCount(0);
   for (const name of ["Try again", "Use one step", "Change my line"]) {

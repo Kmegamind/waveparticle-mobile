@@ -27,7 +27,8 @@ export type GoalShape = "specific" | "vague" | "big";
 
 /** One sentence about the shape of the Goal; never a question, a method or encouragement. */
 export const REACTIONS: Record<GoalShape, readonly string[]> = {
-  specific: ["That has edges I can see from here.", "That is a shape I can hold in my head."],
+  // The first line is the prototype v4's (#235).
+  specific: ["That has a clear edge to it.", "That is a shape I can hold in my head."],
   vague: ["That is still as open as this canyon floor.", "The edges of that are still soft to me."],
   big: [
     "That is a whole country, not a single site.",
@@ -37,17 +38,26 @@ export const REACTIONS: Record<GoalShape, readonly string[]> = {
 
 export const TIME_QUESTION = "How long do you have?";
 
-export const TIME_ACKS = [
-  "Then I will keep to the same span.",
-  "That is about what Dudley allows for a site.",
-] as const;
+/** His reaction and the time question share one slip, as in prototype v4 (#235). */
+export function timeQuestionSlip(reaction: string): string {
+  return `${reaction} ${TIME_QUESTION}`;
+}
 
-export const NOT_SURE_LINE =
-  "Thirty minutes, then; that is long enough to see the shape of a thing.";
+// The lines below are prototype v4's wording (#235, #236, #237). There is no acknowledgement line
+// after a time answer any more: the prototype goes straight to the split question.
+export const NOT_SURE_LINE = "Then thirty minutes. Long enough to start, short enough to keep.";
 
-export const SPLIT_QUESTION = "Do you want it cut fine, or left in broad pieces?";
+export const SPLIT_QUESTION = "Do you want it cut fine, or kept in a few broad pieces?";
 
-export const PLAN_INTRO = "Here it is on paper; argue with it now, in ink, where it's cheap.";
+export const PLAN_INTRO =
+  "Here is how I would cut it. Argue with it now, in ink, where it’s cheap.";
+
+/** The split-failed screen (GD-F). */
+export const SPLIT_FAILED_TITLE = "That one wouldn’t split.";
+
+export function splitFailedLine(goal: string): string {
+  return `Nothing is lost. Your words are kept: “${goal}”.`;
+}
 
 export const SPLITTING_LINES = [
   "I am writing it out on the back of Dudley's map.",
@@ -88,10 +98,6 @@ export function classifyGoalShape(goal: string): GoalShape {
 
 export function reactionFor(shape: GoalShape, random: Random = Math.random): string {
   return pick(REACTIONS[shape], random);
-}
-
-export function timeAck(random: Random = Math.random): string {
-  return pick(TIME_ACKS, random);
 }
 
 export function splittingLine(random: Random = Math.random): string {

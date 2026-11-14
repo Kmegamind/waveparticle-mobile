@@ -3,26 +3,28 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { COMPANION } from "@/app/_session/companion";
 import { CrisisPage } from "@/app/safety/crisis-page";
 import {
   FIRST_OPENING,
   NOT_SURE_LINE,
   PLAN_INTRO,
   RETURNING_OPENINGS,
+  SPLIT_FAILED_TITLE,
   SPLIT_QUESTION,
-  TIME_QUESTION,
   classifyGoalShape,
   pickReturningOpening,
   reactionFor,
+  splitFailedLine,
   splittingLine,
-  timeAck,
+  timeQuestionSlip,
 } from "@/lib/prototype/goal-lines";
 import {
   SLIDER_MAX_MINUTES,
   SLIDER_STEP_MINUTES,
   SLIDER_ZERO_HINT,
   findTimeInGoal,
-  formatMinutes,
+  minutesLabel,
   sliderStart,
   sliderValueText,
 } from "@/lib/prototype/goal-time";
@@ -51,7 +53,9 @@ import { usePrototypeState } from "../use-prototype-state";
 import { splitGoalAction } from "./actions";
 
 type Phase = "goal" | "time" | "split" | "splitting" | "plan" | "failed" | "crisis";
-type TimeMode = "asked" | "not-sure" | "understood" | "changed";
+// "understood": the time was read from the goal line (GOAL-TIME); Change keeps it until a new time
+// is sent, which makes it "asked".
+type TimeMode = "asked" | "not-sure" | "understood";
 
 const DEFAULT_MINUTES = 30;
 
@@ -112,8 +116,6 @@ export function GoalDialogue({
   const [sliderMinutes, setSliderMinutes] = useState(0);
   const [minutes, setMinutes] = useState<number | null>(null);
   const [timeMode, setTimeMode] = useState<TimeMode | null>(null);
-  const [timeAnswer, setTimeAnswer] = useState("");
-  const [ackLine, setAckLine] = useState("");
   const [splitFiner, setSplitFiner] = useState<boolean | null>(null);
   const [justSplit, setJustSplit] = useState(false);
   const [cameFrom, setCameFrom] = useState<Phase>("goal");
@@ -128,6 +130,12 @@ export function GoalDialogue({
   const [goalId, setGoalId] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
+
+  // The thread grows downward; each new turn scrolls to its end, with no smooth scrolling.
+  useEffect(() => {
+    if (phase === "crisis") return;
+    window.scrollTo(0, document.documentElement.scrollHeight);
+  }, [phase]);
 
   function openCrisis(back: Phase) {
     setCrisisBack(back);
@@ -194,30 +202,22 @@ export function GoalDialogue({
     }
   }
 
-  function chooseTime(value: number, answer: string) {
+  function chooseTime(value: number) {
     setMinutes(value);
-    setTimeAnswer(answer);
-    if (timeMode === "understood" || timeMode === "changed") {
-      setTimeMode("changed");
-    } else {
-      setTimeMode("asked");
-      setAckLine(timeAck());
-    }
+    setTimeMode("asked");
     setPhase("split");
   }
 
   function chooseNotSure() {
     setMinutes(DEFAULT_MINUTES);
-    setTimeAnswer("Not sure");
     setTimeMode("not-sure");
-    setAckLine(NOT_SURE_LINE);
     setPhase("split");
   }
 
   function onSendTime(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (sliderMinutes <= 0) return;
-    chooseTime(sliderMinutes, formatMinutes(sliderMinutes));
+    chooseTime(sliderMinutes);
   }
 
   function openTimeQuestion() {
@@ -266,6 +266,12 @@ export function GoalDialogue({
     setSteps(fromPlan([{ title: goal.slice(0, 80), description: "", minutes: total }]));
     setEditing(null);
     setPhase("plan");
+  }
+
+  /** GD-F: Change my line puts the goal back in the composer. */
+  function changeLine() {
+    setDraft(goal);
+    setPhase("goal");
   }
 
   function back() {
@@ -368,9 +374,11 @@ export function GoalDialogue({
   const timeSettled = minutes !== null && phase !== "time";
   const showSplitQuestion =
     !justSplit && (phase === "split" || (afterGoal && phase !== "time" && splitFiner !== null));
-  const timeIsSystem = timeMode === "understood" || timeMode === "changed";
+  const understood = timeMode === "understood";
   // Just split it from the opening skips the time question entirely (#35 AC3).
   const timeAsked = afterGoal && !(justSplit && cameFrom === "goal");
+  // Prototype v4: no reaction when the time was read from the line, until Change asks again.
+  const showTimeQuestion = timeAsked && Boolean(reaction) && (!understood || phase === "time");
 
   return (
     <main className="app-screen try-screen try-dialogue" data-ready={ready ? "true" : "false"}>
@@ -379,179 +387,201 @@ export function GoalDialogue({
           <Link aria-label="Back" className="button-plain try-back" href="/try">
             ‹
           </Link>
-        ) : phase === "splitting" ? null : (
+        ) : phase === "splitting" ? (
+          <span aria-hidden="true" className="try-back" />
+        ) : (
           <button aria-label="Back" className="button-plain try-back" onClick={back} type="button">
             ‹
           </button>
         )}
+        <span aria-hidden="true" className="try-avatar">
+          {/* eslint-disable-next-line @next/next/no-img-element -- a 40 px decorative portrait */}
+          <img alt="" src={COMPANION.portrait} />
+        </span>
+        <span className="try-companion-name">{COMPANION.name}</span>
       </div>
 
-      {ready ? <Slip>{opening}</Slip> : null}
+      <div className="try-thread">
+        {ready ? <Slip>{opening}</Slip> : null}
 
-      {afterGoal && goal ? <p className="try-you">{goal}</p> : null}
-      {afterGoal && reaction ? <Slip>{reaction}</Slip> : null}
+        {afterGoal && goal ? <p className="try-you">{goal}</p> : null}
+        {showTimeQuestion ? <Slip>{timeQuestionSlip(reaction)}</Slip> : null}
 
-      {timeAsked && !timeIsSystem ? <Slip>{TIME_QUESTION}</Slip> : null}
-      {timeSettled && !timeIsSystem && timeAnswer ? <p className="try-you">{timeAnswer}</p> : null}
-      {timeSettled && !timeIsSystem && ackLine ? <Slip>{ackLine}</Slip> : null}
-      {afterGoal && timeIsSystem && minutes !== null && phase !== "time" ? (
-        <div className="try-system-row">
-          <p className="try-system">Time: {formatMinutes(minutes)}</p>
-          {phase === "split" ? (
-            <button className="button-plain button-small" onClick={openTimeQuestion} type="button">
-              Change time
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-
-      {showSplitQuestion ? <Slip>{SPLIT_QUESTION}</Slip> : null}
-      {showSplitQuestion && phase !== "split" && splitFiner !== null ? (
-        <p className="try-you">{splitFiner ? "Split it finer" : "Keep it broad"}</p>
-      ) : null}
-
-      {phase === "splitting" ? (
-        <>
-          <Slip>{waitLine}</Slip>
-          <div className="try-dots" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </div>
-          <p className="try-caption" role="status">
-            Splitting your line into steps
-          </p>
-        </>
-      ) : null}
-
-      {phase === "plan" ? (
-        <>
-          <Slip>{PLAN_INTRO}</Slip>
-          <PlanCard
-            editing={editing}
-            onAdd={onAddStep}
-            onChangeEditing={setEditing}
-            onDone={() => void finishEditing()}
-            onMinutes={(id, delta) => setSteps(changeMinutes(steps, id, delta))}
-            onMove={(id, by) => setSteps(moveStep(steps, id, by))}
-            onOpen={openEditor}
-            onRemove={(id) => {
-              setSteps(removeStep(steps, id));
-              setEditing(null);
-            }}
-            steps={steps}
-            title={planTitle || goal}
-          />
-          <button className="try-link" onClick={splitAgain} type="button">
-            Split again
-          </button>
-          {saveFailed ? (
-            <div className="try-failure" role="alert">
-              <p className="try-system">Your Goal was not saved. Please try again.</p>
-              <button className="button-gray" onClick={() => void onStart()} type="button">
-                Retry
+        {timeSettled && timeMode === "asked" ? (
+          <p className="try-you">{minutesLabel(minutes)}</p>
+        ) : null}
+        {timeSettled && timeMode === "not-sure" ? (
+          <>
+            <p className="try-you">Not sure</p>
+            <Slip>{NOT_SURE_LINE}</Slip>
+          </>
+        ) : null}
+        {afterGoal && understood && minutes !== null && phase !== "time" ? (
+          <div className="try-system-row">
+            <p className="try-caption-line" role="status">
+              Time I understood from your line: <b>{minutesLabel(minutes)}</b>.
+            </p>
+            {phase === "split" ? (
+              <button
+                aria-label="Change time"
+                className="try-link"
+                onClick={openTimeQuestion}
+                type="button"
+              >
+                Change
               </button>
-            </div>
-          ) : null}
-          <button
-            className="button-filled"
-            disabled={saving}
-            onClick={() => void onStart()}
-            type="button"
-          >
-            Start
-          </button>
-        </>
-      ) : null}
+            ) : null}
+          </div>
+        ) : null}
 
-      {phase === "failed" ? (
-        <section className="try-failure" role="alert">
-          <p>The split did not work. Your words are kept.</p>
-          <div className="try-actions">
+        {showSplitQuestion ? <Slip>{SPLIT_QUESTION}</Slip> : null}
+        {showSplitQuestion && phase !== "split" && splitFiner !== null ? (
+          <p className="try-you">{splitFiner ? "Split it finer" : "Keep it broad"}</p>
+        ) : null}
+
+        {phase === "splitting" ? (
+          <>
+            <Slip>{waitLine}</Slip>
+            <div className="try-typing" role="status">
+              <span aria-hidden="true" />
+              <span aria-hidden="true" />
+              <span aria-hidden="true" />
+              <span className="sr-only">Splitting your line into steps</span>
+            </div>
+          </>
+        ) : null}
+
+        {phase === "plan" ? (
+          <>
+            <Slip>{PLAN_INTRO}</Slip>
+            <PlanCard
+              editing={editing}
+              onAdd={onAddStep}
+              onChangeEditing={setEditing}
+              onDone={() => void finishEditing()}
+              onMinutes={(id, delta) => setSteps(changeMinutes(steps, id, delta))}
+              onMove={(id, by) => setSteps(moveStep(steps, id, by))}
+              onOpen={openEditor}
+              onRemove={(id) => {
+                setSteps(removeStep(steps, id));
+                setEditing(null);
+              }}
+              onSplitAgain={splitAgain}
+              steps={steps}
+              title={planTitle || goal}
+            />
+          </>
+        ) : null}
+
+        {phase === "failed" ? (
+          <section aria-labelledby="split-failed" className="try-sys" role="alert">
+            <h2 id="split-failed">{SPLIT_FAILED_TITLE}</h2>
+            <p>{splitFailedLine(goal)}</p>
             <button className="button-filled" onClick={splitAgain} type="button">
               Try again
             </button>
-            <button className="button-tinted" onClick={useOneStep} type="button">
+            <button className="button-gray" onClick={useOneStep} type="button">
               Use one step
             </button>
+            <button className="try-link try-link-centre" onClick={changeLine} type="button">
+              Change my line
+            </button>
+          </section>
+        ) : null}
+      </div>
+
+      <div className="try-dock">
+        {phase === "goal" ? (
+          <>
+            <form className="try-composer" onSubmit={onSendGoal}>
+              <input
+                aria-label="Your goal"
+                autoComplete="off"
+                className="try-field"
+                onChange={(event) => setDraft(event.target.value)}
+                placeholder="Say it in one line"
+                value={draft}
+              />
+              <SendButton />
+            </form>
+            {goalHint ? (
+              <p className="try-hint" role="status">
+                Write one line first
+              </p>
+            ) : null}
+            <button className="try-link try-link-centre" onClick={onJustSplit} type="button">
+              Just split it
+            </button>
+          </>
+        ) : null}
+
+        {phase === "time" ? (
+          <>
+            {understood ? null : (
+              <div aria-label="Quick replies" className="try-chips" role="group">
+                <button className="try-chip" onClick={chooseNotSure} type="button">
+                  Not sure
+                </button>
+              </div>
+            )}
+            <form className="try-time" onSubmit={onSendTime}>
+              <input
+                aria-describedby={sliderMinutes <= 0 ? "try-time-hint" : undefined}
+                aria-label="Your time"
+                aria-valuetext={sliderValueText(sliderMinutes)}
+                className="try-time-slider"
+                max={SLIDER_MAX_MINUTES}
+                min={0}
+                onChange={(event) => setSliderMinutes(Number(event.target.value))}
+                step={SLIDER_STEP_MINUTES}
+                type="range"
+                value={sliderMinutes}
+              />
+              <output aria-hidden="true" className="try-time-value">
+                {sliderValueText(sliderMinutes)}
+              </output>
+              <SendButton disabled={sliderMinutes <= 0} />
+            </form>
+            {sliderMinutes <= 0 ? (
+              <p className="try-hint" id="try-time-hint">
+                {SLIDER_ZERO_HINT}
+              </p>
+            ) : null}
+          </>
+        ) : null}
+
+        {phase === "split" ? (
+          <div aria-label="Quick replies" className="try-chips" role="group">
+            <button className="try-chip" onClick={() => answerSplit(true)} type="button">
+              Split it finer
+            </button>
+            <button className="try-chip" onClick={() => answerSplit(false)} type="button">
+              Keep it broad
+            </button>
           </div>
-          <button className="button-plain" onClick={() => setPhase("goal")} type="button">
-            Change my line
-          </button>
-        </section>
-      ) : null}
+        ) : null}
 
-      {phase === "goal" ? (
-        <>
-          <form className="try-composer" onSubmit={onSendGoal}>
-            <input
-              aria-label="Your goal"
-              autoComplete="off"
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder="Write one line"
-              value={draft}
-            />
-            <SendButton />
-          </form>
-          {goalHint ? (
-            <p className="try-hint" role="status">
-              Write one line first
-            </p>
-          ) : null}
-          <button className="try-link" onClick={onJustSplit} type="button">
-            Just split it
-          </button>
-        </>
-      ) : null}
-
-      {phase === "time" ? (
-        <>
-          <form className="try-time" onSubmit={onSendTime}>
-            <input
-              aria-describedby={sliderMinutes <= 0 ? "try-time-hint" : undefined}
-              aria-label="Your time"
-              aria-valuetext={sliderValueText(sliderMinutes)}
-              className="try-time-slider"
-              max={SLIDER_MAX_MINUTES}
-              min={0}
-              onChange={(event) => setSliderMinutes(Number(event.target.value))}
-              step={SLIDER_STEP_MINUTES}
-              type="range"
-              value={sliderMinutes}
-            />
-            <output aria-hidden="true" className="try-time-value">
-              {sliderValueText(sliderMinutes)}
-            </output>
-            <SendButton disabled={sliderMinutes <= 0} />
-          </form>
-          {sliderMinutes <= 0 ? (
-            <p className="try-hint" id="try-time-hint">
-              {SLIDER_ZERO_HINT}
-            </p>
-          ) : null}
-          {timeMode === "understood" ? null : (
-            <div className="try-chips">
-              <button className="try-chip" onClick={chooseNotSure} type="button">
-                Not sure
-              </button>
-            </div>
-          )}
-          <button className="try-link" onClick={onJustSplit} type="button">
-            Just split it
-          </button>
-        </>
-      ) : null}
-
-      {phase === "split" ? (
-        <div className="try-actions">
-          <button className="button-tinted" onClick={() => answerSplit(true)} type="button">
-            Split it finer
-          </button>
-          <button className="button-gray" onClick={() => answerSplit(false)} type="button">
-            Keep it broad
-          </button>
-        </div>
-      ) : null}
+        {phase === "plan" ? (
+          <>
+            {saveFailed ? (
+              <div className="try-save-failed" role="alert">
+                <p className="try-system">Your Goal was not saved. Please try again.</p>
+                <button className="button-gray" onClick={() => void onStart()} type="button">
+                  Retry
+                </button>
+              </div>
+            ) : null}
+            <button
+              className="button-filled try-start"
+              disabled={saving}
+              onClick={() => void onStart()}
+              type="button"
+            >
+              Start
+            </button>
+          </>
+        ) : null}
+      </div>
     </main>
   );
 }
@@ -570,7 +600,7 @@ function SendButton(props: { disabled?: boolean }) {
       type="submit"
     >
       <svg aria-hidden="true" viewBox="0 0 24 24">
-        <path d="M12 19V5M5 12l7-7 7 7" />
+        <path d="M5 12h14M13 6l6 6-6 6" />
       </svg>
     </button>
   );
@@ -589,6 +619,7 @@ function PlanCard(props: {
   onMove: (id: string, by: -1 | 1) => void;
   onRemove: (id: string) => void;
   onAdd: () => void;
+  onSplitAgain: () => void;
 }) {
   const { steps, editing } = props;
   return (
@@ -641,7 +672,7 @@ function PlanCard(props: {
                         +
                       </button>
                     </div>
-                    <span className="try-minutes">{formatMinutes(step.minutes)}</span>
+                    <span className="try-minutes">{minutesLabel(step.minutes)}</span>
                   </div>
                   <div className="try-step-tools">
                     {index > 0 ? (
@@ -689,7 +720,7 @@ function PlanCard(props: {
                 >
                   <span className="try-step-head">
                     <span className="try-step-title">{step.title}</span>
-                    <span className="try-minutes">{formatMinutes(step.minutes)}</span>
+                    <span className="try-minutes">{minutesLabel(step.minutes)}</span>
                   </span>
                   {step.description ? (
                     <span className="try-step-description">{step.description}</span>
@@ -703,6 +734,9 @@ function PlanCard(props: {
       <p className="try-count">{countLine(steps)}</p>
       <button className="button-gray button-small" onClick={props.onAdd} type="button">
         Add a step
+      </button>
+      <button className="try-link" onClick={props.onSplitAgain} type="button">
+        Split again
       </button>
     </section>
   );

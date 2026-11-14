@@ -813,33 +813,103 @@ a {
   text-decoration: none;
 }
 
+/*
+ * Goal dialogue of prototype v4 (issues 263 and 234 to 237): a header, a thread that grows downward and a
+ * dock pinned to the bottom of the screen. The shell is a full-height column so the dock sits at
+ * the bottom when the thread is short and stays in view (sticky) when the thread is long.
+ */
+.try-shell:has(.try-dialogue) {
+  display: flex;
+  flex-direction: column;
+}
+
 .try-dialogue {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
   min-width: 0;
+  padding-bottom: 0;
 }
 
 .try-dialogue-bar {
+  align-items: center;
   display: flex;
+  gap: var(--space-control-gap);
   min-height: var(--target);
 }
 
 .try-back {
-  font-size: var(--text-display-size);
+  font-size: var(--text-back-size);
   justify-content: flex-start;
+  min-width: var(--target);
   padding-inline: 0;
   text-decoration: none;
 }
 
+.try-avatar {
+  background: var(--tag-fill);
+  border: var(--line-strong) solid var(--tag-edge);
+  border-radius: 50%;
+  display: grid;
+  flex: none;
+  height: var(--avatar-size);
+  overflow: hidden;
+  place-items: center;
+  width: var(--avatar-size);
+}
+
+.try-avatar img {
+  height: var(--avatar-zoom);
+  object-fit: cover;
+  object-position: 50% 20%;
+  width: var(--avatar-zoom);
+}
+
+.try-companion-name {
+  color: var(--ink-2);
+  font-family: var(--type-shell);
+  font-size: var(--text-name-size);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.try-thread {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  gap: var(--space-thread-gap);
+  padding: var(--space-thread-top) 0 var(--space-screen-bottom);
+}
+
+.try-dock {
+  background: var(--bg);
+  bottom: 0;
+  display: grid;
+  gap: var(--space-small-gap);
+  padding: var(--space-control-gap) 0 calc(var(--space-screen-bottom) + env(safe-area-inset-bottom));
+  position: sticky;
+}
+
+.try-dock:empty {
+  display: none;
+}
+
+/* His words on a slip (prototype .note.m.him). */
 .try-slip {
+  align-self: flex-start;
   background: var(--raised);
+  border: 1px solid var(--hairline);
   border-radius: var(--r-note);
   box-shadow: var(--shadow-paper);
   color: var(--ink);
   font-family: var(--type-voice);
-  font-size: var(--text-body-size);
-  line-height: var(--text-body-leading);
-  margin: var(--space-small-gap) 0 0;
-  max-width: 100%;
-  padding: var(--space-screen-inline) var(--space-screen-inline) var(--space-control-gap);
+  font-size: var(--text-slip-size);
+  line-height: var(--text-slip-leading);
+  margin: 0;
+  max-width: var(--slip-max);
+  padding: var(--pad-slip);
   position: relative;
 }
 
@@ -857,22 +927,37 @@ a {
   content: "";
 }
 
+/* The user's own words (prototype .me). */
 .try-you {
-  background: var(--control);
-  border-radius: var(--r-note);
-  color: var(--on-control);
+  align-self: flex-end;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-bubble) var(--r-bubble) var(--r-bubble-tail) var(--r-bubble);
+  color: var(--ink);
   font-family: var(--type-shell);
-  justify-self: end;
+  font-size: var(--text-you-size);
+  line-height: var(--text-you-leading);
   margin: 0;
-  max-width: 85%;
-  padding: var(--space-small-gap) var(--space-control-gap);
+  max-width: var(--bubble-max);
+  padding: var(--pad-bubble);
 }
 
 .try-system-row {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-small-gap);
+  gap: 0 var(--space-small-gap);
+}
+
+.try-caption-line {
+  color: var(--ink-2);
+  font-family: var(--type-shell);
+  font-size: var(--text-caption-size);
+  margin: 0;
+}
+
+.try-caption-line b {
+  color: var(--ink);
 }
 
 .try-system,
@@ -886,48 +971,51 @@ a {
   color: var(--ink-2);
 }
 
-.try-composer {
+/* The composer: a rectangular field and a separate paper-tag Send (prototype .composer). */
+.try-composer,
+.try-time {
   align-items: center;
-  background: var(--raised);
-  border-radius: var(--r-capsule);
-  box-shadow: inset 0 0 0 1px var(--edge);
   display: flex;
   gap: var(--space-small-gap);
   min-width: 0;
-  padding: 0.1875rem 0.1875rem 0.1875rem var(--space-control-gap);
 }
 
-.try-composer input {
-  background: transparent;
-  border: 0;
+.try-field {
+  background: var(--raised);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-field);
   color: var(--ink);
   flex: 1 1 auto;
   font-family: var(--type-sans);
   font-size: var(--text-body-size);
+  min-height: var(--field-height-chat);
   min-width: 0;
+  padding: 0 var(--button-small-padding);
 }
 
-.try-composer:focus-within {
+.try-field::placeholder {
+  color: var(--faint);
+}
+
+.try-field:focus-visible {
   outline: 3px solid var(--control);
   outline-offset: 3px;
 }
 
-.try-composer input:focus-visible {
-  outline: none;
-}
-
 .try-send {
   align-items: center;
-  background: var(--control);
-  border: 0;
-  border-radius: var(--r-capsule);
-  color: var(--on-control);
+  background: var(--tag-fill);
+  border: 1px solid var(--tag-edge);
+  border-radius: var(--r-field);
+  box-shadow: 0 2px 0 0 var(--tag-edge);
+  color: var(--tag-ink);
   cursor: pointer;
   display: inline-flex;
-  flex: 0 0 var(--target);
-  height: var(--target);
+  flex: 0 0 var(--send-size);
+  height: var(--send-size);
   justify-content: center;
-  width: var(--target);
+  padding: 0;
+  width: var(--send-size);
 }
 
 .try-send svg {
@@ -936,8 +1024,13 @@ a {
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2.4;
+  stroke-width: 2.2;
   width: 1.25rem;
+}
+
+.try-send:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 3px;
 }
 
 .try-send[aria-disabled="true"] {
@@ -945,13 +1038,9 @@ a {
   opacity: 0.35;
 }
 
-/* TIME-SLIDER (issue 32): the time question is a slider from 0 to 3 hours. Placement on the
-   GD2 screen belongs to issue 235. */
+/* TIME-SLIDER (issue 32) at the bottom of GD2 (issue 235): slider, its value, Send. */
 .try-time {
-  align-items: center;
-  display: flex;
   flex-wrap: wrap;
-  gap: var(--space-small-gap);
 }
 
 .try-time-slider {
@@ -978,10 +1067,16 @@ a {
   font-size: var(--text-link-size);
   font-weight: 700;
   justify-self: start;
+  min-height: var(--target);
   padding: 0;
   text-decoration: underline;
 }
 
+.try-link-centre {
+  justify-self: center;
+}
+
+/* Chips (prototype .chip): 12 px radius, raised, a 1.5 px edge. */
 .try-chips {
   display: flex;
   flex-wrap: wrap;
@@ -989,15 +1084,23 @@ a {
 }
 
 .try-chip {
-  background: transparent;
-  border: 1px solid var(--edge);
-  border-radius: var(--r-capsule);
+  align-items: center;
+  background: var(--raised);
+  border: var(--line-strong) solid var(--edge);
+  border-radius: var(--r-chip);
   color: var(--ink);
   cursor: pointer;
+  display: inline-flex;
   font-family: var(--type-shell);
-  font-size: var(--text-body-size);
+  font-size: var(--text-link-size);
   font-weight: 600;
-  padding-inline: var(--space-screen-inline);
+  min-height: var(--target);
+  padding: 0 var(--button-small-padding);
+}
+
+.try-chip:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 3px;
 }
 
 .try-actions {
@@ -1006,39 +1109,56 @@ a {
   gap: var(--space-control-gap);
 }
 
-.try-actions > :first-child {
-  flex: 62 1 auto;
-}
-
-.try-actions > :last-child {
-  flex: 38 1 auto;
-}
-
-.try-dots {
-  display: flex;
-  gap: var(--space-small-gap);
-}
-
-.try-dots span {
-  background: var(--mark);
-  border-radius: var(--r-capsule);
-  height: var(--space-small-gap);
-  width: var(--space-small-gap);
-}
-
-/* System voice: bold border and text, not red (FLOW GD-F). */
-.try-failure {
-  border: 2px solid var(--ink);
+/* Splitting: his typing dots (prototype .typing). */
+.try-typing {
+  align-self: flex-start;
+  background: var(--raised);
+  border: 1px solid var(--hairline);
   border-radius: var(--r-note);
+  display: inline-flex;
+  gap: 5px;
+  padding: var(--space-control-gap) var(--space-screen-bottom);
+}
+
+.try-typing > span[aria-hidden] {
+  background: var(--ink-2);
+  border-radius: 50%;
+  height: 6px;
+  opacity: 0.6;
+  width: 6px;
+}
+
+/* System voice boxes: the split failed (GD-F) and the save failed. */
+.try-sys {
+  background: var(--raised);
+  border: var(--line-strong) solid var(--edge);
+  border-radius: var(--r-sys);
   display: grid;
   font-family: var(--type-shell);
   gap: var(--space-control-gap);
-  padding: var(--space-screen-inline);
+  padding: var(--space-card-pad);
 }
 
-.try-failure p {
-  font-weight: 700;
+.try-sys h2 {
+  font-family: var(--type-display);
+  font-size: var(--text-sys-title-size);
+  font-weight: 800;
+  line-height: 1.2;
   margin: 0;
+}
+
+.try-sys p {
+  margin: 0;
+}
+
+.try-save-failed {
+  display: grid;
+  font-family: var(--type-shell);
+  gap: var(--space-small-gap);
+}
+
+.try-start {
+  width: 100%;
 }
 
 .try-plan {
