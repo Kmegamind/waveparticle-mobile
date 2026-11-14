@@ -3067,10 +3067,15 @@ a {
   margin: 0;
 }
 
-.account-text a:not(.life-back),
+/* Links inside a sentence stay in the line (inline links are exempt from the target size). */
+.account-text p a,
 .account-page > p a {
   color: var(--ink);
+  display: inline;
+  font-size: inherit;
   font-weight: 700;
+  min-height: 0;
+  min-width: 0;
   text-decoration: underline;
 }
 
@@ -3097,9 +3102,9 @@ a {
   line-height: var(--text-body-leading);
 }
 
-.delete-title {
+.app-screen .delete-title {
   font-family: var(--type-display);
-  font-size: var(--text-card-title-size);
+  font-size: var(--text-sheet-title-size);
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.12;
@@ -3114,4 +3119,10 @@ a {
 
 .delete-actions > * {
   width: 100%;
+}
+
+/* Links drawn as paper tags read as buttons, as in the prototype: no underline. */
+.delete-actions a,
+.account-page > a.button-filled {
+  text-decoration: none;
 }
