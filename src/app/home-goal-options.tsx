@@ -2,13 +2,33 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import type { GoalStatus } from "@/lib/home/goal-status";
+import type { GoalStatus, SetGoalStatusOutcome } from "@/lib/home/goal-status";
 import { setGoalStatusAction } from "./home-actions";
 
 /** What the Undo toast needs after Put on hold or Mark done (#268 AC4). */
-export type HomeToastState = { goalId: string; previous: GoalStatus; text: string };
+export type HomeToastState = {
+  goalId: string;
+  previous: GoalStatus;
+  /** The session the change parked, if any: Undo reopens exactly this one. */
+  parkedSessionId?: string;
+  text: string;
+};
 
 const TOAST_MS = 5_000;
+const UNDO_FAILED = "Could not undo. Please try again.";
+
+/** The request Undo sends: the previous status and the session that was parked. */
+export function undoRequest(toast: HomeToastState) {
+  return { goalId: toast.goalId, status: toast.previous, sessionId: toast.parkedSessionId };
+}
+
+/** After Undo: no toast when it worked; otherwise a toast that says so, with Undo to retry. */
+export function afterUndo(
+  toast: HomeToastState,
+  outcome: SetGoalStatusOutcome,
+): HomeToastState | null {
+  return outcome.status === "ok" ? null : { ...toast, text: UNDO_FAILED };
+}
 
 /**
  * ⋯ on the Home Goal card and its "Goal options" sheet (HOME-MENU, #88): Put on hold, Mark done,
@@ -51,6 +71,7 @@ export function HomeGoalOptions({
     onChanged({
       goalId,
       previous: outcome.previous,
+      parkedSessionId: outcome.parkedSessionId,
       text: status === "on_hold" ? "Goal put on hold" : "Goal marked done",
     });
     router.refresh();
@@ -103,7 +124,15 @@ export function HomeGoalOptions({
 }
 
 /** "Goal put on hold · Undo" for five seconds, paused while focused or hovered (DESIGN 6.8). */
-export function HomeToast({ toast, onClose }: { toast: HomeToastState; onClose: () => void }) {
+export function HomeToast({
+  toast,
+  onClose,
+  onReplace,
+}: {
+  toast: HomeToastState;
+  onClose: () => void;
+  onReplace: (toast: HomeToastState) => void;
+}) {
   const router = useRouter();
   const [held, setHeld] = useState(false);
 
@@ -115,7 +144,11 @@ export function HomeToast({ toast, onClose }: { toast: HomeToastState; onClose: 
 
   async function undo() {
     onClose();
-    await setGoalStatusAction({ goalId: toast.goalId, status: toast.previous }).catch(() => null);
+    const outcome = await setGoalStatusAction(undoRequest(toast)).catch(() => ({
+      status: "failed" as const,
+    }));
+    const next = afterUndo(toast, outcome);
+    if (next) onReplace(next);
     router.refresh();
   }
 

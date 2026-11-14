@@ -13,22 +13,37 @@ export type GoalStatusWriter = {
   /** Null when the Goal is not this account's (row-level security hides it). */
   goalStatus(goalId: string): Promise<GoalStatus | null>;
   setGoal(goalId: string, status: GoalStatus): Promise<void>;
-  /** The id of the Goal's newest session in this state, or null. */
-  sessionIn(goalId: string, state: "open" | "on_hold"): Promise<string | null>;
+  /** The id of the Goal's open session (at most one: `sessions_one_open_per_goal`), or null. */
+  sessionIn(goalId: string, state: "open"): Promise<string | null>;
+  /** The Goal and state of one session of this account, or null. */
+  sessionOf(sessionId: string): Promise<{ goalId: string; state: string } | null>;
   setSession(sessionId: string, state: "open" | "on_hold"): Promise<void>;
 };
 
-export type SetGoalStatusOutcome = { status: "ok"; previous: GoalStatus } | { status: "failed" };
+export type SetGoalStatusOutcome =
+  | {
+      status: "ok";
+      previous: GoalStatus;
+      /** The session this call parked; Undo passes it back so exactly that one reopens. */
+      parkedSessionId?: string;
+    }
+  | { status: "failed" };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ALLOWED = new Set<GoalStatus>(["on_hold", "done", "in_progress"]);
 
-function parse(input: unknown): { goalId: string; status: GoalStatus } | null {
+function parse(
+  input: unknown,
+): { goalId: string; status: GoalStatus; sessionId: string | null } | null {
   if (typeof input !== "object" || input === null) return null;
-  const { goalId, status } = input as Record<string, unknown>;
+  const { goalId, status, sessionId } = input as Record<string, unknown>;
   if (typeof goalId !== "string" || !UUID.test(goalId)) return null;
   if (typeof status !== "string" || !ALLOWED.has(status as GoalStatus)) return null;
-  return { goalId, status: status as GoalStatus };
+  return {
+    goalId,
+    status: status as GoalStatus,
+    sessionId: typeof sessionId === "string" && sessionId.length <= 64 ? sessionId : null,
+  };
 }
 
 export async function setGoalStatus(
@@ -43,16 +58,19 @@ export async function setGoalStatus(
     if (previous === null) return { status: "failed" };
     await writer.setGoal(request.goalId, request.status);
     if (request.status === "in_progress") {
-      // Undo: reopen the parked session, unless the Goal already has an open one.
-      if ((await writer.sessionIn(request.goalId, "open")) === null) {
-        const parked = await writer.sessionIn(request.goalId, "on_hold");
-        if (parked) await writer.setSession(parked, "open");
+      // Undo: reopen exactly the session this Goal's hold parked, if it is still parked and the
+      // Goal has no open session meanwhile.
+      if (request.sessionId && (await writer.sessionIn(request.goalId, "open")) === null) {
+        const parked = await writer.sessionOf(request.sessionId);
+        if (parked?.goalId === request.goalId && parked.state === "on_hold") {
+          await writer.setSession(request.sessionId, "open");
+        }
       }
-    } else {
-      const open = await writer.sessionIn(request.goalId, "open");
-      if (open) await writer.setSession(open, "on_hold");
+      return { status: "ok", previous };
     }
-    return { status: "ok", previous };
+    const open = await writer.sessionIn(request.goalId, "open");
+    if (open) await writer.setSession(open, "on_hold");
+    return open ? { status: "ok", previous, parkedSessionId: open } : { status: "ok", previous };
   } catch {
     return { status: "failed" };
   }

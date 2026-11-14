@@ -119,7 +119,7 @@ export function ProtectedHome({
           ) : null}
         </>
       ) : null}
-      {toast ? <HomeToast onClose={closeToast} toast={toast} /> : null}
+      {toast ? <HomeToast onClose={closeToast} onReplace={setToast} toast={toast} /> : null}
     </main>
   );
 }

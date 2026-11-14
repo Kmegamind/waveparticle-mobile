@@ -31,11 +31,23 @@ export function createSupabaseGoalStatusWriter(
           .select("id")
           .eq("goal_id", goalId)
           .eq("state", state)
-          .order("started_at", { ascending: false, nullsFirst: false })
           .limit(1)) as Result,
       );
       const rows = result.data as { id?: unknown }[] | null | undefined;
       return typeof rows?.[0]?.id === "string" ? rows[0].id : null;
+    },
+    async sessionOf(sessionId) {
+      const result = check(
+        (await client
+          .from("sessions")
+          .select("goal_id, state")
+          .eq("id", sessionId)
+          .maybeSingle()) as Result,
+      );
+      const row = result.data as { goal_id?: unknown; state?: unknown } | null | undefined;
+      return typeof row?.goal_id === "string" && typeof row.state === "string"
+        ? { goalId: row.goal_id, state: row.state }
+        : null;
     },
     async setSession(sessionId, state) {
       check((await client.from("sessions").update({ state }).eq("id", sessionId)) as Result);

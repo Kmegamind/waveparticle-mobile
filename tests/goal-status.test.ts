@@ -24,6 +24,10 @@ function memory(goals: Record<string, ProgressGoal["status"]>, sessions: Session
       const found = sessions.filter((s) => s.goalId === goalId && s.state === state).at(-1);
       return found?.id ?? null;
     },
+    async sessionOf(sessionId) {
+      const found = sessions.find((s) => s.id === sessionId);
+      return found ? { goalId: found.goalId, state: found.state } : null;
+    },
     async setSession(sessionId, state) {
       calls.push(`session ${state}`);
       const found = sessions.find((s) => s.id === sessionId);
@@ -33,6 +37,32 @@ function memory(goals: Record<string, ProgressGoal["status"]>, sessions: Session
   return { writer, goals, sessions, calls };
 }
 
+describe("#268 final review: Undo reopens the session it parked", () => {
+  it("returns the parked session and Undo reopens that one, not another parked one", async () => {
+    const store = memory({ [GOAL]: "in_progress" }, [
+      { id: "stale", goalId: GOAL, state: "on_hold" },
+      { id: "s1", goalId: GOAL, state: "open" },
+    ]);
+    const deps = { userId: "u", writer: store.writer };
+    const parked = await setGoalStatus({ goalId: GOAL, status: "on_hold" }, deps);
+    expect(parked).toEqual({ status: "ok", previous: "in_progress", parkedSessionId: "s1" });
+    await setGoalStatus({ goalId: GOAL, status: "in_progress", sessionId: "s1" }, deps);
+    expect(store.sessions.map((s) => s.state)).toEqual(["on_hold", "open"]);
+  });
+
+  it("Undo never reopens a session of another Goal or one that is not parked", async () => {
+    const store = memory({ [GOAL]: "on_hold" }, [
+      { id: "theirs", goalId: OTHER, state: "on_hold" },
+      { id: "done", goalId: GOAL, state: "completed" },
+    ]);
+    const deps = { userId: "u", writer: store.writer };
+    await setGoalStatus({ goalId: GOAL, status: "in_progress", sessionId: "theirs" }, deps);
+    await setGoalStatus({ goalId: GOAL, status: "in_progress", sessionId: "done" }, deps);
+    expect(store.sessions.map((s) => s.state)).toEqual(["on_hold", "completed"]);
+    expect(store.goals[GOAL]).toBe("in_progress");
+  });
+});
+
 describe("#268 AC4 the Goal options", () => {
   it("put on hold sets the Goal and parks its open session", async () => {
     const store = memory({ [GOAL]: "in_progress" }, [{ id: "s1", goalId: GOAL, state: "open" }]);
@@ -40,7 +70,7 @@ describe("#268 AC4 the Goal options", () => {
       { goalId: GOAL, status: "on_hold" },
       { userId: "u", writer: store.writer },
     );
-    expect(outcome).toEqual({ status: "ok", previous: "in_progress" });
+    expect(outcome).toEqual({ status: "ok", previous: "in_progress", parkedSessionId: "s1" });
     expect(store.goals[GOAL]).toBe("on_hold");
     expect(store.sessions[0].state).toBe("on_hold");
   });
@@ -58,13 +88,14 @@ describe("#268 AC4 the Goal options", () => {
       { id: "s1", goalId: GOAL, state: "on_hold" },
     ]);
     const deps = { userId: "u", writer: store.writer };
-    const outcome = await setGoalStatus({ goalId: GOAL, status: "in_progress" }, deps);
+    const undo = { goalId: GOAL, status: "in_progress", sessionId: "s1" };
+    const outcome = await setGoalStatus(undo, deps);
     expect(outcome).toEqual({ status: "ok", previous: "on_hold" });
     expect(store.goals[GOAL]).toBe("in_progress");
     expect(store.sessions.map((s) => s.state)).toEqual(["completed", "open"]);
     // A second Undo (a repeated tap, or a refreshed page) opens no second session.
     store.sessions.push({ id: "s2", goalId: GOAL, state: "on_hold" });
-    await setGoalStatus({ goalId: GOAL, status: "in_progress" }, deps);
+    await setGoalStatus({ ...undo, sessionId: "s2" }, deps);
     expect(store.sessions.map((s) => s.state)).toEqual(["completed", "open", "on_hold"]);
   });
 
