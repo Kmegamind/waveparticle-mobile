@@ -445,18 +445,18 @@ test.describe("focus page", () => {
     await expect(panel.locator(".focus-panel-goal")).toHaveText("Methods section for Friday");
     await expect(panel.locator(".focus-panel-now").first()).toHaveText("Now Gather what you need");
     await expect(panel).toContainText("Collect the notes and sources.");
-    const more = panel.getByRole("button", { name: "Your steps ▾" });
+    // The arrow shows but is not part of the name (a finding left by #263).
+    const more = panel.getByRole("button", { name: "Your steps", exact: true });
+    await expect(more).toHaveText("Your steps ▾");
     await expect(more).toHaveAttribute("aria-expanded", "false");
     await more.click();
-    await expect(panel.getByRole("button", { name: "Your steps ▴" })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
+    await expect(more).toHaveText("Your steps ▴");
+    await expect(more).toHaveAttribute("aria-expanded", "true");
   });
 
   test("#238 F1 the open list marks done, now and to do with ✓ ● ○", async ({ page }) => {
     await openFocus(page);
-    await page.getByRole("button", { name: "Your steps ▾" }).click();
+    await page.getByRole("button", { name: "Your steps", exact: true }).click();
     const rows = page.locator("#your-steps li");
     await expect(rows).toHaveCount(4);
     await expect(rows.nth(0).locator(".focus-steps-mark")).toHaveText("●");
