@@ -23,6 +23,15 @@ const PROTOTYPE = {
   "gd-f": ["gd-f", "gd-f"],
   f1: ["f1", "f1"],
   "f1-you": ["f1-you", "f1-you"],
+  // The Goals area (#73): the prototype has a day and a night picture of each.
+  g1: ["g1-day", "g1-night"],
+  g3: ["g3-day", "g3-night"],
+  g4: ["g4-day", "g4-night"],
+  "g4-n": ["g4-n-day", "g4-n-night"],
+  "g4-h": ["g4-h-day", "g4-h-night"],
+  g5: ["g5-day", "g5-night"],
+  "g5-d": ["g5-d-day", "g5-d-night"],
+  g6: ["g6-day", "g6-night"],
 };
 const dataUrl = (file) => `data:image/png;base64,${readFileSync(file).toString("base64")}`;
 
