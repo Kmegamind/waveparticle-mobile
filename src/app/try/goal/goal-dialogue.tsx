@@ -91,6 +91,8 @@ type GoalDialogueProps = {
    * written to the browser store: the account holds the Plan.
    */
   focusPath?: string;
+  /** The line the composer starts with (/goal?line=, from Goals' New goal and Start; #77). */
+  initialDraft?: string;
 };
 
 export function GoalDialogue({
@@ -98,6 +100,7 @@ export function GoalDialogue({
   start,
   stories,
   focusPath,
+  initialDraft = "",
 }: GoalDialogueProps = {}) {
   const router = useRouter();
   const { ready, state, update } = usePrototypeState();
@@ -116,7 +119,7 @@ export function GoalDialogue({
   const opening = openingIndex === null ? storyOpening : RETURNING_OPENINGS[openingIndex];
 
   const [phase, setPhase] = useState<Phase>("goal");
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(initialDraft);
   const [goalHint, setGoalHint] = useState(false);
   const [goal, setGoal] = useState("");
   const [reaction, setReaction] = useState("");

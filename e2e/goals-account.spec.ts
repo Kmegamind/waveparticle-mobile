@@ -423,3 +423,18 @@ test.describe("the Goal detail", () => {
     }
   });
 });
+
+test.describe("the goal dialogue from Goals", () => {
+  test("#77 AC2 /goal?line= opens the dialogue with the line in the composer; the safety gate still runs on Send", async ({
+    page,
+    baseURL,
+  }) => {
+    await signIn(page.context(), baseURL!, sampleGoals);
+    await page.goto(`/goal?line=${encodeURIComponent("Read chapter four")}`);
+    await expect(page.getByLabel("Your goal")).toHaveValue("Read chapter four");
+    await page.goto(`/goal?line=${encodeURIComponent("I want to kill myself")}`);
+    await expect(page.getByLabel("Your goal")).toHaveValue("I want to kill myself");
+    await page.getByRole("button", { name: "Send" }).click();
+    await expect(page.getByRole("heading", { name: "This is outside the story." })).toBeVisible();
+  });
+});
