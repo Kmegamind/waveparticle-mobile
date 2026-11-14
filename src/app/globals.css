@@ -2660,3 +2660,38 @@ a {
   color: var(--ink-2);
   font-size: var(--text-link-size);
 }
+
+/* ME-REC and the Story record (issue 81). */
+.rec-meta {
+  margin-top: calc(var(--space-small-gap) * -1);
+}
+
+.rec-section {
+  display: grid;
+  gap: var(--space-control-gap);
+  margin-top: var(--space-control-gap);
+}
+
+.rec-steps,
+.rec-moments {
+  display: grid;
+  gap: var(--space-small-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rec-steps li {
+  display: flex;
+  font-size: var(--text-body-size);
+  gap: var(--space-control-gap);
+}
+
+.rec-moments li {
+  font-family: var(--type-voice);
+  font-size: var(--text-slip-small-size);
+}
+
+.rec-chapter {
+  justify-self: start;
+}
