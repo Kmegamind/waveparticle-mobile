@@ -11,8 +11,11 @@ import { COMPANION_ID } from "./finish-run";
 export type LifePathRow = {
   id: string;
   title: string;
-  state: "finished" | "current" | "later";
-  /** Finished: his closing line from that run. Current: the story's goal sentence. Later: none. */
+  state: "finished" | "memory" | "current" | "later";
+  /**
+   * Finished: his closing line from that run. Memory and current: the story's goal sentence (an
+   * input, not a stored line of his). Later: none.
+   */
   line: string | null;
 };
 
@@ -21,17 +24,25 @@ export type LifePathView = {
   currentId: string | null;
 };
 
-export function lifePath(progress: AccountProgress): LifePathView {
+/**
+ * `startId` is the account's starting story (#97 AC2): the stories before it are "his memory" rows
+ * and are never played. Under M1 every account starts at chapter 1, so there are none yet.
+ */
+export function lifePath(progress: AccountProgress, startId: string = STORY_IDS[0]): LifePathView {
+  const start = Math.max(0, STORY_IDS.indexOf(startId));
   const firstLine = new Map<string, string>();
   for (const session of progress.sessions) {
     if (session.state !== "completed" || session.companionId !== COMPANION_ID) continue;
     if (!firstLine.has(session.storyId)) firstLine.set(session.storyId, session.closingLine ?? "");
   }
-  const currentId = STORY_IDS.find((id) => !firstLine.has(id)) ?? null;
+  const currentId = STORY_IDS.slice(start).find((id) => !firstLine.has(id)) ?? null;
   const row = (id: string): LifePathRow => {
     const profile = storyProfile(id);
     if (firstLine.has(id)) {
       return { id, title: profile.title, state: "finished", line: firstLine.get(id) || null };
+    }
+    if (STORY_IDS.indexOf(id) < start) {
+      return { id, title: profile.title, state: "memory", line: profile.goalShort };
     }
     if (id === currentId)
       return { id, title: profile.title, state: "current", line: profile.goalShort };

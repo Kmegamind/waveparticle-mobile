@@ -86,6 +86,14 @@
   --text-back-size: 1.375rem;
   --text-card-title-size: 1.5625rem;
   --text-note-size: 0.9375rem;
+  /* Life Path rows, measured in prototype v4 (#272). */
+  --text-row-title-size: 1rem;
+  --text-period-size: 0.75rem;
+  --space-row-gap: 1.125rem;
+  --life-node: 0.9375rem;
+  --life-node-current: 1.25rem;
+  --life-portrait: 4rem;
+  --text-card-heading-size: 1.6875rem;
   --target: 2.75rem;
   --logo-width: 3.375rem;
   --logo-height: 1.25rem;

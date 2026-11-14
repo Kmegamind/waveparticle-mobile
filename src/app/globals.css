@@ -1830,29 +1830,59 @@ a {
   justify-self: stretch;
 }
 
-/* Life Path CPAGE (issue 258), prototype v4: header, named periods, a timeline of nodes. */
+/* Life Path CPAGE of prototype v4 (issues 258 and 272): a sticky header, then named periods on a
+   timeline. State is carried by the node's shape and a name, never by colour alone. */
 .life-path {
+  align-content: start;
   display: grid;
   gap: var(--space-control-gap);
-  align-content: start;
+}
+
+/* The header stays at the top, full width, while the rows scroll under it (prototype v4). */
+.life-top {
+  background: var(--bg);
+  display: grid;
+  gap: var(--space-row-after);
+  margin: calc(var(--space-screen-top) * -1) calc(var(--space-screen-inline) * -1) 0;
+  padding: var(--space-screen-top) var(--space-screen-inline) var(--space-small-gap);
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .life-back {
-  gap: var(--space-small-gap);
+  gap: var(--space-control-gap);
   text-decoration: none;
+}
+
+.life-back > span:first-child {
+  font-size: var(--text-back-size);
+  min-width: var(--target);
+  text-align: center;
 }
 
 .life-header {
   align-items: center;
   display: flex;
-  gap: var(--space-control-gap);
+  gap: var(--space-button-before);
 }
 
 .life-portrait {
   border: 2px solid var(--mark);
   border-radius: 50%;
-  height: 6rem;
-  width: 6rem;
+  height: var(--life-portrait);
+  width: var(--life-portrait);
+}
+
+.life-path .life-header h1 {
+  font-size: var(--text-card-heading-size);
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+}
+
+.life-tags {
+  color: var(--ink-2);
+  font-size: var(--text-caption-size);
 }
 
 .life-tags,
@@ -1860,44 +1890,83 @@ a {
   margin: 0;
 }
 
+.life-current .button-filled {
+  text-decoration: none;
+}
+
 .life-periods,
 .life-rows {
-  display: grid;
-  gap: var(--space-control-gap);
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
+/* The timeline: a 1.5 px line with the nodes sitting on it. */
+.life-periods {
+  border-left: 1.5px solid var(--hairline);
+  margin-left: var(--space-button-before);
+  padding-left: var(--space-screen-inline);
+}
+
 .life-period {
-  margin: var(--space-control-gap) 0 0;
+  color: var(--ink-2);
+  font-family: var(--type-shell);
+  font-size: var(--text-period-size);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1.3;
+  margin: var(--space-title-after) 0 var(--space-control-gap) calc(var(--space-screen-inline) * -1);
+  text-transform: uppercase;
 }
 
 .life-row {
-  display: grid;
-  gap: var(--space-control-gap);
-  grid-template-columns: var(--space-screen-inline) minmax(0, 1fr);
+  padding-bottom: var(--space-row-gap);
+  position: relative;
 }
 
 .life-node {
-  border: 2px dotted var(--edge);
+  background: var(--bg);
   border-radius: 50%;
-  height: 1.125rem;
-  margin-top: 0.25rem;
-  width: 1.125rem;
+  height: var(--life-node);
+  left: calc(var(--space-screen-inline) * -1 - var(--life-node) / 2 - 0.75px);
+  position: absolute;
+  top: 0.3125rem;
+  width: var(--life-node);
 }
 
-.life-row[data-state="finished"] .life-node {
-  background: var(--mark);
-  border: 2px solid var(--mark);
+.life-node-finished {
+  background: var(--ink);
+  box-shadow: 0 0 0 1.5px var(--ink);
 }
 
-.life-row[data-state="current"] .life-node {
-  border: 4px solid var(--mark);
+.life-node-memory {
+  border: 2px solid var(--ink-2);
 }
 
-.life-row[data-state="later"] h3 {
+.life-node-current {
+  border: 5px solid var(--mark);
+  height: var(--life-node-current);
+  left: calc(var(--space-screen-inline) * -1 - var(--life-node-current) / 2 - 0.75px);
+  top: 0.125rem;
+  width: var(--life-node-current);
+}
+
+.life-node-later {
+  border: 2px dotted var(--ink-2);
+}
+
+.life-title {
+  font-family: var(--type-shell);
+  font-size: var(--text-row-title-size);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* Later rows fade by size and weight; --ink-2 keeps at least 5:1 (#96 AC3). */
+.life-row[data-state="later"] .life-title {
   color: var(--ink-2);
+  font-size: var(--text-note-size);
+  font-weight: 600;
 }
 
 .life-current {
@@ -1907,17 +1976,30 @@ a {
   box-shadow: var(--shadow-paper);
   display: grid;
   gap: var(--space-control-gap);
-  padding: var(--space-screen-inline);
+  padding: var(--space-screen-bottom);
+  scroll-margin-top: 12rem;
+}
+
+.life-current .life-title {
+  font-size: var(--text-slip-size);
 }
 
 .life-line {
   font-family: var(--type-voice);
-  font-size: var(--text-slip-size);
-  line-height: var(--text-slip-leading);
+  font-size: var(--text-row-title-size);
+  line-height: 1.45;
+  margin: var(--space-link-rows) 0 0;
+}
+
+.life-current .life-line {
+  font-size: var(--text-body-size);
   margin: 0;
 }
 
-.life-said {
+/* Finished and memory lines are his voice in italics, as in the prototype; the node's shape tells
+   them apart. */
+.life-said,
+.life-memory {
   color: var(--ink-2);
   font-style: italic;
 }

@@ -25,7 +25,7 @@ The public code interfaces today are:
 - `src/lib/summary/run-writer.ts`: `claimClosingLine(sessionId, line)` sets `closing_line` only while it is empty (`claimed` or `taken`). A second tab that finds it taken waits for the stored lines. `insertClosingLine` writes the carried line as a `closing` row with a fixed id, ignoring duplicates. Nothing else on the account is written.
 - `src/app/end/actions.ts`: server action `finishRunAction({ sessionId })` for `/end`. It answers `failed` when the test path is off, when the model is not configured, or on any error. Before calling it, `/end` sends the device's snapshot through `recordFocusProgress` (#257), so the account knows the session is complete.
 - `src/app/_session/paths.ts`: `accountPathsFor(sessionId)` is `ACCOUNT_PATHS` with `end` set to `/end?session=<id>`.
-- `src/lib/summary/life-path.ts`: `lifePath(progress)` gives `{ periods: [{ name, rows }], currentId }`. Each row is `{ id, title, state, line }`, where `state` is `finished`, `current` or `later`.
+- `src/lib/summary/life-path.ts`: `lifePath(progress, startId = chapter 1)` gives `{ periods: [{ name, rows }], currentId }`. Each row is `{ id, title, state, line }`, where `state` is `finished`, `memory` (a story before `startId`; its line is the story's goal sentence; none under M1, #272), `current` or `later`.
   - A finished row's `line` is the closing line of its first completed run.
   - The current row's `line` is the story's goal sentence.
   - A later row has no line.
