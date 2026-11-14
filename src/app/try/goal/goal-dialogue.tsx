@@ -354,11 +354,29 @@ export function GoalDialogue({
     setEditing({ id: added.id, title: "", description: "", minutes: String(NEW_STEP_MINUTES) });
   }
 
+  // After a move, focus stays on the moved Step's button and the new place is said aloud (#237).
+  const moved = useRef<{ id: string; by: -1 | 1 } | null>(null);
+  const [moveLine, setMoveLine] = useState("");
   function onMoveStep(id: string, by: -1 | 1) {
     const committed = editing ? finishEditing() : steps;
     if (committed === null) return;
-    setSteps(moveStep(committed, id, by));
+    const next = moveStep(committed, id, by);
+    const at = next.findIndex((step) => step.id === id);
+    moved.current = { id, by };
+    setMoveLine(at < 0 ? "" : `${next[at].title} moved to step ${at + 1}.`);
+    setSteps(next);
   }
+  useEffect(() => {
+    const target = moved.current;
+    if (!target || !thread.current) return;
+    moved.current = null;
+    const find = (by: -1 | 1) =>
+      thread.current?.querySelector<HTMLButtonElement>(
+        `[data-step="${target.id}"][data-move="${by}"]`,
+      );
+    const same = find(target.by);
+    (same && !same.disabled ? same : find(target.by === 1 ? -1 : 1))?.focus();
+  }, [steps]);
 
   function openFocus(saved: StartInput["steps"]) {
     update({
@@ -518,6 +536,7 @@ export function GoalDialogue({
                 setEditing(null);
               }}
               onSplitAgain={splitAgain}
+              moveLine={moveLine}
               onTitle={setTitleDraft}
               steps={steps}
               title={titleDraft}
@@ -663,6 +682,7 @@ type Editing = { id: string; title: string; description: string; minutes: string
 
 function PlanCard(props: {
   title: string;
+  moveLine: string;
   onTitle: (value: string) => void;
   steps: EditableStep[];
   editing: Editing;
@@ -811,6 +831,8 @@ function PlanCard(props: {
               <span className="try-move">
                 <button
                   aria-label={`Move up: ${step.title}`}
+                  data-move="-1"
+                  data-step={step.id}
                   disabled={index === 0}
                   onClick={() => props.onMove(step.id, -1)}
                   type="button"
@@ -819,6 +841,8 @@ function PlanCard(props: {
                 </button>
                 <button
                   aria-label={`Move down: ${step.title}`}
+                  data-move="1"
+                  data-step={step.id}
                   disabled={index === steps.length - 1}
                   onClick={() => props.onMove(step.id, 1)}
                   type="button"
@@ -830,6 +854,9 @@ function PlanCard(props: {
           );
         })}
       </ol>
+      <p className="sr-only" role="status">
+        {props.moveLine}
+      </p>
       <div className="try-plan-foot">
         <button className="try-link" onClick={props.onAdd} type="button">
           + Add a step

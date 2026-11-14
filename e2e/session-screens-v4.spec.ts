@@ -187,6 +187,53 @@ test.describe("the plan", () => {
     await expect(rows.first().locator(".try-step-number")).toHaveText("1");
   });
 
+  test("#237 moving a Step with the keyboard keeps focus on it and says where it went", async ({
+    page,
+  }) => {
+    await toPlan(page);
+    const card = planCard(page);
+    const rows = card.locator(".try-step-button");
+    const first = (await rows.first().locator(".try-step-title").textContent()) ?? "";
+    await card.getByRole("button", { name: `Move down: ${first}` }).focus();
+    await page.keyboard.press("Enter");
+    await expect(rows.nth(1).locator(".try-step-title")).toHaveText(first);
+    // Now the last Step, so Move down is disabled: focus goes to its Move up button.
+    await expect(card.getByRole("button", { name: `Move up: ${first}` })).toBeFocused();
+    await expect(page.getByRole("status").filter({ hasText: "moved" })).toHaveText(
+      `${first} moved to step 2.`,
+    );
+    await page.keyboard.press("Enter");
+    await expect(rows.first().locator(".try-step-title")).toHaveText(first);
+    await expect(card.getByRole("button", { name: `Move down: ${first}` })).toBeFocused();
+  });
+
+  test("#237 each move button is 44 wide and 35 tall to touch (prototype size, see the PR)", async ({
+    page,
+  }) => {
+    await toPlan(page);
+    const sizes = await planCard(page)
+      .locator(".try-move button")
+      .evaluateAll((buttons) =>
+        buttons.map((button) => {
+          const rect = button.getBoundingClientRect();
+          const before = getComputedStyle(button, "::before");
+          const top = parseFloat(before.top);
+          const bottom = parseFloat(before.bottom);
+          const left = parseFloat(before.left);
+          const right = parseFloat(before.right);
+          return {
+            width: rect.width - left - right,
+            height: rect.height - top - bottom,
+          };
+        }),
+      );
+    expect(sizes.length).toBe(4);
+    for (const size of sizes) {
+      expect(Math.round(size.width)).toBe(44);
+      expect(Math.round(size.height)).toBe(35);
+    }
+  });
+
   test("#237 AC3 Add a step and the count share a row; Split again is centred in the card", async ({
     page,
   }) => {
