@@ -1,6 +1,5 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
 import { summaryOf } from "@/lib/summary/finish-run";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -16,7 +15,6 @@ export default function EndPage({ searchParams }: PageProps<"/end">) {
 
 async function EndContent({ searchParams }: Pick<PageProps<"/end">, "searchParams">) {
   await connection();
-  if (!isPrototypeEnabled()) notFound();
   const client = await createSupabaseServerClient();
   const user = await getCurrentUser(client);
   if (!user) redirect("/auth/sign-in");

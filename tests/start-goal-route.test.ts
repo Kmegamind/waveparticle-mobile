@@ -1,7 +1,6 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { accountSessionPathIsHidden, goalPathIsHidden, isGoalPath } from "@/lib/prototype/config";
 import { setStepCards, syncSession } from "@/lib/prototype/session";
 import { isSessionPath } from "@/app/try/session-paths";
 
@@ -15,20 +14,10 @@ function filesUnder(dir: string): string[] {
   });
 }
 
-describe("#32 /goal exists only when the test path is on", () => {
-  it("is hidden while PROTOTYPE_ENABLED is off", () => {
-    expect(isGoalPath("/goal")).toBe(true);
-    expect(isGoalPath("/goal/x")).toBe(true);
-    expect(isGoalPath("/goals")).toBe(false);
-    expect(goalPathIsHidden("/goal", false)).toBe(true);
-    expect(goalPathIsHidden("/goal", true)).toBe(false);
-    expect(goalPathIsHidden("/goals", false)).toBe(false);
-  });
-
-  it("the proxy answers 404 for a hidden /goal", () => {
-    // #257: one check now hides /goal, /focus and /rest together.
-    expect(accountSessionPathIsHidden("/goal", false)).toBe(true);
-    expect(read("src/proxy.ts")).toContain("accountSessionPathIsHidden(");
+describe("#32 /goal exists for signed-in users in every environment (#278)", () => {
+  it("is not hidden by PROTOTYPE_ENABLED", () => {
+    expect(read("src/proxy.ts")).not.toContain("accountSessionPathIsHidden");
+    expect(read("src/app/goal/page.tsx")).not.toContain("isPrototypeEnabled");
   });
 
   it("is a session page, so it uses the Oppenheimer skin", () => {
@@ -47,17 +36,17 @@ describe("#32 AC6 /try never touches the account save", () => {
 });
 
 describe("#32 the account actions", () => {
-  it("require the switch and a signed-in user", () => {
+  it("require a signed-in user, not the test-path switch (#278)", () => {
     const actions = read("src/app/goal/actions.ts");
     expect(actions).toContain('"use server"');
-    expect(actions).toContain("isPrototypeEnabled()");
+    expect(actions).not.toContain("isPrototypeEnabled");
     expect(actions).toContain("getCurrentUser(");
     expect(actions).toContain("createSupabaseGoalWriter(");
   });
 
   it("the page passes them to the shared dialogue", () => {
     const page = read("src/app/goal/page.tsx");
-    expect(page).toContain("notFound()");
+    expect(page).not.toContain("notFound()");
     expect(page).toMatch(/redirect\("\/auth\/sign-in"\)/);
     expect(page).toMatch(/<GoalDialogue[^>]*start={startGoalAction}/);
   });

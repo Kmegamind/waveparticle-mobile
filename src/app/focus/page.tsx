@@ -1,6 +1,5 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { AccountFocus } from "./account-focus";
@@ -16,7 +15,6 @@ export default function FocusPage({ searchParams }: PageProps<"/focus">) {
 
 async function FocusContent({ searchParams }: Pick<PageProps<"/focus">, "searchParams">) {
   await connection();
-  if (!isPrototypeEnabled()) notFound();
   const client = await createSupabaseServerClient();
   const user = await getCurrentUser(client);
   if (!user) redirect("/auth/sign-in");

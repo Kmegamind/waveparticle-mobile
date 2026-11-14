@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import { accountPathsFor, ACCOUNT_PATHS } from "@/app/_session/paths";
 import { showsHeader, showsTabBar } from "@/app/shell-rules";
 import { isSessionPath } from "@/app/try/session-paths";
-import { accountSessionPathIsHidden } from "@/lib/prototype/config";
 
 // Issue #258: where the summary and the Life Path live, on top of the signed-in focus page (#257).
 
@@ -12,17 +11,16 @@ const root = path.resolve(import.meta.dirname, "..");
 const read = (file: string) => readFileSync(path.join(root, file), "utf8");
 const SESSION = "4f0a7c2e-8d1b-4c3a-9e2f-1a2b3c4d5e6f";
 
-describe("#258 AC1 the summary is a signed-in session page in test builds", () => {
+describe("#258 AC1 the summary is a signed-in session page", () => {
   it("uses the Oppenheimer skin, with no tab bar and no header", () => {
     expect(isSessionPath("/end")).toBe(true);
     expect(showsTabBar("/end")).toBe(false);
     expect(showsHeader("/end")).toBe(false);
   });
 
-  it("is hidden while the test path is off, like /focus", () => {
-    expect(accountSessionPathIsHidden("/end", false)).toBe(true);
-    expect(accountSessionPathIsHidden("/end", true)).toBe(false);
-    expect(accountSessionPathIsHidden("/ending", false)).toBe(false);
+  it("exists in every environment, like /focus (#278)", () => {
+    expect(read("src/proxy.ts")).not.toContain("accountSessionPathIsHidden");
+    expect(read("src/app/end/page.tsx")).not.toContain("isPrototypeEnabled");
   });
 
   it("opens after the last Done of the signed-in focus page, for that session", () => {

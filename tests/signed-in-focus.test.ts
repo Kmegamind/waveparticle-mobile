@@ -16,9 +16,6 @@ import {
   accountStepCards,
 } from "@/lib/progress/account-lines";
 import {
-  accountSessionPathIsHidden,
-  isAccountSessionPath,
-  goalPathIsHidden,
 } from "@/lib/prototype/config";
 import { isSessionPath } from "@/app/try/session-paths";
 import {
@@ -347,17 +344,13 @@ describe("#257 AC5 the signed-in pages never show test data", () => {
 });
 
 describe("#257 AC1 the signed-in pages", () => {
-  it("/focus and /rest exist only while the test path is on, like /goal", () => {
-    for (const path of ["/goal", "/focus", "/rest", "/focus/x"]) {
-      expect(isAccountSessionPath(path), path).toBe(true);
-      expect(accountSessionPathIsHidden(path, false), path).toBe(true);
-      expect(accountSessionPathIsHidden(path, true), path).toBe(false);
+  it("/focus and /rest exist in every environment, like /goal (#278)", () => {
+    const proxy = read("src/proxy.ts");
+    expect(proxy).not.toContain("accountSessionPathIsHidden");
+    for (const file of ["src/app/focus/page.tsx", "src/app/rest/page.tsx"]) {
+      expect(read(file), file).not.toContain("isPrototypeEnabled");
+      expect(read(file), file).toContain('redirect("/auth/sign-in")');
     }
-    for (const path of ["/focused", "/rested", "/goals", "/try/focus"]) {
-      expect(isAccountSessionPath(path), path).toBe(false);
-    }
-    expect(goalPathIsHidden("/goal", false)).toBe(true);
-    expect(read("src/proxy.ts")).toContain("accountSessionPathIsHidden(");
   });
 
   it("use the Oppenheimer skin as session pages", () => {
