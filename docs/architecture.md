@@ -14,7 +14,8 @@ Browser (installed web app, mobile first)
 ## Components
 | Component | Path | Responsibility |
 |---|---|---|
-| Home page | `src/app/page.tsx`, `src/app/protected-home.tsx` | Signed-in Home: the account's Goal titles. In test builds an in-progress Goal has a Continue link (`src/app/continue-link.tsx`, #69 AC3) to `/focus?goal=<id>`, where the return pop-up rule applies before the clock restarts. The same link is on `/goals` |
+| Home page | `src/app/page.tsx`, `src/app/protected-home.tsx`, `src/app/home-goal-options.tsx`, `src/lib/home/` | Signed-in Home from the account only (#268, prototype v4). `homeView` picks one state: HOME-0 (the account never started a Goal), HOME-1 (the most recently active Goal in progress: title, Companion, where you left it, his newest shown card, #69's Continue, Start something else, the ⋯ Goal options sheet, My Companions, In progress) or HOME-NONE (portrait, his carried line from the last summary, New session, Quick Replay). Put on hold and Mark done (`setGoalStatusAction`) change the Goal and park its open session as `on_hold`, with a 5 second Undo toast. Links to `/goal` and `/focus` show only in test builds |
+| Companions list | `src/app/companions/`, `src/content/companions.ts` | COMP (#268): Oppenheimer and Moriarty (OTHER-COMPANIONS) as a radio group; Enter opens Oppenheimer's Life Path, and stays disabled with a visible reason for Moriarty, who has no stories yet |
 | Root layout | `src/app/layout.tsx` | Page shell, install metadata and the phone viewport |
 | Typefaces | `src/app/fonts.ts` | Loads Atkinson Hyperlegible Next and Mono, Bricolage Grotesque and Newsreader with `next/font` (served from this site) and passes them to the `--type-*` tokens |
 | App shell | `src/app/shell.tsx`, `src/app/shell-rules.ts` | Header and tab bar. Where each shows follows prototype version 4 (#240) |

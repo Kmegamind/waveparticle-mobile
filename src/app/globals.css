@@ -1868,3 +1868,8 @@ a {
   font-size: var(--text-caption-size);
   margin: 0;
 }
+
+/* Links drawn as paper-tag buttons on Home carry no underline (issue 268). */
+.home-page a.button-filled {
+  text-decoration: none;
+}
