@@ -124,8 +124,10 @@ pipe to `psql`. Documented in `docs/deploy.md` and `docs/api/README.md` (no new 
 - `src/lib/app-text/provider.tsx` (client): `AppTextProvider({ texts })` and `useAppText(key)`;
   without a provider the hook answers the default, so a screen is never blank.
 - Server pages wrap their screen in the provider with `await getAppTexts()`: `/` (Home), `/focus`,
-  `/rest`, `/end`, `/goal`, `/safety` (made dynamic with `connection()` inside `Suspense`). The
-  sign-in-free test path `/try` keeps the code defaults (test builds only; its pages are static).
+  `/rest`, `/end`, `/goal`. The sign-in-free test path `/try` and the standalone `/safety` demo keep
+  the code defaults: they are static, and `/safety` must work before its scripts load (changed during
+  the build: making it dynamic broke `e2e/crisis-page.spec.ts`). S1 inside the rest page and the goal
+  dialogue shows the published text.
 
 ### Admin page ADM-07 (`/admin/app-text`)
 - Server page reads every `app_text` row with the signed-in user's client (the policy gives editors

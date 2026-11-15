@@ -29,7 +29,9 @@ const SCREENS: Record<string, AppTextKey[]> = {
 
 const crisis = (texts?: AppTexts) => {
   const page = createElement(CrisisPage, { onBack: () => undefined });
-  return renderToStaticMarkup(texts ? createElement(AppTextProvider, { texts }, page) : page);
+  return renderToStaticMarkup(
+    texts ? createElement(AppTextProvider, { texts, children: page }) : page,
+  );
 };
 
 describe("screens read app text through keys (#288)", () => {
@@ -65,8 +67,10 @@ describe("screens read app text through keys (#288)", () => {
     "src/app/rest/page.tsx",
     "src/app/end/page.tsx",
     "src/app/goal/page.tsx",
-    "src/app/safety/page.tsx",
   ])("test_288_ac3_%s_passes_the_published_texts", (file) => {
+    // /safety (the standalone Step demo) and /try stay static and show the defaults: /safety must
+    // work before its scripts load (e2e/crisis-page.spec.ts). S1 in the rest page and the goal
+    // dialogue gets the published text from those pages.
     const source = read(file);
     expect(source).toContain("await getAppTexts()");
     expect(source).toMatch(/<AppTextProvider texts=\{/);

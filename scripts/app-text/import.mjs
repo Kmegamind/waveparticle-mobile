@@ -30,7 +30,7 @@ function quote(text) {
 }
 
 /**
- * @param {{ key: string, text: string }[]} entries
+ * @param {{ key: string, text: string, note?: string }[]} entries
  * @returns {string}
  */
 export function appTextImportSql(entries) {

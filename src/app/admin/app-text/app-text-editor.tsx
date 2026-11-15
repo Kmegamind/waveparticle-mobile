@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, useTransition } from "react";
+import { useId, useState, useSyncExternalStore, useTransition } from "react";
 import type { AppTextAdminRow, AppTextWriteResult } from "@/lib/app-text/admin";
 import { publishAppTextAction, rollBackAppTextAction, saveAppTextDraftAction } from "./actions";
 
@@ -12,6 +12,8 @@ const PROBLEMS: Record<Exclude<AppTextWriteResult, { ok: true }>["error"], strin
   failed: "Could not save the change. Please try again.",
 };
 
+const noSubscription = () => () => {};
+
 const STATE_LABEL = { published: "Published", draft: "Draft", earlier: "Earlier" } as const;
 
 /** One key on ADM-07: its published text, a newer draft, the editor and its versions. */
@@ -20,7 +22,14 @@ export function AppTextEditor({ row }: { row: AppTextAdminRow }) {
   const [status, setStatus] = useState("");
   const [pending, startTransition] = useTransition();
   const latest = row.draft ?? row.published;
-  const [text, setText] = useState(latest?.body ?? row.defaultText);
+  // False in the server HTML and until React has hydrated: the field and the buttons stay off until
+  // then, so nothing typed is lost to hydration and a click never submits the form natively.
+  const ready = useSyncExternalStore(
+    noSubscription,
+    () => true,
+    () => false,
+  );
+  const busy = pending || !ready;
 
   function run(action: () => Promise<AppTextWriteResult>, done: string) {
     setStatus("");
@@ -64,6 +73,8 @@ export function AppTextEditor({ row }: { row: AppTextAdminRow }) {
         className="admin-text-form"
         onSubmit={(event) => {
           event.preventDefault();
+          // The field is uncontrolled: its own value is read, typed before hydration or after.
+          const text = String(new FormData(event.currentTarget).get("text") ?? "");
           run(() => saveAppTextDraftAction(row.key, text), "Draft saved.");
         }}
       >
@@ -72,20 +83,21 @@ export function AppTextEditor({ row }: { row: AppTextAdminRow }) {
         </label>
         <textarea
           className="admin-text-field"
+          defaultValue={latest?.body ?? row.defaultText}
+          disabled={!ready}
           id={`${id}-text`}
           maxLength={1000}
-          onChange={(event) => setText(event.target.value)}
+          name="text"
           rows={2}
-          value={text}
         />
         <div className="admin-text-actions">
-          <button className="button-gray button-small" disabled={pending} type="submit">
+          <button className="button-gray button-small" disabled={busy} type="submit">
             Save draft
           </button>
           {row.draft ? (
             <button
               className="button-filled button-small"
-              disabled={pending}
+              disabled={busy}
               onClick={() =>
                 run(
                   () => publishAppTextAction(row.key, row.draft!.version),
@@ -114,7 +126,7 @@ export function AppTextEditor({ row }: { row: AppTextAdminRow }) {
                 {version.canRollBack ? (
                   <button
                     className="button-gray button-small"
-                    disabled={pending}
+                    disabled={busy}
                     onClick={() =>
                       run(
                         () => rollBackAppTextAction(row.key, version.version),
