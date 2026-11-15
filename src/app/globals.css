@@ -3112,6 +3112,95 @@ a {
   justify-content: center;
 }
 
+/* Account and privacy pages (issues 102, 103 and 104): plain reading pages in the Me style. */
+.account-page {
+  align-content: start;
+  display: grid;
+  gap: var(--space-control-gap);
+  padding-bottom: var(--space-screen-bottom);
+}
+
+.account-text {
+  display: grid;
+  gap: var(--space-control-gap);
+  max-width: 60ch;
+}
+
+.account-text h2 {
+  font-family: var(--type-display);
+  font-size: var(--text-sheet-title-size);
+  font-weight: 800;
+  line-height: 1.2;
+  margin: var(--space-button-before) 0 0;
+}
+
+.account-text p,
+.account-page > p {
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-leading);
+  margin: 0;
+}
+
+/* Links inside a sentence stay in the line (inline links are exempt from the target size). */
+.account-text p a,
+.account-page > p a {
+  color: var(--ink);
+  display: inline;
+  font-size: inherit;
+  font-weight: 700;
+  min-height: 0;
+  min-width: 0;
+  text-decoration: underline;
+}
+
+.account-date {
+  color: var(--ink-2);
+  font-size: var(--text-caption-size);
+}
+
+/* ACCOUNT-DELETE as in prototype v4: one card in the middle of the screen. */
+.delete-page {
+  align-content: stretch;
+  grid-template-rows: auto 1fr;
+  min-height: 100dvh;
+}
+
+.delete-card {
+  align-self: center;
+  border-color: var(--edge);
+  gap: var(--space-control-gap);
+}
+
+.delete-card p {
+  font-size: var(--text-body-size);
+  line-height: var(--text-body-leading);
+}
+
+.app-screen .delete-title {
+  font-family: var(--type-display);
+  font-size: var(--text-sheet-title-size);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  margin: 0;
+}
+
+.delete-actions {
+  display: grid;
+  gap: var(--space-control-gap);
+  margin-top: var(--space-button-before);
+}
+
+.delete-actions > * {
+  width: 100%;
+}
+
+/* Links drawn as paper tags read as buttons, as in the prototype: no underline. */
+.delete-actions a,
+.account-page > a.button-filled {
+  text-decoration: none;
+}
+
 /*
  * Large text (issue 100). The query is in em, so it follows the text size, not the screen: it holds
  * when fewer than 16 body-size characters fit across the content, which happens from about 150%

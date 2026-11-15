@@ -6,7 +6,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => undefined })
 
 const { AuthForm } = await import("@/app/auth/auth-form");
 const { isPublicPath } = await import("@/lib/supabase/session");
-const { default: PrivacyPage } = await import("@/app/privacy/page");
+const { PrivacyNotice } = await import("@/app/privacy/privacy-notice");
 
 // Issue #262 (#229 to #232): the account screens match prototype v4; behaviour is unchanged.
 
@@ -74,10 +74,12 @@ describe("#262 AC7 behaviour is unchanged", () => {
     expect(render("sign-up")).toContain('minLength="8"');
   });
 
-  it("lets a signed-out visitor open the privacy placeholder", () => {
+  it("lets a signed-out visitor open the privacy notice", () => {
     expect(isPublicPath("/privacy", false)).toBe(true);
-    const html = renderToStaticMarkup(createElement(PrivacyPage));
-    expect(html).toContain("The privacy notice is not written yet.");
+    // #102 replaced the placeholder with the notice; from Sign in it goes back to Sign in.
+    const html = renderToStaticMarkup(createElement(PrivacyNotice, { back: "sign-in" }));
+    expect(html).toContain(">Privacy notice</h1>");
+    expect(html).not.toContain("not written yet");
     expect(html).toContain('href="/auth/sign-in"');
   });
 });

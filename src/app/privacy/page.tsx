@@ -1,17 +1,14 @@
-import Link from "next/link";
+import { PrivacyNotice } from "./privacy-notice";
 
-// Placeholder for the privacy notice (US-ACC-4), linked from Sign in and Create an account (#262).
-// Like the prototype, it says only that the notice is not written yet.
-export default function PrivacyPage() {
+export const instant = false;
+
+// The privacy notice (#102, #8 AC3). Public: linked from Sign in, Create an account (#262) and
+// Me, Data (?from=me), and it goes back to where it was opened from.
+export default async function PrivacyPage({ searchParams }: PageProps<"/privacy">) {
+  const { from } = await searchParams;
   return (
-    <main className="auth-page">
-      <div className="auth-body">
-        <h1>Privacy notice</h1>
-        <p className="auth-lead">The privacy notice is not written yet.</p>
-        <p className="auth-links">
-          <Link href="/auth/sign-in">Back to Sign in</Link>
-        </p>
-      </div>
+    <main className="app-screen account-page">
+      <PrivacyNotice back={from === "me" ? "me" : "sign-in"} />
     </main>
   );
 }
