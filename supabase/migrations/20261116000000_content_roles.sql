@@ -29,11 +29,13 @@ as $$
   where r.user_id = auth.uid();
 $$;
 
-revoke all on function public.content_role() from public, anon;
-grant execute on function public.content_role() to authenticated;
+revoke all on function public.content_role() from public;
+grant execute on function public.content_role() to anon, authenticated;
 
 -- True when the signed-in account is an admin or a writer. For later policies:
---   create policy ... using (public.is_content_editor());
+--   create policy ... using ((select public.is_content_editor()));
+-- (the select runs it once per query). anon may call both functions: a policy that also applies to
+-- anon requests needs the execute right, and without a session the answer is null or false.
 create function public.is_content_editor()
 returns boolean
 language sql
@@ -44,5 +46,5 @@ as $$
   select public.content_role() is not null;
 $$;
 
-revoke all on function public.is_content_editor() from public, anon;
-grant execute on function public.is_content_editor() to authenticated;
+revoke all on function public.is_content_editor() from public;
+grant execute on function public.is_content_editor() to anon, authenticated;

@@ -13,7 +13,7 @@ is not advertised.
 ## Options
 | Option | For | Against |
 |---|---|---|
-| A. `public.content_roles` with RLS on and no policy; `security definer` functions `content_role()` and `is_content_editor()` that answer for `auth.uid()` only | No service-role key; nobody can read or change roles through the API; later policies call one function | One database call per admin request |
+| A. `public.content_roles` with RLS on and no policy; `security definer` functions `content_role()` and `is_content_editor()` that answer for `auth.uid()` only (null or false without a session) | No service-role key; nobody can read or change roles through the API; later policies call one function | One database call per admin request |
 | B. A select policy that lets each account read its own role row | No function | The table is readable through the API; every later policy repeats the subquery |
 | C. The role in the access token (`app_metadata` or a custom access token hook) | No query per request | Granting needs the auth admin API or a hook; a change waits for the token to refresh |
 
@@ -23,8 +23,9 @@ Option A.
 - `public.content_roles (user_id, role, granted_at)`, `role` is `admin` or `writer`, cascades with
   the account (`delete_my_account` removes it).
 - `public.content_role() returns text` and `public.is_content_editor() returns boolean`:
-  `security definer`, `stable`, `search_path` set to empty, executable by `authenticated` only.
-  A later policy writes `using (public.is_content_editor())`, or `public.content_role() = 'admin'`
+  `security definer`, `stable`, `search_path` set to empty, executable by `anon` and `authenticated` (a policy that also applies to anon requests needs the execute right; without a session the answer is null or false).
+  A later policy writes `using ((select public.is_content_editor()))`, or
+  `(select public.content_role()) = 'admin'`
   for admin-only rights.
 - The app reads the role with the signed-in user's own client (`readContentRole` in
   `src/lib/admin/roles.ts`). The proxy answers every `/admin` path with the app's normal 404 when

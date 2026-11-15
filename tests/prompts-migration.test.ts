@@ -14,9 +14,9 @@ describe("prompts migration (#282)", () => {
     const names = readdirSync(directory)
       .filter((file) => file.endsWith(".sql"))
       .sort();
-    expect(names.indexOf(name)).toBeGreaterThan(
-      names.indexOf("20261114120000_delete_my_account.sql"),
-    );
+    const deleteAccount = names.indexOf("20261114120000_delete_my_account.sql");
+    expect(deleteAccount).toBeGreaterThanOrEqual(0);
+    expect(names.indexOf(name)).toBeGreaterThan(deleteAccount);
   });
 
   it("test_282_creates_the_table_with_key_version_active_body_and_params", () => {

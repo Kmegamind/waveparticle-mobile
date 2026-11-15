@@ -20,11 +20,19 @@ const fn = (name: string) => {
 };
 
 describe("content roles migration (#287)", () => {
-  it("test_287_is_the_latest_migration", () => {
+  it("test_287_runs_after_the_prompts_migration", () => {
     const names = readdirSync(migrations)
       .filter((file) => file.endsWith(".sql"))
       .sort();
-    expect(names.at(-1)).toBe(MIGRATION);
+    const prompts = names.indexOf("20261115000000_prompts.sql");
+    expect(prompts).toBeGreaterThanOrEqual(0);
+    expect(names.indexOf(MIGRATION)).toBeGreaterThan(prompts);
+  });
+
+  it("test_287_ac1_a_later_policy_can_call_the_functions_for_every_api_role", () => {
+    // A policy without "to authenticated" also runs for anon requests; Postgres checks the execute
+    // right when it plans the query, so anon must be able to call them (they answer null or false).
+    expect(code()).not.toMatch(/from public, anon;/);
   });
 
   it("test_287_ac1_creates_the_roles_table_with_admin_and_writer", () => {
@@ -49,8 +57,10 @@ describe("content roles migration (#287)", () => {
     expect(body).toMatch(/set search_path = ''/);
     expect(body).toMatch(/from public\.content_roles/);
     expect(body).toMatch(/user_id = auth\.uid\(\)/);
-    expect(code()).toContain("revoke all on function public.content_role() from public, anon;");
-    expect(code()).toContain("grant execute on function public.content_role() to authenticated;");
+    expect(code()).toContain("revoke all on function public.content_role() from public;");
+    expect(code()).toContain(
+      "grant execute on function public.content_role() to anon, authenticated;",
+    );
   });
 
   it("test_287_ac1_is_content_editor_answers_from_content_role", () => {
@@ -59,11 +69,9 @@ describe("content roles migration (#287)", () => {
     expect(body).toMatch(/security definer/);
     expect(body).toMatch(/set search_path = ''/);
     expect(body).toMatch(/public\.content_role\(\) is not null/);
+    expect(code()).toContain("revoke all on function public.is_content_editor() from public;");
     expect(code()).toContain(
-      "revoke all on function public.is_content_editor() from public, anon;",
-    );
-    expect(code()).toContain(
-      "grant execute on function public.is_content_editor() to authenticated;",
+      "grant execute on function public.is_content_editor() to anon, authenticated;",
     );
   });
 
