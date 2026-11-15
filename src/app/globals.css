@@ -3494,8 +3494,8 @@ a {
 
 .admin-text-field:focus-visible,
 .admin-text-versions summary:focus-visible {
-  outline: 3px solid var(--control);
-  outline-offset: 3px;
+  outline: 2px solid var(--control);
+  outline-offset: 2px;
 }
 
 .admin-text-actions {
