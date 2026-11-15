@@ -24,7 +24,9 @@ Option A.
 
 - `public.app_text (key, version, body, published, created_at, created_by, published_at,
   published_by, screen)`, primary key `(key, version)`, one published version per key, body never
-  blank and at most 1000 characters. Migration `20261117000000_app_text.sql`.
+  blank (at least one character that is not white space) and at most 1000 characters. Anyone may
+  select every column except `created_by` and `published_by` (account ids stay private). Migration
+  `20261117000000_app_text.sql`.
 - `save_app_text_draft(key, body)`, `publish_app_text(key, version)` and
   `roll_back_app_text(key, version)`, executable by `authenticated`, each checking
   `is_content_editor()`. Publish and roll back both call `private.set_published_app_text(key,

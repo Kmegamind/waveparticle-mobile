@@ -12,7 +12,8 @@
 create table public.app_text (
   key text not null check (key ~ '^ui\.[A-Z][A-Z0-9-]*\.[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$'),
   version integer not null check (version >= 1),
-  body text not null check (btrim(body) <> '') check (char_length(body) <= 1000),
+  -- Never blank: at least one character that is not a space, tab or new line.
+  body text not null check (body ~ '\S') check (char_length(body) <= 1000),
   published boolean not null default false,
   created_at timestamptz not null default now(),
   created_by uuid default auth.uid() references auth.users (id) on delete set null,
@@ -31,7 +32,9 @@ create unique index app_text_one_published_per_key
 
 alter table public.app_text enable row level security;
 revoke all on public.app_text from anon, authenticated;
-grant select on public.app_text to anon, authenticated;
+-- Every column but who saved or published a version: account ids are not public.
+grant select (key, version, body, published, published_at, created_at, screen)
+  on public.app_text to anon, authenticated;
 
 create policy app_text_read on public.app_text
   for select

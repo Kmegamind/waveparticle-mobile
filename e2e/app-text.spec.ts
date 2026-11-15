@@ -138,7 +138,14 @@ test("test_288_ac1_an_account_without_a_role_cannot_write", async ({ page, conte
 test("test_288_admin_is_not_kept_in_the_browser_cache", async ({ page, context }) => {
   await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
   const response = await page.goto("/admin/app-text");
-  expect(response?.headers()["cache-control"]).toContain("no-store");
+  // The proxy's own value (Next alone would send "no-cache, no-store" without "private").
+  expect(response?.headers()["cache-control"]).toBe("private, no-store, max-age=0");
+  await context.clearCookies();
+  await signIn(context, baseUrlOf(page));
+  const notFound = await page.goto("/admin/app-text");
+  expect(notFound?.status()).toBe(404);
+  // Next's not-found answer sets its own value, which is private and no-store as well.
+  expect(notFound?.headers()["cache-control"]).toMatch(/^private,.*\bno-store\b/);
 });
 
 test("test_288_ac2_no_sideways_scroll_at_360_px", async ({ page, context }) => {

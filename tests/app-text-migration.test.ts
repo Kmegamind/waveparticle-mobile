@@ -40,13 +40,18 @@ describe("app text migration (#288)", () => {
   });
 
   it("test_288_ac1_body_is_never_blank", () => {
-    expect(code()).toMatch(/check \(btrim\(body\) <> ''\)/);
+    // Any non-space character: a body of only spaces, tabs or new lines is refused.
+    expect(code()).toContain("check (body ~ '\\S')");
     expect(code()).toMatch(/check \(char_length\(body\) <= 1000\)/);
   });
 
   it("test_288_ac1_anyone_reads_published_rows_editors_read_drafts", () => {
     expect(code()).toMatch(/alter table public\.app_text enable row level security;/);
-    expect(code()).toMatch(/grant select on public\.app_text to anon, authenticated;/);
+    // Only these columns: who saved or published a version (account ids) is not public.
+    expect(code()).toContain(
+      "grant select (key, version, body, published, published_at, created_at, screen)\n  on public.app_text to anon, authenticated;",
+    );
+    expect(code()).not.toMatch(/grant select on public\.app_text/);
     expect(code()).toMatch(
       /create policy app_text_read on public\.app_text\s+for select\s+to anon, authenticated\s+using \(published or \(select public\.is_content_editor\(\)\)\);/,
     );
