@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { PROMPT_KEYS as APP_PROMPT_KEYS } from "@/lib/prompts/repository";
 import {
   PROMPT_KEYS,
   parsePromptFile,
@@ -34,6 +35,10 @@ describe("prompt files (#282)", () => {
     expect(readPromptDirectory(seedDirectory).map((row: { key: string }) => row.key)).toEqual(
       [...PROMPT_KEYS].sort(),
     );
+  });
+
+  it("test_282_the_scripts_and_the_app_know_the_same_keys", () => {
+    expect([...PROMPT_KEYS]).toEqual([...APP_PROMPT_KEYS]);
   });
 
   it("test_282_every_seed_file_is_already_in_the_written_form", () => {
