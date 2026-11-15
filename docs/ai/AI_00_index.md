@@ -10,6 +10,8 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 
 ---
 
+> **Prompts in the database (#282):** the prompts the gateway sends live in `public.prompts`; their seed and how to edit them: [prompts/README.md](prompts/README.md).
+
 ## 1. The classification (IDs are fixed)
 
 | ID | Name | Purpose | Screens | Runtime: model call or authored | Fallback |

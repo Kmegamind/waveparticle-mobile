@@ -11,8 +11,12 @@ const supabaseStubPort = 3198;
 // Set E2E_BASE_URL to test a deployed site; otherwise the app is built and started locally.
 const deployed = process.env.E2E_BASE_URL;
 
+// The server's prompt reader token (#282); the stub answers get_active_prompts only to it.
+const promptsReadToken = "e2e-prompts-reader";
+
 const appEnv = {
   NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${supabaseStubPort}`,
+  PROMPTS_READ_TOKEN: promptsReadToken,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: "playwright-placeholder",
   // Turns on the sign-in-free test path (#208) for the e2e servers only.
   PROTOTYPE_ENABLED: "1",
@@ -41,7 +45,10 @@ export default defineConfig({
         {
           command: "node e2e/support/stub-supabase.mjs",
           url: `http://127.0.0.1:${supabaseStubPort}/health`,
-          env: { STUB_SUPABASE_PORT: String(supabaseStubPort) },
+          env: {
+            STUB_SUPABASE_PORT: String(supabaseStubPort),
+            STUB_PROMPTS_READ_TOKEN: promptsReadToken,
+          },
           reuseExistingServer: !process.env.CI,
           timeout: 30_000,
         },

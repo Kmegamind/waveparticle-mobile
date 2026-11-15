@@ -1,4 +1,12 @@
-import { checkCompanionLine, checkPlan } from "./checks";
+import type { PromptKey, PromptRow, PromptSource } from "@/lib/prompts/repository";
+import { renderPrompt, type PromptValue } from "@/lib/prompts/template";
+import {
+  checkCompanionLine,
+  checkPlan,
+  readLineLimits,
+  readPlanLimits,
+  type LineLimits,
+} from "./checks";
 import { checkRunList, reusesCardNouns } from "./run-list";
 import type {
   GatewayCall,
@@ -27,44 +35,90 @@ export const DEFAULT_MAX_ATTEMPTS = 3;
 
 type Attempt<T> = { ok: true; value: T } | { ok: false; rejectedRules: string[] };
 
-/** Plain reasons added to the prompt on a retry. Rule ids only; never user text or forbid terms. */
-const RULE_FIXES: Record<string, string> = {
-  parse: "Return valid JSON in exactly the shape asked for.",
-  empty: "Write a non-empty line within the size asked for.",
-  minutes: "Use positive whole minutes that add up to the total.",
-  failure_text: "Do not mention errors or failures.",
-  cjk: "Write in English only.",
-  dash: "Use no dashes.",
-  ban: "Use none of the banned words.",
-  clock: "Use no clock times, numbers of minutes or durations.",
-  back: "Use no behind-the-scenes words such as step, session, app, screen or task.",
-  cmd: "Give no orders or advice.",
-  question: "Ask no question, or at most one where a question is allowed.",
-  you: "Do not address the person as you.",
-  hook: "Use no hook words such as more, later, soon or next.",
-  praise: "Give no praise.",
-  form: "Use no exclamation marks, emoji or links, and end with a full stop.",
-  name: "Never say his own name.",
-  first_person: "Write in his first person.",
-  blame: "Do not blame the person for being away.",
-  len: "Keep within the length asked for.",
-  leak: "Use none of the forbidden words.",
-  repeat: "Do not repeat a line already shown.",
-  opening: "Do not start with the same three words as a recent line.",
-  similar: "Do not write a line close to one already shown.",
-  card_nouns: "Do not reuse the nouns of the last card.",
-};
+/**
+ * Thrown while a prompt is built from a row that cannot be used: an unknown placeholder, or a
+ * parameter that is missing or of the wrong kind. The call then fails like a missing prompt.
+ */
+class PromptRowError extends Error {}
 
-function retryPrompt(prompt: string, rejectedRules: string[]): string {
-  const fixes = [...new Set(rejectedRules.map((rule) => RULE_FIXES[rule]).filter(Boolean))];
+function text(row: PromptRow, name: string): string {
+  const texts = row.params.text;
+  const value =
+    typeof texts === "object" && texts !== null ? (texts as Record<string, unknown>)[name] : null;
+  if (typeof value !== "string") throw new PromptRowError(`${row.key}: text.${name}`);
+  return value;
+}
+
+function count(row: PromptRow, value: unknown, name: string): number {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+    throw new PromptRowError(`${row.key}: ${name}`);
+  }
+  return value;
+}
+
+function checks(row: PromptRow): Record<string, unknown> {
+  const value = row.params.checks;
+  if (typeof value !== "object" || value === null) throw new PromptRowError(`${row.key}: checks`);
+  return value as Record<string, unknown>;
+}
+
+function lineLimits(row: PromptRow, value: unknown): LineLimits {
+  const limits = readLineLimits(value);
+  if (!limits) throw new PromptRowError(`${row.key}: line limits`);
+  return limits;
+}
+
+function render(row: PromptRow, values: Record<string, PromptValue>): string {
+  try {
+    return renderPrompt(row.body, values);
+  } catch {
+    throw new PromptRowError(`${row.key}: template`);
+  }
+}
+
+/** Plain reasons added to the prompt on a retry, from the retry_hints row. Rule ids only. */
+function retryPrompt(prompt: string, rejectedRules: string[], hints: PromptRow): string {
+  const fixesByRule = hints.params.fixes;
+  const known =
+    typeof fixesByRule === "object" && fixesByRule !== null
+      ? (fixesByRule as Record<string, unknown>)
+      : {};
+  const fixes = [
+    ...new Set(
+      rejectedRules
+        .map((rule) => known[rule])
+        .filter((fix): fix is string => typeof fix === "string" && fix.length > 0),
+    ),
+  ];
   if (fixes.length === 0) return prompt;
-  return `${prompt}\n\nThe last answer was rejected. Fix this: ${fixes.join(" ")}`;
+  return `${prompt}\n\n${render(hints, { fixes: fixes.join(" ") })}`;
 }
 
 class TimeLimitError extends Error {}
 
+function withinTime<T>(work: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new TimeLimitError("timeout")), Math.max(0, timeoutMs));
+    work.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 export function createModelGateway(options: {
   provider: ModelProvider;
+  /**
+   * Where the prompts come from (#282): the database through `getActivePrompt` on the server,
+   * the seed files in tests. A missing prompt fails the call; there is no default prompt.
+   */
+  prompts: PromptSource;
   /** Waiting time limit for one call, all attempts included (default 12 s). */
   timeLimitMs?: number;
   /** Most attempts per call within the time limit (default 3). */
@@ -82,11 +136,38 @@ export function createModelGateway(options: {
    */
   async function run<T extends { source: "generated" }>(
     call: GatewayCall,
-    prompt: string,
-    accept: (raw: string) => Attempt<T>,
+    key: PromptKey,
+    build: (row: PromptRow) => { prompt: string; accept: (raw: string) => Attempt<T> },
   ): Promise<T | GatewayFailure> {
     const started = Date.now();
     const deadline = started + timeLimitMs;
+    // The prompt and the retry hints are read and built before any model call. If either is
+    // missing or cannot be used, the call fails here: no model call, no stored line (NO-BACKUP).
+    let prompt: string;
+    let accept: (raw: string) => Attempt<T>;
+    let hints: PromptRow;
+    try {
+      // Reading the prompts counts against the call's time limit: a stalled read ends in the
+      // failure screen, not in a page that waits forever.
+      const [row, hintsRow] = await withinTime(
+        Promise.all([options.prompts(key), options.prompts("retry_hints")]),
+        deadline - Date.now(),
+      );
+      if (!row || !hintsRow) throw new PromptRowError(key);
+      ({ prompt, accept } = build(row));
+      hints = hintsRow;
+      retryPrompt("", ["parse"], hints);
+    } catch {
+      log({
+        call,
+        source: "failed",
+        reason: "prompt",
+        rejectedRules: [],
+        latencyMs: Date.now() - started,
+        attempts: 0,
+      });
+      return { source: "failed", reason: "prompt" };
+    }
     let rejectedRules: string[] = [];
     let reason: GatewayFailureReason = "request";
     let attempts = 0;
@@ -119,7 +200,7 @@ export function createModelGateway(options: {
         }
         rejectedRules = parsed.rejectedRules;
         reason = "checks";
-        nextPrompt = retryPrompt(prompt, rejectedRules);
+        nextPrompt = retryPrompt(prompt, rejectedRules, hints);
       } catch (error) {
         controller.abort();
         reason = error instanceof TimeLimitError ? "timeout" : "request";
@@ -142,56 +223,105 @@ export function createModelGateway(options: {
 
   return {
     splitPlan(input): Promise<PlanSplitResult> {
-      return run("plan_split", planPrompt(input), (raw) => {
-        const parsed = parseModelJson(raw);
-        if (parsed === null) return { ok: false, rejectedRules: ["parse"] };
-        const checked = checkPlan(parsed, input.totalMinutes);
-        if (!checked.ok) return checked;
-        return { ok: true, value: checked.plan };
+      return run("plan_split", "plan_split", (row) => {
+        const limits = readPlanLimits(checks(row));
+        if (!limits) throw new PromptRowError("plan_split: checks");
+        return {
+          prompt: planPrompt(input, row),
+          accept: (raw) => {
+            const parsed = parseModelJson(raw);
+            if (parsed === null) return { ok: false, rejectedRules: ["parse"] };
+            const checked = checkPlan(parsed, input.totalMinutes, limits);
+            if (!checked.ok) return checked;
+            return { ok: true, value: checked.plan };
+          },
+        };
       });
     },
     writeStepCards(input): Promise<StepCardsResult> {
-      return run("step_cards", stepCardPrompt(input), (raw) => acceptCards(raw, input));
+      return run("step_cards", "step_cards", (row) => {
+        const rules = cardRules(row);
+        return {
+          prompt: stepCardPrompt(input, row, rules),
+          accept: (raw) => acceptCards(raw, input, rules),
+        };
+      });
     },
     writeStuckStory(input): Promise<LineResult> {
-      return run("stuck_story", stuckPrompt(input), (raw) =>
-        acceptLine(raw, "story", "stuck_story", input.forbidTerms ?? [], {
-          earlierLines: input.earlierLines ?? [],
-          lastCard: input.lastCard,
-        }),
-      );
+      return run("stuck_story", "stuck_story", (row) => {
+        const limits = lineLimits(row, checks(row));
+        return {
+          prompt: stuckPrompt(input, row),
+          accept: (raw) =>
+            acceptLine(raw, "story", "stuck_story", input.forbidTerms ?? [], limits, {
+              earlierLines: input.earlierLines ?? [],
+              lastCard: input.lastCard,
+            }),
+        };
+      });
     },
     writeRestReply(input): Promise<LineResult> {
-      return run("rest_reply", restPrompt(input), (raw) =>
-        acceptLine(raw, "reply", "rest_reply", [], null),
-      );
+      return run("rest_reply", "rest_reply", (row) => {
+        const limits = lineLimits(row, checks(row));
+        return {
+          prompt: restPrompt(input, row),
+          accept: (raw) => acceptLine(raw, "reply", "rest_reply", [], limits, null),
+        };
+      });
     },
     writeReturnPopup(input): Promise<LineResult> {
-      return run("return_popup", returnPrompt(input), (raw) =>
-        acceptLine(raw, "returnLine", "return_popup", input.forbidTerms ?? [], {
-          earlierLines: input.earlierLines ?? [],
-        }),
-      );
+      return run("return_popup", "return_popup", (row) => {
+        const limits = lineLimits(row, checks(row));
+        return {
+          prompt: returnPrompt(input, row),
+          accept: (raw) =>
+            acceptLine(raw, "returnLine", "return_popup", input.forbidTerms ?? [], limits, {
+              earlierLines: input.earlierLines ?? [],
+            }),
+        };
+      });
     },
     writeClosingLine(input): Promise<ClosingLineResult> {
-      return run("closing_line", closingPrompt(input), (raw) => acceptClosing(raw, input));
+      return run("closing_line", "closing_line", (row) => {
+        const limits = lineLimits(row, checks(row));
+        return {
+          prompt: closingPrompt(input, row),
+          accept: (raw) => acceptClosing(raw, input, limits),
+        };
+      });
     },
   };
 }
 
-const DEFAULT_CARDS = 5;
-const MAX_STORY_CARDS = 5;
+/** The step_cards row's card counts and limits (T7, CARD-LENGTH). */
+type CardRules = {
+  maxStoryCards: number;
+  defaultCards: number;
+  stepCard: LineLimits;
+  backgroundCard: LineLimits;
+};
+
+function cardRules(row: PromptRow): CardRules {
+  const values = checks(row);
+  return {
+    maxStoryCards: count(row, values.max_story_cards, "max_story_cards"),
+    defaultCards: count(row, values.default_cards, "default_cards"),
+    stepCard: lineLimits(row, values.step_card),
+    backgroundCard: lineLimits(row, values.background_card),
+  };
+}
 
 /** The opening card plus at most the Step's story cards (T7); extra cards are dropped. */
-function cardLimit(input: StepCardsInput): number {
+function cardLimit(input: StepCardsInput, rules: CardRules): number {
   const story = input.storyCards;
-  if (typeof story !== "number" || !Number.isInteger(story) || story < 1) return DEFAULT_CARDS;
-  return 1 + Math.min(story, MAX_STORY_CARDS);
+  if (typeof story !== "number" || !Number.isInteger(story) || story < 1) return rules.defaultCards;
+  return 1 + Math.min(story, rules.maxStoryCards);
 }
 
 function acceptCards(
   raw: string,
   input: StepCardsInput,
+  rules: CardRules,
 ): Attempt<{ source: "generated"; cards: string[] }> {
   const forbidTerms = input.forbidTerms ?? [];
   const earlierLines = input.earlierLines ?? [];
@@ -200,10 +330,11 @@ function acceptCards(
   if (!cards || cards.length === 0) return { ok: false, rejectedRules: ["parse"] };
 
   const accepted: string[] = [];
-  for (const [position, card] of cards.slice(0, cardLimit(input)).entries()) {
+  for (const [position, card] of cards.slice(0, cardLimit(input, rules)).entries()) {
     if (typeof card !== "string") return { ok: false, rejectedRules: ["parse"] };
     const kind = position === 0 && input.background ? "background_card" : "step_card";
-    const checked = checkCompanionLine(card, kind, forbidTerms);
+    const limits = kind === "background_card" ? rules.backgroundCard : rules.stepCard;
+    const checked = checkCompanionLine(card, kind, forbidTerms, limits);
     if (!checked.ok) return checked;
     // Each card is a one-way line: it is checked against the run and the cards before it.
     const runRules = checkRunList(checked.text, [...earlierLines, ...accepted]);
@@ -219,12 +350,13 @@ function acceptLine(
   key: string,
   kind: "stuck_story" | "rest_reply" | "return_popup" | "closing_line",
   forbidTerms: string[],
+  limits: LineLimits,
   runList: { earlierLines: string[]; lastCard?: string } | null,
 ): Attempt<{ source: "generated"; text: string }> {
   const parsed = parseModelJson(raw);
-  const text = isRecord(parsed) ? parsed[key] : undefined;
-  if (typeof text !== "string") return { ok: false, rejectedRules: ["parse"] };
-  const checked = checkCompanionLine(text, kind, forbidTerms);
+  const line = isRecord(parsed) ? parsed[key] : undefined;
+  if (typeof line !== "string") return { ok: false, rejectedRules: ["parse"] };
+  const checked = checkCompanionLine(line, kind, forbidTerms, limits);
   if (!checked.ok) return checked;
   if (runList) {
     const rules = checkRunList(checked.text, runList.earlierLines);
@@ -240,6 +372,7 @@ function acceptLine(
 function acceptClosing(
   raw: string,
   input: ClosingLineInput,
+  limits: LineLimits,
 ): Attempt<Extract<ClosingLineResult, { source: "generated" }>> {
   const parsed = parseModelJson(raw);
   if (!isRecord(parsed)) return { ok: false, rejectedRules: ["parse"] };
@@ -249,6 +382,7 @@ function acceptClosing(
     "line",
     "closing_line",
     input.forbidTerms ?? [],
+    limits,
     { earlierLines },
   );
   if (!closing.ok) return closing;
@@ -257,6 +391,7 @@ function acceptClosing(
     "line",
     "closing_line",
     input.forbidTerms ?? [],
+    limits,
     { earlierLines: [...earlierLines, closing.value.text] },
   );
   if (!carry.ok) return carry;
@@ -305,122 +440,76 @@ function withTimeout(
   });
 }
 
-function planPrompt(input: PlanSplitInput): string {
-  return [
-    "Return JSON only with a short title and at least one step.",
-    'Shape: {"title":"...","steps":[{"title":"...","description":"...","minutes":1}]}',
-    "Minutes are positive whole numbers and add up to the total.",
-    `Goal: ${input.goal}`,
-    `Total minutes: ${input.totalMinutes}`,
-    `Split into finer steps: ${input.splitFiner ? "yes" : "no"}`,
-  ].join("\n");
+function planPrompt(input: PlanSplitInput, row: PromptRow): string {
+  return render(row, {
+    goal: input.goal,
+    totalMinutes: input.totalMinutes,
+    splitFiner: text(row, input.splitFiner ? "split_finer_yes" : "split_finer_no"),
+  });
 }
 
 /** No user-written text goes into this prompt (#216): only the Story side and numbers. */
-function stepCardPrompt(input: StepCardsInput): string {
+function stepCardPrompt(input: StepCardsInput, row: PromptRow, rules: CardRules): string {
   const storyCards =
     typeof input.storyCards === "number" && input.storyCards >= 1
-      ? Math.min(Math.floor(input.storyCards), MAX_STORY_CARDS)
+      ? Math.min(Math.floor(input.storyCards), rules.maxStoryCards)
       : null;
-  const lines = [
-    'Return JSON only: {"cards":["..."]}',
-    storyCards === null
-      ? "Write one opening card and then the story cards for this part of his day."
-      : `Write 1 opening card and then ${storyCards} story cards for this part of his day.`,
-    "Each story card is 1 to 3 sentences and at most 45 words, in his first person, with no advice and no question.",
-    "Every card says something new: never repeat what an earlier card said.",
-  ];
-  if (input.background) {
-    lines.push(
-      "The opening card is the background card: who is here, where this is and what each person knows, at most 70 words.",
-    );
-  }
-  if (input.stepNumber && input.stepCount) {
-    lines.push(`This is Step ${input.stepNumber} of ${input.stepCount} of his Story.`);
-  }
-  if (input.mustUse && input.mustUse.length > 0) {
-    lines.push(`These moments must happen in these cards: ${input.mustUse.join(" ")}`);
-  }
-  lines.push(`Minutes: ${input.minutes}`);
-  if (input.stepFacts === undefined) {
-    lines.push(`Facts already known: ${input.facts}`);
-  } else {
-    // CARD-NEW: say what happened before and what is new in this part.
-    lines.push(`Already happened: ${input.facts}`);
-    lines.push(
-      input.stepFacts.trim().length > 0
-        ? `New in this part: ${input.stepFacts}`
-        : "Nothing new happens in this part: he stays in the moment he is in, with no new events.",
-    );
-  }
-  return lines.join("\n");
+  const numbered = Boolean(input.stepNumber && input.stepCount);
+  // CARD-NEW: without the Step's own facts, `facts` is sent as before; with them, the prompt says
+  // what already happened and what is new in this part.
+  const split = input.stepFacts !== undefined;
+  const somethingNew = split && input.stepFacts!.trim().length > 0;
+  return render(row, {
+    cardsLine:
+      storyCards === null
+        ? text(row, "cards_open")
+        : renderPrompt(text(row, "cards_counted"), { storyCards }),
+    backgroundLine: input.background ? text(row, "background") : null,
+    stepNumber: numbered ? input.stepNumber : null,
+    stepCount: numbered ? input.stepCount : null,
+    mustUse: input.mustUse && input.mustUse.length > 0 ? input.mustUse.join(" ") : null,
+    minutes: input.minutes,
+    facts: split ? null : input.facts,
+    factsBefore: split ? input.facts : null,
+    stepFacts: somethingNew ? input.stepFacts : null,
+    nothingNew: split && !somethingNew ? text(row, "nothing_new") : null,
+  });
 }
-
-const HARDER_PAUSE = 3;
 
 /** A Pause number that is not a whole number of at least 1 is read as the first Pause. */
 function normalPauseNumber(value: number): number {
   return Number.isInteger(value) && value >= 1 ? value : 1;
 }
 
-function stuckPrompt(input: StuckStoryInput): string {
+function stuckPrompt(input: StuckStoryInput, row: PromptRow): string {
   const pauseNumber = normalPauseNumber(input.pauseNumber);
-  const situation =
-    pauseNumber >= HARDER_PAUSE
-      ? [
-          "Every pause has stalled his own work, and he remembers the earlier setbacks.",
-          "So this new stuck situation is much harder than the earlier ones.",
-          "He says he is worried he may fail.",
-        ]
-      : ["A new small snag that holds up his own work, and how he feels about it."];
-  return [
-    'Return JSON only: {"story":"..."}',
-    "One or two short first-person sentences about where his own work is stuck.",
-    ...situation,
-    "Never tell the person what to do and never ask the person to stop pausing.",
-    `Pause number: ${pauseNumber}`,
-    `Facts already known: ${input.facts}`,
-  ].join("\n");
+  const harderFrom = count(row, row.params.harder_from_pause, "harder_from_pause");
+  return render(row, {
+    situation: text(row, pauseNumber >= harderFrom ? "situation_harder" : "situation_first"),
+    pauseNumber,
+    facts: input.facts,
+  });
 }
 
-function restPrompt(input: RestReplyInput): string {
-  return [
-    'Return JSON only: {"reply":"..."}',
-    "One to three first-person sentences from his side of the work. No advice.",
-    `Facts already known: ${input.facts}`,
-    `The person wrote: ${input.userMessage}`,
-  ].join("\n");
+function restPrompt(input: RestReplyInput, row: PromptRow): string {
+  return render(row, { facts: input.facts, userMessage: input.userMessage });
 }
 
 const RETURN_SITUATION: Record<ReturnTrigger, string> = {
-  rest: "The person is coming back from the rest conversation with him.",
-  absence: "The person is coming back after being away from the app.",
+  rest: "situation_rest",
+  absence: "situation_absence",
 };
 
-function returnPrompt(input: ReturnPopupInput): string {
-  return [
-    'Return JSON only: {"returnLine":"..."}',
-    "One to three first-person sentences: what he did in that time and how he felt.",
-    RETURN_SITUATION[input.trigger],
-    "He may say how the time felt in his own words, such as a while or very long.",
-    "No clock times and no numbers.",
-    `Return trigger: ${input.trigger}`,
-    `Facts already known: ${input.facts}`,
-    `Minutes away, for context only and never written out: ${input.awayMinutes}`,
-  ].join("\n");
+function returnPrompt(input: ReturnPopupInput, row: PromptRow): string {
+  return render(row, {
+    situation: text(row, RETURN_SITUATION[input.trigger]),
+    trigger: input.trigger,
+    facts: input.facts,
+    awayMinutes: input.awayMinutes,
+  });
 }
 
 /** The closing line (docs/ai/AI_07 section 4, changed for END-TONE on 2026-11-12). */
-function closingPrompt(input: ClosingLineInput): string {
-  return [
-    'Return JSON only: {"closing_line":"...","carry_line":"..."}',
-    "This is the end of this stretch of your own life. Nothing after this moment has happened.",
-    "closing_line: one to three short first-person sentences. Tell what happened to you that day and how you feel about it now.",
-    "Feel it from what happened to you. Do not default to proud or wise. Draw no lesson, praise no one, give no advice.",
-    "Never count anything and never mention pauses, minutes, the reader or their work.",
-    "carry_line: one short first-person sentence about one thing about yourself that is still unresolved.",
-    "Use only what is in the facts below; quote at most one short phrase.",
-    `What happened: ${input.facts}`,
-    `The last moment: ${input.lastMoment}`,
-  ].join("\n");
+function closingPrompt(input: ClosingLineInput, row: PromptRow): string {
+  return render(row, { facts: input.facts, lastMoment: input.lastMoment });
 }
