@@ -1,0 +1,67 @@
+[
+  {
+    "key": "ui.F3.fail.body",
+    "text": "He is not here right now. Please try again.",
+    "note": "Focus page: his cards could not be made (FAIL-SCREEN)."
+  },
+  {
+    "key": "ui.F3.fail.retry",
+    "text": "Retry",
+    "note": "Focus page: the button under the failure message."
+  },
+  {
+    "key": "ui.F-RET.fail.body",
+    "text": "He is not here right now. Please try again.",
+    "note": "Return pop-up: his line could not be made."
+  },
+  {
+    "key": "ui.F-RET.fail.retry",
+    "text": "Retry",
+    "note": "Return pop-up: the button under the failure message."
+  },
+  {
+    "key": "ui.R1.fail.body",
+    "text": "He is not here right now. Please try again.",
+    "note": "Rest page: his message or reply could not be made."
+  },
+  {
+    "key": "ui.R1.fail.retry",
+    "text": "Retry",
+    "note": "Rest page: the button under the failure message."
+  },
+  {
+    "key": "ui.END.fail.body",
+    "text": "He is not here right now. Please try again.",
+    "note": "Summary: his closing line could not be made."
+  },
+  {
+    "key": "ui.END.fail.retry",
+    "text": "Retry",
+    "note": "Summary: the button under the failure message."
+  },
+  {
+    "key": "ui.R-OFF.body",
+    "text": "No connection. You can still go back to your Step.",
+    "note": "Rest page without a network (R-OFF). Not shown yet: the offline state arrives with #21."
+  },
+  {
+    "key": "ui.S1.title",
+    "text": "This is outside the story.",
+    "note": "Safety page: the title."
+  },
+  {
+    "key": "ui.S1.support",
+    "text": "Get support now",
+    "note": "Safety page: the button to the support resources."
+  },
+  {
+    "key": "ui.S1.back",
+    "text": "Back to my Goal",
+    "note": "Safety page: the back button."
+  },
+  {
+    "key": "ui.HOME-0.greeting",
+    "text": "Let’s launch your first wave.",
+    "note": "Home, first visit: the greeting on the Goal card."
+  }
+]
