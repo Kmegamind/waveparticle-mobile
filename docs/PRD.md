@@ -193,13 +193,13 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | FR-CONTENT-4 | Each story has 2 to 4 key slices, each with a first-person past-tense key line of at most 18 words, confirmed by the content owner, and an optional bridge of at most 10 words. | Must | C2 |
 | FR-CONTENT-5 | Each story lists its people and what each one knows, as input for the background card. Later cards carry no introduction phrases. | Should | M2 |
 | FR-CONTENT-6 | Each story supplies a scene table (where, who is present, props, scale of rain, wind and sky) and each card carries a state tag, so cards and the opening situation cannot contradict each other. | Should | C5 (proposal) |
-| FR-CONTENT-7 | Each story supplies the inputs the live generators need (scene table, allowed props, allowed names, rules) and a small authored fallback set of snag lines. | Must | C1 |
+| FR-CONTENT-7 | Each story supplies the inputs the live generators need (scene table, allowed props, allowed names, rules). There are no fallback snag lines (NO-BACKUP). | Must | C1 |
 | FR-CONTENT-8 | Each entry card contains at least one new, true, non-event element: a background fact from the story's knowledge field, a one-way change of scale, or a shift of worry. | Should | C3 (proposal) |
-| FR-CONTENT-10 | Every card, written live or authored, passes the same checks: no question, no "you", no clock time or duration, no later knowledge, no repeats in a step, each card readable alone. Authored cards are checked before shipping, live cards at runtime, and a card that fails is replaced by a fallback card. | Must | T3 |
+| FR-CONTENT-10 | Every card passes the same checks: no question, no "you", no clock time or duration, no later knowledge, no repeats in a step, each card readable alone. Cards are made ahead and checked and read by a person before they are published; a card that fails cannot be published. | Must | SHARED-STORY |
 | FR-CONTENT-11 | Cards, live or authored, are never drawn from after the user's current position and never carry a fact from the Step's own story slices or later ones. | Must | |
 | FR-CONTENT-12 | Historical source labels (in the book, inferred, invented) are kept in the backend and are not shown on any screen. | Must | |
 | FR-CONTENT-13 | Every story that ships has `reviewed` marked, and unreviewed generated plans are flagged in logs for sampling. | Should | |
-| FR-CONTENT-14 | All 26 stories carry the inputs the live generator needs. Authored fallback cards exist for two stories; for the other 24, a few generic fallback lines in his voice are shown if generation fails or is slow. | Must | D4, D5 |
+| FR-CONTENT-14 | All 26 stories carry the inputs the generator needs. Their cards are made ahead per story part and published before users see them. There are no fallback lines. | Must | SHARED-STORY, NO-FALLBACK-TABLES |
 
 ### 4.5 Home (FR-HOME)
 
@@ -210,7 +210,7 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | FR-HOME-3 | With a Run in progress, Home shows one card with his latest line, one Continue button, a "Start something else" text link, and a menu with Put on hold and Mark done. | Must | |
 | FR-HOME-4 | However long the user has been away, Home keeps the Run in progress and shows the same card with Continue. There is no time limit on resuming and no time-based line or card on Home. | Must | T6 |
 | FR-HOME-5 | The return pop-up (FR-FOCUS-11) is shown on the focus page, at most once per return, and never on Home. | Must | R1 |
-| FR-HOME-6 | The return pop-up text is generated live by the language model, has an authored fallback, and passes the never-say list in section 5. | Must | R1, A6 |
+| FR-HOME-6 | The return pop-up text is generated live by the language model and passes the never-say list in section 5. If generation fails, the failure message with Retry is shown (FAIL-SCREEN). | Must | R1, A6, NO-BACKUP |
 | FR-HOME-7 | After the user finishes a Goal with nothing in progress, Home keeps a small trace of him: his portrait, his own closing line and one New session action. The finished Goal appears in Quick Replay (a list of recent Goals) automatically. It never resets to the first-visit card. | Should | H5 |
 | FR-HOME-8 | After a long absence with nothing in progress Home shows the same state as after finishing, with no "welcome back". | Should | H7 |
 | FR-HOME-9 | Start over restarts the Goal from Step 1 after a calm confirmation, and restarts his night, because his night has failed. | Should | T5 |
@@ -231,11 +231,11 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | FR-STORY-9 | During a Step all cards presuppose only what he could know at the point of his story where the Step starts. | Must | |
 | FR-STORY-10 | Later cards carry no short introduction phrases. The background card introduces the people who are present (FR-STORY-18). Names are not tappable. | Must | M2 |
 | FR-STORY-11 | The n-th story card of a Step arrives exactly when the clock reaches 00:00. It is not a separate card and is written to say he is still at it. At 00:00 only the light vibration happens; the clock stays at 00:00 until Done, with no overdue wording. | Must | T8 |
-| FR-STORY-12 | A card the AI fails to write, writes too slowly or that fails the checks is replaced by the authored fallback card (two stories have them) or, for other stories, by one of a few generic lines in his voice; if none remain, no new card is added. No error text or spinner appears. | Must | D5 |
+| FR-STORY-12 | Story cards are read from the published cards of the story, so they cannot fail on the user's screen. No fallback lines exist. | Must | SHARED-STORY |
 | FR-STORY-14 | Each card can be read alone, so a user can look back at it, with no "again", "another", "the same" and no opening with "He" or "It". A whole finished Step is reread in original order with a system line (story name and the user's Step name). | Should | D2; NF5-D7 (proposal) |
 | FR-STORY-17 | A bridge phrase may join merged key moments. | Could | C2 |
 | FR-STORY-18 | When the user first enters the story, an extra background card is shown first, told in his own voice: who is here, where this is, and what each person knows. It is the one card with which Step 1 opens, is the oldest card in the stack and needs no dismiss button. It is not counted among the n story cards. It appears once at the start of the Goal, not at the start of every Step (to confirm, T1b). | Must | T4, T9, D3 |
-| FR-STORY-19 | Cards are written live by the AI from the story's facts and key turning points (must-use facts), with the instruction that the story is divided into x Steps and each Step is split into n cards according to the story's progress. His goal mirrors the user's: x Steps of y minutes each. Every card passes the same checks as authored cards (FR-CONTENT-10). The pre-written cards from the slices are the fallback. | Must | T1, T3, C1 |
+| FR-STORY-19 | Cards are made ahead once per story part from the story's facts and key turning points (must-use facts). When the user starts, the app spreads the parts across the user's x Steps. Every card passes the checks (FR-CONTENT-10). | Must | SHARED-STORY, CARDS-PER-PART |
 
 ### 4.7 Focus page (FR-FOCUS)
 
@@ -265,7 +265,7 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | ID | Requirement | Priority | Decision |
 |---|---|---|---|
 | FR-REST-1 | Pause opens the rest page, where his first message, generated live, is about the snag his own story has hit and how he feels about it (a Pause means his side of the story has stalled). It arrives a moment after Pause. | Must | F1, C1 |
-| FR-REST-2 | The message is generated live in two steps (a stuck story, then his description of the predicament and his feelings) inside his entry state and rules, with an authored fallback when generation fails, is slow or fails a check. | Must | C1 |
+| FR-REST-2 | The message is generated live in two steps (a stuck story, then his description of the predicament and his feelings) inside his entry state and rules, 1 or 2 sentences and at most 30 words. If generation fails, the failure message with Retry is shown. | Must | C1, LEN-PAUSE, NO-BACKUP |
 | FR-REST-3 | The rest page header offers ‹ Back to step (returns to the focus page through the return pop-up, and restarts the clock when the user taps its start button) and Home (leaves with the Step paused). He stays stuck on the rest page until the user taps Back to step. | Must | R1, Prototype v7 |
 | FR-REST-4 | The user may type free text, with no limit on replies and no quick replies. The Companion answers briefly from his own side and in his own voice. | Must | A3 |
 | FR-REST-5 | He may deflect gently but is not required to refuse. He may actually answer questions about the user's own work and general-knowledge questions from what he could plausibly know in his time, stays short and returns to his own situation. | Must | A3 |

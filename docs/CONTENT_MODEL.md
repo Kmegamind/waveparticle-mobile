@@ -4,6 +4,8 @@ This document describes the data an engineer needs in order to build the story s
 
 Every field name, type and example below is taken from the real content files unless it is marked "proposed". Where a file and a decision disagree, `docs/DECISIONS.md` wins and the disagreement is stated.
 
+> **Changed 2026-11-14 and 2026-11-15 (`docs/DECISIONS.md`, decisions SHARED-STORY to CLOSING-AHEAD).** The background card, the step story cards and the closing line are made ahead once per story part, read by a person and shared by all users; only the pause message, the rest conversation, the return pop-up and the goal split are live. There are no authored or generic fallback lines (NO-BACKUP, NO-FALLBACK-TABLES): section 3.1 is removed and section 6 is rewritten. Text below that still describes cards written live for each user, slices as a fallback device, or fallback lines is superseded and must not be built.
+
 ## 0. How to read this document
 
 Status labels used throughout:
@@ -32,7 +34,7 @@ Words used with a fixed meaning:
 
 Content files used as the real data (all in the planning folder under `1_Projects/Newfeatures/NF3_content/` unless stated): `site_search_cards_2026-10-29.json`, `trinity_chains_2026-10-29.json`, `trinity_leakmap_2026-10-29.json`, `dialogue_pools_2026-10-29.json`, `story_openers_2026-10-29.json`, `snag_sample_trinity_s4_2026-11-04.json`, `nf5_records_2026-10-29.json`, plus the story database under `2_Areas/Product/oppenheimer-stories/en/database/` (index, `entries/*.plan.json`, `personas.json`). The repository import is `src/content/oppenheimer/stories.json`, exposed through `src/content/oppenheimer/index.ts`.
 
-The repository import contains the 26 story goals, ordered facts, forbidden terms, and provenance. Key slices are represented by task-level cut points: content-owner `added_later` markers are preferred, and the first two task cut points are used when a story has fewer than two markers. Each imported key slice is marked `confirmed` and records the fact ids it covers. Its `keyLine` is one first-person past-tense sentence of at most 18 words. This selection is data, not a limit on the number of user Steps. Pressing Start calls `startStory` in `src/lib/story/start.ts`, which gives the whole story to the card writer with the instruction that it is divided into the plan's steps and that the key slices are facts the writer must use. That function does not call a model.
+The repository import contains the 26 story goals, ordered facts, forbidden terms, and provenance. Key slices are represented by task-level cut points: content-owner `added_later` markers are preferred, and the first two task cut points are used when a story has fewer than two markers. Each imported key slice is marked `confirmed` in today's file; when the content moves into the database it is stored as unconfirmed (KEY-UNCONFIRMED), and and records the fact ids it covers. Its `keyLine` is one first-person past-tense sentence of at most 18 words. This selection is data, not a limit on the number of user Steps. Pressing Start calls `startStory` in `src/lib/story/start.ts`, which gives the whole story to the card writer with the instruction that it is divided into the plan's steps and that the key slices are facts the writer must use. That function does not call a model.
 
 No person has read any of the authored lines for voice. They were written from the story database entries and passed by script only.
 
@@ -102,7 +104,7 @@ One episode. The story database holds 26 Oppenheimer stories (`entries/<id>.plan
 | seq | integer, 1 to 26 | `8`. Chapter number; time order. All 26 stories are playable and shown on the Life Path, in order, with chapters ahead of the current one visible and not tappable (Decided, D4); a new user starts at chapter 1 (Decided, M1). Chapter 1 is `bohr-difficulties` ("The Trade of a Theorist"), chapter 8 is `site-search`, chapter 13 is `trinity` ("The Storm Before the Shot"). From `story_openers_2026-10-29.json`. The numbering in the database index table is a different order and must not be used as the chapter number. |
 | title | text | "The Canyon and the Mesa" |
 | era | text | `era3` |
-| date | text | `1942-11-16`. Several dates are placeholders (see the database index, section "Left for Yue by the fixers"). Never shown inside his lines. |
+| date | text | `1942-11-16`. Several dates are placeholders (see the database index, section "Left for Yue by the fixers"). Visible only in the admin and never passed to a card prompt; the checks reject a year, date or age in a card (DATES-ADMIN-ONLY). |
 | place | text | "Jemez Springs and the Pajarito Plateau, northwest of Santa Fe, New Mexico" |
 | context | text | Background paragraph; backend only. |
 | hook | text | Third-person summary; no longer shown to users. |
@@ -115,7 +117,7 @@ One episode. The story database holds 26 Oppenheimer stories (`entries/<id>.plan
 | who_i_am | text | "I'm a physicist from Berkeley, asked to run a laboratory the Army has not yet found a home for." (key `where_now.who`) |
 | slice count (runtime) | integer | `8` for `site-search`, `7` for `trinity`; none for the other stories. Equals the number of authored slices. It is not a limit on the number of steps (Decided, T2). Earlier called capacity. |
 | allowed_cut_points (runtime) | list of text | `["after s1", ..., "after s7"]`. Fallback only. |
-| key moments | list of {fact ids, key_line} | 2 to 4 per story, confirmed by the content owner (Decided, C2). Imported as `keySlices`. Given to the AI as must-use facts. `keyLine`: one first-person past-tense sentence of at most 18 words. |
+| key moments | list of {fact ids, key_line} | 2 to 4 per story (Decided, C2). Stored as unconfirmed until the content owner reviews them (KEY-MOMENTS-DRAFT, KEY-UNCONFIRMED). Imported as `keySlices`. Given to the AI as must-use facts. `keyLine`: one first-person past-tense sentence of at most 18 words. |
 | forbid_terms (runtime) | list of text | Ending words of the whole story; checked on every generated card. Trinity: `["Hiroshima", "Nagasaki", "Little Boy", "Fat Man", "Truman", "Potsdam", "Enola Gay", "destroyer of worlds", "White Sands", "Cold War", "hearing"]` |
 | dialogue_open (runtime) | list of text | Opening line of the goal conversation in this story's starting situation: "I have given up the bench and I am betting everything on a calculation. What are you working on?" (chapter 1). Rules: at most 2 sentences and 30 words, exactly one question and it is the last sentence, first person, nothing that happens after the story starts, no time-of-day words, no "we". |
 | step_lines (runtime) | map slice id to {current, done, plan} | See 2.3. |
@@ -283,7 +285,7 @@ What the pause number changes (prompt only, Decided, F1):
 | Pause number in one step | His message |
 |---|---|
 | 1 and 2 | The snag his own task has hit and how he feels about it. |
-| 3 | The prompt changes: he says more strongly that he cannot finish his task and asks the user not to pause again. |
+| 3 | The prompt changes: the snag is much harder and, remembering the earlier setbacks, he says he is worried he may fail. He never asks the user to stop pausing (PAUSE-3). |
 | 4 and later | The same strong tone continues, in new words each time. Nothing else happens. |
 
 No new screen, no warning page. The return after a pause is a return pop-up (2.9), not a line of this entity.
@@ -300,7 +302,7 @@ When it appears (Decided, R1):
 
 A shorter glance at another app resumes the clock with no pop-up. The return line on Home, the return card in the stack (type RET) and the separate "away card" are not needed (Decided, R1). Home shows no "welcome back" (Decided, H7). Not decided: what the pop-up does when the keep-running setting is on and the clock never stopped.
 
-The text is generated live (Decided, T6, A6, H2) and checked. An authored fallback is still required whenever generation fails or is too slow; its size is not decided.
+The text is generated live (Decided, T6, A6, H2) and checked. There is no authored fallback (NO-BACKUP); a failure shows the failure message with Retry (FAIL-SCREEN).
 
 | Field | Meaning |
 |---|---|
@@ -405,26 +407,7 @@ Let N be the number of steps the user confirmed. There is no maximum (Decided, T
 
 ### 3.1 Choosing the authored fallback card
 
-Authored cards exist only for the two stories `site-search` and `trinity`, and are used only when a live card fails the checks or generation is slow (Decided, T3, D5). The authored sets were cut by slice, so a fallback card is chosen by the slice the step's stretch starts in:
-
-- Step 1: the opening card is the background card (its fallback is in section 6); the story cards start with the first card of the entry state of slice 1.
-- Step k (k from 2): the landing card of the highest-priority slice covered by step k-1 (a tie goes to the last slice).
-- Later cards of the same step: the next unused card of that entry state, in the order of its chain.
-- If every authored card is used, add no card. For the other 24 stories the generic fallback lines are used (section 6).
-
-Worked example, `site-search`, N = 4 (default cut s1 to s2, s3 to s4, s5 to s6, s7 to s8):
-
-| Step | Covers | Fallback opening card | Fallback entry cards come from |
-|---|---|---|---|
-| 1 | s1, s2 | `site-search.s1.c1` (the opening card) | entry state s1 |
-| 2 | s3, s4 | `site-search.s2.land` (s2 has the higher priority) | entry state s3 |
-| 3 | s5, s6 | `site-search.s4.land` (s3 and s4 tie at 2, last wins) | entry state s5 |
-| 4 | s7, s8 | `site-search.s6.land` (s6 has priority 3) | entry state s7 |
-| End | | `site-search.s8.land` | |
-
-The slice boundaries are only a fallback device. They are not a limit on the number of steps.
-
-Open problem (Draft): the Trinity chains were written for the default cut only. When a step covers several slices, the fallback card for the opening has to be the highest-priority one and the following card may not connect to it. For fallback use this is accepted; the content team may widen the chains later.
+Removed 2026-11-15 (decision NO-FALLBACK-TABLES). The cut-by-slice table is in git history. Cards are made per story part and spread across the user's steps by `src/lib/story/start.ts` (decision CARDS-PER-PART).
 
 ## 4. Key slices
 
@@ -480,23 +463,23 @@ Card count of a step: n, from 1 to 5, chosen by the AI, with at least 5 minutes 
 
 Authored fallback data: the step records of `site_search_cards_2026-10-29.json` list four cards at time zero. Used as a fallback, none is visible when the step opens beyond the opening card, and the cards are released one at a time at the due times of 2.14.
 
-## 6. Where each content type comes from, and its fallback
+## 6. Where each content type comes from
 
-"Authored" means written by a person in advance and picked by code. "Model-written" means generated at runtime by a language model, then passed through the same checks as authored lines. A model-written line is never shown unchecked. The general ladder is: parse, clean, check the rules, retry once, then use the fallback. All 26 stories are playable because the cards are written live (Decided, D4). Authored cards exist for two stories only; the other 24 have a few generic fallback lines in the character's voice (Decided, D5).
+"Made ahead" means generated once per story part, checked, read by a person and published (decision SHARED-STORY); every user sees the published version. "Live" means generated for this user at runtime and checked before it is shown. Nothing stored ever stands in for a failed live line (NO-BACKUP): after the retries within the time limit, the screen shows the failure message with Retry (FAIL-SCREEN).
 
-| Content type | Source | Fallback if generation fails or is too slow |
+| Content type | Source | If generation fails |
 |---|---|---|
-| Goal conversation lines (GD0 to GD4C) | Authored pools; the model only classifies the goal's shape and splits the plan. The order is goal, time, then whether to split finer (Decided, T2). | The older fixed lines (welcome, confirm goal, generating, plan ready) |
-| Plan: step titles, descriptions and minutes | Model-written by the planning prompt (placeholder until the real prompt is supplied, P1) | Retry once, then an honest failure screen with the text kept; a one-step plan built in code. No silent generic steps. |
-| Story cards (the n cards of a step) | Model-written live from the story's facts and the key moments (must-use facts). Every card passes the same checks as authored cards (Decided, T3). | Authored cards for `site-search` and `trinity` (section 3.1); for the other 24 stories a few generic fallback lines (D5). If those are used up, add no card. Never an error text. |
-| Background card | Model-written live, told in the character's voice (Decided, D3, T4) | The story's `who_i_am` line, then a generic opening line (to write) |
-| His message on the rest page (snag) | Model-written live (Decided, C1, F1) from allowed props, names and rules supplied by the story data; receives the pause number | The authored snag pool for the entry state (Trinity s4 sample only). Missing: fallback wording for the third pause and later. Open: how many fallback lines are enough, who writes the generator's checks. |
-| Return pop-up text | Model-written live (Decided, T6, R1, A6, H2) | Authored `ret_line`, `ret_short`, `ret_long` for the snag; otherwise a small authored set (size not decided) |
-| Rest chat reply | Model-written, no message limit (Decided, R2). Decided (A3): he answers in the character's world and voice, may answer questions, does not have to refuse, keeps it short and returns to his own situation. Open: what he does with questions about things he could not know in his time. | Authored chat fallback lines; not yet written |
-| End-of-story feeling line | Model-written, 1 to 3 sentences, from what happened and how it went (Decided, A7) | Authored closing fallback by mode: smooth (2) and rough (2). Trinity has them; `site-search` has none (drafts exist in the AI specification); the other 24 stories need generic ones. |
-| Key lines (the merged key moments on the summary) | Authored from the story database, one first-person line each (Decided, C2) | None |
-| Story goal, where-now | Authored from the story database for `site-search`; for other stories the generator builds them from the story facts and the same checks apply | None |
-| Safety response | Code plus a small classifier; two tiers in the first demo: crisis (real hotlines by region) and ordinary stress. Low mood is deferred (Decided, A5b). The crisis page is system voice, not his. | Keyword layer alone if the classifier fails; the user can always go back to the step |
+| Goal conversation lines (GD0 to GD4C) | Authored pools; the model only classifies the goal's shape and splits the plan (Decided, T2) | Failure message with Retry |
+| Plan: step titles, descriptions and minutes | Live, from the planning prompt (P1) | Failure message with Retry; the typed text is kept |
+| Background card | Made ahead, once per story (SHARED-STORY) | Not possible on the user's screen: only published cards are shown |
+| Story cards | Made ahead, once per story part, from the story's facts and key moments (SHARED-STORY, CARDS-PER-PART) | Not possible on the user's screen |
+| Closing line | Made ahead with the story's cards (CLOSING-AHEAD); END-TONE applies | Not possible on the user's screen |
+| His message on the rest page (snag) | Live (C1, F1, PAUSE-3), from allowed props, names and rules; receives the pause number | Failure message with Retry |
+| Return pop-up text | Live (T6, R1) | Failure message with Retry |
+| Rest chat reply | Live, no message limit (R2, A3); passes the spoiler check (CHAT-SPOILER-CHECK) | Failure message with Retry |
+| Key lines (merged key moments on the summary) | Authored from the story database (C2), unconfirmed until reviewed (KEY-UNCONFIRMED) | None needed |
+| Story goal, where-now | Authored from the story database | None needed |
+| Safety response | Code plus a small classifier (A5b); system voice | Keyword layer alone if the classifier fails |
 
 Disclosure that the companion is an AI appears only in the terms and the settings; the conversation never mentions it (Decided, A4). If a legal check shows some regions need a clear answer to a direct question, the fallback is one sentence in system voice.
 
@@ -527,16 +510,16 @@ These apply to every line the companion shows, whether authored or model-written
 | Live story card; SIT, EVM, WRY, DOI, NTC | 1 to 3 sentences, at most 45 words (CARD-LENGTH, 2026-11-12; was 2 to 4 sentences and 60 words) |
 | Return pop-up text | Proposed from the earlier return card rule: at most 3 sentences, 25 to 40 words (fewer than 25 gives a warning) |
 | Background card | At most 70 words, no sentence limit (CARD-LENGTH, 2026-11-12) |
-| His message on the rest page (obstacle) and `ret_line` | At most 2 sentences, 25 words |
+| His message on the rest page (obstacle) | 1 or 2 sentences, at most 30 words (LEN-PAUSE, 2026-11-15) |
 | Single status line (older design, still in the Trinity pool) | 1 sentence, 14 words |
 | Opening of the goal conversation | 2 sentences, 30 words, one question and it comes last |
 | Step lines `current`, `done`, `plan` | At most 10 words, first person |
 | `key_line` | At most 18 words |
 | `bridge` | At most 10 words |
-| End-of-story feeling line | 1 to 3 sentences, first person, no "you", no numbers or durations |
+| End-of-story feeling line (closing line) | 1 to 3 sentences, at most 45 words, first person, no "you", no numbers or durations (LEN-CARD) |
 | Rest chat reply | 1 to 3 sentences (deflections: 1 to 2) |
 
-The AI specification adds a stricter limit for model-written snags (at most 20 words and 2 sentences) and a limit of 14 words for the resolved line, which conflicts with the return text above; see `docs/ai/DIFFERENCES.md`. When two limits apply, use the stricter one, except where a decision settles it.
+Decision LEN-PAUSE (2026-11-15) replaces the AI specification's stricter limit for model-written snags (at most 20 words and 2 sentences). The AI specification also gives a limit of 14 words for the resolved line, which conflicts with the return text above; see `docs/ai/DIFFERENCES.md`. When two limits apply, use the stricter one, except where a decision settles it.
 
 ### 7.3 Per row and per run (cards of one step, and neighbouring steps)
 
