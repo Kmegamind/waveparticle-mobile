@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { getAppTexts } from "@/lib/app-text/repository";
+import { AppTextProvider } from "@/lib/app-text/provider";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { loadFocusPlan } from "../focus/account-progress";
@@ -19,5 +21,9 @@ async function RestContent() {
   const user = await getCurrentUser(client);
   if (!user) redirect("/auth/sign-in");
   const loaded = await loadFocusPlan(client, user.id, null, false).catch(() => null);
-  return <AccountRest plan={loaded?.plan ?? null} />;
+  return (
+    <AppTextProvider texts={await getAppTexts()}>
+      <AccountRest plan={loaded?.plan ?? null} />
+    </AppTextProvider>
+  );
 }

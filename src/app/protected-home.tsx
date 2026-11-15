@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { companionById } from "@/content/companions";
+import { useAppText } from "@/lib/app-text/provider";
 import type { HomeView } from "@/lib/home/home-view";
 import { ContinueLink } from "./continue-link";
 import { HomeGoalOptions, HomeToast, type HomeToastState } from "./home-goal-options";
@@ -114,10 +115,11 @@ export function ProtectedHome({
 }
 
 function FirstVisit() {
+  const greeting = useAppText("ui.HOME-0.greeting");
   return (
     <section aria-label="Goal" className="home-card">
       <p className="focus-label">Goal</p>
-      <h2 className="home-card-title home-card-title-large">Let’s launch your first wave.</h2>
+      <h2 className="home-card-title home-card-title-large">{greeting}</h2>
       <p className="home-card-text">Choose a Companion to start a Goal in a focused session.</p>
       <Link className="button-filled" href="/companions">
         Choose a Companion

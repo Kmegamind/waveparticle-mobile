@@ -17,6 +17,7 @@ import {
   type FocusSession,
   type RestMessage,
 } from "@/lib/prototype/session";
+import { useAppText } from "@/lib/app-text/provider";
 import { CrisisPage } from "../safety/crisis-page";
 import { fullPageLoad } from "../try/full-page-load";
 import type { FocusPlan } from "./focus-body";
@@ -26,7 +27,6 @@ import type { SessionPaths } from "./paths";
 const FIRST_MESSAGE_MIN_MS = 1_000;
 /** Three quiet dots appear only when a reply takes longer than this (FLOW R1). */
 const DOTS_AFTER_MS = 600;
-const FAILURE_TEXT = "He is not here right now. Please try again.";
 
 const currentTime = () => Date.now();
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -59,6 +59,8 @@ function focusHref(paths: SessionPaths, session: FocusSession): string {
 
 export function RestBody({ host }: { host: RestHost }) {
   const { paths, plan, stored, storageKey, loadPauseMessage, loadRestReply, onProgress } = host;
+  const failureText = useAppText("ui.R1.fail.body");
+  const retryLabel = useAppText("ui.R1.fail.retry");
   // Arriving here without an open rest is a Pause; an open rest is shown again as it was.
   const [session, setSession] = useState<FocusSession>(() =>
     stored.rest ? stored : startRest(stored, currentTime()),
@@ -192,13 +194,13 @@ export function RestBody({ host }: { host: RestHost }) {
         {isTestData ? <p className="try-caption">Test data: chapter 8 rest lines</p> : null}
         {firstFailed ? (
           <div className="rest-failure">
-            <p>{FAILURE_TEXT}</p>
+            <p>{failureText}</p>
             <button
               className="button-filled button-small"
               onClick={() => setFirstFailed(false)}
               type="button"
             >
-              Retry
+              {retryLabel}
             </button>
           </div>
         ) : null}
@@ -223,9 +225,9 @@ export function RestBody({ host }: { host: RestHost }) {
         ) : null}
         {replyFailed && !waiting ? (
           <div className="rest-failure">
-            <p>{FAILURE_TEXT}</p>
+            <p>{failureText}</p>
             <button className="button-filled button-small" onClick={onRetryReply} type="button">
-              Retry
+              {retryLabel}
             </button>
           </div>
         ) : null}

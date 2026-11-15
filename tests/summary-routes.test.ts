@@ -67,8 +67,9 @@ describe("#258 AC4 no stored line on the new pages", () => {
 
   it("the END screen shows the failure message with Retry and no counts", () => {
     const source = read("src/app/end/end-screen.tsx");
-    expect(source).toContain("He is not here right now. Please try again.");
-    expect(source).toContain("Retry");
+    // #288: the words are app text now; their defaults are checked in tests/app-text-catalog.test.ts.
+    expect(source).toContain('useAppText("ui.END.fail.body")');
+    expect(source).toContain('useAppText("ui.END.fail.retry")');
     expect(source).not.toMatch(/%|\bof \$\{/);
   });
 });
