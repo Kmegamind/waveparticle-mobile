@@ -39,6 +39,27 @@ usage in the model provider's dashboard.
 `PROMPTS_READ_TOKEN` (server only, Production and Preview) lets the server read the prompts table; see `docs/ai/prompts/README.md` (#282).
 Real values live in the platform's environment settings or CI secrets. `.env.example` lists the names.
 
+## Admin roles
+The content admin at `/admin` (#287, `docs/decisions/0016`) opens only for an account with the
+`admin` or `writer` role; everyone else gets the normal 404. The account must already exist (signed
+up once). To give it a role, run one command in the Supabase SQL editor (use `'admin'` for an admin):
+
+```sql
+insert into public.content_roles (user_id, role)
+select id, 'writer' from auth.users where email = 'person@example.com'
+on conflict (user_id) do update set role = excluded.role;
+```
+
+The same command changes a role. To remove one:
+
+```sql
+delete from public.content_roles
+where user_id = (select id from auth.users where email = 'person@example.com');
+```
+
+The migration `supabase/migrations/20261116000000_content_roles.sql` must run first. No key with full
+database rights is needed: the app asks `public.content_role()` with the signed-in user's session.
+
 ## After each deploy
 - Smoke test: open the deployed home page and confirm the product name is
   visible. To run the end-to-end test against a deployed address instead of a local

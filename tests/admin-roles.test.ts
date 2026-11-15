@@ -168,3 +168,27 @@ describe("admin shell (#287)", () => {
     }
   });
 });
+
+describe("admin docs (#287)", () => {
+  it("test_287_ac6_deploy_says_how_to_give_a_role_with_one_sql_command", () => {
+    const deploy = read("docs/deploy.md");
+    expect(deploy).toMatch(/## Admin roles/);
+    expect(deploy).toMatch(
+      /insert into public\.content_roles \(user_id, role\)\s+select id, 'writer' from auth\.users where email = '[^']+'\s+on conflict \(user_id\) do update set role = excluded\.role;/,
+    );
+    expect(deploy).toMatch(/delete from public\.content_roles/);
+  });
+
+  it("test_287_ac6_architecture_lists_the_admin_area", () => {
+    const architecture = read("docs/architecture.md");
+    expect(architecture).toMatch(/\| Admin area \| `src\/app\/admin\/`/);
+    expect(architecture).toContain("content_roles");
+    expect(architecture).toContain("content_role()");
+  });
+
+  it("test_287_records_the_roles_decision", () => {
+    const decision = read("docs/decisions/0016-content-roles-checked-on-the-server.md");
+    expect(decision).toMatch(/Issue: #287/);
+    expect(decision).toContain("is_content_editor()");
+  });
+});
