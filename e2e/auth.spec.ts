@@ -20,10 +20,11 @@ test("a signed-out visitor can open sign in and the auth links", async ({ page }
   );
 });
 
-test("#262 a signed-out visitor can open the privacy placeholder", async ({ page }) => {
+test("#262 #102 a signed-out visitor can open the privacy notice", async ({ page }) => {
   await page.goto("/privacy");
   await expect(page).toHaveURL(/\/privacy$/);
-  await expect(page.getByText("The privacy notice is not written yet.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Privacy notice" })).toBeVisible();
+  await expect(page.getByText("Last changed: November 14, 2026")).toBeVisible();
 });
 
 test("#262 the account screens fit a 320 pixel wide phone without sideways scrolling", async ({

@@ -2,6 +2,7 @@
 // Puts the prototype picture, the app before and the app after side by side (issues #240, #263).
 // A screen whose prototype state has no picture (null) gets a blank first column with a note.
 // Usage: node scripts/design/compose-compare.mjs <folder with <screen>-<scheme>-before/after.png>
+// A missing "before" picture drops that column (#103).
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { chromium } from "@playwright/test";
@@ -32,6 +33,14 @@ const PROTOTYPE = {
   g5: ["g5-day", "g5-night"],
   "g5-d": ["g5-d-day", "g5-d-night"],
   g6: ["g6-day", "g6-night"],
+  // The account and privacy pages (#103): ME and ACCOUNT-DELETE are drawn; the others are not.
+  me: ["me-day", "me-night"],
+  "account-delete": ["account-delete-day", "account-delete-night"],
+  data: [null, null],
+  about: [null, null],
+  privacy: [null, null],
+  terms: [null, null],
+  export: [null, null],
 };
 const dataUrl = (file) => `data:image/png;base64,${readFileSync(file).toString("base64")}`;
 
@@ -48,7 +57,8 @@ for (const [screen, [day, night]] of Object.entries(PROTOTYPE)) {
         : ["Prototype v4: no picture of this state", null],
       ["App before (main)", path.join(folder, `${screen}-${scheme}-before.png`)],
       ["App after (this pull request)", path.join(folder, `${screen}-${scheme}-after.png`)],
-    ];
+    ].filter(([label, file]) => !label.startsWith("App before") || existsSync(file));
+    // A folder without "before" pictures (new screens) compares the prototype with the app only.
     if (!files.every(([, file]) => file === null || existsSync(file))) continue;
     const cells = files
       .map(
