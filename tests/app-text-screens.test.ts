@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { createElement } from "react";
+import { createElement, type ComponentProps } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { CrisisPage } from "@/app/safety/crisis-page";
@@ -30,7 +30,9 @@ const SCREENS: Record<string, AppTextKey[]> = {
 const crisis = (texts?: AppTexts) => {
   const page = createElement(CrisisPage, { onBack: () => undefined });
   return renderToStaticMarkup(
-    texts ? createElement(AppTextProvider, { texts, children: page }) : page,
+    texts
+      ? createElement(AppTextProvider, { texts } as ComponentProps<typeof AppTextProvider>, page)
+      : page,
   );
 };
 
