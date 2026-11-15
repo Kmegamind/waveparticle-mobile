@@ -37,13 +37,13 @@ create table private.prompt_reader (
 
 -- The active prompts, for the server only: without a known reader token it returns no rows.
 create function public.get_active_prompts(reader_token text)
-returns table (key text, version integer, body text, params jsonb)
+returns table (key text, version integer, body text, params jsonb, note text)
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select p.key, p.version, p.body, p.params
+  select p.key, p.version, p.body, p.params, p.note
   from public.prompts p
   where p.active
     and exists (

@@ -12,9 +12,9 @@ Edit the prompt or its settings here or in the Supabase table editor; see README
   "note": "His reply in the rest chat (AI_04). Moved from gateway.ts unchanged.",
   "params": {
     "checks": {
-      "min_sentences": 1,
       "max_sentences": 3,
-      "max_words": 80
+      "max_words": 80,
+      "min_sentences": 1
     }
   }
 }

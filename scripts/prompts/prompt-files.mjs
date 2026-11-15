@@ -22,11 +22,29 @@ const BODY_OPEN = "```text\n";
 const CLOSE = "\n```";
 
 /**
+ * Object keys in alphabetical order, at every level. The database keeps JSON keys in its own
+ * order, so a fixed order makes an export write the same file every time.
+ */
+function sorted(value) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return value;
+  return Object.fromEntries(
+    Object.keys(value)
+      .sort()
+      .map((name) => [name, sorted(value[name])]),
+  );
+}
+
+/**
  * @param {{ key: string, version: number, note: string, params: unknown, body: string }} row
  * @returns {string}
  */
 export function writePromptFile(row) {
-  const settings = { key: row.key, version: row.version, note: row.note, params: row.params };
+  const settings = {
+    key: row.key,
+    version: row.version,
+    note: row.note,
+    params: sorted(row.params),
+  };
   return [
     `# Prompt: ${row.key}`,
     "",

@@ -11,14 +11,14 @@ Edit the prompt or its settings here or in the Supabase table editor; see README
   "version": 1,
   "note": "Goal split into Steps (AI_01). Moved from gateway.ts unchanged.",
   "params": {
-    "text": {
-      "split_finer_yes": "yes",
-      "split_finer_no": "no"
-    },
     "checks": {
-      "title_max_chars": 40,
+      "description_max_words": 40,
       "step_title_max_chars": 80,
-      "description_max_words": 40
+      "title_max_chars": 40
+    },
+    "text": {
+      "split_finer_no": "no",
+      "split_finer_yes": "yes"
     }
   }
 }

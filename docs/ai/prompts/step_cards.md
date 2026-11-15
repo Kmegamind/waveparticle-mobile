@@ -11,22 +11,22 @@ Edit the prompt or its settings here or in the Supabase table editor; see README
   "version": 1,
   "note": "His cards for one Step, with the background card on Step 1 (AI_10). No user text (#216). Moved from gateway.ts unchanged.",
   "params": {
-    "text": {
-      "cards_open": "Write one opening card and then the story cards for this part of his day.",
-      "cards_counted": "Write 1 opening card and then {{storyCards}} story cards for this part of his day.",
-      "background": "The opening card is the background card: who is here, where this is and what each person knows, at most 70 words.",
-      "nothing_new": "Nothing new happens in this part: he stays in the moment he is in, with no new events."
-    },
     "checks": {
-      "max_story_cards": 5,
+      "background_card": {
+        "max_words": 70
+      },
       "default_cards": 5,
+      "max_story_cards": 5,
       "step_card": {
         "max_sentences": 3,
         "max_words": 45
-      },
-      "background_card": {
-        "max_words": 70
       }
+    },
+    "text": {
+      "background": "The opening card is the background card: who is here, where this is and what each person knows, at most 70 words.",
+      "cards_counted": "Write 1 opening card and then {{storyCards}} story cards for this part of his day.",
+      "cards_open": "Write one opening card and then the story cards for this part of his day.",
+      "nothing_new": "Nothing new happens in this part: he stays in the moment he is in, with no new events."
     }
   }
 }

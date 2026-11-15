@@ -11,13 +11,13 @@ Edit the prompt or its settings here or in the Supabase table editor; see README
   "version": 1,
   "note": "His line in the return pop-up (F-RET). Moved from gateway.ts unchanged.",
   "params": {
-    "text": {
-      "situation_rest": "The person is coming back from the rest conversation with him.",
-      "situation_absence": "The person is coming back after being away from the app."
-    },
     "checks": {
       "max_sentences": 3,
       "max_words": 40
+    },
+    "text": {
+      "situation_absence": "The person is coming back after being away from the app.",
+      "situation_rest": "The person is coming back from the rest conversation with him."
     }
   }
 }

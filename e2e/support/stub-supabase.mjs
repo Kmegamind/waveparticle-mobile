@@ -7,7 +7,14 @@
 //   GET  /health
 //   GET  /auth/v1/user                (Authorization: Bearer <token>)
 //   GET|PATCH /rest/v1/<table>?…      eq., in.(…), order, limit, select (all columns returned)
+//   POST /rest/v1/rpc/get_active_prompts  { reader_token } → the seed prompts in docs/ai/prompts
+//        when the token is STUB_PROMPTS_READ_TOKEN, otherwise no rows, as the real function (#282)
 import { createServer } from "node:http";
+import { fileURLToPath } from "node:url";
+import { readPromptDirectory } from "../../scripts/prompts/prompt-files.mjs";
+
+const promptDirectory = fileURLToPath(new URL("../../docs/ai/prompts", import.meta.url));
+const promptReaderToken = process.env.STUB_PROMPTS_READ_TOKEN ?? "";
 
 const port = Number(process.env.STUB_SUPABASE_PORT ?? "3198");
 /** token → { user, tables } */
@@ -109,6 +116,12 @@ createServer(async (request, response) => {
   }
 
   if (path.startsWith("/auth/v1/")) return json(response, 400, { error: "not supported by stub" });
+
+  if (path === "/rest/v1/rpc/get_active_prompts" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    const allowed = promptReaderToken.length > 0 && body.reader_token === promptReaderToken;
+    return json(response, 200, allowed ? readPromptDirectory(promptDirectory) : []);
+  }
 
   if (path.startsWith("/rest/v1/")) {
     if (!dataset) return json(response, 401, { message: "JWT required" });

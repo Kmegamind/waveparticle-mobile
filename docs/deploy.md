@@ -36,6 +36,7 @@ paid model for signed-in sessions, with no per-account cap (#256 is in "Later");
 usage in the model provider's dashboard.
 
 ## Secrets
+`PROMPTS_READ_TOKEN` (server only, Production and Preview) lets the server read the prompts table; see `docs/ai/prompts/README.md` (#282).
 Real values live in the platform's environment settings or CI secrets. `.env.example` lists the names.
 
 ## After each deploy
