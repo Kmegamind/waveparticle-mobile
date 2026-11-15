@@ -101,3 +101,22 @@ describe("app text catalog (#288)", () => {
     expect(read("scripts/app-text/import.mjs")).toContain("src/content/app-text.json");
   });
 });
+
+describe("app text docs (#288)", () => {
+  it("test_288_docs_describe_the_seed_and_the_reader", () => {
+    const deploy = read("docs/deploy.md");
+    expect(deploy).toContain("20261117000000_app_text.sql");
+    expect(deploy).toContain("node scripts/app-text/import.mjs");
+    const api = read("docs/api/README.md");
+    expect(api).toContain("getAppTexts");
+    expect(api).toContain("useAppText");
+    expect(api).toContain("publish_app_text");
+    expect(api).toContain("private.set_published_app_text");
+    const architecture = read("docs/architecture.md");
+    expect(architecture).toContain("public.app_text");
+    expect(architecture).toContain("src/lib/app-text/");
+    const decision = read("docs/decisions/0017-app-text-in-the-database.md");
+    expect(decision).toMatch(/Issue: #288/);
+    expect(decision).toContain("APP-TEXT");
+  });
+});
