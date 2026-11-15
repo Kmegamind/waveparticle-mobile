@@ -5,6 +5,12 @@ import { createModelGateway, type ModelProvider } from "@/lib/model-gateway";
 import { checkCompanionLine } from "@/lib/model-gateway/checks";
 import { cardNouns, checkRunList, similarity } from "@/lib/model-gateway/run-list";
 import { MODEL_GATEWAY_ENV_NAMES, createServerModelGateway } from "@/lib/model-gateway/server";
+import { seedPromptSource, seedLineLimits } from "./support/seed-prompts";
+import type { CompanionKind } from "@/lib/model-gateway/types";
+
+// #282: the length limits are data in the prompt rows; tests use the seed's.
+const checkLine = (text: string, kind: CompanionKind, forbidTerms: string[] = []) =>
+  checkCompanionLine(text, kind, forbidTerms, seedLineLimits(kind));
 
 const root = path.resolve(import.meta.dirname, "..");
 const goal = "SECRET_GOAL_TEXT";
@@ -68,6 +74,7 @@ describe("model gateway", () => {
     const fake = provider(async () => planJson);
     const logs: unknown[] = [];
     const gateway = createModelGateway({
+      prompts: seedPromptSource(),
       provider: fake.impl,
       log: (event) => logs.push(event),
     });
@@ -92,7 +99,7 @@ describe("model gateway", () => {
   it("returns checked step cards, a stuck story, a rest reply and a return pop-up", async () => {
     const replies = [cardsJson(2), stuckJson, replyJson, returnJson];
     const fake = provider(async () => replies.shift() ?? "");
-    const gateway = createModelGateway({ provider: fake.impl });
+    const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
 
     const cards = await gateway.writeStepCards({
       minutes: 25,
@@ -123,6 +130,7 @@ describe("model gateway", () => {
 
   it("drops story cards past the fifth", async () => {
     const gateway = createModelGateway({
+      prompts: seedPromptSource(),
       provider: provider(async () => cardsJson(6)).impl,
     });
     const cards = await gateway.writeStepCards({
@@ -135,7 +143,7 @@ describe("model gateway", () => {
 
   it("retries after invalid JSON with the failure reason and then uses the second answer", async () => {
     const fake = provider(async (attempt) => (attempt === 1 ? "not json" : planJson));
-    const gateway = createModelGateway({ provider: fake.impl });
+    const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
     const plan = await gateway.splitPlan({ goal, totalMinutes: 25, splitFiner: false });
     expect(plan.source).toBe("generated");
     expect(fake.calls).toHaveLength(2);
@@ -145,7 +153,7 @@ describe("model gateway", () => {
 
   it("returns an explicit failure, not a stored plan, when every answer is invalid JSON", async () => {
     const fake = provider(async () => '{"steps":[]}');
-    const gateway = createModelGateway({ provider: fake.impl });
+    const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
     const plan = await gateway.splitPlan({ goal, totalMinutes: 40, splitFiner: false });
     expect(plan).toEqual({ source: "failed", reason: "checks" });
     expect(fake.calls).toHaveLength(3);
@@ -154,6 +162,7 @@ describe("model gateway", () => {
   it("returns a timeout failure, not a stored line, when the provider is too slow", async () => {
     let calls = 0;
     const gateway = createModelGateway({
+      prompts: seedPromptSource(),
       timeLimitMs: 20,
       provider: ({ signal }) => {
         calls += 1;
@@ -176,6 +185,7 @@ describe("model gateway", () => {
   it("returns a request failure when the provider fails, and logs neither user text nor the key", async () => {
     const logs: unknown[] = [];
     const gateway = createModelGateway({
+      prompts: seedPromptSource(),
       log: (event) => logs.push(event),
       provider: async () => {
         throw new Error(`provider failed for ${userMessage} with ${apiKey}`);
@@ -192,6 +202,7 @@ describe("model gateway", () => {
   it("retries a line that fails the check, then fails without showing the rejected line", async () => {
     const rejected = "You should close your eyes.";
     const gateway = createModelGateway({
+      prompts: seedPromptSource(),
       provider: async () => JSON.stringify({ reply: rejected }),
     });
     const reply = await gateway.writeRestReply({
@@ -210,6 +221,7 @@ describe("model gateway", () => {
 
     let called = false;
     const gateway = createServerModelGateway({
+      prompts: seedPromptSource(),
       env: {
         NEXT_PUBLIC_MODEL_API_KEY: apiKey,
         MODEL_API_URL: "https://models.example/v1/chat/completions",
@@ -230,6 +242,7 @@ describe("model gateway", () => {
     let seenUrl = "";
     let seenAuth = "";
     const gateway = createServerModelGateway({
+      prompts: seedPromptSource(),
       env: {
         MODEL_API_KEY: apiKey,
         MODEL_API_URL: "https://models.example/v1/chat/completions",
@@ -292,12 +305,12 @@ describe("model gateway", () => {
     const oneWayKinds = ["step_card", "stuck_story", "return_popup"] as const;
 
     it("test_201_ac1_rest_reply_allows_a_question_and_you", () => {
-      const checked = checkCompanionLine(chatWithQuestion, "rest_reply");
+      const checked = checkLine(chatWithQuestion, "rest_reply");
       expect(checked).toEqual({ ok: true, text: chatWithQuestion });
     });
 
     it("test_201_ac1_rest_reply_allows_at_most_one_question", () => {
-      const checked = checkCompanionLine(
+      const checked = checkLine(
         "Do you see it? Do you hear it? I keep my notes dry.",
         "rest_reply",
       );
@@ -306,18 +319,18 @@ describe("model gateway", () => {
 
     it("test_215_ac1_rest_reply_may_end_on_its_question", () => {
       const text = "I keep my notes dry under my coat. Do you see the wind on the mesa?";
-      expect(checkCompanionLine(text, "rest_reply")).toEqual({ ok: true, text });
+      expect(checkLine(text, "rest_reply")).toEqual({ ok: true, text });
     });
 
     it("test_215_ac2_rest_reply_without_a_full_stop_or_question_mark_is_rejected", () => {
-      const checked = checkCompanionLine("I keep my notes dry under my coat", "rest_reply");
+      const checked = checkLine("I keep my notes dry under my coat", "rest_reply");
       expect(checked.ok).toBe(false);
       if (!checked.ok) expect(checked.rejectedRules).toContain("form");
     });
 
     it("test_215_ac3_one_way_lines_ending_on_a_question_are_still_rejected", () => {
       for (const kind of oneWayKinds) {
-        const checked = checkCompanionLine("I keep my notes dry. Is the wind on the mesa?", kind);
+        const checked = checkLine("I keep my notes dry. Is the wind on the mesa?", kind);
         expect(checked.ok, kind).toBe(false);
         if (!checked.ok) expect(checked.rejectedRules, kind).toContain("form");
       }
@@ -333,7 +346,7 @@ describe("model gateway", () => {
         ["Do you see it? You should close your eyes, I think.", "cmd"],
       ];
       for (const [text, rule] of cases) {
-        const checked = checkCompanionLine(text, "rest_reply", ["gadget"]);
+        const checked = checkLine(text, "rest_reply", ["gadget"]);
         expect(checked.ok, text).toBe(false);
         if (!checked.ok) expect(checked.rejectedRules, text).toContain(rule);
       }
@@ -341,11 +354,11 @@ describe("model gateway", () => {
 
     it("test_201_ac2_one_way_lines_still_reject_a_question_and_you", () => {
       for (const kind of oneWayKinds) {
-        const question = checkCompanionLine("Is the wind on the mesa? I keep my notes dry.", kind);
+        const question = checkLine("Is the wind on the mesa? I keep my notes dry.", kind);
         expect(question.ok, kind).toBe(false);
         if (!question.ok) expect(question.rejectedRules, kind).toContain("question");
 
-        const addressed = checkCompanionLine("I keep my notes dry for you.", kind);
+        const addressed = checkLine("I keep my notes dry for you.", kind);
         expect(addressed.ok, kind).toBe(false);
         if (!addressed.ok) expect(addressed.rejectedRules, kind).toEqual(["you"]);
       }
@@ -353,6 +366,7 @@ describe("model gateway", () => {
 
     it("test_201_ac3_gateway_returns_a_rest_reply_with_a_question", async () => {
       const gateway = createModelGateway({
+        prompts: seedPromptSource(),
         provider: async () => JSON.stringify({ reply: chatWithQuestion }),
       });
       const reply = await gateway.writeRestReply({ userMessage, facts: "A quiet room." });
@@ -369,14 +383,14 @@ describe("model gateway", () => {
 
     async function stuckPromptFor(pauseNumber: number): Promise<string> {
       const fake = provider(async () => stuckJson);
-      const gateway = createModelGateway({ provider: fake.impl });
+      const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
       await gateway.writeStuckStory({ pauseNumber, facts: "He is at a table." });
       return fake.calls[0] ?? "";
     }
 
     async function returnPromptFor(trigger: "rest" | "absence"): Promise<string> {
       const fake = provider(async () => returnJson);
-      const gateway = createModelGateway({ provider: fake.impl });
+      const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
       await gateway.writeReturnPopup({ trigger, facts: "He is at a table.", awayMinutes: 12 });
       return fake.calls[0] ?? "";
     }
@@ -435,7 +449,7 @@ describe("model gateway", () => {
 
     it("test_202_ac3_stuck_and_return_prompts_carry_no_goal_or_step_text", async () => {
       const fake = provider(async (attempt) => (attempt === 1 ? stuckJson : returnJson));
-      const gateway = createModelGateway({ provider: fake.impl });
+      const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
       await gateway.writeStuckStory({
         pauseNumber: 3,
         facts: "He is at a table.",
@@ -464,7 +478,7 @@ describe("model gateway", () => {
       const fake = provider(async (attempt) =>
         attempt === 1 ? story("Is the ink dry? I wait at my desk.") : story(goodStory),
       );
-      const gateway = createModelGateway({ provider: fake.impl });
+      const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
       const result = await gateway.writeStuckStory({ pauseNumber: 1, facts });
       expect(result).toEqual({ source: "generated", text: goodStory });
       expect(fake.calls).toHaveLength(2);
@@ -477,7 +491,7 @@ describe("model gateway", () => {
       const fake = provider(async (attempt) =>
         attempt < 3 ? story("You see the snag.") : story(goodStory),
       );
-      const gateway = createModelGateway({ provider: fake.impl });
+      const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
       const result = await gateway.writeStuckStory({ pauseNumber: 2, facts });
       expect(result).toEqual({ source: "generated", text: goodStory });
       expect(fake.calls).toHaveLength(3);
@@ -486,6 +500,7 @@ describe("model gateway", () => {
     it("test_44_ac1_every_call_returns_an_explicit_failure_and_no_stored_text", async () => {
       const logs: { source: string; reason?: string }[] = [];
       const gateway = createModelGateway({
+        prompts: seedPromptSource(),
         provider: async () => {
           throw new Error("network down");
         },
@@ -552,7 +567,7 @@ describe("model gateway", () => {
     it("test_44_ac2_the_gateway_checks_lines_against_the_run_and_against_each_other", async () => {
       const repeat = "I am held on a small snag in my work.";
       const fake = provider(async () => story(repeat));
-      const gateway = createModelGateway({ provider: fake.impl });
+      const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
       const result = await gateway.writeStuckStory({
         pauseNumber: 1,
         facts,
@@ -562,11 +577,13 @@ describe("model gateway", () => {
       expect(fake.calls[1]).toMatch(/already shown/i);
 
       const cards = await createModelGateway({
+        prompts: seedPromptSource(),
         provider: async () => JSON.stringify({ cards: [card, card] }),
       }).writeStepCards({ minutes: 25, facts });
       expect(cards).toEqual({ source: "failed", reason: "checks" });
 
       const popup = await createModelGateway({
+        prompts: seedPromptSource(),
         provider: async () => returnJson,
       }).writeReturnPopup({
         trigger: "rest",
@@ -592,7 +609,7 @@ describe("model gateway", () => {
       const reuse = "My table wobbles under my elbow.";
       const fresh = "My pencil snapped at the tip.";
       const fake = provider(async (attempt) => story(attempt === 1 ? reuse : fresh));
-      const gateway = createModelGateway({ provider: fake.impl });
+      const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
       const result = await gateway.writeStuckStory({ pauseNumber: 1, facts, lastCard });
       expect(result).toEqual({ source: "generated", text: fresh });
       expect(fake.calls[1]).toMatch(/last card/i);
@@ -600,7 +617,10 @@ describe("model gateway", () => {
 
     it("test_44_ac4_a_line_is_checked_before_it_is_returned_and_never_after", async () => {
       const rejected = "I keep the papers flat on the table.";
-      const gateway = createModelGateway({ provider: async () => story(rejected) });
+      const gateway = createModelGateway({
+        prompts: seedPromptSource(),
+        provider: async () => story(rejected),
+      });
       const result = await gateway.writeStuckStory({
         pauseNumber: 1,
         facts,

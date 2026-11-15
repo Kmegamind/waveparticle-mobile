@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createModelGateway, type ModelProvider } from "@/lib/model-gateway";
+import { seedPromptSource } from "./support/seed-prompts";
 
 // Issue #258 (#41): his closing line and the line he still carries, from one live call.
 
@@ -27,7 +28,7 @@ const input = {
 describe("#258 AC3 AC4 the closing call", () => {
   it("returns both lines when they pass the existing checks", async () => {
     const provider = fake([answer(closing, carry)]);
-    const gateway = createModelGateway({ provider: provider.impl });
+    const gateway = createModelGateway({ prompts: seedPromptSource(), provider: provider.impl });
     expect(await gateway.writeClosingLine(input)).toEqual({
       source: "generated",
       closingLine: closing,
@@ -41,7 +42,7 @@ describe("#258 AC3 AC4 the closing call", () => {
       answer(closing, "Do I know what Born thinks?"),
       answer(closing, carry),
     ]);
-    const gateway = createModelGateway({ provider: provider.impl });
+    const gateway = createModelGateway({ prompts: seedPromptSource(), provider: provider.impl });
     const result = await gateway.writeClosingLine(input);
     expect(result.source).toBe("generated");
     expect(provider.prompts).toHaveLength(3);
@@ -49,20 +50,31 @@ describe("#258 AC3 AC4 the closing call", () => {
 
   it("refuses a carried line that repeats the closing line", async () => {
     const provider = fake([answer(closing, closing)]);
-    const gateway = createModelGateway({ provider: provider.impl, maxAttempts: 2 });
+    const gateway = createModelGateway({
+      prompts: seedPromptSource(),
+      provider: provider.impl,
+      maxAttempts: 2,
+    });
     expect(await gateway.writeClosingLine(input)).toEqual({ source: "failed", reason: "checks" });
   });
 
   it("refuses a forbidden term and a line over the length limit", async () => {
     const long = `I ${"walk ".repeat(45)}home.`;
     const provider = fake([answer("I think of Los Alamos tonight.", carry), answer(long, carry)]);
-    const gateway = createModelGateway({ provider: provider.impl, maxAttempts: 2 });
+    const gateway = createModelGateway({
+      prompts: seedPromptSource(),
+      provider: provider.impl,
+      maxAttempts: 2,
+    });
     expect((await gateway.writeClosingLine(input)).source).toBe("failed");
   });
 
   it("builds the prompt from what happened to him, in the END-TONE", async () => {
     const provider = fake([answer(closing, carry)]);
-    await createModelGateway({ provider: provider.impl }).writeClosingLine(input);
+    await createModelGateway({
+      prompts: seedPromptSource(),
+      provider: provider.impl,
+    }).writeClosingLine(input);
     const prompt = provider.prompts[0];
     expect(prompt).toContain("FACT_ONE. FACT_TWO.");
     expect(prompt).toContain("LAST_MOMENT.");

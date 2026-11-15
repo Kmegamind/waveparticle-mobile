@@ -1,3 +1,4 @@
+import { getActivePrompt, type PromptSource } from "@/lib/prompts/repository";
 import { createModelGateway } from "./gateway";
 import { createHttpModelProvider } from "./http";
 import type { GatewayLog, ModelGateway } from "./types";
@@ -12,6 +13,8 @@ export function createServerModelGateway(
     timeLimitMs?: number;
     maxAttempts?: number;
     log?: (event: GatewayLog) => void;
+    /** The prompt source; the database through getActivePrompt unless a test passes another. */
+    prompts?: PromptSource;
   } = {},
 ): ModelGateway {
   const source = options.env ?? process.env;
@@ -21,6 +24,7 @@ export function createServerModelGateway(
   const configured = apiKey.length > 0 && apiUrl.length > 0 && model.length > 0;
 
   return createModelGateway({
+    prompts: options.prompts ?? getActivePrompt,
     timeLimitMs: options.timeLimitMs,
     maxAttempts: options.maxAttempts,
     log: options.log,

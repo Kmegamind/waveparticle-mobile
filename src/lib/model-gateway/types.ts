@@ -9,7 +9,7 @@ export type LineSource = "generated" | "failed";
  * ran out, `checks` every answer failed the parse or the line checks. No stored text is returned;
  * a screen turns this into the calm failure message with a retry button.
  */
-export type GatewayFailureReason = "request" | "timeout" | "checks";
+export type GatewayFailureReason = "request" | "timeout" | "checks" | "prompt";
 
 export type GatewayFailure = { source: "failed"; reason: GatewayFailureReason };
 

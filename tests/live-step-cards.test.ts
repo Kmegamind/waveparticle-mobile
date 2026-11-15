@@ -10,6 +10,12 @@ import {
 } from "@/lib/prototype/focus-cards";
 import { maxStoryCards } from "@/lib/prototype/session";
 import { startStory } from "@/lib/story/start";
+import { seedPromptSource, seedLineLimits } from "./support/seed-prompts";
+import type { CompanionKind } from "@/lib/model-gateway/types";
+
+// #282: the length limits are data in the prompt rows; tests use the seed's.
+const checkLine = (text: string, kind: CompanionKind, forbidTerms: string[] = []) =>
+  checkCompanionLine(text, kind, forbidTerms, seedLineLimits(kind));
 
 // #43 US-AI-2 (criteria corrected 2026-11-13) and #216.
 
@@ -58,7 +64,7 @@ describe("#216 the step-cards prompt holds no user-written text", () => {
 
   it("the gateway prompt has no Step line", async () => {
     const fake = recordingProvider([JSON.stringify({ cards: ["I look at the canyon."] })]);
-    await createModelGateway({ provider: fake.impl }).writeStepCards({
+    await createModelGateway({ prompts: seedPromptSource(), provider: fake.impl }).writeStepCards({
       minutes: 20,
       facts: "I am at Jemez Springs.",
     });
@@ -105,7 +111,7 @@ describe("#43 AC1 the Story is divided across the Plan's Steps", () => {
 
   it("the prompt states the Step's place in the Story and the number of cards", async () => {
     const fake = recordingProvider([JSON.stringify({ cards: ["I look at the canyon."] })]);
-    await createModelGateway({ provider: fake.impl }).writeStepCards({
+    await createModelGateway({ prompts: seedPromptSource(), provider: fake.impl }).writeStepCards({
       minutes: 25,
       facts: "I am at Jemez Springs.",
       stepNumber: 2,
@@ -126,7 +132,10 @@ describe("#43 AC1 the Story is divided across the Plan's Steps", () => {
       "Mud dries on my boots.",
     ];
     const fake = recordingProvider([JSON.stringify({ cards })]);
-    const result = await createModelGateway({ provider: fake.impl }).writeStepCards({
+    const result = await createModelGateway({
+      prompts: seedPromptSource(),
+      provider: fake.impl,
+    }).writeStepCards({
       minutes: 10,
       facts: "I am at Jemez Springs.",
       storyCards: 2,
@@ -137,19 +146,19 @@ describe("#43 AC1 the Story is divided across the Plan's Steps", () => {
 
 describe("#43 AC2 CARD-LENGTH", () => {
   it("a story card is one to three sentences and at most 45 words", () => {
-    expect(checkCompanionLine(words(45), "step_card").ok).toBe(true);
-    expect(checkCompanionLine("I wait. My map is wet. I fold it.", "step_card").ok).toBe(true);
-    const long = checkCompanionLine(words(46), "step_card");
+    expect(checkLine(words(45), "step_card").ok).toBe(true);
+    expect(checkLine("I wait. My map is wet. I fold it.", "step_card").ok).toBe(true);
+    const long = checkLine(words(46), "step_card");
     expect(long).toEqual({ ok: false, rejectedRules: ["len"] });
-    const four = checkCompanionLine("I wait. My map is wet. I fold it. I stand.", "step_card");
+    const four = checkLine("I wait. My map is wet. I fold it. I stand.", "step_card");
     expect(four).toEqual({ ok: false, rejectedRules: ["len"] });
   });
 
   it("the background card is at most 70 words, with no sentence limit", () => {
-    expect(checkCompanionLine(words(70), "background_card").ok).toBe(true);
+    expect(checkLine(words(70), "background_card").ok).toBe(true);
     const five = "I am here. My map is wet. I fold it. I stand. I look at the mesa.";
-    expect(checkCompanionLine(five, "background_card").ok).toBe(true);
-    expect(checkCompanionLine(words(71), "background_card")).toEqual({
+    expect(checkLine(five, "background_card").ok).toBe(true);
+    expect(checkLine(words(71), "background_card")).toEqual({
       ok: false,
       rejectedRules: ["len"],
     });
@@ -159,11 +168,13 @@ describe("#43 AC2 CARD-LENGTH", () => {
     const background = words(60);
     const answer = JSON.stringify({ cards: [background, "My map is wet."] });
     const asBackground = await createModelGateway({
+      prompts: seedPromptSource(),
       provider: recordingProvider([answer]).impl,
     }).writeStepCards({ minutes: 20, facts: "f", background: true });
     expect(asBackground).toEqual({ source: "generated", cards: [background, "My map is wet."] });
 
     const asCard = await createModelGateway({
+      prompts: seedPromptSource(),
       provider: recordingProvider([answer, answer, answer]).impl,
     }).writeStepCards({ minutes: 20, facts: "f" });
     expect(asCard).toEqual({ source: "failed", reason: "checks" });
@@ -171,7 +182,7 @@ describe("#43 AC2 CARD-LENGTH", () => {
 
   it("the prompt carries the limits", async () => {
     const fake = recordingProvider([JSON.stringify({ cards: ["I look at the canyon."] })]);
-    await createModelGateway({ provider: fake.impl }).writeStepCards({
+    await createModelGateway({ prompts: seedPromptSource(), provider: fake.impl }).writeStepCards({
       minutes: 20,
       facts: "f",
       background: true,
@@ -195,7 +206,10 @@ describe("#43 AC2 CARD-NEW every card says something new", () => {
     const repeat = JSON.stringify({ cards: ["I drove out to Jemez Springs."] });
     const fresh = JSON.stringify({ cards: ["My boots sink in the wet sand."] });
     const fake = recordingProvider([repeat, fresh]);
-    const result = await createModelGateway({ provider: fake.impl }).writeStepCards({
+    const result = await createModelGateway({
+      prompts: seedPromptSource(),
+      provider: fake.impl,
+    }).writeStepCards({
       minutes: 20,
       facts: "f",
       earlierLines: ["I drove out to Jemez Springs."],
@@ -209,7 +223,10 @@ describe("#43 AC3 generated again within the time limit, then the failure messag
   it("returns an explicit failure and no text when every attempt fails the checks", async () => {
     const bad = JSON.stringify({ cards: [words(80)] });
     const fake = recordingProvider([bad, bad, bad]);
-    const result = await createModelGateway({ provider: fake.impl }).writeStepCards({
+    const result = await createModelGateway({
+      prompts: seedPromptSource(),
+      provider: fake.impl,
+    }).writeStepCards({
       minutes: 20,
       facts: "f",
     });
@@ -267,7 +284,7 @@ describe("#43 review: the prompt marks what is new in this Step (CARD-NEW)", () 
 
   it("the prompt labels earlier facts and this part's facts", async () => {
     const fake = recordingProvider([JSON.stringify({ cards: ["I look at the canyon."] })]);
-    await createModelGateway({ provider: fake.impl }).writeStepCards({
+    await createModelGateway({ prompts: seedPromptSource(), provider: fake.impl }).writeStepCards({
       minutes: 20,
       facts: "I drove to Jemez Springs.",
       stepFacts: "Groves listens to me about the mesa.",
@@ -285,7 +302,7 @@ describe("#43 review: the prompt marks what is new in this Step (CARD-NEW)", () 
     expect(input.stepFacts).toBe("");
 
     const fake = recordingProvider([JSON.stringify({ cards: ["I look at the canyon."] })]);
-    await createModelGateway({ provider: fake.impl }).writeStepCards({
+    await createModelGateway({ prompts: seedPromptSource(), provider: fake.impl }).writeStepCards({
       minutes: 5,
       facts: "I drove to Jemez Springs.",
       stepFacts: "",
@@ -297,7 +314,7 @@ describe("#43 review: the prompt marks what is new in this Step (CARD-NEW)", () 
 
   it("the word limit of 45 is for story cards, so the background card keeps its 70", async () => {
     const fake = recordingProvider([JSON.stringify({ cards: ["I look at the canyon."] })]);
-    await createModelGateway({ provider: fake.impl }).writeStepCards({
+    await createModelGateway({ prompts: seedPromptSource(), provider: fake.impl }).writeStepCards({
       minutes: 20,
       facts: "f",
       background: true,

@@ -47,10 +47,45 @@ function push(rules: string[], id: string, hit: boolean) {
   if (hit) rules.push(id);
 }
 
+/**
+ * Length limits of one kind of line. They are data: each prompt row carries its own in
+ * `params.checks` (#282), so the owner can change them with the prompt.
+ */
+export type LineLimits = { max_words: number; max_sentences?: number; min_sentences?: number };
+
+/** Size limits of a generated plan (the plan_split prompt row's `params.checks`, #282). */
+export type PlanLimits = {
+  title_max_chars: number;
+  step_title_max_chars: number;
+  description_max_words: number;
+};
+
+const isCount = (value: unknown): value is number =>
+  typeof value === "number" && Number.isInteger(value) && value >= 0;
+
+/** The limits in a prompt row, or null when they are missing or not whole numbers. */
+export function readLineLimits(value: unknown): LineLimits | null {
+  if (typeof value !== "object" || value === null) return null;
+  const limits = value as Record<string, unknown>;
+  if (!isCount(limits.max_words)) return null;
+  for (const name of ["max_sentences", "min_sentences"]) {
+    if (limits[name] !== undefined && !isCount(limits[name])) return null;
+  }
+  return limits as LineLimits;
+}
+
+export function readPlanLimits(value: unknown): PlanLimits | null {
+  if (typeof value !== "object" || value === null) return null;
+  const limits = value as Record<string, unknown>;
+  const names = ["title_max_chars", "step_title_max_chars", "description_max_words"];
+  return names.every((name) => isCount(limits[name])) ? (limits as PlanLimits) : null;
+}
+
 export function checkCompanionLine(
   raw: string,
   kind: CompanionKind,
-  forbidTerms: string[] = [],
+  forbidTerms: string[],
+  limits: LineLimits,
 ): { ok: true; text: string } | { ok: false; rejectedRules: string[] } {
   const text = cleanLine(raw);
   const rejected: string[] = [];
@@ -78,7 +113,7 @@ export function checkCompanionLine(
   push(rejected, "name", OWN_NAME.test(text));
   push(rejected, "first_person", !FIRST_PERSON.test(text));
   push(rejected, "blame", kind === "return_popup" && BLAME.test(text));
-  push(rejected, "len", lengthFails(kind, sentenceCount, wordCount));
+  push(rejected, "len", lengthFails(limits, sentenceCount, wordCount));
   push(
     rejected,
     "leak",
@@ -89,19 +124,20 @@ export function checkCompanionLine(
   return { ok: true, text };
 }
 
-function lengthFails(kind: CompanionKind, sentenceCount: number, wordCount: number): boolean {
-  // CARD-LENGTH (2026-11-12): a story card is 1 to 3 sentences and at most 45 words; the
-  // background card is at most 70 words and has no sentence limit.
-  if (kind === "step_card") return sentenceCount > 3 || wordCount > 45;
-  if (kind === "background_card") return wordCount > 70;
-  if (kind === "stuck_story") return sentenceCount > 2 || wordCount > 20;
-  if (kind === "rest_reply") return sentenceCount < 1 || sentenceCount > 3 || wordCount > 80;
-  return sentenceCount > 3 || wordCount > 40;
+// The seed keeps the values of CARD-LENGTH (2026-11-12): a story card is 1 to 3 sentences and at
+// most 45 words; the background card is at most 70 words with no sentence limit.
+function lengthFails(limits: LineLimits, sentenceCount: number, wordCount: number): boolean {
+  return (
+    wordCount > limits.max_words ||
+    (limits.max_sentences !== undefined && sentenceCount > limits.max_sentences) ||
+    (limits.min_sentences !== undefined && sentenceCount < limits.min_sentences)
+  );
 }
 
 export function checkPlan(
   value: unknown,
   totalMinutes: number,
+  limits: PlanLimits,
 ): { ok: true; plan: GeneratedPlan } | { ok: false; rejectedRules: string[] } {
   const rejected: string[] = [];
   const record = isRecord(value) ? value : null;
@@ -109,7 +145,11 @@ export function checkPlan(
   const steps = Array.isArray(record?.steps) ? record.steps : null;
 
   push(rejected, "parse", record === null || steps === null);
-  push(rejected, "empty", title.length === 0 || title.length > 40 || steps?.length === 0);
+  push(
+    rejected,
+    "empty",
+    title.length === 0 || title.length > limits.title_max_chars || steps?.length === 0,
+  );
   push(rejected, "failure_text", FAILURE_WORDING.test(title));
   push(rejected, "cjk", CJK.test(title));
 
@@ -120,8 +160,16 @@ export function checkPlan(
       const description = typeof item.description === "string" ? cleanLine(item.description) : "";
       const minutes = item.minutes;
       const minutesOk = typeof minutes === "number" && Number.isInteger(minutes) && minutes > 0;
-      push(rejected, "empty", stepTitle.length === 0 || stepTitle.length > 80);
-      push(rejected, "empty", description.length === 0 || words(description) > 40);
+      push(
+        rejected,
+        "empty",
+        stepTitle.length === 0 || stepTitle.length > limits.step_title_max_chars,
+      );
+      push(
+        rejected,
+        "empty",
+        description.length === 0 || words(description) > limits.description_max_words,
+      );
       push(rejected, "minutes", !minutesOk);
       push(rejected, "failure_text", FAILURE_WORDING.test(`${stepTitle} ${description}`));
       push(rejected, "cjk", CJK.test(`${stepTitle} ${description}`));
