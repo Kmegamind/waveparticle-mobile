@@ -1,6 +1,8 @@
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
+import { adminAnswer, isAdminPath, readContentRole } from "@/lib/admin/roles";
 
 // #287: the admin and writer roles, the server-side role check and the admin shell.
 
@@ -67,5 +69,102 @@ describe("content roles migration (#287)", () => {
 
   it("test_287_ac4_no_service_role_key_is_mentioned", () => {
     expect(sql()).not.toMatch(/service_role|service-role/);
+  });
+});
+
+describe("server role check (#287)", () => {
+  type Rpc = (name: string) => Promise<{ data: unknown; error: unknown }>;
+  const clientWith = (rpc: Rpc) => ({ rpc }) as unknown as SupabaseClient;
+
+  it("test_287_ac2_only_admin_and_paths_under_it_are_admin_paths", () => {
+    expect(isAdminPath("/admin")).toBe(true);
+    expect(isAdminPath("/admin/")).toBe(true);
+    expect(isAdminPath("/admin/app-text")).toBe(true);
+    expect(isAdminPath("/admin/anything/deeper")).toBe(true);
+    for (const other of ["/", "/administer", "/admin-notes", "/me", "/auth/sign-in"]) {
+      expect(isAdminPath(other)).toBe(false);
+    }
+  });
+
+  it("test_287_ac4_reads_the_role_through_the_users_own_client", async () => {
+    const calls: string[] = [];
+    const client = clientWith(async (name) => {
+      calls.push(name);
+      return { data: "writer", error: null };
+    });
+    expect(await readContentRole(client)).toBe("writer");
+    expect(calls).toEqual(["content_role"]);
+    expect(await readContentRole(clientWith(async () => ({ data: "admin", error: null })))).toBe(
+      "admin",
+    );
+  });
+
+  it("test_287_ac4_a_failed_role_read_counts_as_no_role", async () => {
+    const answers: Rpc[] = [
+      async () => ({ data: null, error: null }),
+      async () => ({ data: null, error: { code: "PGRST202", message: "function not found" } }),
+      async () => ({ data: "owner", error: null }),
+      async () => {
+        throw new Error("network");
+      },
+    ];
+    for (const rpc of answers) expect(await readContentRole(clientWith(rpc))).toBeNull();
+  });
+
+  it("test_287_ac2_no_user_or_no_role_gets_not_found", () => {
+    expect(adminAnswer("/admin", false, null)).toBe("not-found");
+    expect(adminAnswer("/admin/app-text", true, null)).toBe("not-found");
+  });
+
+  it("test_287_ac3_a_role_passes_and_other_paths_are_untouched", () => {
+    expect(adminAnswer("/admin", true, "writer")).toBe("pass");
+    expect(adminAnswer("/admin/publish-history", true, "admin")).toBe("pass");
+    expect(adminAnswer("/me", false, null)).toBe("pass");
+  });
+
+  it("test_287_ac4_the_check_is_server_code_only", () => {
+    expect(read("src/lib/admin/roles.ts")).not.toMatch(/["']use client["']/);
+    const session = read("src/lib/supabase/session.ts");
+    expect(session).toContain("readContentRole");
+    expect(session).toContain("adminAnswer");
+    // The admin layout checks again on the server.
+    expect(read("src/app/admin/layout.tsx")).toMatch(/readContentRole[\s\S]*notFound\(\)/);
+  });
+});
+
+describe("admin shell (#287)", () => {
+  const adminCss = () => {
+    const css = read("src/app/globals.css");
+    return css.slice(css.indexOf("/* The content admin (issue 287)"));
+  };
+
+  it("test_287_ac5_admin_styles_use_tokens_only", () => {
+    const css = adminCss();
+    expect(css.length).toBeGreaterThan(100);
+    expect(css).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i);
+    expect(css).not.toMatch(/font-family:\s*(?!\s|var\()/);
+    // Lengths come from tokens; literal: 1 px and 2 px lines, the DESIGN.md title letter spacing
+    // (-0.02em, -0.025em) and the wide-screen breakpoint (a media query cannot read a token).
+    for (const length of css.match(/\b\d+(\.\d+)?(px|rem|em|ch)\b/g) ?? []) {
+      expect(["1px", "2px", "0.02em", "0.025em", "56.25rem"]).toContain(length);
+    }
+  });
+
+  it("test_287_ac3_the_menu_follows_the_prototype", () => {
+    const shell = read("src/app/admin/admin-shell.tsx");
+    for (const text of [
+      'aria-label="Admin pages"',
+      "WaveParticle",
+      "Content admin",
+      '"Content"',
+      '"Review and logs"',
+      '"ADM-07"',
+      '"App text"',
+      '"ADM-12"',
+      '"Publish history"',
+      "SignOutButton",
+    ]) {
+      expect(shell).toContain(text);
+    }
   });
 });

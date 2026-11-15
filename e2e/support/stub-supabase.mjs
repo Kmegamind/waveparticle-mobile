@@ -3,16 +3,19 @@
 //
 // Each test signs in with its own access token, so parallel tests never share data:
 //   POST /__seed   { token, user: { id, email }, tables: { profiles, goals, steps, sessions,
-//                  session_steps, session_lines }, missingFunctions?: ["delete_my_account"] }
+//                  session_steps, session_lines }, missingFunctions?: ["delete_my_account"],
+//                  contentRole?: "admin" | "writer" }
 //   GET  /__tables?token=…   the dataset after the app's writes, with auth_users ([] once deleted)
 //   GET  /health
 //   GET  /auth/v1/user                (Authorization: Bearer <token>)
 //   GET|PATCH /rest/v1/<table>?…      eq., in.(…), order, limit, select (all columns returned)
 //   POST /rest/v1/rpc/get_active_prompts  { reader_token } → the seed prompts in docs/ai/prompts
 //        when the token is STUB_PROMPTS_READ_TOKEN, otherwise no rows, as the real function (#282)
+//   POST /rest/v1/rpc/content_role        the seeded contentRole ("admin", "writer") or null, as
+//                                          public.content_role() for the caller (#287)
 //   POST /rest/v1/rpc/delete_my_account   mirrors the migration (#103): the caller's rows, then
 //                                          the auth user
-//   POST /auth/v1/logout              204
+//   POST /auth/v1/logout              204, also to the browser (cross-origin headers, #287)
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import { readPromptDirectory } from "../../scripts/prompts/prompt-files.mjs";
@@ -121,6 +124,7 @@ createServer(async (request, response) => {
       tables,
       deleted: false,
       missingFunctions: body.missingFunctions ?? [],
+      contentRole: body.contentRole ?? null,
     });
     return json(response, 200, { ok: true });
   }
@@ -136,7 +140,18 @@ createServer(async (request, response) => {
 
   const dataset = datasets.get(tokenOf(request));
 
-  if (path === "/auth/v1/logout" && request.method === "POST") return json(response, 204);
+  // Sign out runs in the browser (another origin than the stub), so only this endpoint answers
+  // cross-origin requests (#287: Sign out in the admin).
+  if (path === "/auth/v1/logout") {
+    response.setHeader("access-control-allow-origin", request.headers.origin ?? "*");
+    response.setHeader(
+      "access-control-allow-headers",
+      request.headers["access-control-request-headers"] ?? "*",
+    );
+    response.setHeader("access-control-allow-methods", "POST, OPTIONS");
+    if (request.method === "OPTIONS") return json(response, 204);
+    if (request.method === "POST") return json(response, 204);
+  }
 
   if (path === "/auth/v1/user") {
     if (!dataset || dataset.deleted) return json(response, 401, { code: 401, msg: "invalid JWT" });
@@ -158,6 +173,11 @@ createServer(async (request, response) => {
     const body = (await readBody(request)) ?? {};
     const allowed = promptReaderToken.length > 0 && body.reader_token === promptReaderToken;
     return json(response, 200, allowed ? readPromptDirectory(promptDirectory) : []);
+  }
+
+  if (path === "/rest/v1/rpc/content_role" && request.method === "POST") {
+    if (!dataset || dataset.deleted) return json(response, 401, { message: "JWT required" });
+    return json(response, 200, dataset.contentRole);
   }
 
   if (path === "/rest/v1/rpc/delete_my_account" && request.method === "POST") {
