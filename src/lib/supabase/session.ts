@@ -2,7 +2,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isPrototypeEnabled, isTryPath } from "../prototype/config";
-import { adminAnswer, isAdminPath, readContentRole } from "../admin/roles";
+import { adminAnswer, isAdminPath, readContentRole, withAdminCacheControl } from "../admin/roles";
 import { readSupabaseEnv } from "./env";
 
 /** No page lives here, so a rewrite to it renders the app's normal 404 page with status 404. */
@@ -50,10 +50,13 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   // The content admin (#287): no account with a role → the normal 404, before the sign-in redirect.
   if (isAdminPath(pathname)) {
     const role = data.user ? await readContentRole(supabase) : null;
+    // Admin responses are never stored by the browser (#288), the 404 included.
     if (adminAnswer(pathname, Boolean(data.user), role) === "not-found") {
-      return withCookies(NextResponse.rewrite(new URL(NOT_FOUND_PATH, request.url)), response);
+      return withAdminCacheControl(
+        withCookies(NextResponse.rewrite(new URL(NOT_FOUND_PATH, request.url)), response),
+      );
     }
-    return response;
+    return withAdminCacheControl(response);
   }
 
   if (!data.user && !isPublicPath(pathname, isPrototypeEnabled())) {

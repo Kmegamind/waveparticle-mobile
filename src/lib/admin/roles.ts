@@ -36,3 +36,12 @@ export function adminAnswer(
   if (!isAdminPath(pathname)) return "pass";
   return hasUser && role !== null ? "pass" : "not-found";
 }
+
+/** Admin pages are never kept by the browser or a shared cache, so Back after Sign out shows nothing (#288). */
+export const ADMIN_CACHE_CONTROL = "private, no-store, max-age=0";
+
+/** Marks an /admin response as not to be stored. */
+export function withAdminCacheControl<T extends Response>(response: T): T {
+  response.headers.set("cache-control", ADMIN_CACHE_CONTROL);
+  return response;
+}

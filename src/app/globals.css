@@ -3404,6 +3404,150 @@ a {
   max-width: var(--admin-measure);
 }
 
+/* ADM-07 App text (issue 288): one card per key, in the spirit of the content-admin prototype. */
+.admin-notice {
+  border: 1px solid var(--edge);
+  border-radius: var(--r-field);
+  margin: var(--space-title-after) 0 0;
+  max-width: var(--admin-measure);
+  padding: var(--space-small-gap);
+}
+
+.admin-text-list {
+  display: grid;
+  gap: var(--space-row-gap);
+  list-style: none;
+  margin: var(--space-title-after) 0 0;
+  max-width: var(--admin-measure);
+  padding: 0;
+}
+
+.admin-text {
+  background: var(--raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-paper);
+  display: grid;
+  gap: var(--space-small-gap);
+  min-width: 0;
+  padding: var(--space-card-pad);
+}
+
+.admin-text-head {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-control-gap);
+  justify-content: space-between;
+}
+
+.admin-text-key {
+  font-family: var(--type-mono);
+  font-size: var(--text-caption-size);
+  font-weight: 700;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-text-screen,
+.admin-text-state,
+.admin-text-facts dt,
+.admin-text-label {
+  color: var(--ink-2);
+  font-size: var(--text-overline-size);
+  font-weight: 700;
+  letter-spacing: var(--overline-tracking);
+  text-transform: uppercase;
+}
+
+.admin-text-screen {
+  margin: 0;
+}
+
+.admin-text-facts {
+  display: grid;
+  gap: var(--space-row-after);
+  margin: 0;
+}
+
+.admin-text-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-text-form {
+  display: grid;
+  gap: var(--space-row-after);
+}
+
+.admin-text-field {
+  background: var(--raised);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-field);
+  color: var(--ink);
+  font-family: var(--type-sans);
+  font-size: var(--text-body-size);
+  min-height: 3.125rem;
+  padding: var(--space-small-gap);
+  resize: vertical;
+  width: 100%;
+}
+
+.admin-text-field:focus-visible,
+.admin-text-versions summary:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 3px;
+}
+
+.admin-text-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-control-gap);
+}
+
+.admin-text-versions summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  font-size: var(--text-link-size);
+  font-weight: 700;
+  min-height: var(--target);
+}
+
+.admin-text-versions ol {
+  display: grid;
+  gap: var(--space-small-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-text-versions li {
+  border-top: 1px solid var(--hairline);
+  display: grid;
+  gap: var(--space-row-after);
+  padding-top: var(--space-small-gap);
+}
+
+.admin-text-versions p {
+  margin: 0;
+}
+
+.admin-text-body {
+  overflow-wrap: anywhere;
+}
+
+.admin-text-versions .button-small {
+  justify-self: start;
+}
+
+.admin-text-status {
+  color: var(--ink-2);
+  font-size: var(--text-caption-size);
+  margin: 0;
+  min-height: 1lh;
+}
+
 @media (min-width: 56.25rem) {
   .admin-shell {
     grid-template-columns: var(--admin-rail-width) minmax(0, 1fr);
