@@ -1,8 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Who may open the content admin at /admin (#287, docs/decisions/0016). Server code only: the proxy
-// and the admin layout ask the database through the signed-in user's own client. No service-role
-// key is involved; public.content_role() answers for auth.uid() only.
+// and the admin layout ask the database through the signed-in user's own client. No key with full
+// database rights is involved; public.content_role() answers for auth.uid() only.
 
 export type ContentRole = "admin" | "writer";
 
