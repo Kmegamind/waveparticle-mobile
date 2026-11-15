@@ -93,6 +93,41 @@ describe("reading the table on the server (#282)", () => {
     ).rejects.toThrow(/PROMPTS_READ_TOKEN/);
   });
 
+  it("test_282_an_empty_answer_is_a_failed_read_not_every_prompt_missing", async () => {
+    // A wrong or unregistered token gets no rows from get_active_prompts, and no error.
+    await expect(
+      readActivePromptsFromSupabase({
+        env: {
+          NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:3198",
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon",
+          PROMPTS_READ_TOKEN: "unregistered",
+        },
+        fetchImpl: async () =>
+          new Response("[]", { status: 200, headers: { "content-type": "application/json" } }),
+      }),
+    ).rejects.toThrow(/no active prompts/);
+  });
+
+  it("test_282_a_hanging_read_is_given_up_after_its_time_limit", async () => {
+    const fetchImpl: typeof fetch = (_input, init) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new Error("aborted")));
+      });
+    const started = Date.now();
+    await expect(
+      readActivePromptsFromSupabase({
+        env: {
+          NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:3198",
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon",
+          PROMPTS_READ_TOKEN: "t",
+        },
+        fetchImpl,
+        timeoutMs: 50,
+      }),
+    ).rejects.toThrow();
+    expect(Date.now() - started).toBeLessThan(1_000);
+  });
+
   it("test_282_calls_get_active_prompts_with_the_token_and_keeps_only_known_keys", async () => {
     const requests: { url: string; body: string; headers: Headers }[] = [];
     const fetchImpl: typeof fetch = async (input, init) => {

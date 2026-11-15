@@ -96,6 +96,22 @@ function retryPrompt(prompt: string, rejectedRules: string[], hints: PromptRow):
 
 class TimeLimitError extends Error {}
 
+function withinTime<T>(work: Promise<T>, timeoutMs: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new TimeLimitError("timeout")), Math.max(0, timeoutMs));
+    work.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 export function createModelGateway(options: {
   provider: ModelProvider;
   /**
@@ -124,16 +140,19 @@ export function createModelGateway(options: {
     build: (row: PromptRow) => { prompt: string; accept: (raw: string) => Attempt<T> },
   ): Promise<T | GatewayFailure> {
     const started = Date.now();
+    const deadline = started + timeLimitMs;
     // The prompt and the retry hints are read and built before any model call. If either is
     // missing or cannot be used, the call fails here: no model call, no stored line (NO-BACKUP).
     let prompt: string;
     let accept: (raw: string) => Attempt<T>;
     let hints: PromptRow;
     try {
-      const [row, hintsRow] = await Promise.all([
-        options.prompts(key),
-        options.prompts("retry_hints"),
-      ]);
+      // Reading the prompts counts against the call's time limit: a stalled read ends in the
+      // failure screen, not in a page that waits forever.
+      const [row, hintsRow] = await withinTime(
+        Promise.all([options.prompts(key), options.prompts("retry_hints")]),
+        deadline - Date.now(),
+      );
       if (!row || !hintsRow) throw new PromptRowError(key);
       ({ prompt, accept } = build(row));
       hints = hintsRow;
@@ -149,7 +168,6 @@ export function createModelGateway(options: {
       });
       return { source: "failed", reason: "prompt" };
     }
-    const deadline = started + timeLimitMs;
     let rejectedRules: string[] = [];
     let reason: GatewayFailureReason = "request";
     let attempts = 0;

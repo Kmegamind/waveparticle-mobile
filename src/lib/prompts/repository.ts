@@ -102,8 +102,15 @@ function isPromptRow(value: unknown): value is PromptRow {
  * only to the server's reader token (supabase/migrations/20261115000000_prompts.sql). It uses the
  * public key and no user session; the table itself is closed to the API.
  */
+/** How long one read of the prompts may take before it is given up. */
+export const PROMPT_READ_TIMEOUT_MS = 5_000;
+
 export async function readActivePromptsFromSupabase(
-  options: { env?: Record<string, string | undefined>; fetchImpl?: typeof fetch } = {},
+  options: {
+    env?: Record<string, string | undefined>;
+    fetchImpl?: typeof fetch;
+    timeoutMs?: number;
+  } = {},
 ): Promise<PromptRow[]> {
   const env = options.env ?? process.env;
   const token = env.PROMPTS_READ_TOKEN?.trim();
@@ -113,9 +120,15 @@ export async function readActivePromptsFromSupabase(
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     global: options.fetchImpl ? { fetch: options.fetchImpl } : undefined,
   });
-  const { data, error } = await client.rpc("get_active_prompts", { reader_token: token });
+  const { data, error } = await client
+    .rpc("get_active_prompts", { reader_token: token })
+    .abortSignal(AbortSignal.timeout(options.timeoutMs ?? PROMPT_READ_TIMEOUT_MS));
   if (error) throw new Error("get_active_prompts failed");
-  return (Array.isArray(data) ? data : []).filter(isPromptRow);
+  const rows = (Array.isArray(data) ? data : []).filter(isPromptRow);
+  // The function answers a wrong or unregistered token with no rows and no error. That is a failed
+  // read (not cached, logged as such), not "every prompt is missing".
+  if (rows.length === 0) throw new Error("no active prompts: check PROMPTS_READ_TOKEN");
+  return rows;
 }
 
 function logToServer(event: PromptLog) {

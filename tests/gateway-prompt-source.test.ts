@@ -55,6 +55,27 @@ describe("the gateway and the prompt source (#282)", () => {
     });
   }
 
+  it("test_282_a_prompt_read_that_hangs_ends_within_the_time_limit", async () => {
+    const hanging: PromptSource = () => new Promise(() => undefined);
+    const logs: GatewayLog[] = [];
+    let modelCalls = 0;
+    const gateway = createModelGateway({
+      prompts: hanging,
+      timeLimitMs: 50,
+      provider: async () => {
+        modelCalls += 1;
+        return "{}";
+      },
+      log: (event) => logs.push(event),
+    });
+    const started = Date.now();
+    const result = await gateway.writeRestReply({ facts, userMessage: "hello" });
+    expect(result).toEqual({ source: "failed", reason: "prompt" });
+    expect(Date.now() - started).toBeLessThan(1_000);
+    expect(modelCalls).toBe(0);
+    expect(logs).toEqual([expect.objectContaining({ reason: "prompt", attempts: 0 })]);
+  });
+
   it("test_282_missing_retry_hints_fails_every_call_before_the_model", async () => {
     for (const [, call] of calls) {
       const { result, modelCalls } = await run(without("retry_hints"), call);
