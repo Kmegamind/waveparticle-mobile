@@ -3277,6 +3277,7 @@ a {
 .admin-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
   min-height: 100svh;
 }
 
@@ -3406,6 +3407,7 @@ a {
 @media (min-width: 56.25rem) {
   .admin-shell {
     grid-template-columns: var(--admin-rail-width) minmax(0, 1fr);
+    grid-template-rows: auto;
   }
 
   .admin-rail {
@@ -3421,7 +3423,8 @@ a {
     top: 0;
   }
 
-  .admin-brand {
+  .admin-brand,
+  .admin-group-heading {
     margin-right: 0;
     padding: 0 var(--space-small-gap);
   }

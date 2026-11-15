@@ -34,8 +34,13 @@ test("test_287_ac2_signed_in_without_a_role_gets_the_normal_404", async ({ page,
 
 async function expectAdminShell(page: Page) {
   const menu = page.getByRole("navigation", { name: "Admin pages" });
-  await expect(page.getByText("WaveParticle", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("Content admin", { exact: true })).toBeVisible();
+  // The product name and "Content admin" (the app's own header, with its hidden logo text, does
+  // not show inside the admin).
+  const brand = page.getByRole("link", { name: "WaveParticle Content admin" });
+  await expect(brand).toBeVisible();
+  await expect(brand.getByText("WaveParticle", { exact: true })).toBeVisible();
+  await expect(brand.getByText("Content admin", { exact: true })).toBeVisible();
+  await expect(page.locator(".app-header")).toBeHidden();
   await expect(page.getByRole("heading", { name: "Content" })).toBeAttached();
   await expect(page.getByRole("heading", { name: "Review and logs" })).toBeAttached();
   await expect(menu.getByRole("link", { name: /App text/ })).toContainText("ADM-07");
