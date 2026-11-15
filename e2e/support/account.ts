@@ -28,7 +28,7 @@ export async function signIn(
   context: BrowserContext,
   baseURL: string,
   tables: (userId: string) => StubTables = () => ({}),
-  options: { missingFunctions?: string[] } = {},
+  options: { missingFunctions?: string[]; contentRole?: "admin" | "writer" } = {},
 ): Promise<StubAccount> {
   const token = `stub-${randomUUID()}`;
   const userId = randomUUID();
@@ -40,6 +40,7 @@ export async function signIn(
       user: { id: userId, email: `${userId}@example.invalid` },
       tables: tables(userId),
       missingFunctions: options.missingFunctions ?? [],
+      contentRole: options.contentRole ?? null,
     }),
   });
   if (!seeded.ok) throw new Error(`stub seed failed: ${seeded.status}`);

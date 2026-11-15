@@ -6,6 +6,7 @@ Planned: Next.js route handlers for goal planning, story card generation, the re
 The public code interfaces today are:
 
 - `src/lib/prompts/repository.ts` (server only, #282): `getActivePrompt(key)` returns the active row `{ key, version, body, params }` of `public.prompts` or `null`; the model gateway reads every prompt through it. See `docs/ai/prompts/README.md`.
+- `src/lib/admin/roles.ts` (server only, #287): `readContentRole(client)` returns `"admin"`, `"writer"` or `null` (any error is `null`) from `public.content_role()` through the user's own client; `isAdminPath(pathname)` and `adminAnswer(pathname, hasUser, role)` (`"pass"` or `"not-found"`) decide the proxy's 404 for `/admin`.
 - `src/lib/clock.ts`: `formatClock(totalSeconds)` returns `MM:SS` and never goes below `00:00`.
 - `src/lib/story/start.ts`: `startStory(story, plan)` builds the brief for pressing Start. `plan` is a list of `{ minutes }`. The result carries the whole story, the step count taken from the plan, an instruction that the story is divided into that many steps and that the key slices are facts the writer must use, the facts for each step, and `mergedKeyMoments`. That list is empty when every key slice ended its own step. One step has `hasNextStepCards: false` and continues to the summary. No model is called.
 - `src/lib/safety/keyword.ts`: `checkSafetyText(text)` returns `{ tier, flagged }` and does not return the text. Reused by the crisis page; do not copy its patterns.

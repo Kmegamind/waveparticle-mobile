@@ -9,11 +9,14 @@ const sql = () => readFileSync(path.join(directory, name), "utf8");
 const code = () => sql().replace(/--.*$/gm, "");
 
 describe("prompts migration (#282)", () => {
-  it("test_282_is_the_latest_migration", () => {
+  it("test_282_runs_after_the_earlier_migrations", () => {
+    // Was "the latest migration"; #287 adds a later one (content roles).
     const names = readdirSync(directory)
       .filter((file) => file.endsWith(".sql"))
       .sort();
-    expect(names.at(-1)).toBe(name);
+    const deleteAccount = names.indexOf("20261114120000_delete_my_account.sql");
+    expect(deleteAccount).toBeGreaterThanOrEqual(0);
+    expect(names.indexOf(name)).toBeGreaterThan(deleteAccount);
   });
 
   it("test_282_creates_the_table_with_key_version_active_body_and_params", () => {

@@ -2,7 +2,17 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isPrototypeEnabled, isTryPath } from "../prototype/config";
+import { adminAnswer, isAdminPath, readContentRole } from "../admin/roles";
 import { readSupabaseEnv } from "./env";
+
+/** No page lives here, so a rewrite to it renders the app's normal 404 page with status 404. */
+const NOT_FOUND_PATH = "/_no-such-page";
+
+/** Keeps any refreshed session cookies on a response that replaces the default one. */
+function withCookies(target: NextResponse, source: NextResponse): NextResponse {
+  source.cookies.getAll().forEach((cookie) => target.cookies.set(cookie));
+  return target;
+}
 
 /** Returns the signed-in user, or null when the request has no valid session. */
 export async function getCurrentUser(client: SupabaseClient): Promise<User | null> {
@@ -36,6 +46,15 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   const supabase = createServerClient(url, anonKey, { cookies });
   const { data } = await supabase.auth.getUser();
   const pathname = request.nextUrl.pathname;
+
+  // The content admin (#287): no account with a role → the normal 404, before the sign-in redirect.
+  if (isAdminPath(pathname)) {
+    const role = data.user ? await readContentRole(supabase) : null;
+    if (adminAnswer(pathname, Boolean(data.user), role) === "not-found") {
+      return withCookies(NextResponse.rewrite(new URL(NOT_FOUND_PATH, request.url)), response);
+    }
+    return response;
+  }
 
   if (!data.user && !isPublicPath(pathname, isPrototypeEnabled())) {
     return NextResponse.redirect(new URL("/auth/sign-in", request.url));

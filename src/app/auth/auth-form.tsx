@@ -171,7 +171,7 @@ function AuthLinks({ mode }: { mode: AuthMode }) {
   return null;
 }
 
-export function SignOutButton() {
+export function SignOutButton({ className = "button-filled" }: { className?: string } = {}) {
   const supabase = createSupabaseBrowserClient();
   const router = useRouter();
 
@@ -181,7 +181,7 @@ export function SignOutButton() {
   }
 
   return (
-    <button className="button-filled" onClick={signOut} type="button">
+    <button className={className} onClick={signOut} type="button">
       Sign out
     </button>
   );

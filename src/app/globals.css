@@ -3263,3 +3263,184 @@ a {
     grid-row: 2;
   }
 }
+
+/* The content admin (issue 287). Phone first: the brand and Sign out on top, the menu as a wrapping row,
+   then the page. From 900 px the menu is a rail on the left, as in the content-admin prototype. */
+.app-shell:has(.admin-shell) {
+  max-width: none;
+}
+
+.app-shell:has(.admin-shell) > .app-header {
+  display: none;
+}
+
+.admin-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  min-height: 100svh;
+}
+
+.admin-rail {
+  align-items: center;
+  background: var(--raised);
+  border-bottom: 1px solid var(--hairline);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-small-gap) var(--space-control-gap);
+  padding: calc(var(--space-small-gap) + env(safe-area-inset-top))
+    calc(var(--space-screen-inline) + env(safe-area-inset-right)) var(--space-small-gap)
+    calc(var(--space-screen-inline) + env(safe-area-inset-left));
+}
+
+.admin-brand {
+  align-items: flex-start;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  margin-right: auto;
+  min-height: var(--target);
+  justify-content: center;
+  text-decoration: none;
+}
+
+.admin-brand-name {
+  font-family: var(--type-display);
+  font-size: var(--text-button-size);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.admin-brand-sub,
+.admin-group-heading {
+  color: var(--ink-2);
+  font-size: var(--text-overline-size);
+  font-weight: 700;
+  letter-spacing: var(--overline-tracking);
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.admin-menu {
+  display: flex;
+  flex-basis: 100%;
+  flex-wrap: wrap;
+  gap: var(--space-small-gap) var(--space-control-gap);
+  order: 1;
+}
+
+.admin-group {
+  min-width: 0;
+}
+
+.admin-group-heading {
+  margin: 0 0 var(--space-row-after);
+}
+
+.admin-group ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-row-after);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-menu-link {
+  align-items: center;
+  border-radius: var(--r-mini);
+  color: var(--ink);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--text-link-size);
+  font-weight: 600;
+  gap: 0 var(--space-small-gap);
+  justify-content: space-between;
+  min-height: var(--target);
+  padding: 0 var(--space-small-gap);
+  text-decoration: none;
+}
+
+/* The current page: weight and an outline, not colour alone (DESIGN.md 4.3). */
+.admin-menu-link[aria-current="page"] {
+  background: var(--tint);
+  box-shadow: inset 0 0 0 1px var(--control);
+  font-weight: 800;
+}
+
+.admin-menu-link:focus-visible,
+.admin-brand:focus-visible {
+  outline: 2px solid var(--control);
+  outline-offset: 2px;
+}
+
+.admin-page-id {
+  color: var(--ink-2);
+  font-family: var(--type-mono);
+  font-size: var(--text-caption-size);
+  font-weight: 400;
+}
+
+.admin-main {
+  min-width: 0;
+  padding: var(--space-screen-top) calc(var(--space-screen-inline) + env(safe-area-inset-right))
+    calc(var(--space-screen-bottom) + env(safe-area-inset-bottom))
+    calc(var(--space-screen-inline) + env(safe-area-inset-left));
+}
+
+.admin-main h1 {
+  font-family: var(--type-display);
+  font-size: var(--text-display-size);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: var(--text-display-leading);
+  margin: 0;
+}
+
+.admin-lede {
+  color: var(--ink-2);
+  margin: var(--space-title-after) 0 0;
+  max-width: var(--admin-measure);
+}
+
+@media (min-width: 56.25rem) {
+  .admin-shell {
+    grid-template-columns: var(--admin-rail-width) minmax(0, 1fr);
+    grid-template-rows: auto;
+  }
+
+  .admin-rail {
+    align-items: stretch;
+    border-bottom: 0;
+    border-right: 1px solid var(--hairline);
+    flex-direction: column;
+    flex-wrap: nowrap;
+    height: 100svh;
+    overflow-y: auto;
+    padding: var(--space-screen-top) var(--space-control-gap) var(--space-screen-bottom);
+    position: sticky;
+    top: 0;
+  }
+
+  .admin-brand,
+  .admin-group-heading {
+    margin-right: 0;
+    padding: 0 var(--space-small-gap);
+  }
+
+  .admin-menu {
+    flex: 1;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    order: 0;
+  }
+
+  .admin-group ul {
+    flex-direction: column;
+  }
+
+  .admin-sign-out {
+    align-self: flex-start;
+  }
+}
