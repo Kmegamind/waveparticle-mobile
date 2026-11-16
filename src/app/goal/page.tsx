@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { getAppTexts } from "@/lib/app-text/repository";
+import { AppTextProvider } from "@/lib/app-text/provider";
 import { parseLine } from "@/lib/goals/goals-view";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
@@ -19,12 +21,14 @@ async function GoalContent({ searchParams }: PageProps<"/goal">) {
   // #77: New goal and Start on Goals open the dialogue with their line in the composer.
   const { line } = await searchParams;
   return (
-    <GoalDialogue
-      focusPath="/focus"
-      home={{ href: "/", label: "Back to Home" }}
-      initialDraft={parseLine(line)}
-      split={splitGoalForAccountAction}
-      start={startGoalAction}
-    />
+    <AppTextProvider texts={await getAppTexts()}>
+      <GoalDialogue
+        focusPath="/focus"
+        home={{ href: "/", label: "Back to Home" }}
+        initialDraft={parseLine(line)}
+        split={splitGoalForAccountAction}
+        start={startGoalAction}
+      />
+    </AppTextProvider>
   );
 }

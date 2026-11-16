@@ -60,7 +60,8 @@ test("test_287_ac3_a_writer_sees_the_admin_shell", async ({ page, context }) => 
   await menu.getByRole("link", { name: /App text/ }).click();
   await expect(page).toHaveURL(/\/admin\/app-text$/);
   await expect(page.getByRole("heading", { level: 1, name: "App text" })).toBeVisible();
-  await expect(page.getByText(/#288/)).toBeVisible();
+  // #288 replaced the placeholder with the App text editor.
+  await expect(page.getByRole("region", { name: "ui.F3.fail.body" })).toBeVisible();
   await expect(menu.getByRole("link", { name: /App text/ })).toHaveAttribute(
     "aria-current",
     "page",

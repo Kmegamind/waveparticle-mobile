@@ -6,10 +6,10 @@ import { accountSessionKey, snapshotOf } from "@/lib/progress/focus-session";
 import { isFinished, loadSession } from "@/lib/prototype/session";
 import type { FinishOutcome, SummaryView } from "@/lib/summary/finish-run";
 import { focusLabel, focusSecondsOf, type FinishShown } from "@/lib/summary/run";
+import { useAppText } from "@/lib/app-text/provider";
 import { recordFocusProgress } from "../focus/actions";
 import { finishRunAction } from "./actions";
 
-const FAILURE_TEXT = "He is not here right now. Please try again.";
 const NO_SUMMARY_TEXT = "There is no finished Step to sum up.";
 
 type View =
@@ -41,6 +41,8 @@ export function EndScreen({ view: summary }: { view: SummaryView }) {
 }
 
 function EndBody({ summary }: { summary: SummaryView }) {
+  const failureText = useAppText("ui.END.fail.body");
+  const retryLabel = useAppText("ui.END.fail.retry");
   const [view, setView] = useState<View>({ kind: "waiting" });
   const [focusSeconds] = useState(() =>
     focusSecondsOf(loadSession(window.localStorage, accountSessionKey(summary.sessionId))),
@@ -102,13 +104,13 @@ function EndBody({ summary }: { summary: SummaryView }) {
       ) : null}
       {view.kind === "failed" ? (
         <div className="rest-failure">
-          <p>{FAILURE_TEXT}</p>
+          <p>{failureText}</p>
           <button
             className="button-filled button-small"
             onClick={() => setView({ kind: "waiting" })}
             type="button"
           >
-            Retry
+            {retryLabel}
           </button>
         </div>
       ) : null}

@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { getAppTexts } from "@/lib/app-text/repository";
+import { AppTextProvider } from "@/lib/app-text/provider";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { AccountFocus } from "./account-focus";
@@ -25,5 +27,9 @@ async function FocusContent({ searchParams }: Pick<PageProps<"/focus">, "searchP
     typeof goal === "string" ? goal : null,
     true,
   ).catch(() => null);
-  return <AccountFocus goalLine={loaded?.goalLine ?? ""} plan={loaded?.plan ?? null} />;
+  return (
+    <AppTextProvider texts={await getAppTexts()}>
+      <AccountFocus goalLine={loaded?.goalLine ?? ""} plan={loaded?.plan ?? null} />
+    </AppTextProvider>
+  );
 }

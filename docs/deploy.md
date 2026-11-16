@@ -60,6 +60,21 @@ where user_id = (select id from auth.users where email = 'person@example.com');
 The migration `supabase/migrations/20261116000000_content_roles.sql` must run first. No key with full
 database rights is needed: the app asks `public.content_role()` with the signed-in user's session.
 
+## App text
+The app's own words (#288, `docs/decisions/0017`) live in `public.app_text`. Run the migration
+`supabase/migrations/20261117000000_app_text.sql` (after the content roles migration), then load the
+code defaults as version 1, published:
+
+```sh
+node scripts/app-text/import.mjs > app-text-import.sql   # paste into the Supabase SQL editor
+node scripts/app-text/import.mjs | psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1
+```
+
+The seed only adds keys that have no rows yet, so running it again, or after a writer published an
+edit, changes nothing; run it after every change that adds keys to `src/content/app-text.json`.
+Without the migration or the seed the app shows the code defaults, so the screens look the same. No
+new setting is needed: published rows are read with the public key.
+
 ## After each deploy
 - Smoke test: open the deployed home page and confirm the product name is
   visible. To run the end-to-end test against a deployed address instead of a local

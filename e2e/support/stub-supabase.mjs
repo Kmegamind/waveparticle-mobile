@@ -16,9 +16,18 @@
 //   POST /rest/v1/rpc/delete_my_account   mirrors the migration (#103): the caller's rows, then
 //                                          the auth user
 //   POST /auth/v1/logout              204, also to the browser (cross-origin headers, #287)
+//   GET  /rest/v1/app_text            app text shared by every test (#288), seeded from
+//                                     src/content/app-text.json as version 1, published: anon and
+//                                     no-role accounts get published rows only, as the policy;
+//                                     editors get every row
+//   POST /rest/v1/rpc/save_app_text_draft | publish_app_text | roll_back_app_text
+//                                     mirror the migration, with its editor check
+//   POST /__app_text  { failReads?: boolean, reset?: boolean }   published reads without a user
+//                                     session answer 503 while failReads is on (database down)
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import { readPromptDirectory } from "../../scripts/prompts/prompt-files.mjs";
+import { readAppTextSeed } from "../../scripts/app-text/import.mjs";
 
 const promptDirectory = fileURLToPath(new URL("../../docs/ai/prompts", import.meta.url));
 const promptReaderToken = process.env.STUB_PROMPTS_READ_TOKEN ?? "";
@@ -26,6 +35,40 @@ const promptReaderToken = process.env.STUB_PROMPTS_READ_TOKEN ?? "";
 const port = Number(process.env.STUB_SUPABASE_PORT ?? "3198");
 /** token → { user, tables } */
 const datasets = new Map();
+
+/** The shared app_text rows (#288): the seed loads every code default as version 1, published. */
+function seededAppText() {
+  return readAppTextSeed().map((entry) => ({
+    key: entry.key,
+    version: 1,
+    body: entry.text,
+    published: true,
+    published_at: "2026-11-15T00:00:00Z",
+    created_at: "2026-11-15T00:00:00Z",
+    screen: entry.key.split(".")[1],
+  }));
+}
+let appText = seededAppText();
+let appTextFailReads = false;
+
+/** The same checks as private.set_published_app_text; returns an error message or null. */
+function setPublished(key, version, action) {
+  const rows = appText.filter((row) => row.key === key);
+  const target = rows.find((row) => row.version === version);
+  if (!target) return `no app text ${key} version ${version}`;
+  if (target.published) return "already published";
+  const current = rows.find((row) => row.published);
+  if (
+    action === "roll_back" &&
+    (!current || version >= current.version || target.published_at === null)
+  ) {
+    return "roll back needs an earlier published version";
+  }
+  if (current) current.published = false;
+  target.published = true;
+  target.published_at = new Date().toISOString();
+  return null;
+}
 
 const json = (response, status, body) => {
   response.writeHead(status, { "content-type": "application/json" });
@@ -129,6 +172,13 @@ createServer(async (request, response) => {
     return json(response, 200, { ok: true });
   }
 
+  if (path === "/__app_text" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    if (body.reset) appText = seededAppText();
+    if (typeof body.failReads === "boolean") appTextFailReads = body.failReads;
+    return json(response, 200, { ok: true, failReads: appTextFailReads });
+  }
+
   if (path === "/__tables") {
     const dataset = datasets.get(url.searchParams.get("token"));
     if (!dataset) return json(response, 404, {});
@@ -178,6 +228,46 @@ createServer(async (request, response) => {
   if (path === "/rest/v1/rpc/content_role" && request.method === "POST") {
     if (!dataset || dataset.deleted) return json(response, 401, { message: "JWT required" });
     return json(response, 200, dataset.contentRole);
+  }
+
+  if (path === "/rest/v1/app_text" && request.method === "GET") {
+    const user = dataset && !dataset.deleted ? dataset : null;
+    if (!user && appTextFailReads) return json(response, 503, { message: "database unavailable" });
+    const editor = user?.contentRole === "admin" || user?.contentRole === "writer";
+    const params = [...url.searchParams.entries()];
+    const found = appText.filter((row) => (editor || row.published) && matches(row, params));
+    return json(response, 200, ordered(found, url.searchParams.get("order")));
+  }
+
+  const appTextRpc = path.match(
+    /^\/rest\/v1\/rpc\/(save_app_text_draft|publish_app_text|roll_back_app_text)$/,
+  );
+  if (appTextRpc && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    const editor = dataset && !dataset.deleted && ["admin", "writer"].includes(dataset.contentRole);
+    if (!editor) {
+      return json(response, 403, { code: "42501", message: "only a content editor may do this" });
+    }
+    if (appTextRpc[1] === "save_app_text_draft") {
+      const version =
+        Math.max(
+          0,
+          ...appText.filter((row) => row.key === body.text_key).map((row) => row.version),
+        ) + 1;
+      appText.push({
+        key: body.text_key,
+        version,
+        body: body.text_body,
+        published: false,
+        published_at: null,
+        created_at: new Date().toISOString(),
+        screen: String(body.text_key).split(".")[1],
+      });
+      return json(response, 200, version);
+    }
+    const action = appTextRpc[1] === "publish_app_text" ? "publish" : "roll_back";
+    const problem = setPublished(body.text_key, body.text_version, action);
+    return problem ? json(response, 400, { code: "P0001", message: problem }) : json(response, 204);
   }
 
   if (path === "/rest/v1/rpc/delete_my_account" && request.method === "POST") {

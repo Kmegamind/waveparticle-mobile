@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
+import { useAppText } from "@/lib/app-text/provider";
 import { formatClock } from "@/lib/clock";
 import type { StepCardsRequest, StepCardsResponse } from "@/lib/prototype/focus-cards";
 import type { LineResponse } from "@/lib/prototype/rest-lines";
@@ -96,6 +97,11 @@ function timeUpHaptic() {
 }
 
 export function FocusBody({ host }: { host: FocusHost }) {
+  // The failure screens' words are app text (#288): F3 for his cards, F-RET for the return pop-up.
+  const cardsFailureText = useAppText("ui.F3.fail.body");
+  const cardsRetryLabel = useAppText("ui.F3.fail.retry");
+  const returnFailureText = useAppText("ui.F-RET.fail.body");
+  const returnRetryLabel = useAppText("ui.F-RET.fail.retry");
   const { goalLine, paths, plan, storageKey } = host;
   const [session, setSession] = useState<FocusSession>(() => initialSession(host));
   const [now, setNow] = useState(currentTime);
@@ -417,9 +423,9 @@ export function FocusBody({ host }: { host: FocusHost }) {
 
             {showFailure ? (
               <div className="focus-failure">
-                <p>He is not here right now. Please try again.</p>
+                <p>{cardsFailureText}</p>
                 <button className="button-filled" onClick={onRetry} type="button">
-                  Retry
+                  {cardsRetryLabel}
                 </button>
               </div>
             ) : cards.length > 0 ? (
@@ -583,13 +589,13 @@ export function FocusBody({ host }: { host: FocusHost }) {
           >
             {returnFailed ? (
               <div className="focus-failure" id="return-line">
-                <p>He is not here right now. Please try again.</p>
+                <p>{returnFailureText}</p>
                 <button
                   className="button-filled"
                   onClick={() => setReturnFailed(false)}
                   type="button"
                 >
-                  Retry
+                  {returnRetryLabel}
                 </button>
               </div>
             ) : (
