@@ -1,5 +1,12 @@
 Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIONS.md overrides this document where they differ.
 
+> **Status after the decisions up to 2026-11-15 (#295): superseded as a design.** The card types of section 1 and the counts of section 2 are replaced:
+> - A step opens with exactly one card; further cards arrive one at a time; cards form a stack with Earlier card and Newer card buttons (X2, X6). The background card opens the Goal (T4, D3). There is no separate time-up card (T8) and no back-from-rest card: the return is the live return pop-up (R1).
+> - The background card and the step story cards are **made ahead once per story part**, read by a person before publishing and shared by all users (SHARED-STORY, CARDS-PER-PART, READ-STATUS). When the user starts, the app spreads the parts across the user's Steps with plain code (`src/lib/story/start.ts`), with no model call. The earlier rule that the first card of the next step is generated during the previous step no longer applies.
+> - Lengths: a step story card is 1 to 3 sentences and at most 45 words; the background card at most 70 words (LEN-CARD). Every card contains something new (CARD-NEW); no year, date or age (DATES-ADMIN-ONLY); never the number of Steps (NO-STEP-COUNT).
+> - There are no authored, bundled or ambient fallback cards (NO-BACKUP, NO-FALLBACK-TABLES); section 6 is withdrawn. The closing line is made ahead with the cards (CLOSING-AHEAD); the Canyon `closing_fallback` drafts in section 5 are reference examples only.
+> - Open questions 1 (the next Step starts by itself after a 1.2 second hold, X3), 3 (the return is a pop-up, R1) are closed. Open question 5 had the answer 1 to 5 story cards per Step (T7); how that limit applies when several parts fall in one Step is not settled. Kept as history.
+
 # AI-2 / AI-3 / AI-7 · Story cards on the focus page (landing page removed)
 
 > **Date**: 2026-10-29 · **Status**: v1 draft · Part of the [AI index](AI_00_index.md). (Named AI_10 because AI_09 is already the decisions log.)
@@ -68,6 +75,8 @@ Done on the last step goes straight to **END** (the button wording "Finish" move
 3. **`closing_fallback` for the Canyon must be written** (none exists; Trinity has 4). Two drafts, both pass NF5's script as LC-type lines (no warnings): smooth: "Groves stood on the school grounds and looked out from the mesa, and I kept quiet. I am still sorting out what I feel." Rough: "The canyon was wrong and the mesa was not, and I said so once. I am tired in a way I did not expect." Drafts, unread by a content owner. Note both mention the mesa as a fact of the last slice, which is fine at END and not before.
 
 ## 6. Fallback when a card fails to load
+
+> **Withdrawn** (NO-BACKUP, NO-FALLBACK-TABLES). Cards are read from the published story content. Kept as history.
 
 | Card | Failure | Result |
 |---|---|---|

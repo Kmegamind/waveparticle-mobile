@@ -18,7 +18,8 @@ The words below are fixed by decision X1. The words Mission and Task are not use
 | Goal | Something the user wants to get done, written in one line. A Goal is either One-time or Ongoing. |
 | Step | One piece of a Goal, with a title, a number of minutes and a description of one or two sentences. |
 | Plan | The list of Steps that the goal dialogue produces for one sitting. The older documents use another word for it; this backlog says Plan so that it is not confused with a Step. |
-| Story | One episode from a Companion's life (for example the search for a laboratory site). A Companion has a Life Path: all of his Stories in date order. |
+| Story | One episode from a Companion's life (for example the search for a laboratory site). A Companion has a Life Path: all of his Stories in order, grouped into named periods with no dates or ages (PERIODS). |
+| Part | One of the Companion's tasks in a Story. A Story has 2 to 5 parts (STORY-PARTS). Story cards are made for each part, and the app spreads the parts across the user's Steps (CARDS-PER-PART). |
 | Slice | A short moment inside a Story. One Story is built from several Slices (for example eight). |
 | Entry state | The situation the Companion is in at the start of a Step. Every card in that Step may only use facts that are true in that entry state. |
 | Fate link | The rule that the Companion's Story moves forward only when the user finishes a Step. Nothing else advances it. |
@@ -99,7 +100,7 @@ Every story names its source with one of the keys below, followed by section, re
 
 These rules come from the product principles and from decisions. They are repeated here once so that individual stories do not repeat them.
 
-1. The Companion never knows the future and never refers to the user's Goal or Steps in his own words. The one thing he may ask of the user is, from the third Pause in a Step, not to pause again (US-FOC-9).
+1. The Companion never knows the future and never refers to the user's Goal or Steps in his own words. He never gives the user an instruction and never asks the user to stop pausing (PAUSE-3). His lines never state the number of Steps or how many are left (NO-STEP-COUNT).
 2. Nothing on any screen shows a streak, a count of what is left, a percentage, a score, an overdue marker or the words "late", "behind", "missed" or "abandoned".
 3. The word "Step x of N" appears only on the focus page of a multi-Step Plan. Home, Goals, Life Path and the summary never show the total number of Steps.
 4. The number of minutes on a Step is a target, not a limit.
@@ -280,7 +281,7 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** new or returning user, **I want** to see all Companions in one list and choose one, **so that** I can decide who works with me.
 
 **Acceptance criteria**
-- Given the Companions page, then all eight Companions appear as cards in a list, each with a portrait, a name, three tags and one line in that Companion's voice.
+- Given the Companions page, then the Companions built for Release 1, Oppenheimer and Moriarty, appear as cards in a list (OTHER-COMPANIONS; the other six are out of scope until each has a content plan), each with a portrait, a name, three tags and one line in that Companion's voice.
 - Given I tap a card, then it becomes selected and a single Enter button becomes active; before a card is selected the button is inactive.
 - Given I tap Enter on Oppenheimer, then his Life Path page opens (US-MAP-3).
 - The page does not show a "last observed" line, a long profile or moving effects.
@@ -296,27 +297,26 @@ These rules come from the product principles and from decisions. They are repeat
 - Given I tap Begin, then the goal dialogue opens (US-GD-1) carrying that Story's text.
 - The page shows no progress count and no suggestion that more Stories exist.
 
-**Priority:** Should · **Area:** Story map and Companions (NF2) · **Screens:** COMP, CPAGE-S, GD1 · **Depends on:** US-MAP-1, US-GD-1 · **Size:** S · **Source:** SM00 D33; PROTO CPAGE-S. Whether finished content exists for all seven Companions is an open question (see section 15).
+**Priority:** Should · **Area:** Story map and Companions (NF2) · **Screens:** COMP, CPAGE-S, GD1 · **Depends on:** US-MAP-1, US-GD-1 · **Size:** S · **Status:** The single-Story Companions are out of scope for Release 1 until each has a content plan (OTHER-COMPANIONS). · **Source:** SM00 D33; PROTO CPAGE-S; DEC OTHER-COMPANIONS
 
-### US-MAP-3 · Life Path page with rows, ages and later rows
+### US-MAP-3 · Life Path page with periods and later rows
 
-**As a** user, **I want** to see a Companion's Stories in date order with the age he was, **so that** I can place today's Story in his life.
+**As a** user, **I want** to see a Companion's Stories in order, grouped into the periods of his life, **so that** I can place today's Story in his life.
 
 **Acceptance criteria**
-- Given Oppenheimer's Life Path, then it lists his Stories in date order and every row shows an age and the Story's small title.
-- Given the ruler at the top, then it is a window with no fill that runs from the age of the first row in view to the age of the last row in view, with a marker at the current age; it is never a bar for the whole life.
-- Given the Stories after the current one, then every later row shows (all 26 Stories are on the path), each with an age and a title and never his words, and they fade by type size and weight while all text keeps at least 5:1 contrast.
+- Given Oppenheimer's Life Path, then it lists his Stories in order, grouped under named periods like the chapters of a book, and every row shows the Story's small title; no row shows a date or an age (PERIODS). The period names are drafts until Yue approves them.
+- Given the Stories after the current one, then every later row shows (all 26 Stories are on the path), each with a title and never his words, and they fade by type size and weight while all text keeps at least 5:1 contrast.
 - Given a later row, then it is visible but not tappable or focusable, because chapters are played in order (decision D4), and a screen reader says "Later, not available" without reading the title.
 - Given I open the page, then it opens on the current Story card.
 
-**Priority:** Must · **Area:** Story map and Companions (NF2) · **Screens:** CPAGE · **Depends on:** US-CON-1 · **Size:** L · **Source:** SM02 SM-2, SM-5, SM-18; SM00 D4, D14, D16, D19, D23; DEC D4; PROTO CPAGE
+**Priority:** Must · **Area:** Story map and Companions (NF2) · **Screens:** CPAGE · **Depends on:** US-CON-1 · **Size:** L · **Source:** SM02 SM-2, SM-5, SM-18; SM00 D4, D14, D16, D19, D23; DEC D4, PERIODS; PROTO CPAGE
 
 ### US-MAP-4 · Row states carried by shape and by name
 
 **As a** user, **I want** each row to show clearly whether I finished it, whether it is his memory, whether it is current or whether it is later, **so that** I never have to guess and I never see a lock.
 
 **Acceptance criteria**
-- Given a Story I finished, then its row has a filled dot, an arrow, an age, the small title and one past-tense line from him, and it opens that Story's record (US-MAP-10).
+- Given a Story I finished, then its row has a filled dot, an arrow, the small title and one past-tense line from him (no age, PERIODS), and it opens that Story's record (US-MAP-10).
 - Given Stories before my starting point, then their rows show an open ring and italic text, carry one memory line and are not tappable. (With a new user starting at chapter 1 there are none at first; see US-MAP-6.)
 - Given the current Story, then it shows a heavy ring and a card (US-MAP-5), and later Stories show a dotted circle.
 - Given a screen reader, then the rows are named finished, his memory, current and later, and the state is never carried by colour alone.
@@ -342,7 +342,7 @@ These rules come from the product principles and from decisions. They are repeat
 **Acceptance criteria**
 - Given I select Oppenheimer for the first time, then the current Story is chapter 1, "The Trade of a Theorist", and no designated entry Story exists.
 - Given I start at chapter 1, then no row before the current Story is shown.
-- Given the first test build uses chapter 8 (the site search) or the Trinity night because those are the two Stories with authored fallback cards, then the build states which chapter it uses and does not change the rule for real users.
+- Given the first test build uses chapter 8 (the site search) or the Trinity night because those are the two Stories with existing authored cards (now reference examples and evaluation material only, NO-BACKUP), then the build states which chapter it uses and does not change the rule for real users.
 
 **Priority:** Must · **Area:** Story map and Companions (NF2) · **Screens:** CPAGE · **Depends on:** US-CON-8, US-MAP-3 · **Size:** S · **Source:** DEC M1 (decided 2026-11-05: no designated entry Story; the earlier proposal SM-22 is not added)
 
@@ -375,13 +375,14 @@ These rules come from the product principles and from decisions. They are repeat
 
 **Acceptance criteria**
 - Given I finish the last Step, then the summary (END) appears, and it never appears before the last Step is done or after leaving a Plan early.
-- Given the summary, then it shows his closing feeling in the first person, one thing he is carrying that he has not resolved, and my Steps as a plain list with no "3/3", no percentage and no total time.
+- Given the summary, then it shows his closing feeling in the first person, one thing he is carrying that he has not resolved, and my Steps as a plain list with no "3/3" and no percentage.
+- Given the record on the summary, then it shows only the plan length and the focus time, with no verdict (SUMMARY-RECORD).
 - Given the summary, then it offers Next and Home; nothing starts automatically and Next opens the Life Path with the next Story as current.
 - Given my Plan had fewer Steps than the Story has key moments, then the summary lists the key moments that were merged, one first-person line each; if nothing was merged, no such list appears.
 - Given I was the last user to finish a Story that was already played, then Next is absent and Home remains.
 - Given I finish the final Story of the path, then the path ends with one line from him and no further rows.
 
-**Priority:** Must · **Area:** Story map and Companions (NF2) · **Screens:** END, CPAGE · **Depends on:** US-CON-2, US-AI-10 · **Size:** L · **Source:** SM02 SM-7, SM-13; SM00 D18, D34; DEC C2. The "Your record" section of the summary is still marked to be decided in D34.
+**Priority:** Must · **Area:** Story map and Companions (NF2) · **Screens:** END, CPAGE · **Depends on:** US-CON-2, US-AI-10 · **Size:** L · **Source:** SM02 SM-7, SM-13; SM00 D18, D34; DEC C2, SUMMARY-RECORD
 
 ### US-MAP-10 · Record of a finished Story
 
@@ -415,26 +416,27 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** content owner, **I want** each Story stored with the fields the app needs, **so that** the Life Path, the focus page and the summary can all be built from data.
 
 **Acceptance criteria**
-- Given a Story record, then it has a sequence number, a date and the precision of that date, an era, a title, a present-tense line for the current card, a past-tense memory line, and a carry line that appears on the summary only.
-- Given a Story whose date is a placeholder, then the record is flagged and the Life Path shows an age only where the age is the same across the plausible date range.
+- Given a Story record, then it has a sequence number, a named period (PERIODS), a title, a present-tense line for the current card, a past-tense memory line, and a carry line that appears on the summary only.
+- Given the exact dates of a Story, then they stay in the notebooks for writers, are visible only in the admin and are never passed to a card prompt (DATES-ADMIN-ONLY); the user never sees a date or an age (PERIODS).
 - Given the data for the team, then source and review status stay in the data and never appear on a user-facing screen.
 - Given Oppenheimer, then the records for all 26 Stories load from the draft path-lines file for the memory lines.
 
-**Priority:** Must · **Area:** Story content and data (NF3) · **Screens:** CPAGE, END · **Depends on:** none · **Size:** M · **Source:** SM02 C-1 to C-3; SM00 D7, D9; `StoryMap_Feature_Docs/path_lines_oppenheimer_draft_2026-10-29.json`
+**Priority:** Must · **Area:** Story content and data (NF3) · **Screens:** CPAGE, END · **Depends on:** none · **Size:** M · **Source:** SM02 C-1 to C-3; SM00 D7, D9; DEC PERIODS, DATES-ADMIN-ONLY; `StoryMap_Feature_Docs/path_lines_oppenheimer_draft_2026-10-29.json`
 
 ### US-CON-2 · Key slices as must-use facts for the cards
 
 **As a** user, **I want** the Story's turning points to survive however many Steps I choose, **so that** the moments that matter most are not lost.
 
 **Acceptance criteria**
-- Given a Story, then it has two to four key slices confirmed by the content owner, and each key slice has a one-sentence first-person, past-tense key line of at most 18 words.
-- Given I press Start on a Plan of x Steps (any number), then the whole Story is given to the AI with the instruction that it is divided into x Steps, and the AI spreads the Story across them according to its progress; the key slices are facts the AI must use (US-AI-2).
+- Given a Story, then it has two to four key slices confirmed by the content owner (the machine-derived ones are stored as unconfirmed until reviewed, KEY-UNCONFIRMED), and each key slice has a one-sentence first-person, past-tense key line of at most 18 words.
+- Given a Story, then it has 2 to 5 parts (STORY-PARTS), and its cards are made for each part, with the key slices as must-use facts (US-AI-2).
+- Given I press Start on a Plan of x Steps (any number), then the app spreads the Story's parts across the x Steps with plain code and no model call (CARDS-PER-PART; for example 4 parts and 2 Steps gives parts 1 and 2 in Step 1 and parts 3 and 4 in Step 2).
 - Given a key slice, then it ends a Step whenever the number of Steps allows.
 - Given there are fewer Steps than key slices, then the later key slices are merged into the last Step, and the summary lists every merged key moment, one first-person line each (US-MAP-9).
 - Given there is only one Step, then there are no next-Step cards and the Story goes straight to the summary.
 - Given the number of Steps, then it never depends on the number of Slices.
 
-**Priority:** Must · **Area:** Story content and data (NF3) · **Screens:** F1, END · **Depends on:** US-CON-1 · **Size:** L · **Source:** DEC C2, T1, T3 (decided 2026-11-05); NF3v1 section 3
+**Priority:** Must · **Area:** Story content and data (NF3) · **Screens:** F1, END · **Depends on:** US-CON-1 · **Size:** L · **Source:** DEC C2, T1, T3 (decided 2026-11-05), STORY-PARTS, CARDS-PER-PART, KEY-UNCONFIRMED; NF3v1 section 3
 
 ### US-CON-4 · Scene table and state tag on every card
 
@@ -456,26 +458,26 @@ These rules come from the product principles and from decisions. They are repeat
 - Given a card, then it never adds a new named person, a new conversation or a new outcome.
 - Given a build of the content, then a check warns when a card shares too many content words with the earlier cards of the same Step.
 
-**Priority:** Should · **Area:** Story content and data (NF3) · **Screens:** F1 · **Depends on:** US-CON-1, US-CON-12 · **Size:** L · **Status:** **Blocked by decision C3**. · **Source:** DEC C3; NF3v1 section 5
+**Priority:** Should · **Area:** Story content and data (NF3) · **Screens:** F1 · **Depends on:** US-CON-1, US-CON-12 · **Size:** L · **Status:** Decision CARD-NEW (2026-11-12): every card must contain something new; a card that repeats earlier information is not acceptable. · **Source:** DEC C3, CARD-NEW; NF3v1 section 5
 
-### US-CON-7 · Inputs and fallback set for the live rest scenes
+### US-CON-7 · Inputs for the live rest scenes
 
-**As a** product team, **I want** the content team to supply what the AI needs to write his stuck moment and a small authored fallback, **so that** the rest page works when generation fails or is too slow.
+**As a** product team, **I want** the content team to supply what the AI needs to write his stuck moment, **so that** the live scene stays true to the Story.
 
 **Acceptance criteria**
 - Given an entry state, then the data provides the scene table (US-CON-4), the allowed props, the allowed names and the rules the AI must follow, so that the live scene never adds an event, a person or a fact from later in the Story.
-- Given the AI cannot produce a passing message, then a small authored set of stuck lines for that entry state is used instead (the return texts are in US-CON-10); no authored line is repeated within one Step unless the set is exhausted.
-- Given the authored fallback set, then its size is agreed with the AI owner; the research notes suggest 8 stuck lines per entry state, and that figure is to be confirmed.
+- Given the AI cannot produce a passing message within the time limit, then the failure message is shown (one calm message in the app's own voice with Retry, FAIL-SCREEN); no stored or authored stuck line is shown in its place (NO-BACKUP).
+- Given authored stuck lines, then they are reference examples and evaluation material only and are never shown to the user (C1).
 - Given the quiet lines that the research notes also suggested, then they are not written, because the pause message replaces them (decision F1).
 
-**Priority:** Must · **Area:** Story content and data (NF3) · **Screens:** R1 · **Depends on:** US-CON-4, US-AI-3 · **Size:** L · **Source:** DEC C1, F1; AI03v2 section A4; AI09v2 questions for NF3
+**Priority:** Must · **Area:** Story content and data (NF3) · **Screens:** R1 · **Depends on:** US-CON-4, US-AI-3 · **Size:** L · **Source:** DEC C1, F1, NO-BACKUP, FAIL-SCREEN; AI03v2 section A4; AI09v2 questions for NF3
 
 ### US-CON-8 · Content for chapter 1 of Oppenheimer
 
 **As a** new user starting at chapter 1, **I want** a complete first Story, **so that** my first session has everything the later Stories have.
 
 **Acceptance criteria**
-- Given chapter 1, "The Trade of a Theorist", then the content set is authored: the Story's facts and leak map, its people with their roles, key slices and key lines, the text of the background card and authored fallback cards.
+- Given chapter 1, "The Trade of a Theorist", then the content set is authored: the Story's facts and leak map, its people with their roles, its parts (2 to 5, STORY-PARTS), key slices and key lines; its background card, story cards and closing line are made ahead and published only after a person has read them (SHARED-STORY, CLOSING-AHEAD, READ-STATUS).
 - Given the content, then it passes the content review gate (US-CON-12) and a read by someone who has not read the Story.
 - Given the background card text, then it introduces, in his voice, the people who are present (US-FMT-11).
 
@@ -487,56 +489,35 @@ These rules come from the product principles and from decisions. They are repeat
 
 **Acceptance criteria**
 - Given the existing content for the site search (chapter 8) and the Trinity night, then it is loaded into the story data.
-- Given the existing cards, then they are kept as the authored fallback cards for these two Stories, reworked so that a Step opens with exactly one card (decision X2) and the background card introduces the people who are present, with no introduction phrases in later cards (decisions M2 and T4); the other Stories use the generic fallback lines (decision D5).
+- Given the existing cards, then they become reference examples and evaluation material only and are never shown to the user; there are no fallback cards and no generic fallback lines (NO-BACKUP, NO-FALLBACK-TABLES).
 - Given a test session, then the build states in the interface notes or the test script which chapter is used.
 
-**Priority:** Must · **Area:** Story content and data (NF3) · **Screens:** F1 · **Depends on:** US-CON-1, US-FMT-1, US-FMT-11 · **Size:** M · **Source:** DEC M1, X2, M2, T3, D4, D5; NF3v1 sections 3 and 4
-
-### US-CON-10 · Authored fallback lines for the return pop-up
-
-**As a** content author, **I want** a small authored set of return texts for each entry state, **so that** the return pop-up always has text when generation fails or is slow.
-
-**Acceptance criteria**
-- Given an entry state, then an authored set of short return texts exists in his voice, each saying what he did in the meantime and how he felt; it is used when the generated pop-up text fails its checks or is too slow (US-AI-4, US-AI-9). The research notes suggest three short and three long texts per entry state, to be confirmed.
-- Given any such text, then it states no event that moves the Story, asks no question and names no clock time.
-- Given a Story without authored lines, then the generic fallback lines in his voice are used (decision D5).
-
-**Priority:** Must · **Area:** Story content and data (NF3) · **Screens:** F4, F1-R · **Depends on:** US-CON-4, US-CON-12 · **Size:** M · **Source:** DEC A6, H2, T6, R1, D5; AI03v2 section C3
-
-### US-CON-11 · Fallback and deflection lines for the rest conversation
-
-**As a** product team, **I want** a small authored set of neutral lines for the rest conversation, **so that** the page always has an answer if the AI reply fails its checks.
-
-**Acceptance criteria**
-- Given an entry state, then there are six neutral replies and three deflections for questions he could not know the answer to, written in his period, in the first person and without a clock time.
-- Given an AI reply fails its checks twice, then one of these lines is shown that fits the label of the message.
-- Given a deflection, then it does not sound like a refusal; it contains no "I cannot" and no "as a character".
-
-**Priority:** Should · **Area:** Story content and data (NF3) · **Screens:** R1-C · **Depends on:** US-CON-4, US-AI-6 · **Size:** M · **Status:** Decision A3 is made (he may answer questions); the number of deflections follows from how he handles questions he could not know, which A3 leaves open. · **Source:** DEC A3; AI04v2 sections A2 and A4; AI09v2 T4
+**Priority:** Must · **Area:** Story content and data (NF3) · **Screens:** F1 · **Depends on:** US-CON-1, US-FMT-1, US-FMT-11 · **Size:** M · **Source:** DEC M1, T3, D4, NO-BACKUP, NO-FALLBACK-TABLES; NF3v1 sections 3 and 4
 
 ### US-CON-12 · Content review gate and automatic card checks
 
 **As a** product owner, **I want** every authored line to pass a review gate before it ships, **so that** real people are portrayed carefully and no card leaks the future.
 
 **Acceptance criteria**
-- Given a Story's content, then an automatic check reports repeated lines, lines that mention later facts and banned words, and the build fails when a card fails.
+- Given a Story's content, then an automatic check reports repeated lines, lines that mention later facts, banned words, a year, a date or an age (DATES-ADMIN-ONLY), and cards over the length limits of LEN-CARD; a card that fails cannot be published.
+- Given a card, then it is published only after a person has read it (READ-STATUS); a script check passing never counts as read.
 - Given a Story, then a person reads it forwards and backwards and one reader who does not know the Story reads it once.
 - Given a first-person line about a real person, then invented content is limited to small actions and objects, never a named new person, never a real public tragedy and never an invented testimony.
 - Given the entries that the mechanical check still flags, then they are cleared before launch.
 - Given a pool changes, then the checks run again on the whole pool.
 
-**Priority:** Must · **Area:** Story content and data (NF3) · **Screens:** none · **Depends on:** US-CON-1 · **Size:** M · **Source:** SM02 C-2, C-4, R4, R9; US-NF3 section 4.2 (X2 to X5); NF3v1 section 2; NF5v3 section 7
+**Priority:** Must · **Area:** Story content and data (NF3) · **Screens:** none · **Depends on:** US-CON-1 · **Size:** M · **Source:** SM02 C-2, C-4, R4, R9; US-NF3 section 4.2 (X2 to X5); NF3v1 section 2; NF5v3 section 7; DEC LEN-CARD, READ-STATUS, DATES-ADMIN-ONLY
 
 ### US-CON-13 · Content inputs for all 26 Oppenheimer Stories
 
 **As a** user who keeps working, **I want** every Story on the path to be playable, **so that** the path never ends on a Story that cannot be opened.
 
 **Acceptance criteria**
-- Given each of the 26 Stories, then it has the inputs the live card writer needs: facts, key slices, people, a scene table and rules (US-CON-1 to US-CON-4, US-CON-7).
-- Given a Story without authored fallback cards, then the generic fallback lines in his voice are used when generation fails or is slow (decision D5); a stronger fallback for those 24 Stories is still open (decision D4).
+- Given each of the 26 Stories, then it has the inputs needed to make its cards ahead: facts, parts, key slices, people, a scene table and rules (US-CON-1 to US-CON-4, US-CON-7).
+- Given a Story, then only its published cards, read by a person, are shown; content that is not published is never shown, and no fallback lines stand in (SHARED-STORY, NO-BACKUP).
 - Given any Story becomes the current Story, then it can be opened and played; none is marked as coming soon.
 
-**Priority:** Should · **Area:** Story content and data (NF3) · **Screens:** CPAGE · **Depends on:** US-CON-8, US-CON-9, US-CON-12 · **Size:** L · **Source:** DEC D4, D5; NF3v1 section 1.1; SM02 R9
+**Priority:** Should · **Area:** Story content and data (NF3) · **Screens:** CPAGE · **Depends on:** US-CON-8, US-CON-9, US-CON-12 · **Size:** L · **Source:** DEC D4, SHARED-STORY, NO-BACKUP; NF3v1 section 1.1; SM02 R9
 
 ---
 
@@ -649,10 +630,10 @@ These rules come from the product principles and from decisions. They are repeat
 - Given I keep working, then further cards appear one at a time on foreground time while the timer runs, at the pace set in US-FMT-3; no card appears while the app is in the background or the clock is frozen.
 - Given a card has been shown, then its text is stored with an id and never changes, is never re-picked and is never regenerated when I look at it again.
 - Given the cards of a Step, then no card repeats in that Step.
-- Given a card cannot be written in time or fails its checks, then the authored fallback card is used (US-AI-2).
+- Given the cards, then they are the Story's published cards, read by a person before publishing (SHARED-STORY, READ-STATUS); a card that is not published is never shown, and no stored stand-in text replaces a card (NO-BACKUP, NO-FALLBACK-TABLES).
 - Given any card, then it carries no time label and no count such as "card 2 of 4".
 
-**Priority:** Must · **Area:** Story format and cards (NF5) · **Screens:** F1, F1-N · **Depends on:** US-AI-2, US-CON-9 · **Size:** M · **Source:** DEC X2, T1, T3, T9; AI10 sections 1, 2 and 4; PROTO F1 (shows several cards at the start, which is wrong under decision X2)
+**Priority:** Must · **Area:** Story format and cards (NF5) · **Screens:** F1, F1-N · **Depends on:** US-AI-2, US-CON-9 · **Size:** M · **Source:** DEC X2, T1, T3, T9, SHARED-STORY, NO-BACKUP; AI10 sections 1, 2 and 4; PROTO F1 (shows several cards at the start, which is wrong under decision X2)
 
 ### US-FMT-2 · The card stack: swipe, buttons and dots
 
@@ -672,12 +653,12 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user, **I want** the cards to arrive at an even pace through the Step, **so that** I notice that something is happening in his day without being flooded.
 
 **Acceptance criteria**
-- Given a Step of y minutes, then the AI chooses the number n of story cards for it according to the Story's progress, with n between 1 and 5.
+- Given a Step of y minutes, then its n story cards are the cards of the Story parts that the app spreads to that Step (CARDS-PER-PART), with n between 1 and 5 (T7).
 - Given n cards, then they arrive at y/n, 2y/n, and so on up to y minutes of foreground time after the Step starts, so the n-th card arrives exactly at 00:00 (US-FOC-4); the gap between cards is never less than 5 minutes, and a Step of 10 minutes has at most 2 cards.
-- Given the AI returns more than 5 cards or cards closer together than 5 minutes, then the app ignores the extra cards.
+- Given a Step would get more than 5 cards or cards closer together than 5 minutes, then the app ignores the extra cards (T7).
 - Given a Step opens, then its opening card (the background card for the first Step, US-FMT-11; the card about what he just finished for later Steps, US-FMT-9) is not one of the n story cards.
 
-**Priority:** Must · **Area:** Story format and cards (NF5) · **Screens:** F1 · **Depends on:** US-FMT-1, US-AI-2 · **Size:** M · **Source:** DEC T1, T7, T8, T9 (decided 2026-11-05)
+**Priority:** Must · **Area:** Story format and cards (NF5) · **Screens:** F1 · **Depends on:** US-FMT-1, US-AI-2 · **Size:** M · **Source:** DEC T1, T7, T8, T9 (decided 2026-11-05), CARDS-PER-PART
 
 ### US-FMT-4 · Every card can be read on its own
 
@@ -687,7 +668,7 @@ These rules come from the product principles and from decisions. They are repeat
 - Given a card, then it makes sense without the card before it: it does not use "again", "another", "as I said", "the same" or "that one", and it does not open with He, She, It or This.
 - Given a card links to the one before it, then it does so by repeating a concrete noun, not a pronoun.
 - Given a single card appears in a list, then the interface adds one system line with the Story name and my Step title.
-- Given the AI writes the cards, then these rules are part of its prompt and are enforced by the checks (US-AI-8).
+- Given the cards are made ahead (US-AI-2), then these rules are part of the prompt and are enforced by the checks (US-AI-8).
 
 **Priority:** Should · **Area:** Story format and cards (NF5) · **Screens:** F1, LPH · **Depends on:** US-CON-12 · **Size:** S · **Source:** DEC D2 (decided 2026-11-05); NF5v3 sections 6.1 and 6.2
 
@@ -700,7 +681,7 @@ These rules come from the product principles and from decisions. They are repeat
 - Given a name in a card, then the content data carries a pronunciation hint for it.
 - Given a spoken-form check, then it fails cards that break the length or symbol rules.
 
-**Priority:** Could · **Area:** Story format and cards (NF5) · **Screens:** F1 · **Depends on:** US-CON-12 · **Size:** M · **Status:** **Blocked by decision NF5-D4**. The Listen button itself is not built in Release 1 (decision X5, see section 14). · **Source:** NF5v3 sections 4.1 and 8
+**Priority:** Could · **Area:** Story format and cards (NF5) · **Screens:** F1 · **Depends on:** US-CON-12 · **Size:** M · **Status:** **Parked** by decision NO-READ-ALOUD (2026-11-12). The Listen button itself is not built in Release 1 (decision X5, see section 14). · **Source:** NF5v3 sections 4.1 and 8
 
 ### US-FMT-8 · Reread a finished Step as the original row of cards
 
@@ -730,10 +711,10 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user opening a Companion's Story for the first time, **I want** a background card that is complete but short, **so that** I read them instead of skipping them.
 
 **Acceptance criteria**
-- Given the background card, which is the opening card of the first Step, then it names where he is, who is present and what each person knows, and its word count is within the limit chosen after the test; the tested first card had 20 words and the draft proposal has 41.
-- Given the limits, then the content check enforces them.
+- Given the background card, which is the opening card of the first Step, then it names where he is, who is present and what each person knows, and it has at most 70 words (LEN-CARD).
+- Given the limit, then the content check enforces it, and a background card over the limit cannot be published (LEN-CARD).
 
-**Priority:** Should · **Area:** Story format and cards (NF5) · **Screens:** F1 · **Depends on:** US-FMT-11 · **Size:** S · **Status:** **Blocked by decision M7** (is a 41-word first card acceptable). · **Source:** DEC M7; SM07 section 1.4
+**Priority:** Should · **Area:** Story format and cards (NF5) · **Screens:** F1 · **Depends on:** US-FMT-11 · **Size:** S · **Source:** DEC M7, CARD-LENGTH, LEN-CARD; SM07 section 1.4
 
 ### US-FMT-11 · A background card in his own voice at the very start of a Goal
 
@@ -744,10 +725,10 @@ These rules come from the product principles and from decisions. They are repeat
 - Given the card, then it is never written from a third-party point of view, and it is not progress: it is not counted among the cards of the Step (US-FMT-3).
 - Given the Goal has several Steps, then the card appears once at the start of the Goal and not at the start of the later Steps, which open with the card about what he just finished (US-FMT-9).
 - Given the stack (US-FMT-2), then the background card is the oldest card and needs no button to dismiss it; the first story card arrives on the schedule of US-FMT-3 and sits on top of it.
-- Given the card is written, then the AI writes it live and it passes the same checks as every card (first person, no future facts, no clock times); an authored or generic fallback is used if generation fails or is slow (US-AI-2).
+- Given the card, then it is made ahead once per Story and shared by all users, passes the same checks as every card (first person, no future facts, no clock times) and has at most 70 words (LEN-CARD); it is shown only once a person has read and published it, and content that is not published is never shown (SHARED-STORY, READ-STATUS, US-AI-2).
 - Given a name in the card, then it is not tappable, and there is no separate "what you need to know" screen.
 
-**Priority:** Must · **Area:** Story format and cards (NF5) · **Screens:** F1 · **Depends on:** US-FMT-1, US-AI-2, US-CON-1 · **Size:** M · **Source:** DEC T4, D3, M2, T9
+**Priority:** Must · **Area:** Story format and cards (NF5) · **Screens:** F1 · **Depends on:** US-FMT-1, US-AI-2, US-CON-1 · **Size:** M · **Source:** DEC T4, D3, M2, T9, SHARED-STORY, LEN-CARD
 
 ---
 
@@ -852,16 +833,17 @@ These rules come from the product principles and from decisions. They are repeat
 
 ### US-FOC-9 · His message gets stronger from the third pause
 
-**As a** user who pauses a lot, **I want** the Companion to say plainly that his own work cannot go on, **so that** the Story answers the stillness without a warning screen.
+**As a** user who pauses a lot, **I want** the Companion's own work to be blocked harder each time, **so that** the Story answers the stillness without a warning screen.
 
 **Acceptance criteria**
-- Given I pause, then his first message on the rest page is about the snag his own work has hit and how he feels about it, generated live; the prompt receives the number of this pause in the Step.
-- Given the third pause in one Step, then the prompt changes: he says more strongly that he cannot finish his own work and asks me not to pause again.
+- Given I pause, then his first message on the rest page is about the snag his own work has hit and how he feels about it, generated live as a new stuck story each time; it is 1 or 2 sentences and at most 30 words (LEN-PAUSE); the prompt receives the number of this pause in the Step.
+- Given the third pause in one Step, then the prompt changes: the stuck situation is much harder, and because he remembers the earlier setbacks he says he is worried he may fail (PAUSE-3).
+- Given any pause message, then it never gives me an instruction and never asks me to stop pausing (PAUSE-3).
 - Given the fourth pause and every later one, then the same strong tone continues in new words each time, and nothing else happens.
 - Given the stronger message, then it appears in the same place as every other message: no new screen, no pop-up, no warning, no timer reset and no penalty.
 - Given I continue to pause, then I can always do so (US-FOC-8).
 
-**Priority:** Should · **Area:** Focus and rest (NF6) · **Screens:** R1 · **Depends on:** US-FOC-8, US-FOC-13, US-AI-5 · **Size:** S · **Source:** DEC F1 (refined 2026-11-05)
+**Priority:** Should · **Area:** Focus and rest (NF6) · **Screens:** R1 · **Depends on:** US-FOC-8, US-FOC-13, US-AI-5 · **Size:** S · **Source:** DEC F1 (refined 2026-11-05), PAUSE-3, LEN-PAUSE
 
 ### US-FOC-10 · Leaving the app freezes the clock
 
@@ -893,7 +875,7 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user who paused, **I want** a quiet page where he mentions a small stuck moment of his own, **so that** resting feels like a shared pause and not like more work.
 
 **Acceptance criteria**
-- Given I pause, then a moment later his first message arrives as a taped slip about the snag his own work has hit and how he feels about it (written live by the AI, with an authored fallback).
+- Given I pause, then a moment later his first message arrives as a taped slip about the snag his own work has hit and how he feels about it (written live by the AI; if it cannot be written within the time limit, the failure message with Retry is shown and no stored line stands in, FAIL-SCREEN, NO-BACKUP).
 - Given the page, then the header shows a Back control named "Back to step", "Paused" and Home, and shows no name, no portrait, no timer, no reply limit and no quick replies.
 - Given I am on the rest page, then no notification is sent and no count of rests or skips appears anywhere.
 - Given I tap Home, then Home opens and the Plan stays paused.
@@ -921,21 +903,22 @@ These rules come from the product principles and from decisions. They are repeat
 **Acceptance criteria**
 - Given I tap Back to step on the rest page, then the focus page opens with the return pop-up (US-FOC-19) in his voice, and the clock stays frozen.
 - Given I tap the start button in the pop-up, then the clock continues from where it stopped.
-- Given the pop-up text cannot be generated or fails its checks, then the authored return text is used (US-CON-10).
+- Given the pop-up text cannot be generated within the time limit or keeps failing its checks, then the failure message with Retry is shown, no stored text stands in and the clock does not start (FAIL-SCREEN, NO-BACKUP).
 - Given the first frame after Back, then there is no recap by the system and no "welcome back"; only he speaks.
 
-**Priority:** Must · **Area:** Focus and rest (NF6) · **Screens:** R1, R1-C, F1-R · **Depends on:** US-FOC-13, US-FOC-19 · **Size:** S · **Source:** DEC R1, T6; PROTO F1-R and R1
+**Priority:** Must · **Area:** Focus and rest (NF6) · **Screens:** R1, R1-C, F1-R · **Depends on:** US-FOC-13, US-FOC-19 · **Size:** S · **Source:** DEC R1, T6, FAIL-SCREEN; PROTO F1-R and R1
 
 ### US-FOC-16 · Failure states: his line fails to load, or there is no network
 
 **As a** user with a poor connection, **I want** the page to stay calm when something fails, **so that** my work is not interrupted by an error.
 
 **Acceptance criteria**
-- Given his card fails to load on the focus page, then an authored fallback line stands in and no error text, spinner or retry appears.
-- Given the rest page has no network, then a bundled message is shown, the input field is disabled and one plain system sentence says why.
+- Given his card fails to load on the focus page, then one calm message in the app's own voice with a Retry button is shown (for example "He is not here right now. Please try again."), the Step clock does not start, and no stored or authored line stands in (FAIL-SCREEN, NO-BACKUP).
+- Given the rest page has no network, then the same failure message with Retry is shown in place of his message, no stored message stands in, and the input field is disabled (FAIL-SCREEN, NO-BACKUP).
 - Given either failure, then Back and the Done and Pause buttons still work.
+- Given the failure message, then it is the app's own text (APP-TEXT), not story text; its wording and the time limit are set by testing (TIME-LIMIT).
 
-**Priority:** Must · **Area:** Focus and rest (NF6) · **Screens:** F3, R-OFF · **Depends on:** US-FOC-1, US-FOC-13 · **Size:** S · **Source:** PROTO F3, R-OFF; US-NF6 NF6-23
+**Priority:** Must · **Area:** Focus and rest (NF6) · **Screens:** F3, R-OFF · **Depends on:** US-FOC-1, US-FOC-13 · **Size:** S · **Source:** PROTO F3, R-OFF; US-NF6 NF6-23; DEC NO-BACKUP, FAIL-SCREEN, APP-TEXT
 
 ### US-FOC-17 · "Where I am now" card from his portrait
 
@@ -968,12 +951,12 @@ These rules come from the product principles and from decisions. They are repeat
 - Given I tap Back from the rest conversation, then the pop-up appears before the clock restarts.
 - Given I return to the app after being away for 5 minutes or more, then the pop-up appears before the clock restarts; given a shorter glance at another app, then the clock resumes with no pop-up.
 - Given I tap Continue on Home or on a Goal in Goals, then the same rule applies: the pop-up appears if I was away 5 minutes or more, and also after Back to step from rest.
-- Given the pop-up, then he says in his own voice what he did during that time and how he felt; the text is generated live (US-AI-4, US-AI-9) with an authored fallback (US-CON-10).
+- Given the pop-up, then he says in his own voice what he did during that time and how he felt; the text is generated live (US-AI-4, US-AI-9); he may say how the time felt in his own words, but no exact clock numbers (TIME-WORDS); if it cannot be generated within the time limit, the failure message with Retry is shown and no stored text stands in (FAIL-SCREEN, NO-BACKUP).
 - Given I tap the start button in the pop-up, then the pop-up closes, the original Step resumes and the clock starts; the clock does not run while the pop-up is open.
 - Given any length of absence, then the pop-up works the same: there is no time limit on resuming, and nothing is lost or marked as not completed.
 - Given the pop-up, then it shows no time away, no count and no blame.
 
-**Priority:** Must · **Area:** Focus and rest (NF6) · **Screens:** F4, F1-R · **Depends on:** US-FOC-10, US-FOC-13, US-AI-4, US-AI-9, US-CON-10 · **Size:** M · **Source:** DEC T6, R1, A6, H2
+**Priority:** Must · **Area:** Focus and rest (NF6) · **Screens:** F4, F1-R · **Depends on:** US-FOC-10, US-FOC-13, US-AI-4, US-AI-9 · **Size:** M · **Source:** DEC T6, R1, A6, H2, TIME-WORDS, NO-BACKUP, FAIL-SCREEN
 
 ---
 
@@ -1004,7 +987,7 @@ These rules come from the product principles and from decisions. They are repeat
 
 **Priority:** Must · **Area:** Goal start dialogue (NF7) · **Screens:** GD2 · **Depends on:** US-GD-1, US-AI-1 · **Size:** M · **Source:** NF7v6 sections 2.1 and 3 (shape slots); AI01 (shape classifier)
 
-### US-GD-3 · He asks how long I have, with quick answers and a "Just split it" path
+### US-GD-3 · He asks how long I have, with a time slider and a "Just split it" path
 
 **As a** user, **I want** to answer the time question in one tap, **so that** I am not asked to compute anything.
 
@@ -1034,13 +1017,13 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user, **I want** to change the titles, descriptions, minutes and number of Steps, **so that** the Plan fits what I actually mean to do.
 
 **Acceptance criteria**
-- Given a Step in the Plan card, then I can tap it to change its title and its description and to change its minutes with a stepper in steps of 15 minutes with controls at least 44 by 44 pixels.
+- Given a Step in the Plan card, then I can tap it to change its title and its description and to change its minutes with −5 and +5 buttons or by typing a whole number, from 1 to 1440 minutes, with controls at least 44 by 44 pixels; at either end the reason is shown in words (STEP-EDIT, #249).
 - Given I add a Step, then it appears with a title field focused and 15 minutes; given I leave its title empty, then it is removed.
 - Given I remove a Step, then it disappears; the control is hidden when one Step remains.
 - Given I empty an existing Step's title, then the previous title returns.
 - Given my edits change the total, then the Goal's time follows the edits, and there is no maximum number of Steps.
 
-**Priority:** Must · **Area:** Goal start dialogue (NF7) · **Screens:** GD4 · **Depends on:** US-GD-5 · **Size:** M · **Source:** NF7v6 section 4; DEC D1d, T2 (decided 2026-11-05)
+**Priority:** Must · **Area:** Goal start dialogue (NF7) · **Screens:** GD4 · **Depends on:** US-GD-5 · **Size:** M · **Source:** NF7v6 section 4; DEC D1d, T2 (decided 2026-11-05), STEP-EDIT
 
 ### US-GD-7 · Plan editing rules: position, order and pinned Start
 
@@ -1051,7 +1034,7 @@ These rules come from the product principles and from decisions. They are repeat
 - Given an open Step, then Move up and Move down buttons are available inside it (no dragging) and are not visible in the collapsed list.
 - Given the Plan, then the Start button stays pinned and visible while I edit.
 
-**Priority:** Should · **Area:** Goal start dialogue (NF7) · **Screens:** GD4 · **Depends on:** US-GD-6 · **Size:** S · **Status:** **Blocked by decision NF7-P5** for the Move up and Move down buttons only (whether they are in Release 1); the old caps on the number and length of Steps are gone (decisions T2 and D1d). · **Source:** NF7v7 sections 4.1, 4.2 and 6 (P5); DEC T2, D1d
+**Priority:** Should · **Area:** Goal start dialogue (NF7) · **Screens:** GD4 · **Depends on:** US-GD-6 · **Size:** S · **Status:** Decision STEP-EDIT (2026-11-12) adds the Move up and Move down buttons; the old caps on the number and length of Steps are gone (decisions T2 and D1d). · **Source:** NF7v7 sections 4.1, 4.2 and 6 (P5); DEC T2, D1d, STEP-EDIT
 
 ### US-GD-8 · When the split fails, say so honestly
 
@@ -1081,11 +1064,11 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user who wrote "study chemistry for an hour", **I want** the app to understand the time, **so that** it does not ask me again.
 
 **Acceptance criteria**
-- Given the Goal states a session length ("for an hour", "90 minutes", "half an hour"), then the time question is skipped, the length is rounded to 15 minutes, and the phrase is removed from the title.
+- Given the Goal states a session length ("for an hour", "90 minutes", "half an hour"), then the time question is skipped (GOAL-TIME), the length is rounded to 15 minutes, and the phrase is removed from the title.
 - Given a duration describes the thing and not the session (for example "a 2-hour lecture"), then the length is not read and the time question is asked.
 - Given the time was taken from the Goal, then he acknowledges it in a short sentence and the Plan card shows the total, which I can change.
 
-**Priority:** Should · **Area:** Goal start dialogue (NF7) · **Screens:** GD2 · **Depends on:** US-GD-3, US-AI-1 · **Size:** M · **Status:** **Blocked by decision NF7-P3**. · **Source:** NF7v7 section 3.1 (P3)
+**Priority:** Should · **Area:** Goal start dialogue (NF7) · **Screens:** GD2 · **Depends on:** US-GD-3, US-AI-1 · **Size:** M · **Status:** Decision GOAL-TIME (2026-11-12): the question is skipped and the understood time is shown and can be changed. · **Source:** NF7v7 section 3.1 (P3); DEC GOAL-TIME
 
 ### US-GD-13 · His lines never state the number of Steps
 
@@ -1093,10 +1076,10 @@ These rules come from the product principles and from decisions. They are repeat
 
 **Acceptance criteria**
 - Given the goal dialogue, then none of his lines states the number of Steps.
-- Given I press Start, then everything that depends on the number of Steps (the AI's spread of the Story across x Steps, US-AI-2) is computed at that moment from the final Plan, never when the Plan is first shown.
+- Given I press Start, then everything that depends on the number of Steps (the app's spread of the Story's parts across x Steps, CARDS-PER-PART, US-AI-2) is computed at that moment from the final Plan, never when the Plan is first shown.
 - Given any number of Steps, then the spread works for each; edits before Start never invalidate any line.
 
-**Priority:** Should · **Area:** Goal start dialogue (NF7) · **Screens:** GD1, GD4 · **Depends on:** US-CON-2 · **Size:** S · **Status:** **Blocked by decision NF7-P7** for the rule that his lines never state the number of Steps; the rest follows decisions T1 to T3. · **Source:** NF7v7 sections 4.1 and 6 (P7); DEC T1, T2, T3
+**Priority:** Should · **Area:** Goal start dialogue (NF7) · **Screens:** GD1, GD4 · **Depends on:** US-CON-2 · **Size:** S · **Status:** Decision NO-STEP-COUNT (2026-11-12) settles the rule that his lines never state the number of Steps; the rest follows decisions T1, T2 and CARDS-PER-PART. · **Source:** NF7v7 sections 4.1 and 6 (P7); DEC T1, T2, NO-STEP-COUNT, CARDS-PER-PART
 
 ### US-GD-14 · The conversation's limits are enforced by the server
 
@@ -1147,47 +1130,49 @@ These rules come from the product principles and from decisions. They are repeat
 - Given the planning call, then the splitting itself, for every kind of Goal, is the job of the planning prompt from the AI workflow (open item P1: the real prompt is still to be added; the text in the AI_01 spec is a placeholder); this backlog sets no splitting rules per kind of Goal.
 - Given the answer, then the code checks that it parses and that the minutes add up to the time I gave (fixing or retrying if not); there is no maximum number of Steps.
 - Given the time I gave, then the Plan always matches it, and no message says the Plan is longer than my time.
-- Given a failure, then the call is retried once and then the failure screen is shown (US-GD-8); generic Steps are never produced silently.
+- Given a failure, then the call is generated again within the time limit and then the failure screen is shown (US-GD-8, FAIL-SCREEN); generic Steps are never produced silently and no stored Plan stands in (NO-BACKUP).
 - Given the calls, then the safety layer sees my text first (US-SAF-1).
 
 **Priority:** Must · **Area:** AI pipeline · **Screens:** GD2, GD4, GD-F · **Depends on:** US-AI-8, US-SAF-1 · **Size:** L · **Source:** AI01; DEC D1a, D1b, D1c, D1d, T2, P1; NF7v7 section 8; US-NF7 NF7-16, NF7-17, NF7-29. The description is in US-GD-9; reading the time from the Goal is in US-GD-11.
 
-### US-AI-2 · The AI writes the Step's cards live, with authored cards as the fallback
+### US-AI-2 · Story cards are made ahead for each part and shared
 
 **As a** user, **I want** the Companion's cards to tie exactly to where his Story is, **so that** nothing he says can reveal what has not happened yet.
 
 **Acceptance criteria**
-- Given I press Start, then the whole Story is given to the AI with the instruction that it is divided into x Steps, where x and the minutes of each Step mirror my Plan, and that, according to the Story's progress, each Step is split into n story cards (US-FMT-3); the key slices are must-use facts (US-CON-2).
-- Given a Step, then its cards are written live from the Story's facts, and every card passes the same checks as an authored card (first person, no future facts, no clock times; US-AI-8) before it is shown.
-- Given a card fails the checks or generation is slow, then the pre-written card from the authored slices is used; for the Stories without authored cards, the generic fallback lines in his voice are used (US-CON-9, US-CON-13).
-- Given the background card (US-FMT-11) and the short line on the Home card, then the same live writer and the same checks apply.
+- Given a Story, then its background card, story cards and closing line are made ahead once per Story and shared by all users; story cards are made for each part of the Story, not for each number of user Steps, and the key slices are must-use facts (SHARED-STORY, CARDS-PER-PART, CLOSING-AHEAD, US-CON-2).
+- Given I press Start, then the app spreads the parts across my Steps with plain code and no model call (CARDS-PER-PART, US-CON-2).
+- Given a card, then it passes the checks (first person, no future facts, no clock times, no year, date or age; US-AI-8, DATES-ADMIN-ONLY) before it is published; a story card is 1 to 3 sentences and at most 45 words and the background card at most 70 words, and a card over the limit cannot be published (LEN-CARD); every card says something new (CARD-NEW).
+- Given a card, then it is shown only after a person has read and published it (READ-STATUS); content that is not published is never shown, and no fallback cards or generic lines exist (NO-BACKUP, NO-FALLBACK-TABLES).
+- Given the card prompt, then it never receives exact dates (DATES-ADMIN-ONLY).
+- Given the short line on the Home card, then the same checks apply.
 - Given a card is shown, then it is stored and never regenerated (US-FMT-1).
 
-**Priority:** Must · **Area:** AI pipeline · **Screens:** H1, F1 · **Depends on:** US-CON-2, US-CON-12, US-AI-8 · **Size:** L · **Source:** DEC T1, T3, T4, D3, D5 (decided 2026-11-05); AI10
+**Priority:** Must · **Area:** AI pipeline · **Screens:** H1, F1 · **Depends on:** US-CON-2, US-CON-12, US-AI-8 · **Size:** L · **Source:** DEC T1, T3, T4, D3 (decided 2026-11-05), SHARED-STORY, CARDS-PER-PART, LEN-CARD, NO-FALLBACK-TABLES, DATES-ADMIN-ONLY; AI10
 
 ### US-AI-3 · The AI writes his stuck moment when I pause
 
 **As a** user who pauses, **I want** his small problem to be different and believable each time, **so that** the rest page feels alive.
 
 **Acceptance criteria**
-- Given I pause, then the AI first generates a stuck story and then he describes the snag his own work has hit and how he feels about it; the pause number is passed in (US-AI-5).
+- Given I pause, then the AI first generates a new stuck story and then he describes the snag his own work has hit and how he feels about it; the pause number is passed in (US-AI-5, PAUSE-3).
 - Given I pause, then the code picks a category (body, gear, weather, ground, paper or sound) that was not used in the last two pauses and a prop not yet used in this Step, and the stuck story uses only that prop.
-- Given the answer is structured (prop, story, why, back), then the checks reject it if the prop is not the offered one, if it names an object outside the scene table, if it contains an event verb (arrives, says, decides, finds, loses and similar), a new person or place, a later fact, a near repeat, or if it is too long (the limit is set in the pause prompt).
-- Given the answer fails, then it is retried once with the reason and then an authored line is used.
+- Given the answer is structured (prop, story, why, back), then the checks reject it if the prop is not the offered one, if it names an object outside the scene table, if it contains an event verb (arrives, says, decides, finds, loses and similar), a new person or place, a later fact, a near repeat, or if it is longer than 2 sentences or 30 words (LEN-PAUSE).
+- Given the answer fails, then it is generated again with the reason within the time limit; if it still fails, the failure message with Retry is shown and no authored line stands in (FAIL-SCREEN, NO-BACKUP).
 - Given the moment, then it never moves his Story: it is texture, not an event, and he stays stuck until I tap Back.
 
-**Priority:** Must · **Area:** AI pipeline · **Screens:** R1 · **Depends on:** US-AI-8, US-CON-7 · **Size:** L · **Source:** DEC C1, F1 (the AI first generates a stuck story and the Companion describes his predicament); AI03v2 sections A1 and A4
+**Priority:** Must · **Area:** AI pipeline · **Screens:** R1 · **Depends on:** US-AI-8, US-CON-7 · **Size:** L · **Source:** DEC C1, F1 (the AI first generates a stuck story and the Companion describes his predicament), LEN-PAUSE, NO-BACKUP, FAIL-SCREEN; AI03v2 sections A1 and A4
 
 ### US-AI-4 · The AI writes the return pop-up when I come back from rest
 
 **As a** user coming back from a break, **I want** him to say what he did and how he felt, **so that** returning feels like moving on together.
 
 **Acceptance criteria**
-- Given I tap Back on the rest page, then the AI writes the pop-up text (US-FOC-19) in his voice: what he did during that time and how he felt, with his situation back to what it was before the snag.
-- Given the text, then it is checked before it is shown (US-AI-8) and, on failure or when slow, the authored return text is used (US-CON-10).
+- Given I tap Back on the rest page, then the AI writes the pop-up text (US-FOC-19) in his voice: what he did during that time and how he felt, with his situation back to what it was before the snag; it states no event that moves the Story.
+- Given the text, then it is checked before it is shown (US-AI-8) and, if it still fails or is too slow after the time limit, the failure message with Retry is shown, no stored text stands in and the clock does not start (FAIL-SCREEN, NO-BACKUP).
 - Given the text is created, then it is stored once and never regenerated.
 
-**Priority:** Must · **Area:** AI pipeline · **Screens:** F1-R · **Depends on:** US-AI-3, US-AI-8 · **Size:** M · **Source:** DEC R1, T6, C1; AI03v2 sections A3 and A5
+**Priority:** Must · **Area:** AI pipeline · **Screens:** F1-R · **Depends on:** US-AI-3, US-AI-8 · **Size:** M · **Source:** DEC R1, T6, C1, NO-BACKUP, FAIL-SCREEN; AI03v2 sections A3 and A5
 
 ### US-AI-5 · The pause prompt receives the pause number
 
@@ -1196,11 +1181,11 @@ These rules come from the product principles and from decisions. They are repeat
 **Acceptance criteria**
 - Given I pause, then the number of the pause in this Step is passed in to the prompt that writes his message (US-AI-3).
 - Given the first and the second pause, then the message is the stuck moment with how he feels about it.
-- Given the third pause, then the prompt tells him to say more strongly that he cannot finish his work and to ask me not to pause again; from the fourth pause the same strong tone continues in new words each time.
-- Given the third-pause message, then it is checked like every other line (US-AI-8), except that the rule against addressing the user does not apply to the one request not to pause again.
+- Given the third pause, then the prompt makes the new stuck situation much harder, and because he remembers the earlier setbacks he says he is worried he may fail; from the fourth pause the same strong tone continues in new words each time (PAUSE-3).
+- Given the third-pause message, then it is checked like every other line (US-AI-8); it never gives me an instruction and never asks me to stop pausing (PAUSE-3), and it is 1 or 2 sentences and at most 30 words (LEN-PAUSE).
 - Given the pause count, then it creates no new screen and no penalty.
 
-**Priority:** Should · **Area:** AI pipeline · **Screens:** R1 · **Depends on:** US-AI-3, US-AI-8 · **Size:** S · **Source:** DEC F1 (refined 2026-11-05)
+**Priority:** Should · **Area:** AI pipeline · **Screens:** R1 · **Depends on:** US-AI-3, US-AI-8 · **Size:** S · **Source:** DEC F1 (refined 2026-11-05), PAUSE-3, LEN-PAUSE
 
 ### US-AI-6 · The rest conversation replies
 
@@ -1210,36 +1195,37 @@ These rules come from the product principles and from decisions. They are repeat
 - Given I send a message, then the AI answers in one to three sentences in his voice from his own situation and what he could plausibly know in his time, and ends by returning to his own situation; he does not have to refuse a question about my work or the world.
 - Given the AI returns a label for my message (about his world, my work, general knowledge, him, how I feel, about what he is or nothing clear) together with the reply, then the checks use the label.
 - Given a message about how I feel, then he answers with one line of his own of similar weight and gives no advice, no method and no promise that it will pass.
-- Given a question about something he could not know, then the AI does not state a fact from after his date; how he handles such a question is still to be decided.
-- Given at most one question per reply, then he never asks a question as the last message before I tap Back.
+- Given a question about something he could not know, then he answers as a person of his own time would: he says what he knows, says plainly when he does not know, and may guess; he does not state a fact from after his date (ERA-ANSWER).
+- Given a reply, then it has at most one question and may end on it (CHAT-QUESTION-END).
 - Given a message that the safety layer flags as a crisis, then his reply is not generated or not shown (US-SAF-2).
 - Given I ask whether he is an AI, then the conversation does not mention it (US-ACC-6).
 
-**Priority:** Must · **Area:** AI pipeline · **Screens:** R1-C · **Depends on:** US-AI-7, US-AI-8, US-SAF-1 · **Size:** L · **Status:** Decision A3 is made (he may answer and need not refuse); how he handles things he could not know is still open. · **Source:** DEC A3, A4; AI04v2 sections A2, A3 and B (the earlier recommendation to never answer is superseded)
+**Priority:** Must · **Area:** AI pipeline · **Screens:** R1-C · **Depends on:** US-AI-7, US-AI-8, US-SAF-1 · **Size:** L · **Status:** Decisions A3 and ERA-ANSWER are made (he may answer and need not refuse; he answers things he could not know as a person of his time would). · **Source:** DEC A3, A4, ERA-ANSWER, CHAT-QUESTION-END; AI04v2 sections A2, A3 and B (the earlier recommendation to never answer is superseded)
 
 ### US-AI-7 · Guard and cost caps for the rest conversation
 
 **As a** product owner, **I want** each reply checked and the cost bounded, **so that** the chat stays in character and affordable.
 
 **Acceptance criteria**
-- Given a reply, then it is checked for words from after his date (a list per Story), for facts from later in the Story, for advice, for length, and for questions.
-- Given a reply fails twice, then an authored fallback of the matching label is used (US-CON-11).
+- Given a reply, then it is checked for words from after his date (a list per Story), for advice, for length, and for questions, and it passes the same spoiler check as the story cards, against the parts I have not reached (CHAT-SPOILER-CHECK).
+- Given a reply fails, then it is generated again within the time limit; if it still fails, the failure message with Retry is shown and no stored or authored reply stands in (FAIL-SCREEN, NO-BACKUP).
 - Given the cost caps, then only the last six turns are sent to the AI and a message of more than 300 characters is shortened.
 - Given the rest conversation, then there is no message limit and no hidden cap; cost is controlled by the length of each message only (decision R2).
 
-**Priority:** Must · **Area:** AI pipeline · **Screens:** R1-C · **Depends on:** US-AI-6, US-CON-11 · **Size:** M · **Source:** DEC R2; AI04v2 section A4; AI09v2 T5; AI06
+**Priority:** Must · **Area:** AI pipeline · **Screens:** R1-C · **Depends on:** US-AI-6 · **Size:** M · **Source:** DEC R2, CHAT-SPOILER-CHECK, NO-BACKUP, FAIL-SCREEN; AI04v2 section A4; AI09v2 T5; AI06
 
-### US-AI-8 · One check-and-fallback pipeline for every AI line
+### US-AI-8 · One check pipeline for every AI line
 
 **As a** product owner, **I want** every AI-written line to pass the same gate, **so that** nothing unchecked ever reaches the screen.
 
 **Acceptance criteria**
-- Given any AI output, then it is parsed, cleaned and checked against the rules for one-way lines (no question, no "you", no hook, no clock or duration, no later-fact words, no dash and a full stop at the end), then retried once with the failure reason, then replaced by an authored fallback.
+- Given any AI output, then it is parsed, cleaned and checked against the rules for one-way lines (no question, no "you", no hook, no clock or duration, no later-fact words, no dash and a full stop at the end), then generated again with the failure reason within the time limit. A live line that still fails is not shown: the failure message with Retry appears and nothing stored replaces it (NO-BACKUP, FAIL-SCREEN). A made-ahead card that fails cannot be published (SHARED-STORY).
+- Given a rest conversation reply, then it may end on its one question (CHAT-QUESTION-END) and is not checked against the per-run list below (CHAT-NO-RUN-LIST).
 - Given a run, then every one-way line shown is recorded in a per-run list; a new line is rejected if it matches an earlier one exactly, shares three-word openings with the last four lines, or has a similarity of 0.5 or more.
 - Given a card and a rest moment in the same Step, then the moment may not reuse the nouns of the last card.
 - Given an AI line is checked, then it is checked before it is shown and never after.
 
-**Priority:** Must · **Area:** AI pipeline · **Screens:** none · **Depends on:** none · **Size:** L · **Source:** AI06; AI10 section 4; AI03v2 section B
+**Priority:** Must · **Area:** AI pipeline · **Screens:** none · **Depends on:** none · **Size:** L · **Source:** AI06; AI10 section 4; AI03v2 section B; DEC NO-BACKUP, FAIL-SCREEN, CHAT-QUESTION-END, CHAT-NO-RUN-LIST
 
 ### US-AI-9 · The return pop-up after an absence is generated live
 
@@ -1247,21 +1233,22 @@ These rules come from the product principles and from decisions. They are repeat
 
 **Acceptance criteria**
 - Given I return after being away for 5 minutes or more, then the AI generates the pop-up text (US-FOC-19) in his voice: what he did during that time and how he felt, from the entry state only and with no text from me.
-- Given the text, then it passes the checks of US-AI-8 and a text that fails is replaced by an authored return text (US-CON-10).
-- Given the AI is slow (beyond the limit set with the AI owner), then the authored return text is used so that the screen is never held up.
+- Given the text, then it passes the checks of US-AI-8, and a text that fails is generated again within the time limit.
+- Given the AI is slow, then I wait up to the time limit set by testing (TIME-LIMIT); if it still fails, the failure message with Retry is shown, no stored text stands in and the clock does not start (FAIL-SCREEN, NO-BACKUP).
 
-**Priority:** Must · **Area:** AI pipeline · **Screens:** F4 · **Depends on:** US-AI-8, US-CON-10 · **Size:** M · **Source:** DEC A6, H2, T6, R1; AI03v2 section C3. The size of the authored fallback is still open.
+**Priority:** Must · **Area:** AI pipeline · **Screens:** F4 · **Depends on:** US-AI-8 · **Size:** M · **Source:** DEC A6, H2, T6, R1, NO-BACKUP, FAIL-SCREEN; AI03v2 section C3
 
 ### US-AI-10 · The closing line on the summary
 
-**As a** user who finished the last Step, **I want** a closing line that reflects how the stretch went for him, **so that** the ending feels earned.
+**As a** user who finished the last Step, **I want** a closing line that tells what happened to him that day, **so that** the ending feels earned.
 
 **Acceptance criteria**
-- Given I finish the last Step, then one AI call writes one to three sentences in his voice, built from how the run went (smooth or rough, the moments that had him stuck and how they resolved) and from the last moment of the Story.
-- Given the call, then it receives no text from me, no Goal and no Step names.
-- Given the line, then it is checked (US-AI-8), stored with the run, shown on the summary and in the record of the Story, and never regenerated; a story-level fallback for smooth and rough is used on failure.
+- Given a Story, then its closing line is made ahead with the Story's cards and is read and published with them (CLOSING-AHEAD); it is 1 to 3 sentences and at most 45 words in his voice, and a line over the limit cannot be published (LEN-CARD).
+- Given the line, then it tells what happened to him that day and how he feels about it; it does not count my pauses and does not judge me (END-TONE).
+- Given the prompt that makes it, then it receives no text from me, no Goal and no Step names.
+- Given the line, then it is checked (US-AI-8), shown on the summary and in the record of the Story, and never regenerated; a closing line that is not published is never shown, and no fallback line stands in (NO-BACKUP).
 
-**Priority:** Must · **Area:** AI pipeline · **Screens:** END, LPH · **Depends on:** US-AI-8 · **Size:** M · **Source:** AI07; SM00 D12, D18
+**Priority:** Must · **Area:** AI pipeline · **Screens:** END, LPH · **Depends on:** US-AI-8 · **Size:** M · **Source:** AI07; SM00 D12, D18; DEC CLOSING-AHEAD, END-TONE, LEN-CARD
 
 ### US-AI-11 · What may be sent to the AI provider
 
@@ -1278,8 +1265,8 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** product owner, **I want** the AI features measured before users see them, **so that** repeats, leaks and cost are known.
 
 **Acceptance criteria**
-- Given the stuck moments, then 20 runs of five pauses in each of four entry states are generated with category choice on and off, and repeats, event verbs, escalation, retries and fallbacks are counted.
-- Given the rest conversation, then a set of 60 messages across six labels at three entry states (180 replies) is run, and relevance, in-character rate, leaks, advising, retries, fallbacks, latency and cost are recorded.
+- Given the stuck moments, then 20 runs of five pauses in each of four entry states are generated with category choice on and off, and repeats, event verbs, escalation, retries and failure messages are counted.
+- Given the rest conversation, then a set of 60 messages across six labels at three entry states (180 replies) is run, and relevance, in-character rate, leaks, advising, retries, failure messages, latency and cost are recorded.
 - Given the split call, then 60 to 80 Goal lines (some with ambiguous time phrases) are each run three times and validity, kind and time reading are measured.
 - Given the results, then they are compared with the targets set before the run, and a failed target blocks the matching story from release.
 
@@ -1376,8 +1363,8 @@ These rules come from the product principles and from decisions. They are repeat
 
 **Acceptance criteria**
 - Given any AI reply, then it passes the shared check (US-AI-8) and a denylist of method and instruction words owned by compliance.
-- Given a reply fails, then it is not shown and the authored fallback is used.
-- Given authored pools, then whether the guard applies to them is confirmed (the earlier decision was that they are reviewed offline instead).
+- Given a reply fails, then it is not shown; the failure message with Retry appears and no stored text stands in (FAIL-SCREEN, NO-BACKUP).
+- Given made-ahead story content (SHARED-STORY), then whether the guard applies to it before publishing is confirmed (the earlier decision was that authored content is reviewed offline instead).
 
 **Priority:** Must · **Area:** Safety · **Screens:** R1-C, R1 · **Depends on:** US-AI-8 · **Size:** S · **Source:** AI05v2 sections 3 and 7 (item 9)
 
@@ -1578,8 +1565,8 @@ These stories appeared in older documents and are not in the backlog, either bec
 | A user-facing switch that turns the Story off | SM07 section 3 | Decision M4: out of scope. Only an internal research flag remains (US-MAP-11). "Quiet" mode is decided after a test. |
 | Notification when the user leaves mid-Step (level 2) and app blocking (level 3) | NF6v7 section 3 | Decision F4: only level 1 (the character's card about his own situation on return, now the return pop-up, US-FOC-19). Level 2 is neither built nor tested; level 3 is never built. This is a Won't. |
 | The rest conversation ends after the Kth reply with a pre-written closing and a greyed input | US-NF6 NF6-14 | Superseded by the decision of no chat reply limit (AI09v2, D-AI-4); see US-FOC-14. |
-| Return line chosen from an authored pool and never generated | AI03v2 section C; NF4v4 section 2 (P2) | Decision A6 and H2: generated live by the AI with an authored fallback. Rewritten as the return pop-up (US-FOC-19, US-AI-9). |
-| An authored pool of about 100 lines per Story as the main source for rest scenes | NF3v1 section 1 | Decision C1: the AI generates; the pool shrinks to a fallback. Rewritten as US-CON-7. |
+| Return line chosen from an authored pool and never generated | AI03v2 section C; NF4v4 section 2 (P2) | Decision A6 and H2: generated live by the AI, with no authored fallback (NO-BACKUP, FAIL-SCREEN). Rewritten as the return pop-up (US-FOC-19, US-AI-9). |
+| An authored pool of about 100 lines per Story as the main source for rest scenes | NF3v1 section 1 | Decision C1: the AI generates; authored lines are reference examples and evaluation material only (NO-BACKUP). Rewritten as US-CON-7. |
 | He answers "Are you an AI?" with one honest sentence in the system voice | AI04v2 question 1; AI09v2 (P4) | Decision A4: disclosure only in the terms and settings, with a legal check and the sentence as a fallback. Rewritten as US-ACC-6 and US-SAF-8. |
 | Safety parked, "not needed for now" | AI09 version 1 (D-AI-5) | Decision A5, amended by A5b: two tiers in the first demo (crisis and ordinary stress). Rewritten as US-SAF-1, US-SAF-2 and US-SAF-4 to US-SAF-9. |
 | He must never answer a question about the user's work or general knowledge and never explains | AI04v2 section A1 (option 1); AI09v2 (P3) | Decision A3 (answer of 2026-11-05): no hard refusal. Rewritten as US-AI-6. |
@@ -1588,7 +1575,7 @@ These stories appeared in older documents and are not in the backlog, either bec
 | Goal picker "Which goal is tonight for?", Companion chooser screens (B2, B3A, B3B), Life Path sheet from a strip | G02 G-23; SM02 SM-1, SM-17, SM-21 | Deferred by SM00 D29 and not in the prototype. Release 1 goes Companions, Life Path page, Begin, goal dialogue. |
 | Reminders at a time the user sets, and Repeat for Ongoing Goals | G02 G-14, G-21; US-NF7 NF7-12, NF7-27 | The start-time module does not exist; the Reminders row is hidden. Won't in Release 1. |
 | Learning cards, source labels per card and three-level source labelling | US-NF3 D4 and D5 | Decision D7 (SM00): no source labels on any screen; the learning card was cancelled in FLOW D-9. The unified statement is US-ACC-6. |
-| A listening button that reads a card aloud, and auto-reading of new cards | US-NF5; NF6v7 sections 4 and 9 | Parked: not in Release 1 (NF6v7 to-do 1; decision X5 asks for the confirmation). Only the writing style is prepared (US-FMT-7). This is a Won't. |
+| A listening button that reads a card aloud, and auto-reading of new cards | US-NF5; NF6v7 sections 4 and 9 | Parked: not in Release 1 (NF6v7 to-do 1; decision X5 asks for the confirmation). The writing style (US-FMT-7) is parked too (NO-READ-ALOUD). This is a Won't. |
 | Shared-desk presence, live feeds and reel-style content | US-NF5 stories 8 and 9; parked presence insights | Parked research; not in the current wireframes. |
 | Diary page, offline daily-life pool, weekly drip, user-declared pause and similar life-state stories | NF4 user stories US7, US8, US9, US12, US14 | Replaced by NF4v4, which keeps only the status line, the return line and the new Home states. |
 | Recommending a Companion by Goal type, changing Companion after the first session, importing Goals, two-pane layout on wide screens | G02 G-18 to G-20, G-22 | Not in the current wireframes and no decision supports them. |
@@ -1602,10 +1589,15 @@ These stories appeared in older documents and are not in the backlog, either bec
 | Supported and unsupported kinds of Goal, and splitting rules by kind | US-GD-10 of the earlier backlog; NF7v7 sections 1 and 2 | Decisions D1a and D1b: free text with no restriction; splitting is the job of the AI planning prompt. |
 | A maximum of five Steps and limits on the minutes of a Step | US-GD-7 of the earlier backlog; NF7v7 section 4 | Decisions T2 and D1d: no maximum; the user can edit fully. Rewritten as US-GD-6 and US-GD-7. |
 | A limit of 30 messages in the rest conversation | AI04v2 section A4; AI09v2 | Decision R2: no message limit. Rewritten as US-AI-7. |
-| A card every 10 foreground minutes, three to seven timed cards, "small turns" as a content requirement, and authored pools as the only source of cards | NF5v3 sections 3.1 to 3.4; AI02; US-FMT-3 and US-AI-2 of the earlier backlog | Decisions T1, T3, T7 and D2: n cards per Step (1 to 5, at least 5 minutes apart), written live with authored cards as the fallback. Rewritten as US-FMT-3 and US-AI-2. |
+| A card every 10 foreground minutes, three to seven timed cards, "small turns" as a content requirement, and authored pools as the only source of cards | NF5v3 sections 3.1 to 3.4; AI02; US-FMT-3 and US-AI-2 of the earlier backlog | Decisions T1, T3, T7 and D2: n cards per Step (1 to 5, at least 5 minutes apart). Cards are made ahead for each Story part and shared, and the app spreads the parts across the Steps (SHARED-STORY, CARDS-PER-PART); there are no fallback cards (NO-BACKUP). Rewritten as US-FMT-3 and US-AI-2. |
 | The success measures, the start-rate north star and the silent measures list | US-PLAT-5 of the earlier backlog; US-NF7 NF7-1, NF7-15 | Decision N1: removed; measurement will be designed later. |
 | A prompt to keep progress by signing in after the first finished Step | G02 G-29; FLOW screen SAVE | Decision ACC: an account is required at first open. Rewritten as US-ACC-1. |
 | A step-out line for low mood and the low-mood tier of the classifier | US-SAF-3 of the earlier backlog; AI05v2 | Decision A5b: the low-mood tier is not in the first demo. |
+| Authored or generic fallback cards and lines shown when generation fails or is slow: return texts for the pop-up, neutral replies and deflections for the rest conversation, stuck lines, fallback cards and a smooth or rough closing-line fallback | US-CON-10 and US-CON-11 of the earlier backlog; DEC T3 safety net, D5, A6 and H2; AI03v2 section C3; AI04v2 sections A2 and A4 | Decisions NO-BACKUP, FAIL-SCREEN and NO-FALLBACK-TABLES: no stored text ever stands in for a failed live message; the failure message with Retry is shown. Made-ahead content is shown only when published (SHARED-STORY). |
+| He asks the user not to pause again from the third pause | US-FOC-9 and US-AI-5 of the earlier backlog; DEC F1 | Decision PAUSE-3: he never gives an instruction and never asks the user to stop pausing. |
+| Ages on Life Path rows, an age ruler, a date precision and an approximate-date flag on Story records | US-MAP-3 and US-CON-1 of the earlier backlog; SM02 | Decisions PERIODS and DATES-ADMIN-ONLY: named periods, no dates or ages for the user; exact dates only in the admin. |
+| An AI that spreads the Story across the user's Steps, and cards written live for each user | US-CON-2 and US-AI-2 of the earlier backlog; DEC T3 | Decisions SHARED-STORY and CARDS-PER-PART: cards are made ahead per part and shared; the app spreads the parts with plain code. |
+| A Step stepper in steps of 15 minutes | US-GD-6 of the earlier backlog | Decision STEP-EDIT: −5 and +5 and a typed whole number, 1 to 1440 minutes. |
 
 ---
 
@@ -1615,9 +1607,9 @@ These questions came up while writing the stories. None is answered in the sourc
 
 | Id | Question | Stories affected |
 |---|---|---|
-| OQ-4 | Do finished Story texts exist for the seven single-Story Companions? In the prototype only Oppenheimer can be played. | US-MAP-2 |
-| OQ-7 | What goes in the "Your record" section of the summary (Plan length, focus time, ideas for next time)? | US-MAP-9 |
-| OQ-8 | Which test comes first (decision F6 and G6)? It decides what to build for the test build. | Milestone M1 |
+| OQ-4 | ~~Do finished Story texts exist for the seven single-Story Companions?~~ Settled by OTHER-COMPANIONS: they are out of scope for Release 1 until each has a content plan. | US-MAP-2 |
+| OQ-7 | ~~What goes in the "Your record" section of the summary?~~ Settled by SUMMARY-RECORD: only the plan length and the focus time, with no verdict. | US-MAP-9 |
+| OQ-8 | ~~Which test comes first?~~ Settled by TEST-LATER: the first user test is chosen after the live-generation demo works. | Milestone M1 |
 
 ---
 
@@ -1631,7 +1623,7 @@ The goal of M1 is that a real tester can create an account, type a Goal, get a P
 
 - **Goal dialogue:** US-GD-1, US-GD-2, US-GD-3, US-GD-16, US-GD-5, US-GD-6, US-GD-8, US-GD-9, US-GD-14, US-GD-15
 - **Focus page with cards:** US-FOC-1, US-FOC-2, US-FOC-3, US-FOC-4, US-FOC-5, US-FOC-6, US-FOC-7, US-FOC-8, US-FOC-10, US-FMT-1, US-FMT-2, US-FMT-3, US-FMT-4, US-FMT-9, US-FMT-11, US-FOC-16, US-FOC-18
-- **Rest conversation and return:** US-FOC-9, US-FOC-13, US-FOC-14, US-FOC-15, US-FOC-19, US-AI-3, US-AI-4, US-AI-5, US-AI-6, US-AI-7, US-AI-9, US-CON-4, US-CON-7, US-CON-10, US-CON-11
+- **Rest conversation and return:** US-FOC-9, US-FOC-13, US-FOC-14, US-FOC-15, US-FOC-19, US-AI-3, US-AI-4, US-AI-5, US-AI-6, US-AI-7, US-AI-9, US-CON-4, US-CON-7
 - **Summary:** US-MAP-9, US-MAP-5, US-MAP-6
 - **Oppenheimer content:** US-CON-1, US-CON-2, US-CON-8, US-CON-9, US-CON-12
 - **AI and safety foundations:** US-AI-1, US-AI-2, US-AI-8, US-AI-10, US-AI-12, US-SAF-1, US-SAF-2, US-SAF-9
@@ -1651,7 +1643,8 @@ The goal of M1 is that a real tester can create an account, type a Goal, get a P
 
 ### M4 · Polish and compliance
 
-- **Decisions that refine the core loop (move earlier once decided):** US-GD-7 (NF7-P5), US-GD-11 (NF7-P3), US-GD-13 (NF7-P7), US-FMT-7 (NF5-D4), US-FMT-10 (M7), US-CON-5 (C3)
+- **Refinements of the core loop, now decided:** US-GD-7 (STEP-EDIT), US-GD-11 (GOAL-TIME), US-GD-13 (NO-STEP-COUNT), US-FMT-10 (LEN-CARD), US-CON-5 (CARD-NEW)
+- **Parked:** US-FMT-7 (NO-READ-ALOUD)
 - **Home refinements:** US-HOME-11
 - **Settings and search:** US-GM-6, US-MAP-11
 - **Safety and compliance:** US-SAF-4, US-SAF-5, US-SAF-6, US-SAF-7, US-SAF-8, US-ACC-4, US-ACC-5, US-ACC-6, US-AI-11 (A7b)

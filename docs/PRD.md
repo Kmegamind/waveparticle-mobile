@@ -1,6 +1,6 @@
 # WaveParticle Mobile: Product Requirements Document
 
-Version 0.1 (draft). Date: 2026-11-05. Owner: Yue (product and content). Decisions are recorded up to 2026-11-05.
+Version 0.1 (draft). Date: 2026-11-05. Owner: Yue (product and content). Decisions are recorded up to 2026-11-15 (issue #295).
 
 This document describes release 1 of WaveParticle, a mobile-first web app. It replaces the older master document. Where an older source disagrees with a decision that Yue has made, the decision wins. Where two sources disagree and no decision exists, the question is listed in section 10 and nothing is invented to fill the gap.
 
@@ -40,13 +40,14 @@ The founder also experienced the effect in three "gold standard" moments with ch
 
 | Term | Meaning |
 |---|---|
-| Companion | The character who accompanies the user. Release 1 has one playable Companion, Oppenheimer. |
+| Companion | The character who accompanies the user. Release 1 builds two Companions, Oppenheimer and Moriarty (OTHER-COMPANIONS). |
 | Goal | Something the user wants to finish or keep doing. It has a title, a Companion, a type (One-time or Ongoing) and a status (In progress, On hold, Done). |
 | Step | One part of a Goal with a short title, a description of one or two sentences, and a target number of minutes. The user works on one Step at a time. There is no maximum number of Steps. |
 | Run | One attempt at a Goal: its Steps, current Step, clock position and the story it is bound to. A Goal has at most one open Run. |
-| Story | One episode of the Companion's life (for Oppenheimer, one chapter such as a night, a lunch or a hearing). |
-| Slice | A short unit of a story, built from one to three historical facts. Slices supply the facts the AI writes cards from and the authored fallback cards. |
-| Card | One short first-person text from the Companion shown on the focus page. A Step has between one and five story cards; one extra background card opens the Goal. |
+| Story | One episode of the Companion's life (for Oppenheimer, one chapter such as a night, a lunch or a hearing). A story has 2 to 5 parts (STORY-PARTS). |
+| Part | One of the Companion's tasks in a story. Story cards are made ahead for each part, and the app spreads the parts across the user's Steps (CARDS-PER-PART). |
+| Slice | A short unit of a story, built from one to three historical facts. Slices supply the facts the story cards are made from. |
+| Card | One short first-person text from the Companion shown on the focus page. Story cards are made ahead once per story part, read by a person and shared by all users (SHARED-STORY); one extra background card opens the Goal. |
 | Fate link | The rule that the story advances only when the user finishes a Step. |
 | N | The number of Steps in the user's plan. |
 
@@ -67,7 +68,7 @@ These come from the Core Experience Constitution. Any change that breaks a pilla
 
 ### 2.2 Constraints that hold everywhere
 
-1. No streaks, no shame, no "you missed". Coming back is always allowed. Nothing he says blames the user or measures the time away; the return pop-up speaks only of his own situation.
+1. No streaks, no shame, no "you missed". Coming back is always allowed. Nothing he says blames the user or measures the time away; the return pop-up speaks only of his own situation, and he may say how the time felt to him in his own words (TIME-WORDS).
 2. He is self-driven. The user's finishing a Step decides only when his next beat happens, never why he acts.
 3. He never knows the future. He knows only what he could know at that moment of his life.
 4. He does not instruct, advise, praise or coach, and he is never in the user's room.
@@ -93,7 +94,7 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | Area | Contents |
 |---|---|
 | Home | First visit, in-progress state, state after finishing, Goal options menu, start-over confirmation |
-| Companion browsing | The Companions list (eight characters) and the Oppenheimer Life Path page with current story card |
+| Companion browsing | The Companions list (Oppenheimer and Moriarty, OTHER-COMPANIONS) and the Oppenheimer Life Path page with current story card |
 | Goal dialogue | The conversation that turns a Goal into Steps: the Goal, the time, whether to split finer, an editable plan, failure state, one-step plan |
 | Focus page | Story cards on his side, the user's side, Done and Pause, single-step variant, timer at zero, signals |
 | Rest conversation | The page opened by Pause: his message about the snag in his own story, free conversation, offline state, Back with the return pop-up |
@@ -101,6 +102,7 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | Goals and Me | Goals (In progress, On hold, Done, History), Goal detail, New goal, and Me (appearance, signals, about, data, history calendar, session record) |
 | Safety | Two-tier safety page and responses (crisis and everyday stress) |
 | Accounts | Sign-up or sign-in when the product is first opened, privacy notice, account deletion |
+| Content admin | A website at `/admin` for writers and the product manager to edit Companions, stories, cards, app text, prompts and checks; changes go live only on Publish (ADMIN) |
 
 ### 3.3 Explicitly out of release 1
 
@@ -110,14 +112,14 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | Level-2 notifications (one opt-in nudge in his voice when the user leaves mid-Step). Level 3 (blocking other apps) is never built. | F4 |
 | The low-mood safety tier. The first demo has the crisis tier and everyday stress only. | A5b |
 | The listen button (hear a card read aloud) and automatic reading of new cards. | X5 |
-| Full content for the other seven characters. They may appear in the Companions list, but only Oppenheimer has playable content. | Brief |
+| The other six companions of the old product, until each has a content plan. Only Oppenheimer and Moriarty are being built. | OTHER-COMPANIONS |
 | A language setting, or any interface language other than English. | L1 |
 | Reminders and start times, and the Repeat option on Ongoing Goals. The Reminders row in Me stays hidden. | Master PRD, GOALS_02 |
 | Choosing, swapping or skipping stories, and side stories. Stories are played in path order, and all 26 are playable. | STORYMAP_02, D4 |
 | Due dates, priorities, labels, projects, streaks, scores, rankings, progress bars, percentages, "N of M". | GOALS_02, constitution |
 | Tutoring, stranger matching, scoring completions, a user-built character. | Master PRD |
 | Long-term memory about the user and a memory board. Not in the wireframes. | Master PRD |
-| Payments, subscriptions and an admin back office. | Master PRD |
+| Payments and subscriptions. | Master PRD |
 
 ---
 
@@ -132,17 +134,17 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | FR-START-3 | The dialogue asks in this order: the Goal, the time available, then whether to split the Goal into finer Steps. There is no feeling question. The assistant proposes a split and the user can adjust it. | Must | T2, D1e |
 | FR-START-4 | A shortcut called "Just split it" skips the conversation and uses 30 minutes when no time was given. The prototype uses 60 minutes, which is wrong. | Must | NF7 v6 spec |
 | FR-START-5 | One small classification call labels the Goal as specific, big, vague or unknown and decides which authored reaction line he says. A vague Goal gets no follow-up question; the planning prompt turns it into concrete first steps (D1f). | Must | |
-| FR-START-6 | The time question offers quick replies (30 minutes, 1 hour, 2 hours, Not sure) and accepts typed text; Not sure means 30 minutes. | Should | |
+| FR-START-6 | The time question is a slider from 0 to 3 hours with no fixed example times, plus Not sure; Not sure means 30 minutes. | Should | TIME-SLIDER |
 | FR-START-7 | A split call, driven by the AI planning prompt (P1), turns the Goal and time into Steps, each with a short title, a description and minutes; the minutes sum to the time the user gave, and code validates every result. How a plan is split for different kinds of Goals is the job of that prompt, not of this document. | Must | D1b, D1d |
 | FR-START-8 | When the split fails twice, a system-voice failure screen keeps the user's text and offers "Try again" and a one-step plan. The app never shows a silent generic list of Steps. | Must | |
 | FR-START-9 | A one-step plan is allowed, and focus screens then drop "Step 1 of 1" and any step list. | Must | |
 | FR-START-10 | The plan card is fully editable before the user starts: the title, description and minutes of each Step, and the number of Steps (add or remove; remove is hidden when only one remains). If the edits change the total, the Goal's time follows the edits. Start stays visible. | Must | D1d |
-| FR-START-11 | Editing rules: adding inserts after the Step being edited, there is no maximum number of Steps, minutes are whole positive numbers, and empty titles are removed or reverted, also checked on the server. | Should | T2, D1d |
-| FR-START-12 | Move up and Move down buttons (not dragging) let the user reorder Steps. | Could | NF7-P5 (proposal) |
+| FR-START-11 | Editing rules: adding inserts after the Step being edited, there is no maximum number of Steps, and empty titles are removed or reverted, also checked on the server. A Step's minutes are changed with −5 and +5 buttons or by typing a whole number from 1 to 1440; at either end the reason is shown in words. | Should | T2, D1d, STEP-EDIT (#249) |
+| FR-START-12 | Move up and Move down buttons (not dragging) let the user reorder Steps. | Could | STEP-EDIT |
 | FR-START-13 | Each Step has a short title and a description of one or two sentences that expands the title (what to do and what to watch for). The description is generated with the plan, is editable on the plan card, is shown read-only under the Step name on the focus page, and is shown as nothing when missing. | Must | D1c, X4 |
-| FR-START-15 | When the Goal text states a session length, the app reads it, skips the time question, and removes the phrase from the title; durations that describe the thing ("a 2-hour lecture") do not count. | Should | NF7-P3 (proposal) |
-| FR-START-17 | N is fixed when the user presses Start. Anything that depends on N, including his own x Steps of y minutes and the card count for each Step, is computed then, and his dialogue lines never state the number of Steps. | Must | T1; NF7-P7 (proposal) |
-| FR-START-18 | There is no maximum number of Steps and no story capacity. Key moments are must-use inputs to the AI. When there are fewer Steps than key slices, key moments are merged by the key-slice rule (FR-STORY-8). | Must | T2, T3, C2 |
+| FR-START-15 | When the Goal text states a session length, the app reads it, does not ask the time question again, shows the time it understood so the user can change it, and removes the phrase from the title; durations that describe the thing ("a 2-hour lecture") do not count. | Should | GOAL-TIME; NF7-P3 (proposal, for the title) |
+| FR-START-17 | N is fixed when the user presses Start. Anything that depends on N, including his own x Steps of y minutes and which story parts fall in each Step (plain app code, no model call), is computed then. His lines never state the number of Steps or how many are left. | Must | T1, CARDS-PER-PART, NO-STEP-COUNT |
+| FR-START-18 | There is no maximum number of Steps and no story capacity. Key moments are must-use inputs when the story's cards are made ahead. When there are fewer Steps than key slices, key moments are merged by the key-slice rule (FR-STORY-8). | Must | T2, T3, C2 |
 | FR-START-19 | The Goal and its Run are created when the user presses Start on the plan, and the Type (One-time or Ongoing) is not asked then; it is a chip in the Goal detail. | Must | FLOW D-5 |
 
 ### 4.2 Goals page (FR-GOAL)
@@ -168,12 +170,12 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 
 | ID | Requirement | Priority | Decision |
 |---|---|---|---|
-| FR-MAP-1 | The Companions page lists the eight characters with one line each in their own voice; the interface stays neutral and the portraits carry colour. | Must | S1 |
-| FR-MAP-2 | The Oppenheimer page shows his stories in date order with an age ruler, each row showing an age, and opens on the current story card. | Must | S1 |
+| FR-MAP-1 | The Companions page lists Oppenheimer and Moriarty with one line each in their own voice; the interface stays neutral and the portraits carry colour. | Must | S1, OTHER-COMPANIONS |
+| FR-MAP-2 | The Oppenheimer page shows his stories in path order, grouped into named periods like chapters of a book, with no dates or ages, and opens on the current story card. | Must | S1, PERIODS |
 | FR-MAP-3 | A new user starts at chapter 1 of Oppenheimer's path. There is no designated entry story. | Must | M1 |
 | FR-MAP-4 | Rows the user finished are filled dots with one past-tense line from him and open a history record; rows before the user's starting point are "his memory" (open ring, italic, not tappable). | Must | |
 | FR-MAP-5 | Exactly one story is current. It shows his present-tense text and one button, Begin. | Must | |
-| FR-MAP-6 | Rows ahead are shown with an age and a neutral title, never his words. All 26 stories are playable and appear on the path. Rows ahead are not tappable or focusable, use no lock icon, and fade by size and weight while keeping text contrast of at least 5:1. A screen reader says "Later". | Must | D4 |
+| FR-MAP-6 | Rows ahead are shown with a neutral title only, never an age or date and never his words. All 26 stories are playable and appear on the path. Rows ahead are not tappable or focusable, use no lock icon, and fade by size and weight while keeping text contrast of at least 5:1. A screen reader says "Later". | Must | D4, PERIODS |
 | FR-MAP-7 | A story counts as played when the first Run bound to it finishes its last Step, and finishing opens the next story. Leaving a story records nothing and shows nothing. | Must | FLOW D-7 |
 | FR-MAP-8 | The map shows no counts, progress, percentages, countdowns, "locked" labels or source labels. | Must | |
 | FR-MAP-9 | The map and the current card carry no scene or Step markers. Key moments appear only in the Life Path history record and, when Steps were merged, on the summary. | Must | M3 |
@@ -187,19 +189,21 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 
 | ID | Requirement | Priority | Decision |
 |---|---|---|---|
-| FR-CONTENT-1 | The story library is the single source of truth. Each story has a sequence number, date and date precision, title, slices, key slices, his lines and people. | Must | |
-| FR-CONTENT-2 | Each slice has one to three first-person past-tense facts. For the authored fallback cards, a slice also has a landing line and an entry state holding the pools that may be used while the slice is the first one in the user's current Step. | Must | |
-| FR-CONTENT-3 | Content for chapter 1 ("The Trade of a Theorist") must be written. Existing content covers chapter 8 (the site search) and the Trinity night only. | Must | M1 |
-| FR-CONTENT-4 | Each story has 2 to 4 key slices, each with a first-person past-tense key line of at most 18 words, confirmed by the content owner, and an optional bridge of at most 10 words. | Must | C2 |
+| FR-CONTENT-1 | The story library is the single source of truth. Each story has a sequence number, a period, a title, 2 to 5 parts, slices, key slices, his lines and people. The exact date stays in the notebook for writers, is visible only in the admin and is never passed to a card prompt. | Must | PERIODS, DATES-ADMIN-ONLY, STORY-PARTS |
+| FR-CONTENT-2 | Each slice has one to three first-person past-tense facts. | Must | NO-FALLBACK-TABLES |
+| FR-CONTENT-3 | Content for chapter 1 ("The Trade of a Theorist") must be written. The existing authored cards (chapter 8, the site search, and the Trinity night) are reference examples and evaluation material only. | Must | M1, NO-BACKUP |
+| FR-CONTENT-4 | Each story has 2 to 4 key slices, each with a first-person past-tense key line of at most 18 words, confirmed by the content owner, and an optional bridge of at most 10 words. The machine-derived key moments are stored as unconfirmed until that review. | Must | C2, KEY-MOMENTS-DRAFT, KEY-UNCONFIRMED |
 | FR-CONTENT-5 | Each story lists its people and what each one knows, as input for the background card. Later cards carry no introduction phrases. | Should | M2 |
 | FR-CONTENT-6 | Each story supplies a scene table (where, who is present, props, scale of rain, wind and sky) and each card carries a state tag, so cards and the opening situation cannot contradict each other. | Should | C5 (proposal) |
 | FR-CONTENT-7 | Each story supplies the inputs the live generators need (scene table, allowed props, allowed names, rules). There are no fallback snag lines (NO-BACKUP). | Must | C1 |
-| FR-CONTENT-8 | Each entry card contains at least one new, true, non-event element: a background fact from the story's knowledge field, a one-way change of scale, or a shift of worry. | Should | C3 (proposal) |
-| FR-CONTENT-10 | Every card passes the same checks: no question, no "you", no clock time or duration, no later knowledge, no repeats in a step, each card readable alone. Cards are made ahead and checked and read by a person before they are published; a card that fails cannot be published. | Must | SHARED-STORY |
-| FR-CONTENT-11 | Cards, live or authored, are never drawn from after the user's current position and never carry a fact from the Step's own story slices or later ones. | Must | |
+| FR-CONTENT-8 | Every card contains something new; a card that repeats earlier information is not acceptable. Examples of something new: a background fact from the story's knowledge field, a one-way change of scale, or a shift of worry. | Should | CARD-NEW |
+| FR-CONTENT-10 | Every card passes the same checks: no question, no "you", no clock time or duration, no year, date or age, no number of Steps, no later knowledge, no repeats in a step, each card readable alone. A step story card is 1 to 3 sentences and at most 45 words; the background card is at most 70 words. Cards are made ahead and checked and read by a person before they are published; a card that fails or is over the limit cannot be published. | Must | SHARED-STORY, LEN-CARD, DATES-ADMIN-ONLY, NO-STEP-COUNT |
+| FR-CONTENT-11 | Cards are never drawn from after the user's current position and never carry a fact from the Step's own story slices or later ones. | Must | |
 | FR-CONTENT-12 | Historical source labels (in the book, inferred, invented) are kept in the backend and are not shown on any screen. | Must | |
-| FR-CONTENT-13 | Every story that ships has `reviewed` marked, and unreviewed generated plans are flagged in logs for sampling. | Should | |
+| FR-CONTENT-13 | Every piece of content that Yue must judge carries one of three states: written, checked by script, read by a person. Only Yue, or a person Yue names, may set "read by a person"; a passing script check never counts as read. Content that nobody has read is not treated as approved. Unreviewed generated plans are flagged in logs for sampling. | Should | READ-STATUS |
 | FR-CONTENT-14 | All 26 stories carry the inputs the generator needs. Their cards are made ahead per story part and published before users see them. There are no fallback lines. | Must | SHARED-STORY, NO-FALLBACK-TABLES |
+| FR-CONTENT-15 | The rule "every quotation must be in the source" applies to historical Companions only. A fictional Companion's notebook may invent freely but must stay consistent with that Companion's world record, which is stored with the Companion. | Must | FICTION-RULES |
+| FR-CONTENT-16 | The closing line is made ahead with the story's cards and is read and published with them. | Must | CLOSING-AHEAD |
 
 ### 4.5 Home (FR-HOME)
 
@@ -221,13 +225,13 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | ID | Requirement | Priority | Decision |
 |---|---|---|---|
 | FR-STORY-1 | Finishing a Step is the only event that moves the story. Nothing the user does inside a Step, including pausing, adds a story fact. | Must | Fate link |
-| FR-STORY-2 | A Step opens with exactly one card: the background card for the first Step, and the card about what he just finished for every later Step. The n story cards of the Step, with n between 1 and 5 chosen by the AI for each Step, then arrive one at a time while the user works. The prototype that shows four cards at the start is wrong. | Must | X2, T1, T7, T9 |
+| FR-STORY-2 | A Step opens with exactly one card: the background card for the first Step, and the card about what he just finished for every later Step. The n story cards of the Step (the cards of the story parts the app placed in that Step) then arrive one at a time while the user works. The prototype that shows four cards at the start is wrong. | Must | X2, T1, T7, T9, CARDS-PER-PART |
 | FR-STORY-3 | Steps after the first open with the card about what he just finished and his next concern; Step 1 opens with the background card (FR-STORY-18); the last Step's end feeds the summary and not a separate screen. | Must | |
 | FR-STORY-4 | Cards form a stack. One card is visible, the newest is on top, swiping the top card left moves it aside and shows the one before, swiping right brings the newer card back, dots show position, and the Earlier card and Newer card buttons do the same as the gestures. | Must | X6 |
-| FR-STORY-5 | In a Step of y minutes with n story cards, the n story cards arrive at y/n, 2y/n, ... y minutes of foreground time after the Step starts. The gap between cards is at least 5 minutes, so a 10-minute Step has at most 2 cards. The AI is told these limits and the app ignores any extra cards it returns. Pause and time in the background do not count. | Must | T1, T7 |
+| FR-STORY-5 | In a Step of y minutes with n story cards, the n story cards arrive at y/n, 2y/n, ... y minutes of foreground time after the Step starts. The gap between cards is at least 5 minutes, so a 10-minute Step has at most 2 cards. Pause and time in the background do not count. | Must | T1, T7 |
 | FR-STORY-6 | The view opens on the newest card and does not jump when a newer card arrives while the user reads an older one; nothing marks the new card except the dots. | Must | NF6 v6 |
 | FR-STORY-7 | A card is immutable once shown, stored with an id, restored in the same order after a pause or after leaving, and never regenerated on re-reading. | Must | |
-| FR-STORY-8 | Key-slice rule: key moments are must-use inputs to the AI. A key slice ends a Step when possible; when there are fewer Steps than key slices, key moments are merged and the summary lists every merged key line, one first-person line each. The goal dialogue does not forbid few Steps. | Must | C2, T3 |
+| FR-STORY-8 | Key-slice rule: key moments are must-use inputs when the cards are made ahead. A key slice ends a Step when possible; when there are fewer Steps than key slices, key moments are merged and the summary lists every merged key line, one first-person line each. The goal dialogue does not forbid few Steps. | Must | C2, T3 |
 | FR-STORY-9 | During a Step all cards presuppose only what he could know at the point of his story where the Step starts. | Must | |
 | FR-STORY-10 | Later cards carry no short introduction phrases. The background card introduces the people who are present (FR-STORY-18). Names are not tappable. | Must | M2 |
 | FR-STORY-11 | The n-th story card of a Step arrives exactly when the clock reaches 00:00. It is not a separate card and is written to say he is still at it. At 00:00 only the light vibration happens; the clock stays at 00:00 until Done, with no overdue wording. | Must | T8 |
@@ -250,7 +254,7 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | FR-FOCUS-7 | After Done, the clock holds for 1.2 seconds and then starts the next Step without a tap; Done is greyed during the hold. | Must | X3 |
 | FR-FOCUS-8 | The Companion does not react to an early Done; the app silently logs an early-Done flag for research only. | Must | F3 |
 | FR-FOCUS-9 | Pause has no limit, no warning, no counter, no timer reset, and adds no screen, pop-up or penalty. It freezes the clock and opens the rest page. | Must | F1 |
-| FR-FOCUS-10 | From the third Pause in one Step, his first message on the rest page is stronger: he says he cannot finish his own story and asks the user not to pause again. From the fourth Pause on, the same tone continues in new words. This is a prompt change only (FR-REST-14). | Must | F1 |
+| FR-FOCUS-10 | Every Pause means his own story is blocked, and a new stuck story is generated each time. From the third Pause in one Step the stuck situation is much harder, and because he remembers the earlier setbacks he says he is worried he may fail. From the fourth Pause on, the same tone continues in new words. He never gives the user an instruction and never asks the user to stop pausing. This is a prompt change only (FR-REST-14). | Must | F1, PAUSE-3 |
 | FR-FOCUS-11 | Leaving the app, locking the screen or taking a call freezes the clock. There is no time limit on resuming. A pop-up in his voice, saying what he did during that time and how he felt, appears before the clock restarts when the user taps Back to step on the rest page and when the user returns after being away 5 minutes or more, whether through the app, Home Continue or Goals Continue (the same rule everywhere); a shorter glance at another app resumes the clock with no pop-up. When the user taps the start button in the pop-up, the same Step resumes and the clock starts. This pop-up is the level 1 enforcement (F4). | Must | F2, T6, R1 |
 | FR-FOCUS-12 | A setting "Keep the clock running when I leave" (off by default) computes elapsed time from timestamps on return and never shows a negative or count-up value. | Must | F2 |
 | FR-FOCUS-13 | The return pop-up does not report on the user (no "you were away") and keeps the word Paused out of screen-reader text. | Should | F2 |
@@ -269,24 +273,25 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | FR-REST-3 | The rest page header offers ‹ Back to step (returns to the focus page through the return pop-up, and restarts the clock when the user taps its start button) and Home (leaves with the Step paused). He stays stuck on the rest page until the user taps Back to step. | Must | R1, Prototype v7 |
 | FR-REST-4 | The user may type free text, with no limit on replies and no quick replies. The Companion answers briefly from his own side and in his own voice. | Must | A3 |
 | FR-REST-5 | He may deflect gently but is not required to refuse. He may actually answer questions about the user's own work and general-knowledge questions from what he could plausibly know in his time, stays short and returns to his own situation. | Must | A3 |
-| FR-REST-6 | How he handles questions about things he could not know (modern methods, software) and how to prevent facts from after his date remain open for the AI work. | Must | A3 (open for AI work) |
+| FR-REST-6 | When the user asks about something he could not know (modern methods, software), he answers exactly as a person of his own time would: he says what he knows, says plainly when he does not know, and may guess. A list of later-knowledge words stays as a check. | Must | A3, ERA-ANSWER |
 | FR-REST-7 | Within one Step the same snag is never shown twice and consecutive messages differ in kind. | Must | |
-| FR-REST-8 | An obstacle never adds an event, a named new person, a change of weather or place, or a fact after the user's position, and never escalates. | Must | |
+| FR-REST-8 | An obstacle never adds an event, a named new person, a change of weather or place, or a fact after the user's position. It does not escalate in the first two Pauses of a Step; from the third Pause the stuck situation is much harder (FR-FOCUS-10). | Must | PAUSE-3 |
 | FR-REST-9 | If asked whether he is an AI, the conversation never mentions it; disclosure lives only in the terms and settings. If counsel advises that a direct answer is required, a one-sentence system-voice answer is the fallback. | Must | A4 |
-| FR-REST-10 | With no network the page shows a bundled message, the input is disabled, a plain system sentence explains why, and Back still works. | Must | |
+| FR-REST-10 | With no network the page shows the failure message in the app's own voice with Retry, never a stored line of his; the input is disabled, a plain system sentence explains why, and Back still works. | Must | NO-BACKUP, FAIL-SCREEN |
 | FR-REST-11 | The rest page shows no timer, no count of pauses, no "he has to go" after a number of replies and no avatar on every line. | Must | |
 | FR-REST-12 | Cost is controlled by limiting the length of each message (proposal: 300 characters) and the context sent (proposal: the last 6 turns). There is no cap on the number of messages and no hidden cap. | Should | R2 |
 | FR-REST-13 | Free text on this page is the only place where the Companion replies to user words; all replies pass the safety input and output checks. | Must | A5 |
-| FR-REST-14 | Every Pause opens the same conversation. The prompt receives the number of the Pause in the Step; the third Pause and later use the stronger rules in FR-FOCUS-10. No new screen is added. | Must | F1 |
+| FR-REST-14 | Every Pause opens the same conversation. The prompt receives the number of the Pause in the Step; the third Pause and later use the stronger rules in FR-FOCUS-10. No new screen is added. | Must | F1, PAUSE-3 |
+| FR-REST-15 | Every reply passes the same spoiler check as the story cards, against the parts the user has not reached; a failing reply is generated again within the time limit. A reply may end on its one question. Replies are not checked against the per-run list of earlier one-way lines. | Must | CHAT-SPOILER-CHECK, CHAT-QUESTION-END, CHAT-NO-RUN-LIST |
 
 ### 4.9 Summary (FR-END)
 
 | ID | Requirement | Priority | Decision |
 |---|---|---|---|
-| FR-END-1 | Finishing the last Step opens one summary screen with his closing line, one thing he is carrying (his own hanging concern), the user's finished Steps as a plain list, and Next and Home. | Must | |
-| FR-END-2 | The summary shows no percentage, badge, score, "3 of 3" or total time and never auto-advances. | Must | |
-| FR-END-3 | The closing line (one to three first-person sentences) is generated live at the last Done from what happened in the run, opens immediately with the list and the carried concern, and falls back to an authored line if not ready in about 2 seconds. | Must | |
-| FR-END-4 | The closing line receives no user text and no Step names, never gives a lesson or praise, never mentions pauses or minutes, and never repeats an opening used recently. | Must | |
+| FR-END-1 | Finishing the last Step opens one summary screen with his closing line, one thing he is carrying (his own hanging concern), the user's finished Steps as a plain list, the record, and Next and Home. | Must | |
+| FR-END-2 | The summary shows no percentage, badge, score or "3 of 3" and never auto-advances. The record shows only the plan length and the focus time, with no verdict. | Must | SUMMARY-RECORD |
+| FR-END-3 | The closing line (1 to 3 first-person sentences, at most 45 words) is made ahead once per story with the story's cards, read by a person and published with them (FR-CONTENT-16). The summary shows the published line with the list and the carried concern. There is no fallback line. | Must | CLOSING-AHEAD, LEN-CARD, NO-FALLBACK-TABLES |
+| FR-END-4 | The closing line tells what happened to him that day and how he feels about it. It receives no user text and no Step names, does not count the user's pauses, does not judge the user, never gives a lesson or praise and never mentions minutes. | Must | END-TONE |
 | FR-END-5 | When Steps were merged, the summary lists the covered key moments, one first-person line each. | Must | C2, M3 |
 | FR-END-6 | After the last story on the path, Next is replaced by the end-of-path line. | Should | |
 
@@ -309,22 +314,23 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 
 | ID | Requirement | Priority | Decision |
 |---|---|---|---|
-| FR-AI-1 | Every model-written output passes the shared pipeline: parse, clean, rule checks, one retry, then an authored fallback, with a log that never contains raw user text. | Must | |
-| FR-AI-2 | Status lines are authored and picked by code at runtime; the model only drafts candidates offline. Story cards are written live (FR-STORY-19). | Must | AI D-AI-1, T3 |
-| FR-AI-3 | Model calls exist for: goal classification, goal split (the planning prompt), story cards including the background card, the pause message (two steps), the return pop-up, rest chat, the closing line, and the safety classifier. | Must | |
-| FR-AI-4 | An authored fallback exists for every model call and no model failure shows error text on the focus page. | Must | |
+| FR-AI-1 | Every model-written output passes the shared pipeline: parse, clean, rule checks, with a log that never contains raw user text. A live output that fails is generated again within the time limit; if it still fails, the failure message with Retry is shown and no stored text is substituted. Made-ahead content that fails cannot be published. | Must | NO-BACKUP, FAIL-SCREEN, SHARED-STORY |
+| FR-AI-2 | Status lines are authored and picked by code at runtime; the model only drafts candidates offline. Story cards, the background card and the closing line are made ahead once per story and shared (FR-STORY-19). Only the pause message, the rest conversation, the return pop-up and the goal split are generated live. | Must | AI D-AI-1, SHARED-STORY |
+| FR-AI-3 | Live model calls exist for: goal classification, goal split (the planning prompt), the pause message (two steps), the return pop-up, rest chat, and the safety classifier. Prompts for making stories ahead write the story cards, the background card and the closing line. | Must | SHARED-STORY, CLOSING-AHEAD |
+| FR-AI-4 | No stored or pre-written text stands in for a failed or slow live message. When a live call still fails after retrying within the time limit, the app shows one calm message in its own voice with a Retry button, and the step clock does not start while it is shown. | Must | NO-BACKUP, FAIL-SCREEN |
 | FR-AI-5 | The goal text is sent only to classification and split, and the Companion's goal-dialogue lines are authored. | Must | NF7 D-G2 |
-| FR-AI-6 | The model calls for the pause message, the return pop-up and the closing line never receive the user's Goal text or Step names. Story card calls receive the story's facts and key turning points and the Step's position, never user text; every output is checked so that no card carries a later fact. | Must | |
+| FR-AI-6 | The model calls for the pause message, the return pop-up and the closing line never receive the user's Goal text or Step names. The prompts that make story cards ahead receive the story's facts and key turning points and the part, never user text and never an exact date; every output is checked so that no card carries a later fact. | Must | SHARED-STORY, DATES-ADMIN-ONLY |
 | FR-AI-7 | Model input treats user text as data, not instructions; output must match the schema or it fails. | Must | |
-| FR-AI-9 | Latency targets, as hypotheses: classification at most 1 second; split at most 5 seconds with a 10-second hard timeout; first rest reply starts within about 3 seconds; the return pop-up text is ready within about 1 second of Back or the authored fallback is shown. | Should | |
+| FR-AI-9 | Latency targets, as hypotheses: classification at most 1 second; split at most 5 seconds with a 10-second hard timeout; first rest reply starts within about 3 seconds; the return pop-up text is ready within about 1 second of Back; otherwise the user waits up to the time limit and then sees the failure message. | Should | FAIL-SCREEN, TIME-LIMIT (open) |
 | FR-AI-10 | Before release an offline real-model run is made for story cards, pause messages and rest chat, because no document reports any run against a live model yet. | Must | |
+| FR-AI-11 | Every prompt is built from four parts: the shared base, the historical or fictional rules, the Companion, and the story. Each part has its own version, and every generated card and live message records the prompt version that wrote it. | Must | PROMPT-PARTS |
 
 ### 4.12 Safety (FR-SAFETY)
 
 | ID | Requirement | Priority | Decision |
 |---|---|---|---|
 | FR-SAFETY-1 | The first demo ships two safety tiers: crisis, with a classifier and real help lines by region, and everyday stress. The low-mood tier is deferred. | Must | A5, A5b |
-| FR-SAFETY-2 | Every free-text field passes the input check before any model or storage for model use: goal input and follow-up, Step and Goal rename, Add a Step, rest chat, and the nickname. | Must | A5 |
+| FR-SAFETY-2 | Every free-text field passes the input check before any model or storage for model use: goal input, Step and Goal rename, Add a Step, rest chat, and the nickname. | Must | A5 |
 | FR-SAFETY-3 | Tier 3 (crisis) shows a system-voice page outside the story, discards the text, never sends it to a model, offers regional resources and always allows going back. | Must | A5 |
 | FR-SAFETY-5 | Tier 1 (everyday stress) passes and he answers in character without advice. | Must | A5 |
 | FR-SAFETY-6 | A keyword layer runs in code in every case; a classifier call sees the last two messages in the same field; the higher tier wins; if the classifier fails or takes over 1.5 seconds the keyword layer decides alone. | Must | A5 |
@@ -371,11 +377,11 @@ These ids are retired and are not reused.
 These rules apply everywhere and are written once here. A requirement above that seems to conflict with one of these is wrong.
 
 1. **Fate link.** Only a real Done on a Step moves his story. Pausing, waiting, leaving and returning do not. Nothing in the product verifies that work was done; the fate link is an incentive, not a lock. Done costs the user only the story's speed.
-2. **Steps and story.** The AI spreads the whole story over the user's Steps. The number and length of Steps are free, with no maximum, and his goal mirrors the user's: x Steps of y minutes each (T1, T2, T3).
-3. **Key slices.** Each story has two to four key slices, which are must-use inputs for the AI. A key slice ends a Step when possible. When there are fewer Steps than key slices, key moments merge and the summary lists their key lines.
+2. **Steps and story.** The app spreads the story's parts over the user's Steps with plain code and no model call (CARDS-PER-PART). The number and length of Steps are free, with no maximum, and his goal mirrors the user's: x Steps of y minutes each (T1, T2).
+3. **Key slices.** Each story has two to four key slices, which are must-use inputs when the cards are made ahead. A key slice ends a Step when possible. When there are fewer Steps than key slices, key moments merge and the summary lists their key lines.
 4. **Cards appear one at a time.** A Goal opens with one background card in his voice, which is the opening card of Step 1; later Steps open with the card about what he just finished. Each Step then has between 1 and 5 story cards, at least 5 minutes apart, arriving at y/n, 2y/n, ... y minutes. The stack is looked through with a left swipe or the Earlier card and Newer card buttons, and nothing marks scenes or Steps on cards or on the map.
 5. **Done is always allowed and undoable.** It never asks a question, it works in the paused view, and every Done has a short Undo.
-6. **Pause has no limit.** No warning screen, no count, no timer reset, no pop-up. From the third pause in a Step his message on the rest page is stronger; that is a prompt change only (F1).
+6. **Pause has no limit.** No warning screen, no count, no timer reset, no pop-up. Every Pause blocks his own story; from the third pause in a Step the stuck situation is much harder and he says he is worried he may fail, never telling the user what to do. That is a prompt change only (F1, PAUSE-3).
 7. **The clock freezes when the user leaves.** Only foreground time counts. There is no time limit on resuming; before the clock restarts, a pop-up in his voice appears after Back to step on the rest page or after 5 minutes or more away, and the user taps a start button (R1). An optional setting keeps the clock running. Minutes are a target: at 00:00 the clock holds and nothing is overdue.
 8. **Automatic start after a 1.2-second hold.** After Done, the next Step starts by itself and Done is greyed during the hold (X3).
 9. **Vocabulary is Companion, Goal and Step.** No other words are used for the user's work in the interface or in documents (X1).
@@ -383,12 +389,12 @@ These rules apply everywhere and are written once here. A requirement above that
 11. **Entry at chapter 1.** New users start at the first chapter of the path. There is no designated entry story (M1).
 12. **Introductions live in the background card.** The background card, told in his voice, introduces the people present. Later cards carry no introduction phrases, names are not tappable and there is no "what you need to know" screen (M2).
 13. **Safety has two tiers in the first demo.** Crisis, with a classifier and regional help lines, and everyday stress. Low mood is deferred (A5, A5b).
-14. **He never knows the future.** Every line presupposes only what he could know at his point in the story. His lines contain no later fact, no clock time or duration, no "you" in one-way lines, no question in one-way lines, no hook, no praise and no advice.
-15. **Nothing implies guilt at the edges.** No line states how long the user was away, blames them for leaving, or welcomes them back on Home (H7). There is no rule about whether he waits (H8); the AI writes freely.
+14. **He never knows the future.** Every line presupposes only what he could know at his point in the story. His lines contain no later fact, no clock time or duration, no year, date or age (DATES-ADMIN-ONLY), no number of Steps (NO-STEP-COUNT), no "you" in one-way lines, no question in one-way lines, no hook, no praise and no advice.
+15. **Nothing implies guilt at the edges.** No line states how long the user was away (in the return pop-up he may say how the time felt in his own words, but exact clock numbers stay out until decided; TIME-WORDS, CLOCK-NUMBERS), blames them for leaving, or welcomes them back on Home (H7). There is no rule about whether he waits (H8); the AI writes freely.
 16. **One-way lines versus conversation.** His one-way lines (cards, status, return pop-up, closing line) are allowed outside the rest page. The only place where he replies to the user's words is the rest page, plus the goal dialogue before a Run begins.
 17. **No counts and no scores.** Nothing the user sees can go down, needs a target, names a gap or compares. Pause counts, early Done and undo counts are never shown.
 18. **Undo instead of confirm.** Status changes apply immediately with an Undo toast; no "Are you sure?" dialogs. The only confirmations are for Start over and for sign-out and deletion flows.
-19. **Authored fallback always exists.** Whatever a model writes, an authored line stands behind it, and no error text appears on the focus page.
+19. **No backup text.** No stored or pre-written text stands in for a failed or slow live message. If a live call still fails within the time limit, the app shows one calm message in its own voice with Retry, and the clock does not start (NO-BACKUP, FAIL-SCREEN). The app's own interface words have a default written in the code (APP-TEXT); that is interface text, not story text.
 20. **One main action per screen.**
 21. **Source labels are backend only.** Historical, inferred and invented content is marked in the backend and never on a screen.
 22. **The clock comes from timestamps.** No feature depends on a script timer running in the background.
@@ -397,41 +403,43 @@ These rules apply everywhere and are written once here. A requirement above that
 
 ## 6. AI behaviour summary
 
-Detail will live in `docs/ai/` (to be added). That folder will hold the prompts, schemas, check rules, fallback pools and evaluation cases. This section is the product-level summary. No live-model run has been made against any of these specifications yet, so every prompt and number below is a hypothesis.
+Detail lives in `docs/ai/`: the prompts (`docs/ai/prompts/`, read from the database), schemas, check rules and evaluation cases. There are no fallback pools (NO-BACKUP, NO-FALLBACK-TABLES). This section is the product-level summary. No live-model run has been made against any of these specifications yet, so every prompt and number below is a hypothesis.
 
-### 6.1 Calls and fallbacks
+### 6.1 Calls and failure behaviour
 
-| Call | Purpose | Input | Runs when | Fallback |
+Only the goal dialogue calls, the pause message, the return pop-up and the rest conversation run live. The background card, the story cards and the closing line are made ahead once per story, read by a person and published (SHARED-STORY, CLOSING-AHEAD). A live call that still fails within the time limit shows the failure message with Retry (FAIL-SCREEN).
+
+| Call | Purpose | Input | Runs when | On failure |
 |---|---|---|---|---|
 | Goal classification | One word: specific, big, vague, unknown (and, proposed, minutes and count) | Goal text | After the Goal is entered | "unknown", authored confirmation line |
 | Goal split | Steps with titles, descriptions and minutes, from the AI planning prompt (P1) | Goal text, minutes, the answer to the split question | Time chosen or "Just split it" | Retry once, then the failure screen with a one-step option; never silent generic Steps |
-| Story cards | One story card per interval, plus the background card at the start of the Goal | Story facts, key turning points, x, y, the Step's position, n | Step start and every y divided by n minutes | Authored fallback cards, or generic lines in his voice |
-| Pause message, part 1 | The stuck story: the snag in his own story | Entry state, pause number, rules | Pause | Authored snag lines |
-| Pause message, part 2 | His description of the predicament and his feelings, shown as his first message | Part 1 output, pause number | Pause | Authored snag lines |
-| Return pop-up | What he did during the time and how he felt, ending with a start button | Entry state, return case (Back to step, or away 5 minutes or more) | Back to step; return after 5 minutes or more | Small authored set (size not set) |
-| Rest chat | His reply | Obstacle, entry state, last turns | Each user message | Authored fallback lines |
-| Closing line | One to three sentences, in his voice | Done Steps' facts, obstacles, smooth or rough | Last Done | Authored smooth and rough lines per story |
+| Story cards (made ahead) | The story cards of each story part, plus the background card | Story facts, key turning points, the part; never an exact date | Once per story, before publishing | Cannot be published; nothing to show at run time because the user sees only published cards |
+| Pause message, part 1 | The stuck story: the snag in his own story | Entry state, pause number, rules | Pause | Failure message with Retry |
+| Pause message, part 2 | His description of the predicament and his feelings, shown as his first message (1 or 2 sentences, at most 30 words, LEN-PAUSE) | Part 1 output, pause number | Pause | Failure message with Retry |
+| Return pop-up | What he did during the time and how he felt, in any words for how the time felt (TIME-WORDS), ending with a start button | Entry state, return case (Back to step, or away 5 minutes or more) | Back to step; return after 5 minutes or more | Failure message with Retry; the clock does not start |
+| Rest chat | His reply | Obstacle, entry state, last turns | Each user message | Generated again within the time limit, then the failure message with Retry |
+| Closing line (made ahead) | One to three sentences, at most 45 words, in his voice: what happened to him that day and how he feels (END-TONE) | The story's facts | Once per story, with its cards | Cannot be published |
 | Safety classifier | Tier label | Message plus last two messages | Every free-text submission | Keyword layer alone |
 
 Status lines on the focus page are authored and chosen by code with no call.
 
 ### 6.2 Checks
 
-Every model-written line passes the same pipeline: parse, clean, rules, retry once, fallback. The rules cover length, language, dash, banned words, clock times and durations, backstage words ("step", "timer", "app"), advising, invented people (only allowed names), later knowledge, blaming, no question, no "you", no hook, no praise, no exclamation marks, a full stop at the end and no use of his own name. Obstacles also pass checks against new events, escalation and repeats. The advising rule over-blocks most and needs tuning.
+Every model-written line passes the same pipeline: parse, clean, rules. A live line that fails is generated again within the time limit, then the failure message is shown; a made-ahead line that fails cannot be published. The rules cover length, language, dash, banned words, clock times and durations, backstage words ("step", "timer", "app"), advising, invented people (only allowed names), later knowledge, blaming, no question, no "you", no hook, no praise, no exclamation marks, a full stop at the end and no use of his own name. Obstacles also pass checks against new events, escalation and repeats. The advising rule over-blocks most and needs tuning.
 
 ### 6.3 Decisions that shape AI behaviour
 
-- The return pop-up is generated live (R1, A6). A small authored fallback set is still required; its size is not set.
-- Pause messages and the Companion's described predicament are generated live (C1). Authored pools shrink to a fallback; the story database supplies generator inputs.
-- Rest chat has no hard refusal rule and no "never explain" rule (A3). Facts after his date remain a risk.
+- The return pop-up is generated live (R1, A6). There is no authored fallback set (NO-BACKUP).
+- Pause messages and the Companion's described predicament are generated live (C1, PAUSE-3). Authored snag lines are reference examples and evaluation material only; the story database supplies generator inputs.
+- Rest chat has no hard refusal rule and no "never explain" rule (A3). He answers as a person of his own time would and may guess (ERA-ANSWER). Every reply passes the spoiler check (CHAT-SPOILER-CHECK).
 - The Companion is never described as an AI inside the conversation (A4); see section 7 for the legal risk.
 - Safety has two tiers in the first demo (A5, A5b).
 - Goal text goes only to classification and split; his goal-dialogue lines are authored.
-- Story cards are written live from the story's facts and key turning points, with authored cards as fallback (T3). Tone rules and the three small turns of feeling per Step live in the prompts, not in the product requirements (D2).
+- Story cards are made ahead once per story part from the story's facts and key turning points, read by a person and shared by all users; there are no fallback cards (SHARED-STORY, CARDS-PER-PART, NO-FALLBACK-TABLES). Tone rules and the three small turns of feeling per Step live in the prompts, not in the product requirements (D2).
 
 ### 6.4 Estimated calls per session
 
-Story cards add one call per card (at most five per Step) and one for the background card, plus one pause message per Pause and one return pop-up per return. The total per session is not estimated.
+Story cards, the background card and the closing line add no call per session, because they are made ahead (SHARED-STORY). A session makes the goal dialogue calls, one pause message per Pause, one rest reply per user message and one return pop-up per return. The total per session is not estimated.
 
 ---
 
@@ -466,7 +474,7 @@ The target is WCAG 2.2 level AA (Web Content Accessibility Guidelines).
 
 ### 8.2 Performance
 
-Targets are hypotheses: time from opening the app to a started Step as short as possible with at most two taps for returning users; first rest reply within about 3 seconds at the median and 6 seconds at the 95th percentile; closing line within about 2 seconds or fallback; safety added no more than about 1 second in parallel.
+Targets are hypotheses: time from opening the app to a started Step as short as possible with at most two taps for returning users; first rest reply within about 3 seconds at the median and 6 seconds at the 95th percentile; the closing line is made ahead and needs no wait (CLOSING-AHEAD); safety added no more than about 1 second in parallel.
 
 ### 8.3 Platform
 
@@ -477,7 +485,7 @@ Targets are hypotheses: time from opening the app to a started Step as short as 
 
 ### 8.4 Reliability
 
-Model failures, pool failures and lost network produce authored or bundled content, never error text on the focus page. Card text is stored and restored after a restart.
+When a live call fails or the network is lost, the app shows one calm message in its own voice with Retry and the clock does not start; no stored story text is substituted (NO-BACKUP, FAIL-SCREEN). Story cards are read from published content. Card text is stored and restored after a restart.
 
 ---
 
@@ -491,7 +499,7 @@ Measurement will be designed later. No success measures or north star are set fo
 
 ### 10.1 Decided rows that changed this document
 
-Every decided row in `docs/DECISIONS.md`, up to 2026-11-05, is applied in sections 3 to 8. Where this document and that file disagree, that file wins.
+Every decided row in `docs/DECISIONS.md`, up to 2026-11-15, is applied in sections 3 to 8 (issue #295). Where this document and that file disagree, that file wins.
 
 ### 10.2 Open decisions, copied from the decision log
 
@@ -501,6 +509,11 @@ Every decided row in `docs/DECISIONS.md`, up to 2026-11-05, is applied in sectio
 | S2 | Engineering result on which phone features (vibration, lock-screen alerts, background timers) a web app can use on iPhone and Android. | Signals are specified but not promised on every phone. |
 | A7b | Provider data retention terms. | Not decided. |
 | M5, M6 | Original test data (issues B15 and B17, the definition of "low preference"). | May be skipped. |
+| TIME-LIMIT | The length of the waiting time limit for live generation and the wording of the failure message (FAIL-SCREEN). | Set by testing. |
+| CLOCK-NUMBERS | Whether the return pop-up may use exact clock numbers (TIME-WORDS). | Kept out until decided. |
+| KEY-REVIEW | The review of the machine-derived key moments (KEY-MOMENTS-DRAFT). | Stored unconfirmed. |
+| PERIOD-NAMES | The named periods of each character's Life Path (PERIODS). | Drafted for Yue to approve. |
+| MORIARTY-READ | Yue's reading of the 31 cards of Moriarty story 1 (MORIARTY-6). | Stories 2 to 7 wait for it. |
 
 ### 10.3 Items that need the original test data
 
@@ -523,10 +536,10 @@ Risks that remain:
 - **Chapter 1 is lower stakes.** Starting at chapter 1 (M1) delays the first climactic scene, and the authored content for it does not exist.
 - **Story fatigue.** The number of stories that can carry a user is unmeasured.
 - **Over-planning and pause avoidance.** Neither is policed.
-- **Live generation without a track record.** Story cards, pause messages, return pop-ups and the closing line all rely on models that have not been run against the checks.
+- **Generation without a track record.** Pause messages, rest replies and return pop-ups are generated live, and story cards and closing lines are made ahead, all by models that have not been run against the checks. Made-ahead content is read by a person before it is published (READ-STATUS).
 - **Guilt language at the edges.** Return pop-ups and farewell lines are the highest-risk copy.
 - **Regulation.** Companion-chatbot disclosure, mental-health limits and minors need counsel.
-- **Content volume.** All 26 stories are playable (D4), but cards are written live, so the authored volume per story is the facts, key turning points, scene table and checks, plus fallback cards for two stories and generic lines for the rest.
+- **Content volume.** All 26 stories are playable (D4). Each story's cards and closing line are made ahead per part and must be read by a person before publishing, so the work per story is the facts, key turning points, scene table and checks, plus reading every made-ahead card (SHARED-STORY, READ-STATUS).
 
 ---
 

@@ -1,5 +1,7 @@
 Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIONS.md overrides this document where they differ.
 
+> **Status after the decisions up to 2026-11-15 (#295).** Every proposal below is settled in the decision log; the outcome is written in each row. The ids P1 to P6 here are not the decision log's P1 (the real planning prompt). This file is history; open items live in `docs/DECISIONS.md` section 3.
+
 # AI decisions log and to-do — v2 (2026-11-04, after the user test)
 
 > Replaces AI_09 v1 (earlier version, not imported) as the working log. Source brief: [PROMPTS_user-test-research-round_2026-11-04](../PROMPTS_user-test-research-round_2026-11-04_v1_draft.md), WP2.8. Companion drafts: [AI_03 v2](AI_03_stuck-story-layer.md), [AI_04 v2](AI_04_rest-chat.md), [AI_05 v2](AI_05_safety.md).
@@ -18,21 +20,21 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 
 | # | Decision | Status |
 |---|---|---|
-| D-AI-1 | Hybrid: authored spine (AI-2); model for stuck story, rest chat, end line, goal split; always behind checks with authored fallback | Stays |
-| D-AI-2 | Stuck story = two calls (stuck on Pause, resolved on Back) | Stays; **modified by P2**: no resolved call for a quiet pause |
+| D-AI-1 | Hybrid: authored spine (AI-2); model for stuck story, rest chat, end line, goal split; always behind checks with authored fallback | **Superseded**: story cards, the background card and the closing line are made ahead per story and read before publishing; there is no authored fallback (SHARED-STORY, CLOSING-AHEAD, NO-BACKUP) |
+| D-AI-2 | Stuck story = two calls (stuck on Pause, resolved on Back) | **Replaced**: on Back the return pop-up is generated live (R1, T6); there is no quiet pause (PAUSE-3) |
 | D-AI-3..9 | See v1 | Stays |
-| D-AI-4 | No chat reply limit | Stays (only the third-Pause warning is cancelled) |
+| D-AI-4 | No chat reply limit | Stays (R2); the third-Pause warning is cancelled (F1) |
 
 ## Proposals, one question at a time (decide in this order)
 
 | # | Question | Recommendation | Evidence level | Doc |
 |---|---|---|---|---|
-| **P1** | Is AI-4 §12 (third-Pause warning) cancelled together with the timer-reset rule? | Yes, cancel both. No Pause-count consequence anywhere | Decision by Yue on the timer rule; the warning is my reading | AI-4 v2 |
-| **P2** | What does he do on the Kth Pause in a step? | K=1, 2: a new snag. K≥3: a quiet "nothing has moved" line, no snag, no resolved call | Reasoned; test arm B repeats snag 2 | AI-3 v2 §A3 |
-| **P3** | How does the rest chat treat task and general-knowledge questions? | Stay in his day: deflect in character, answer only from his side, never explain (option 1); no chips | Need seen in the test; the policy is Reasoned | AI-4 v2 §A |
-| **P4** | What does he say when asked "Are you an AI?" | One honest plain sentence in system voice, not in character (verify with legal) | Guess; compliance | AI-4 v2 Q1 |
-| **P5** | Does safety get three tiers, and does T2 (low mood) ship in the next test? | Three tiers; T2 step-out line is tested with scripted phrases only | Guess; compliance | AI-5 v2 |
-| **P6** | Return line after hours: picked or generated? | Picked from an authored pool; shown as the `return` card and on HOME-2; never mentions time away | Reasoned | AI-3 v2 §C |
+| **P1** | Is AI-4 §12 (third-Pause warning) cancelled together with the timer-reset rule? | Yes, cancel both. No Pause-count consequence anywhere. **Settled: cancelled (F1)** | Decision by Yue on the timer rule; the warning is my reading | AI-4 v2 |
+| **P2** | What does he do on the Kth Pause in a step? | K=1, 2: a new snag. K≥3: a quiet "nothing has moved" line, no snag, no resolved call. **Settled otherwise (PAUSE-3):** every Pause gets a new stuck story; from the third it is much harder and he says he is worried he may fail; never an instruction to the user | Reasoned; test arm B repeats snag 2 | AI-3 v2 §A3 |
+| **P3** | How does the rest chat treat task and general-knowledge questions? | Stay in his day: deflect in character, answer only from his side, never explain (option 1); no chips. **Settled otherwise (A3, ERA-ANSWER):** he may answer, as a person of his own time would, and may guess | Need seen in the test; the policy is Reasoned | AI-4 v2 §A |
+| **P4** | What does he say when asked "Are you an AI?" | One honest plain sentence in system voice, not in character (verify with legal). **Settled (A4):** disclosure in the terms and settings only; legal check before release | Guess; compliance | AI-4 v2 Q1 |
+| **P5** | Does safety get three tiers, and does T2 (low mood) ship in the next test? | Three tiers; T2 step-out line is tested with scripted phrases only. **Settled (A5b):** two tiers in the first demo, low mood deferred | Guess; compliance | AI-5 v2 |
+| **P6** | Return line after hours: picked or generated? | Picked from an authored pool; shown as the `return` card and on HOME-2; never mentions time away. **Settled otherwise (R1, A6, T6, TIME-WORDS):** the return pop-up is generated live and he may say how the time felt | Reasoned | AI-3 v2 §C |
 
 ## To-do
 
@@ -41,8 +43,8 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 | T1 | Safety tiers, resources, logging, test sets, legal checks (AI-5 v2 §7) | Yue + compliance |
 | T2 | (cancelled) third-Pause warning wording and R-WARN screen | — |
 | T3 | Wireframe: Back button on C1/rest; resolved line placement; fate of timed R2 | WP2.6 |
-| T4 | Write `rest_chat_fallback` (6 neutral + 3 deflections per scope), authored snag/quiet/return pools (56 + 24 lines for c1 to c4) | WP2.3 |
-| T5 | Chat cost caps (last 6 turns, 300 chars, 30 messages) | Engineering |
+| T4 | (cancelled) No authored fallback pools of any kind (NO-BACKUP, NO-FALLBACK-TABLES) | — |
+| T5 | Chat cost caps (last 6 turns, 300 chars); no message cap (R2) | Engineering |
 | T6 | Update prototype C1 note and NF6 text ("Kth line", "three replies") | Prototype session |
 | T7 | Open decisions D-AI-3, 6, 8, 9 | Yue |
 | T8 | Offline real-model run for AI-3 snags (AI-3 v2 §A6): 20 runs × 5 Pauses × 4 entry states, categories on and off | WP2.8 (after Yue agrees) |
@@ -50,7 +52,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 | T10 | Wizard of Oz arms for Pauses, chat, return line | Yue recruits real users |
 | T11 | Scope label and JSON output for AI-4 (prompt change) | WP2.8 |
 | T12 | `used_lines` run store and dedupe check in the AI-6 checker | Engineering |
-| T13 | Chinese versions of the rules and test sets | Native speaker, TBD |
+| T13 | (cancelled) English only (L1) | — |
 | T14 | Authored props / `scene_objects` / `places` / `people` per entry state | WP2.3 |
 
 ## What a small test would prove (summary)

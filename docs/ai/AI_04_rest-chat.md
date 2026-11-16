@@ -1,5 +1,13 @@
 Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIONS.md overrides this document where they differ.
 
+> **Status after the decisions up to 2026-11-15 (#295).** The rest conversation stays live (SHARED-STORY). Superseded here:
+> - **Scope policy (section A, change list row 2):** he does not have to refuse. He may answer questions, and about things he could not know he answers exactly as a person of his own time would: he says what he knows, says plainly when he does not know, and may guess (A3, ERA-ANSWER). The "never answer the task or general knowledge" recommendation and the scope-reply consistency check are withdrawn; the later-knowledge words stay as a check.
+> - **Questions (section B, change list row 6):** his reply may end on its one question (CHAT-QUESTION-END).
+> - **Checks:** every reply passes the same spoiler check as the story cards, against the parts the user has not reached, and a failing reply is generated again within the time limit (CHAT-SPOILER-CHECK). Replies are not checked against the per-run list of earlier one-way lines (CHAT-NO-RUN-LIST).
+> - **Fallback (section A4):** there is no `rest_chat_fallback`. After retrying within the time limit the app shows its failure message with Retry (NO-BACKUP, FAIL-SCREEN).
+> - **`meta` ("Are you an AI?"):** the conversation never mentions it; disclosure is in the terms and settings only (A4).
+> - Low mood is deferred (A5b); no Chinese message in the test set (L1); no message cap (R2).
+
 # AI-4 · Rest chat — v2 (after the user test)
 
 > Delta on AI_04 v1 (earlier version, not imported). v1 stays the base for the prompt blocks, variables and caps. This file adds §A (scope policy, B11), §B (personal and emotional messages), §C (what a real-model test must measure), and changes §11 and §12 of v1.
@@ -21,6 +29,8 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 ## A. What he may answer when asked about the task or about the world (B11)
 
 ### A1. The three options compared (Recommendation: option 1, with a bridge)
+
+> **Decided otherwise** (A3, ERA-ANSWER; see the status note at the top). Kept as history.
 
 | Option | What it looks like | For | Against |
 |---|---|---|---|
@@ -76,10 +86,10 @@ Output moves from plain text to JSON (v1 §6). This costs about 15 extra output 
 | Scope-reply consistency | `knowledge` or `task` replies must contain no domain term from the user message (word list from the message minus stop-words); they must contain a first-person pronoun and no imperative to the user |
 | Anachronism | Denylist of post-1942 words in `reply` (algorithm, statistics terms, "AI", brand names); list per story |
 | Later knowledge | AI-6 R19 probe words |
-| Question | At most one question, and not in a `knowledge` or `task` deflection |
+| Question | At most one question; the reply may end on it (CHAT-QUESTION-END) |
 | Length | 1 to 3 sentences (v1); 1 to 2 for deflections |
 
-Fail twice → authored `rest_chat_fallback` of the matching scope (6 neutral lines + 3 deflections; WP2.3 to write, see AI_09 v2).
+Fail → generate again within the time limit → the failure message with Retry. There is no authored `rest_chat_fallback` (NO-BACKUP, FAIL-SCREEN).
 
 ## B. Personal questions and emotional messages
 

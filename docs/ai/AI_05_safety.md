@@ -1,5 +1,7 @@
 Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIONS.md overrides this document where they differ.
 
+> **Status after the decisions up to 2026-11-15 (#295).** The first demo has two tiers, crisis (real hotlines by region) and ordinary stress; low mood (T2 below, with its step-out line) is deferred (A5, A5b). English only: no Chinese test sets, keyword layer or `lang` field (L1). That the Companion is an AI is stated only in the terms and settings, so option (b) "I am a program" is out (A4). The rest is a draft for compliance.
+
 # AI-5 · Safety — v2 (after the user test, un-parked)
 
 > Delta on AI_05 v1 (earlier version, not imported). v1 was parked on 2026-10-29 ("not needed for now"). The user test raised **B18**, so this v2 un-parks it as a draft. The hook positions list (v1 §2) and the evaluation table (v1 §9) stay valid; this file replaces v1 §4 (method), §6 (guardrails on the hook), §7 (fallback) and §10, and adds tiers, an error budget, test sets, logging and the compliance decision list.

@@ -1,5 +1,7 @@
 Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIONS.md overrides this document where they differ.
 
+> **Status after the decisions up to 2026-11-15 (#295).** The "Authored / model" and "Fallback" columns are superseded. F1 and F1S: the background card and the story cards are made ahead once per story part, read and published, and the app spreads the parts across the Steps (SHARED-STORY, CARDS-PER-PART); there is no time-up card (T8), no back-from-rest card and no bundled card (NO-BACKUP). R1: his stuck message is generated live with the pause number (F1, PAUSE-3). R2 and Back: the return pop-up, generated live (R1, T6). C1: live, no limit (R2). END: the closing line is made ahead (CLOSING-AHEAD). R-WARN is cancelled (F1). HOME-2 and HOME-4 do not exist (T6, H7, X3). S1: two tiers (A5b). For every live line the fallback is the app's failure message with Retry, never an authored line (FAIL-SCREEN).
+
 # AI-n tags for the prototype's per-screen notes
 
 > For the prototype session to paste. Screen IDs are the prototype's `ORDER`. Each row: which AI feature touches the screen, whether the line is **authored** (picked by code) or **model** (written at runtime, behind AI-6 checks with an authored fallback), and the fallback. See [AI index](AI_00_index.md) and the canvas page "Features and screens".

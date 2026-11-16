@@ -1,5 +1,13 @@
 Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIONS.md overrides this document where they differ.
 
+> **Status after the decisions up to 2026-11-15 (#295).** The pause message stays a live call (SHARED-STORY). Superseded here:
+> - **Repeated Pauses (section A3, change list row 3):** there is no quiet line. Every Pause means his own story is blocked, and a new stuck story is generated each time. From the third Pause in a Step the stuck situation is much harder, and because he remembers the earlier setbacks he says he is worried he may fail. The message is never an instruction to the user and never asks the user to stop pausing (F1, PAUSE-3). The prompt receives the pause number.
+> - **Length (section A4, "Wrong shape"):** the pause message is 1 or 2 sentences and at most 30 words, not 20 (LEN-PAUSE).
+> - **Escalation (section A4):** blocking severity words fits Pauses 1 and 2 only; from the third Pause the harder situation is intended (PAUSE-3).
+> - **Fallback (change list row 5, section A4 pool sizes):** there are no authored snag, quiet or return pools. A failing message is generated again within the time limit; then the app shows its failure message with Retry and no stored text (NO-BACKUP, FAIL-SCREEN). Authored snag lines are reference examples and evaluation material only (C1).
+> - **Return line (section C, change list row 7):** the return is the return pop-up, generated live after Back to step and after 5 minutes or more away (R1, A6, T6). In it he may describe how the time felt in his own words (TIME-WORDS); exact clock numbers stay out until decided (CLOCK-NUMBERS). There is no rule about whether he waits (H8). The HOME-2 line and the picked return card are gone.
+> - Chinese, a second language: out (L1).
+
 # AI-3 · Stuck story layer — v2 (after the user test)
 
 > Delta on AI_03 v1 (earlier version, not imported); v1 stays the base for prompts, schema and the two-call flow. This file replaces v1 §9–§10 and adds §A (repeated Pauses, B14), §B (repetition across Pauses and cards, B10) and §C (return line, B13). Source of the questions: [PROMPTS_user-test-research-round_2026-11-04](../PROMPTS_user-test-research-round_2026-11-04_v1_draft.md), session WP2.8.
@@ -43,6 +51,8 @@ With 6 categories × about 3 props, an entry state supports **about 18 distinct 
 
 ### A3. What he does on the Kth Pause (proposed rule; Recommendation)
 
+> **Superseded by PAUSE-3** (see the status note at the top). Kept as history.
+
 K counts Pauses **within the current step**; it resets when the step changes (new entry state). It is never shown to the user.
 
 | K | His first message on R1 | Source |
@@ -72,11 +82,11 @@ The model returns structured output, so the check can be mechanical:
 | Later knowledge | Probe words (AI-6 R19) | Leak of later facts |
 | Escalation | Severity words (worse, again, still, "more and more", "even") are blocked in `story` for K=2 | Pauses that seem to hurt him |
 | Near repeat | 3-gram Jaccard ≥ 0.5 with any `used_lines` entry, or same opening 3 words | Repeats (see §B) |
-| Wrong shape | `story` > 20 words, > 2 sentences, no full stop | AI-6 length and ending rules |
+| Wrong shape | `story` > 30 words (LEN-PAUSE), > 2 sentences, no full stop | AI-6 length and ending rules |
 
-Retry once with the failure reason as a hint; then authored.
+Generate again with the failure reason as a hint, within the time limit; then the failure message with Retry (NO-BACKUP, FAIL-SCREEN).
 
-**Fallback pool size (Recommendation; WP2.3 to confirm).** Per entry state: 8 authored snags (6 categories, 1 or 2 each) with their `return` lines, and 6 quiet lines. For the 4 entry states the Canyon prototype uses (c1 to c4): 8 × 4 + 6 × 4 = **56 lines**, 32 of them paired snag/return. If the database defines more entry states (8 slices), scale to 8 + 6 per slice = 112. Rule: no authored line is reused in a run unless the pool is exhausted; if exhausted, use a quiet line (never an error).
+**Fallback pool size (withdrawn by NO-BACKUP; kept as history).** Per entry state: 8 authored snags (6 categories, 1 or 2 each) with their `return` lines, and 6 quiet lines. For the 4 entry states the Canyon prototype uses (c1 to c4): 8 × 4 + 6 × 4 = **56 lines**, 32 of them paired snag/return. If the database defines more entry states (8 slices), scale to 8 + 6 per slice = 112. Rule: no authored line is reused in a run unless the pool is exhausted; if exhausted, use a quiet line (never an error).
 
 ### A5. What changes elsewhere
 
@@ -108,6 +118,8 @@ Evidence: the test did see repeated lines, but the prototype had a few mock line
 ## C. Return line after hours (B13)
 
 ### C1. Generate or pick? **Pick (Recommendation, Reasoned).**
+
+> **Decided the other way:** the return pop-up is generated live (R1, A6, T6). Sections C1 to C4 are kept as history.
 
 - The line is shown on a cold start, right when the user is least settled; a model call adds latency and a failure mode on the most sensitive moment.
 - It must never contain anything about the user, so it has no personal input; the only variable is the entry state and the away bucket. That is a table, not a generation problem.

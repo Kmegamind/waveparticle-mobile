@@ -2,7 +2,7 @@
 
 This document is the single list of screens in the WaveParticle mobile web app and the rules for moving between them. It covers what each screen is for, what it shows, what the user can do, where each action leads, what the system back gesture does, and how the screen behaves when it is empty, loading, failing or offline. It also states the global rules: the launch router, the tab bar, away and return, the return pop-up, how Pause, Back and Home relate, how Done moves to the next step on the same page, the undo after Done, and the hold of 1.2 seconds.
 
-Status: draft, written on 2026-11-05 from the design documents of 2026-10-29 to 2026-11-04. Where an older document and a later decision disagree, the decision recorded in `DECISIONS.md` (Yue, up to 2026-11-05) wins. Questions that no decision settles are collected at the end under "Open questions".
+Status: draft, written on 2026-11-05 from the design documents of 2026-10-29 to 2026-11-04. Where an older document and a later decision disagree, the decision recorded in `DECISIONS.md` wins. This file was brought in line with the decisions up to 2026-11-15 and with prototype version 4 of the goal dialogue and focus page (pull request #273) in issue #295. Questions that no decision settles are collected at the end under "Open questions".
 
 ## 1. Product vocabulary
 
@@ -104,7 +104,7 @@ Every time the app opens, it decides the first screen as follows. "Last activity
 
 ### 3.5 The return pop-up (F-RET)
 
-When the user comes back to a Step whose clock is stopped, a pop-up in the Companion's voice appears before the clock restarts. It says what he did during that time and how he felt. It is generated live by the AI, with an authored fallback line when generation fails or is too slow. It has one button, **Start**. When the user taps Start, the Step resumes and the clock starts.
+When the user comes back to a Step whose clock is stopped, a pop-up in the Companion's voice appears before the clock restarts. It says what he did during that time and how he felt. It is generated live by the AI. No stored line stands in when generation fails or is too slow (NO-BACKUP); the failure message with Retry is shown instead and the clock does not start (FAIL-SCREEN). It has one button, **Start**. When the user taps Start, the Step resumes and the clock starts.
 
 It appears in these cases:
 
@@ -125,7 +125,7 @@ It never appears for a glance at another app of under 5 minutes. It replaces the
 | **Continue** (on Home) | HOME-1, HOME-3 | Opens the focus page at the same Step. F-RET opens over it if the user was away 5 minutes or more, or after Back to step; the clock restarts at Start. Goals Continue follows the same rule. |
 | **Start** | F-RET | Closes the pop-up and starts the clock from the frozen value. |
 
-Pause has no limit, no counter, no warning screen, no pop-up and no penalty. The clock is never reset by pausing. Every Pause opens the same rest page: his first message is generated live by the AI, about the snag his own work has hit and how he feels about it, because a Pause means his side of the story has stalled. The prompt receives the number of the pause. From the third Pause in one Step the prompt changes: he says more strongly that he cannot finish his own work and asks the user not to pause again. From the fourth Pause on, the same strong tone continues in new words each time. Nothing else changes: it is the same screen, and the stuck state lasts until the user returns to the Step. He does not write again on his own while the user is silent.
+Pause has no limit, no counter, no warning screen, no pop-up and no penalty. The clock is never reset by pausing. Every Pause opens the same rest page: his first message is generated live by the AI, about the snag his own work has hit and how he feels about it, because a Pause means his side of the story has stalled. The prompt receives the number of the pause. Every Pause means his own story is blocked, and a new stuck story is generated each time. From the third Pause in one Step the stuck situation is much harder, and because he remembers the earlier setbacks he says he is worried he may fail. The message is never an instruction to the user and never asks the user to stop pausing (PAUSE-3). It is 1 or 2 sentences and at most 30 words (LEN-PAUSE). From the fourth Pause on, the same strong tone continues in new words each time. Nothing else changes: it is the same screen, and the stuck state lasts until the user returns to the Step. He does not write again on his own while the user is silent.
 
 ### 3.7 Done moves to the next Step on the same page
 
@@ -144,11 +144,12 @@ Done never asks a question. He does not react to an early Done.
 ### 3.8 Story cards on the focus page
 
 - One card is visible at a time. Cards form a stack: the newest card sits on top.
-- The character's goal mirrors the user's: if the user has x Steps of y minutes, his story has x Steps of y minutes. The AI receives the whole story, split into x Steps, and divides each Step into n story cards according to the story's progress. The AI chooses n for each Step, between 1 and 5, with at least 5 minutes between cards. The app ignores any extra cards. A Step of 10 minutes has at most 2 cards.
+- The character's goal mirrors the user's: if the user has x Steps of y minutes, his story has x Steps of y minutes. A story has 2 to 5 parts (STORY-PARTS), and its cards are made for each part, not for each number of user Steps (CARDS-PER-PART). When the user starts a story, the app spreads the parts across however many Steps the user has, in plain code with no model call (for example 4 parts and 2 Steps gives parts 1 and 2 in Step 1, parts 3 and 4 in Step 2). A Step has between 1 and 5 cards, with at least 5 minutes between cards; the app ignores any extra cards. A Step of 10 minutes has at most 2 cards.
 - A Step opens with exactly one card: the background card for the first Step, and the card about what he just finished for every later Step. The n story cards then arrive one at a time at y/n, 2y/n, ... y minutes of foreground time after the Step starts. The last one arrives at 00:00, is not a separate card and is written to say he is still at it. Each Step has its own stack, which starts again with one card.
 - At the very start of the Goal, one extra background card is shown first. It is told in his own voice, as storytelling: who is here, where this is, and what each person knows. It is never written from an outside point of view. It is the opening card of the first Step, the oldest card in the stack, and has no dismiss button. It is not one of the n story cards and appears once, at the start of the Goal, not at the start of every Step. It introduces the people who are present.
-- Cards are written live by the AI from the story's facts and key turning points. Every card passes the same checks as an authored card (first person, no future facts, no clock times). The pre-written cards stand in when a card fails the checks or generation is slow (F3). Every card makes sense on its own, so the user can look back at it.
-- To look back, swipe the top card **left**: it moves aside and shows the card before it. Swiping **right** brings the newer card back. Dots show the position. The buttons **‹ Earlier card** and **› Newer card** do the same without a gesture. Arrow keys work when the card area has focus.
+- The background card, the step story cards and the closing line are made ahead of time, once per story, and shared by all users. A person reads them before they are published (SHARED-STORY, READ-STATUS, CLOSING-AHEAD). They are not written live for each user. Every card passes the checks (first person, no future facts, no clock times, something new in every card (CARD-NEW), and no year, date or age (DATES-ADMIN-ONLY)). A step story card is 1 to 3 sentences and at most 45 words; the background card is at most 70 words; a card over the limit cannot be published (LEN-CARD). If the cards cannot be shown, F3 shows the failure message; no stored text stands in (NO-BACKUP, FAIL-SCREEN). Every card makes sense on its own, so the user can look back at it.
+- Inside the card, a small label names it: **Where I am** for the background card of the first Step, **Right now** for the newest card, and **How I got here** for older cards. The label, the text, the dots and the ‹ › buttons sit inside the card (prototype version 4).
+- To look back, swipe the top card **left**: it moves aside and shows the card before it. Swiping **right** brings the newer card back. Dots show the position. The buttons **‹** (Earlier card) and **›** (Newer card) do the same without a gesture. Arrow keys work when the card area has focus.
 - The view shows the newest card by default. It resets to the newest card when the app reopens and when the user taps Start in F-RET.
 - When a new card arrives while the user is looking at an earlier card, the view does not move and nothing marks the new card: no ring, no count, no colour, no sound, no vibration. By default a new card is silent.
 - The card area is not announced as a live region. A new card is never read aloud over the user's work.
@@ -178,7 +179,7 @@ Every swipe action has a visible alternative that needs no gesture.
 
 Every free-text field passes through the safety check before anything is sent to the AI, saved or shown. The fields are:
 
-- the goal and the answer to his follow-up question in the goal dialogue, the typed time, the title and description of a Step, the rename of the Goal on the plan, and the name of an added Step;
+- the goal in the goal dialogue, the title and description of a Step, the Goal field on the plan, and the name of an added Step;
 - each message on the rest page;
 - the Goal title in G4 and in G3;
 - the name in Me;
@@ -197,7 +198,7 @@ The character never knows about, mentions or reacts to the safety layer. The cla
 
 These rules apply unless a screen says otherwise.
 
-- **Focus page:** no error text ever appears. A bundled, pre-written card stands in when cards cannot load (F3). A pre-written line stands in when the AI is slow or fails, including in F-RET.
+- **Session pages (focus, return pop-up, rest, summary):** no stored or pre-written text stands in when his text cannot be shown or a live message fails or is slow (NO-BACKUP). After retrying within the time limit, the page shows one calm message in the app's own voice, for example "He is not here right now. Please try again.", with **Retry**. The Step clock does not start while it is shown (FAIL-SCREEN). The wording and the time limit are set by testing (TIME-LIMIT). This message is app text, not story text (APP-TEXT).
 - **Goals pages:** loading shows grey skeleton rows. An empty list shows one plain sentence and, where useful, one text link, with no illustration. A failed save shows the toast "Couldn't save. Try again." with **Retry**, and the change rolls back. Offline, Goals reads from stored data, changes wait in a queue, and the toast "Saved offline" appears.
 - **Every other screen:** the sources do not define loading, empty, error or offline behaviour. Each such gap is marked "Not yet specified" below and listed in Open questions, item 17.
 
@@ -265,10 +266,10 @@ Each entry gives: **Frame** (page, sheet or state), **Purpose**, **Shows**, **Ca
 
 - **Frame:** top-level page with the tab bar.
 - **Purpose:** let the user choose who sits with them.
-- **Shows:** the title "Companions" and a list of all eight Companions in a fixed order. Each card has a portrait, a name, three tags and one line in the Companion's own voice. One **Enter** button is pinned below the list, above the tab bar. No stage, particles, roster strip, dossier panel, count, "new" marker or "Last Observed".
+- **Shows:** the title "Companions" and a list of the Companions of Release 1, Oppenheimer and Moriarty, in a fixed order (OTHER-COMPANIONS). Each card has a portrait, a name, three tags and one line in the Companion's own voice. One **Enter** button is pinned below the list, above the tab bar. No stage, particles, roster strip, dossier panel, count, "new" marker or "Last Observed".
 - **Can do and leads to:**
   - Tap a card to select it, one at a time. Nothing is selected on entry and Enter is inactive until a choice is made.
-  - **Enter** with Oppenheimer selected opens CPAGE. Enter with any of the other seven selected opens the goal dialogue (GD1) directly, or CPAGE-S (see Open questions, item 7).
+  - **Enter** with Oppenheimer selected opens CPAGE. Enter with Moriarty selected opens the goal dialogue (GD1) directly, or CPAGE-S (see Open questions, item 7).
 - **System back:** goes to Home.
 - **States:** the sources do not define loading, error or offline behaviour here. A Companion with no story yet shows a plain notice that it is not available.
 
@@ -279,7 +280,7 @@ Each entry gives: **Frame** (page, sheet or state), **Purpose**, **Shows**, **Ca
 - **Shows:** a plain ruler with ticks and a marker and no fill, and a list of rows with every story of the path. Shape carries the state of each row:
   - Finished (you finished it): solid dot and ›, the story title and his past-tense line. Tappable.
   - Current (exactly one): heavy ring, a card with his first-person line, and the **Begin** button.
-  - The other stories of the path: all 26 chapters are shown, with age and title. Chapters ahead of the current one are visible but not tappable, play is in order, and none is marked locked or "coming soon".
+  - The other stories of the path: all 26 chapters are shown with their titles, grouped under named periods, with no dates or ages (PERIODS, DATES-ADMIN-ONLY). Chapters ahead of the current one are visible but not tappable, play is in order, and none is marked locked or "coming soon".
   - New users start at chapter 1. No marker of any kind is shown for scenes or key moments on the rows or on the current card. No totals, future dates or source labels.
 - **Can do and leads to:**
   - **Begin** opens GD1.
@@ -299,7 +300,7 @@ Each entry gives: **Frame** (page, sheet or state), **Purpose**, **Shows**, **Ca
 
 ### 4.3 Goal dialogue
 
-The goal dialogue is one chat-style page that grows downward. He speaks first, from inside his own afternoon, and asks one question at a time. The user answers with typed text or quick replies. The boundary is built into the product: the number of turns is counted on the server, the input box disappears when the plan appears, the split question has buttons only, and he does not react to any change the user makes to the plan.
+The goal dialogue is one chat-style page that grows downward. He speaks first, from inside his own afternoon, and asks one question at a time. The user answers with typed text for the goal, a slider for the time (TIME-SLIDER) and chips for the split question. The page has a header with ‹, his portrait and his name, a thread that scrolls, and a dock at the bottom that stays put (prototype version 4). The boundary is built into the product: the number of turns is counted on the server, the input box disappears when the plan appears, the split question has chips only, and he does not react to any change the user makes to the plan.
 
 The dialogue has at most three turns, in this order: the goal, the time, and whether to split the goal into finer Steps; there is no follow-up question for a vague goal, because the planning prompt makes a vague goal concrete. The goal is free text. There is no restriction on what a goal can be and no list of unsupported kinds. His lines come from authored pools. The goal text goes to the AI for exactly two purposes, classifying the shape of the goal and splitting it into Steps (the planning prompt of the AI workflow), and not to the writing of his lines. A returning user who already has a Goal with this Companion sees a shorter opening: one line that is the question itself (a variant of GD1, not a separate screen).
 
@@ -307,9 +308,9 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 
 - **Frame:** full page, no tab bar.
 - **Purpose:** let him open and ask what the user is working on.
-- **Shows:** his opening on a paper slip (at most three sentences and about 45 words, ending with the question), a chat-style input box with a send button, and a text link **Just split it** for users who do not want to talk. No label, no Continue button, no long monologue.
+- **Shows:** his opening on a paper slip (at most three sentences and about 45 words, ending with the question), a rectangular input field with the placeholder "Say it in one line" next to a separate **Send** button, and a text link **Just split it** centred under them for users who do not want to talk. No label, no Continue button, no long monologue.
 - **Can do and leads to:**
-  - **Send** opens GD2 with his reaction. If the goal is empty, a short system line says "Write one line first".
+  - **Send** opens GD2 with his reaction. If the goal text already says how long the user will work, the time question is skipped and GD3 follows (GOAL-TIME). If the goal is empty, a short system line says "Write one line first".
   - **Just split it** uses the written goal and, if no time was chosen, a default of 30 minutes, and opens GD4. If the goal is empty it keeps the user on GD1 and shows the same hint.
   - **‹** returns to the screen that opened the dialogue (CPAGE, COMP, Home or Goals; see Open questions, item 6).
 - **System back:** same as ‹. The typed text is kept.
@@ -319,8 +320,8 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 
 - **Frame:** the same page, scrolled; full page, no tab bar.
 - **Purpose:** respond to the shape of the goal and learn how long the user will work.
-- **Shows:** his reaction to the shape of the goal (specific, vague or too big), without repeating the user's words, and then one question about how long. A slider from 0 to 3 hours in steps of 5 minutes, its value in words beside it, a Send button that is inactive at 0 ("Choose a time above 0"), and **Not sure**. No fixed example times (TIME-SLIDER). If the goal was vague he asks one follow-up first, once only. A goal that is too big is not questioned: the split cuts it to the part that fits the time given. The plan always matches that time.
-- **Can do and leads to:** sending a time from the slider opens GD3. **Not sure** makes him set 30 minutes with one line of reason. **Change time** after a time read from the goal opens the slider at that time (at most 3 hours).
+- **Shows:** the user's goal as their own message, then one slip of his that holds both his reaction to the shape of the goal (specific, vague or too big), without repeating the user's words, and the question "How long do you have?". In the dock: a slider from 0 to 3 hours in steps of 5 minutes, its value in words beside it, a Send button that is inactive at 0 ("Choose a time above 0"), and a **Not sure** chip. No fixed example times (TIME-SLIDER). **Just split it** is not offered on GD2. A vague goal gets no follow-up question (D1f). A goal that is too big is not questioned: the split cuts it to the part that fits the time given. The plan always matches that time.
+- **Can do and leads to:** sending a time from the slider opens GD3. **Not sure** makes him set 30 minutes with the line "Then thirty minutes. Long enough to start, short enough to keep." and opens GD3. When the goal text already states a time, GD2 is not shown: he gives no reaction, and GD3 shows the caption "Time I understood from your line: N min." with **Change** (GOAL-TIME). **Change** opens the slider at that time (at most 3 hours).
 - **System back:** goes to the previous turn. The user's previous answer can be changed and his reply is chosen again from the pool.
 - **States:** loading while the goal is classified is covered by the authored fallback line; a classifier failure uses the generic reply. Offline: not yet specified.
 
@@ -328,7 +329,7 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 
 - **Frame:** the same page, scrolled; no tab bar.
 - **Purpose:** ask whether the goal should be split into finer Steps. The question suits a user with a detailed goal.
-- **Shows:** his question and two buttons: **Split it finer** and **Keep it broad**. There is no input box.
+- **Shows:** the user's answer as their own message (for example "60 min"), then his question "Do you want it cut fine, or kept in a few broad pieces?" and two chips in the dock: **Split it finer** and **Keep it broad**. He does not acknowledge the time with a separate line. When the time was read from the goal, the caption "Time I understood from your line: N min." with **Change** is shown instead of the user's answer (GOAL-TIME). There is no input box.
 - **Can do and leads to:** either answer opens GD4 with the proposed split.
 - **System back:** goes to the previous turn (GD2).
 - **States:** not yet specified.
@@ -337,9 +338,10 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 
 - **Frame:** the same page, scrolled; no tab bar. The input box is gone.
 - **Purpose:** show the Steps as his slip of paper and let the user change them before starting.
-- **Shows:** his short introduction ("argue with it now, in ink, where it's cheap" is kept from the existing dialogue), the plan card with the Goal name, the Steps each with a short title, a description of one or two sentences and its minutes, a count line such as "3 steps · 60 min" and an optional closing line of his that does not repeat the user's content or state a number. The user can edit fully: tap a Step to change its title, description and minutes (in steps of 15), or remove it. **Add a step** adds one. There is no maximum number of Steps. If the edits change the total, the Goal's time follows the edits. A text link **Split again** requests a new split.
+- **Shows:** his short introduction, "Here is how I would cut it. Argue with it now, in ink, where it's cheap.", then the plan card. The card starts with the small label "YOUR STEPS" and an editable **Goal** field. Each Step row has a numbered circle, the short title, its minutes and move **↑** / **↓** buttons (STEP-EDIT); the list does not show the Step descriptions, which are in the editor only. **+ Add a step** sits on the same row as the count line, which always reads "N steps · N min" (for example "3 steps · 60 min"). A text link **Split again** is centred inside the card. **Start** is a full-width button pinned at the bottom. An optional closing line of his does not repeat the user's content or state a number.
+- **Step editor:** tapping a Step opens it in place and its row reads "Editing". The editor has **Step title**, **Description**, and the minutes as **−5**, a typed whole number and **+5**, from 1 to 1440 minutes; at either end the reason is shown in words (STEP-EDIT, issue #249). Then **Done editing**, and **Remove step** as a text link. **Add a step** inserts the new Step after the open one. The user can edit fully: rename, change minutes, add, remove and move Steps. There is no maximum number of Steps. If the edits change the total, the Goal's time follows the edits (D1d).
 - **Can do and leads to:**
-  - **Start** creates the Goal and its Step plan and opens F1 at Step 1, with the background card shown first.
+  - **Start** creates the Goal and its Step plan and opens F1 at Step 1, with the background card shown first. The Goal field is saved as the Goal title; if it is left empty, the typed goal is saved.
   - **Split again** shows the splitting state and returns to GD4 with a new plan, or to GD-F if it fails.
   - **‹** goes to GD3.
 - **System back:** goes to GD3 (or GD2). The plan is kept. If the user changed the goal or the time, the plan is generated again and manual edits are lost.
@@ -349,8 +351,8 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 
 - **Frame:** the same page, full page.
 - **Purpose:** say plainly that the split failed, without hiding it.
-- **Shows:** a system-voice message (not his), in bold border and text and not in red. The user's words are kept. One honest way forward.
-- **Can do and leads to:** **Try again** returns to GD4 with a new split. **Use one step** opens GD-N1. **Change my line** returns to GD1 with the text kept.
+- **Shows:** a system-voice message (not his), in bold border and text and not in red: "That one wouldn't split." and "Nothing is lost. Your words are kept: "…"." with the user's goal quoted. The user's words are kept.
+- **Can do and leads to:** **Try again** returns to GD4 with a new split. **Use one step** opens GD-N1. **Change my line** returns to GD1 with the goal put back in the input field.
 - **System back:** goes to the previous turn.
 - **States:** the message is announced as an alert. No silent generic Steps are ever created on failure.
 
@@ -371,23 +373,23 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 - **Purpose:** hold the user's work on one Step next to his story.
 - **Shows:**
   - Pinned at the top: "Step x of N", the paired Step marks and the clock.
-  - His side, in his own first-person voice: "My goal" (one static line about an aim, not an outcome) and the card stack (section 3.8) with dots and the ‹ and › buttons. Newest card first; at the start of the Goal, the background card is the only card, and it has no dismiss button. No name label, no "His…", no counter on the cards, no chat.
-  - The user's side, in plain system type: "Your goal", "Now" with the current Step name and its short description (shown only when there is one), and "Your Steps" as a collapsed list.
-  - Pinned at the bottom: **Done | Pause**.
+  - His side, in his own first-person voice: "My goal" (one static line about an aim, not an outcome) next to his portrait, and the card stack (section 3.8). The card holds its label ("Where I am", "Right now" or "How I got here"), the text, the dots and the ‹ and › buttons. Newest card first; at the start of the Goal, the background card is the only card, and it has no dismiss button. No name label, no "His…", no counter on the cards, no chat.
+  - The user's side, in plain system type: a "Your goal" panel with "Now", the current Step name and its short description (shown only when there is one), and **Your steps ▾**, which opens the list (F1-YOU).
+  - Pinned at the bottom: **Done | Pause**, full-size buttons side by side.
 - **Can do and leads to:**
   - **Done** moves to the next Step on this same page (state F1-N). On the last Step it opens END (section 3.7).
   - **Pause** opens R1 (section 3.6).
   - Tap his **portrait** to open F1-C.
-  - **Your Steps** opens the list in place (F1-YOU).
-  - **‹ Earlier card** and **› Newer card**, or swipe, browse the cards (F1-E).
+  - **Your steps ▾** opens the list in place (F1-YOU).
+  - **‹** (Earlier card) and **›** (Newer card), or swipe, browse the cards (F1-E).
 - **System back:** acts as Pause: the clock freezes and R1 opens. This is inherited from the earlier flow document and has not been re-confirmed (Open questions, item 16).
-- **States:** clock reaches 00:00 (F2); cards fail to load (F3); first frame after Done (F1-N); back from rest or after 5 minutes away (F-RET over F1). Offline: authored fallback cards are bundled, so the page works unchanged.
+- **States:** clock reaches 00:00 (F2); cards fail to load (F3); first frame after Done (F1-N); back from rest or after 5 minutes away (F-RET over F1). Offline: no stored cards stand in; if the cards cannot be shown, F3 applies (NO-BACKUP, FAIL-SCREEN).
 
 #### F1S · Focus, single Step
 
 - **Frame:** the same as F1.
 - **Purpose:** the same as F1 for a plan with one Step.
-- **Shows:** the same screen without "Step 1 of 1", the Step marks or the "Your Steps" list.
+- **Shows:** the same screen without "Step 1 of 1", the Step marks or the "Your steps" list.
 - **Can do and leads to:** **Done** opens END. **Pause** opens R1. Other controls as F1. With one Step the whole story is one Step, and cards follow the rules of section 3.8.
 - **System back:** acts as Pause.
 - **States:** as F1.
@@ -397,7 +399,7 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 - **Frame:** state of F1.
 - **Purpose:** let the user reread an earlier card without the page jumping.
 - **Shows:** an earlier card with its dots position. Nothing marks any newer card.
-- **Can do and leads to:** swipe right or **› Newer card** returns toward the newest card. Reopening the app and tapping Start in F-RET reset the view to the newest card.
+- **Can do and leads to:** swipe right or **›** (Newer card) returns toward the newest card. Reopening the app and tapping Start in F-RET reset the view to the newest card.
 - **System back:** as F1.
 - **States:** a card that arrives in the background does not move the view and is not announced.
 
@@ -405,7 +407,7 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 
 - **Frame:** state of F1.
 - **Purpose:** show the user's own Steps without letting them edit.
-- **Shows:** Step titles only, marked done, now or to do by shape, with no minutes. The short description appears only under the current Step. The middle area scrolls if the cards and the list do not fit together; the clock and Done | Pause never move.
+- **Shows:** Step titles only, marked done (✓), now (●) or to do (○) by shape, with no minutes. The short description appears only under the current Step. The middle area scrolls if the cards and the list do not fit together; the clock and Done | Pause never move.
 - **Can do and leads to:** tap again to close.
 - **System back:** as F1.
 - **States:** Steps cannot be edited here; editing happens before the Goal starts.
@@ -440,33 +442,33 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 #### F3 · Cards failed to load
 
 - **Frame:** state of F1.
-- **Purpose:** keep the page calm when story cards cannot load, fail the checks or are slow.
-- **Shows:** one bundled, pre-written card with the pager hidden. For a story without authored cards, a few generic fallback lines in his voice are used. The "My goal" line is static data and still shows. No error text, no retry, no spinner, no offline badge. If the goal line is also missing, that row is omitted and the portrait stays.
-- **Can do and leads to:** as F1.
+- **Purpose:** say calmly that his cards cannot be shown, without substituting other text.
+- **Shows:** in place of the card, one calm message in the app's own voice, for example "He is not here right now. Please try again.", with **Retry** (FAIL-SCREEN). No stored or pre-written card stands in (NO-BACKUP). The Step clock does not start while the message is shown. The "My goal" line is static data and still shows. If the goal line is also missing, that row is omitted and the portrait stays.
+- **Can do and leads to:** **Retry** tries again; when the cards can be shown, the page continues as F1. Pause as F1.
 - **System back:** acts as Pause.
-- **States:** nothing is announced.
+- **States:** the wording and the waiting time limit are set by testing (TIME-LIMIT).
 
 #### F-RET · Return pop-up
 
 - **Frame:** modal over F1 or F1S. The focus page stays visible behind it with the clock frozen. Any open sheet is closed first.
 - **Purpose:** restart the clock with a word from him after the user comes back.
-- **Shows:** one message in his first-person voice: what he did during that time and how he felt. One button, **Start**. No close button, no second button, no question, no time away, no counter. The message is generated live by the AI; a bundled line is used if generation fails or is slow, and when offline. The clock behind it shows where it froze (the full target if the user left right after Done).
+- **Shows:** one message in his first-person voice: what he did during that time and how he felt. One button, **Start**. No close button, no second button, no question, no time away, no counter. The message is generated live by the AI. He may describe how the time felt in any words he would use, without exact clock numbers (TIME-WORDS, CLOCK-NUMBERS). If generation fails or is slow, and when offline, no stored line stands in: the failure message with **Retry** is shown and the clock does not start (NO-BACKUP, FAIL-SCREEN). The clock behind it shows where it froze (the full target if the user left right after Done).
 - **Appears:** after ‹ Back to step on the rest page, and after returning to the app (including Continue on Home or Goals) from 5 minutes or more away (section 3.5).
 - **Can do and leads to:** **Start** closes the pop-up and the clock starts from the frozen value. The card view shows the newest card.
 - **System back:** leaves to Home. The Step stays paused (Open questions, item 16).
-- **States:** focus moves to Start when the pop-up opens, and the message is read once to screen readers. With reduced motion it appears without animation. The wording and fallback set are not yet written (Open questions, items 2 and 21).
+- **States:** focus moves to Start when the pop-up opens, and the message is read once to screen readers. With reduced motion it appears without animation. The Start label and the length of the message have no wireframe (Open questions, item 2).
 
 #### R1 · Rest, he writes first
 
 - **Frame:** full page, no tab bar.
 - **Purpose:** give the user a break in conversation with him, while the clock is frozen.
-- **Shows:** a slim header with **‹ Back to step** on the left, the label "Paused" in the middle and a small **Home** link on the right. There is no name and no portrait. His first message appears as a taped slip, written by the AI about one small snag of his own, one to two and a half seconds after Pause. An authored snag stands in if the AI is not ready by then. A text box is pinned at the bottom. No timer, no limit on messages, no quick replies, no instruction to write. From the third Pause in one Step his message is stronger (section 3.6); the screen is the same.
+- **Shows:** a slim header with **‹ Back to step** on the left, the label "Paused" in the middle and a small **Home** link on the right. There is no name and no portrait. His first message appears as a taped slip, written live by the AI about the snag his own story has hit (a new stuck story each time), one to two and a half seconds after Pause; 1 or 2 sentences and at most 30 words (LEN-PAUSE). No authored snag stands in if the AI is not ready; the failure message with **Retry** is shown instead (NO-BACKUP, FAIL-SCREEN). A text box is pinned at the bottom. No timer, no limit on messages, no quick replies, no instruction to write. From the third Pause in one Step his stuck situation is much harder and he says he is worried he may fail; he never instructs the user or asks the user to stop pausing (PAUSE-3, section 3.6). The screen is the same.
 - **Can do and leads to:**
   - **‹ Back to step** opens F1 through F-RET.
   - **Home** opens Home with the Step paused.
   - Typing and sending a message opens R1-C.
 - **System back:** same as Home.
-- **States:** while a reply is awaited, three quiet dots appear after 600 milliseconds (this relaxes the earlier "no typing indicator" rule and needs a decision, Open questions, item 15). Replies are expected within about three seconds, and an authored reply is used at six seconds. With the keyboard open the header keeps Back and the log keeps at least one message. The page may be restored by the launch router. He may answer questions in his own voice; he does not state that he is a program (that is only in the terms and in settings).
+- **States:** while a reply is awaited, three quiet dots appear after 600 milliseconds (this relaxes the earlier "no typing indicator" rule and needs a decision, Open questions, item 15). Replies are expected within about three seconds. No authored reply stands in; after the time limit the failure message with **Retry** is shown (NO-BACKUP, FAIL-SCREEN). With the keyboard open the header keeps Back and the log keeps at least one message. The page may be restored by the launch router. He may answer questions in his own voice; about things he could not know he answers as a person of his own time would, says plainly when he does not know, and may guess (ERA-ANSWER). He does not state that he is a program (that is only in the terms and in settings).
 
 #### R1-C · Rest, you answered
 
@@ -475,14 +477,14 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 - **Shows:** his short replies from his own side and the user's messages in plain bubbles. No limit on messages, no ending line, no counter, no avatars, no "he has to go".
 - **Can do and leads to:** as R1.
 - **System back:** same as Home. If the keyboard is open, the first press closes it.
-- **States:** a message that triggers the crisis tier opens S1. If the AI fails, an authored reply is used. Silent safeguards limit the history sent to the AI and the length of a message, without any visible change. There is no limit on the number of messages.
+- **States:** a message that triggers the crisis tier opens S1. A reply may end on its one question (CHAT-QUESTION-END). Every reply passes the same spoiler check as the story cards, against the parts the user has not reached, and a failing reply is generated again within the time limit (CHAT-SPOILER-CHECK). If the AI still fails, no authored reply is used: the failure message with **Retry** is shown (NO-BACKUP, FAIL-SCREEN). Silent safeguards limit the history sent to the AI and the length of a message, without any visible change. There is no limit on the number of messages.
 
 #### R-OFF · Rest, no network
 
 - **Frame:** state of R1.
 - **Purpose:** keep Back working when there is no connection.
-- **Shows:** a bundled authored message, a disabled text box, and one plain system sentence: "No connection. You can still go back to your Step." A typed draft is kept. No error code, no retry, no red banner.
-- **Can do and leads to:** **‹ Back to step** opens F1 through F-RET with a bundled line. **Home** opens Home.
+- **Shows:** a disabled text box and one plain system sentence: "No connection. You can still go back to your Step." No stored message of his stands in (NO-BACKUP). A typed draft is kept. No error code, no retry, no red banner.
+- **Can do and leads to:** **‹ Back to step** opens F1 through F-RET; with no connection F-RET shows the failure message with **Retry** (FAIL-SCREEN). **Home** opens Home.
 - **System back:** same as Home.
 - **States:** when the connection returns, the box is enabled again without a notice.
 
@@ -499,10 +501,10 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 
 - **Frame:** full page, no tab bar, no ‹. It is a destination.
 - **Purpose:** close the session with his last line and the user's finished Steps.
-- **Shows:** his closing line, one thing he leaves hanging that is about himself, and the user's Steps as a plain list. The closing line is written by the AI at the last Done, with an authored fallback. A one-time Goal has moved to Done automatically. If steps were merged so that key moments would otherwise disappear, a short list of those moments appears, one first-person line each. No percentage, badge, score, total time, "3/3" or "Keep going!". The toast "Step done" with Undo is shown on arrival (section 3.9).
+- **Shows:** his closing line, one thing he leaves hanging that is about himself, and the user's Steps as a plain list. The closing line is made ahead with the story's cards, read by a person and published with them (CLOSING-AHEAD); it is 1 to 3 sentences and at most 45 words (LEN-CARD), and tells what happened to him that day and how he feels about it, without counting the user's pauses or judging the user (END-TONE). A one-time Goal has moved to Done automatically. If steps were merged so that key moments would otherwise disappear, a short list of those moments appears, one first-person line each. No percentage, badge, score, total time, "3/3" or "Keep going!". The toast "Step done" with Undo is shown on arrival (section 3.9).
 - **Can do and leads to:** **Next** opens CPAGE with the next story current. It is offered only to the first finisher of a story. **Home** opens Home. **Undo** returns to the last Step.
 - **System back:** goes to Home.
-- **States:** a user who finishes a story that was already played, or when nothing further is playable, sees **Home** only. If the closing line is not ready, the authored fallback appears.
+- **States:** a user who finishes a story that was already played, or when nothing further is playable, sees **Home** only. If the closing line cannot be shown, no other text stands in: the failure message with **Retry** is shown (NO-BACKUP, FAIL-SCREEN).
 
 ### 4.5 Me
 
@@ -652,7 +654,7 @@ Also removed, not as screens but as rules: the 24-hour limit on resuming, the ca
 
 The interactive prototype `wp-prototype_2026-10-29_v1.html` is the current visual reference, but it differs from the decisions in these ways. Follow the decisions.
 
-1. **Cards at the start of a Step.** The prototype shows several story cards when a Step opens. A Step opens with exactly one card, and the n story cards arrive one at a time at y/n, 2y/n, ... y minutes (n from 1 to 5, at least 5 minutes apart). The cards are written live by the AI, with authored cards as the fallback.
+1. **Cards at the start of a Step.** The prototype shows several story cards when a Step opens. A Step opens with exactly one card, and the n story cards arrive one at a time at y/n, 2y/n, ... y minutes (n from 1 to 5, at least 5 minutes apart). The cards are made ahead once per story part, read before publishing and shared by all users, with no fallback cards (SHARED-STORY, CARDS-PER-PART, NO-FALLBACK-TABLES).
 2. **Background card.** The prototype has none. One background card, told in his own voice, is shown first at the start of the Goal.
 3. **Gesture direction.** The prototype moves to an earlier card when the user swipes right and uses a row with the oldest card at the left. Decided: a stack, where swiping the top card left shows the previous card and swiping right brings the newer card back.
 4. **Third pause.** The prototype shows R-WARN on the third pause and restarts the Step clock after resting. Both are cancelled. Pause has no limit and no reset. From the third pause the same rest page opens with a stronger message from him.
@@ -665,7 +667,7 @@ The interactive prototype `wp-prototype_2026-10-29_v1.html` is the current visua
 11. **Words for the user's work.** The prototype's Home menu title, its notes and its toasts use an older word for the Goal. Use Goal and Step, and Companion.
 12. **Home fixtures and state after finishing.** The prototype Home always shows two Quick Replay chips and an "In progress" row from sample data, and a hard-coded name, whatever the account holds. After the last Step or after Put on hold, it falls back to the first-visit card "Let's launch your first wave". Home must read only the signed-in account and, with nothing in progress, keep a small trace of the Companion.
 13. **Companions list.** The prototype opens a Companion's page when its row is tapped. The decision is select first, then press one **Enter** button.
-14. **Life Path.** The prototype opens on chapter 8 with seven "his memory" rows above it and later rows that cannot be opened. New users start at chapter 1, and all stories are shown and playable.
+14. **Life Path.** The prototype opens on chapter 8 with seven "his memory" rows above it and later rows that cannot be opened. New users start at chapter 1, and all stories are shown and played in order; chapters ahead of the current one are visible but not tappable (D4).
 15. **Tab bar on CPAGE.** The story-map specification says CPAGE has no tab bar. Decided (Yue, 2026-11-13): as in the prototype, the tab bar shows on CPAGE, CPAGE-S and the session record (section 3.2).
 16. **Me page.** The prototype's Me has a Language row with a disabled Chinese option, a Reminders row and a Replay intro row, and no signal settings. English only, Reminders hidden until the start-time feature exists, and a Signals sub-page is added.
 17. **History.** The prototype's history rows cannot be opened. Rows open the session record (ME-REC), and there is no weekly total row.
@@ -687,15 +689,15 @@ Each item names the files that disagree or leave the point open. File names are 
 7. **CPAGE and CPAGE-S.** `StoryMap_Feature_Docs/STORYMAP_03_ux-functional-spec` says the seven single-story Companions skip CPAGE (Enter opens GD1) and that CPAGE has no tab bar; the prototype and the screen set include CPAGE-S. The tab bar part is decided: it shows on CPAGE and CPAGE-S, as in the prototype (section 3.2). The same file says system back on the Life Path goes to Home in one table and to COMP in another.
 8. **Begin with several Goals.** The goal picker (PICK) is deferred, so Begin always opens GD1. `Goals_Feature_Docs/GOALS_03_ux-functional-spec` (section 6.5) and `STORYMAP_03_ux-functional-spec` (section 5) leave open what happens when the current story already has an open Step plan for a Goal.
 9. **Finished rows, LPH, S6, END record.** Finished rows should open a record screen (LPH) that is not in this set. S6 is not in the set. `STORYMAP_03_ux-functional-spec` leaves "Your record" on END, and his pending thing card, undecided.
-10. **Plan editing.** Decided: no maximum number of Steps, full editing, a short title and a description of one or two sentences per Step, and the plan matches the time given. Not decided: the range of minutes per Step, move up and down buttons, and the real AI planning prompt, which must replace the placeholder in `docs/ai/AI_01`. File: `PRDs_MomTest/NF7_v7_user-test-research-and-changes`.
+10. **Plan editing.** Decided: no maximum number of Steps, full editing, a short title and a description of one or two sentences per Step, the plan matches the time given, move up and down buttons, and minutes edited with −5 / +5 and a typed whole number from 1 to 1440 (STEP-EDIT, issue #249). Not decided: the real AI planning prompt, which must replace the placeholder in `docs/ai/AI_01` (P1), and the touch area of the move buttons: they are 44 by 35 px, which meets WCAG 2.5.8 but not the 44 by 44 rule in `DESIGN.md` and `AGENTS.md` (pull request #273; accept it, make the rows taller, or use a different control).
 11. **Session record.** Decided: a record page opened from Me, History. This document also opens it from G6 and G4 rows. Not decided: whether those entries are wanted, and whether the record is kept at the Step and shown at the day. Files: `PRDs_MomTest/NF1_v2_research-and-changes`, `GOALS_03_ux-functional-spec`.
 12. **Signals sub-page.** Decided as a sub-page of Me, but no screen is drawn. Whether vibration and lock-screen notifications work on iPhone is for engineering to check. File: `NF6_v7_research-and-changes` (section 9).
-13. **Sign-in, sign-up and account deletion.** An account is required from the first open, but none of these screens is in the set. Files: `PRODUCT_doc-map-and-open-decisions` (S3), `Goals_Feature_Docs/GOALS_03_ux-functional-spec` (ME row "Keep your progress").
+13. **Sign-in, sign-up and account deletion.** An account is required from the first open. Decided (ACCOUNT-SCREENS): the sign-in, sign-up, email confirmation, forgot-password, new-password and account-deletion screens are added to the screen list; their entries are not yet written here. Files: `PRODUCT_doc-map-and-open-decisions` (S3), `Goals_Feature_Docs/GOALS_03_ux-functional-spec` (ME row "Keep your progress").
 14. **Safety details.** What is logged, the exact wording of S1, and the hotline list. The low-mood tier is deferred; when it returns, the rule for how often its sentence may appear is open. Files: `PRODUCT_doc-map-and-open-decisions` (A5), `AI_Specs/AI_05_safety_2026-11-04_v2_draft`.
 15. **Waiting dots on the rest page.** They override the earlier rule of no typing indicator and need a decision. File: `PRDs_MomTest/wireframes_NF6_v5_rest-conversation_EN_2026-10-29.html`.
 16. **System back on Home, Goals, Me, F-RET, and the root of Companions, and on F1.** Nothing states these for the current flow. System back on F1 as Pause comes from `FLOW_jump-rules-and-screen-registry_2026-10-29_v1_draft` and has not been re-confirmed.
 17. **Loading, error and offline states** are not specified for most screens outside Goals, the focus page and the rest page: Home, Companions, the goal dialogue, END, Me, S1 and the sheets.
-18. **Rest-chat questions about things he could not know.** Whether he deflects or refuses questions about modern methods or software, and how to stop him stating facts after his date, is open for the AI session. File: `PRODUCT_doc-map-and-open-decisions` (A3).
+18. **Rest-chat questions about things he could not know.** Decided (ERA-ANSWER): he answers as a person of his own time would, says plainly when he does not know, and may guess. A list of later-knowledge words stays as a check.
 19. **HOME-3 and Start over.** Start over restarts his night, but the decision on resuming removes the old Start-from-Step-1 behaviour for lapsed Goals. This document keeps HOME-3 and Start over as a choice the user makes. File: `DECISIONS.md` (T5, T6).
-20. **Story content.** New users start at chapter 1, and its authored fallback cards are not written. Only two stories have authored cards; the generic fallback lines for the others are not written. Files: `PRODUCT_doc-map-and-open-decisions` (M1, D5), `StoryMap_Feature_Docs/STORYMAP_07_user-test-update`.
-21. **Fallback line pools.** The AI generates the return pop-up and the stuck story live, but the size of the authored fallback set is not chosen. File: `PRODUCT_doc-map-and-open-decisions` (A6, C1).
+20. **Story content.** New users start at chapter 1 (M1). There are no fallback cards or lines (NO-BACKUP, NO-FALLBACK-TABLES); the formerly authored cards (the Trinity night, "finding the place", Moriarty story 1) are reference examples and evaluation material only. Every story's cards and closing line must be made ahead and read before publishing (SHARED-STORY).
+21. **Waiting time limit.** The length of the waiting time limit for live generation and the wording of the failure message are set by testing (TIME-LIMIT).
