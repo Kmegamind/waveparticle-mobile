@@ -1,6 +1,6 @@
 Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIONS.md overrides this document where they differ.
 
-> **Status after the decisions up to 2026-11-15 (#295).** The first demo has two tiers, crisis (real hotlines by region) and ordinary stress; low mood (T2 below, with its step-out line) is deferred (A5, A5b). English only: no Chinese test sets, keyword layer or `lang` field (L1). That the Companion is an AI is stated only in the terms and settings, so option (b) "I am a program" is out (A4). The rest is a draft for compliance.
+> **Status after the decisions up to 2026-11-15 (#295).** The first demo has two tiers, crisis (real hotlines by region) and ordinary stress; low mood (T2 below, with its step-out line) is deferred (A5, A5b). English only: no Chinese test sets, keyword layer or `lang` field (L1). That the Companion is an AI is stated only in the terms and settings, so option (b) "I am a program" is out (A4). The output safety check also runs on pre-made content (cards, closing line) before publishing (SAFETY-PREMADE). The rest is a draft for compliance.
 
 # AI-5 · Safety — v2 (after the user test, un-parked)
 

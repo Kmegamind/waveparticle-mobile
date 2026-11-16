@@ -2,7 +2,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 
 > **Status after the decisions up to 2026-11-15 (#295).** The rest conversation stays live (SHARED-STORY). Superseded here:
 > - **Scope policy (section A, change list row 2):** he does not have to refuse. He may answer questions, and about things he could not know he answers exactly as a person of his own time would: he says what he knows, says plainly when he does not know, and may guess (A3, ERA-ANSWER). The "never answer the task or general knowledge" recommendation and the scope-reply consistency check are withdrawn; the later-knowledge words stay as a check.
-> - **Questions (section B, change list row 6):** his reply may end on its one question (CHAT-QUESTION-END).
+> - **Questions (section B, change list row 6):** his reply may end with a question (CHAT-QUESTION-END, confirmed 2026-11-17); this replaces "never a question before Back".
 > - **Checks:** every reply passes the same spoiler check as the story cards, against the parts the user has not reached, and a failing reply is generated again within the time limit (CHAT-SPOILER-CHECK). Replies are not checked against the per-run list of earlier one-way lines (CHAT-NO-RUN-LIST).
 > - **Fallback (section A4):** there is no `rest_chat_fallback`. After retrying within the time limit the app shows its failure message with Retry (NO-BACKUP, FAIL-SCREEN).
 > - **`meta` ("Are you an AI?"):** the conversation never mentions it; disclosure is in the terms and settings only (A4).
