@@ -3,7 +3,7 @@ import { STUB_SUPABASE, baseUrlOf, signIn } from "./support/account";
 
 // #288: app text in the database. The Supabase stub keeps one app_text table for every test, so
 // these tests run one after the other and change only ui.HOME-0.greeting, which no other test
-// reads; each test starts and ends with the seed (every code default as version 1, published). A
+// reads; each test starts and ends with that key's seed (every code default as version 1, published). A
 // test that publishes ends with a roll back in the admin, which also clears the app's own cache.
 
 test.describe.configure({ mode: "serial" });
@@ -11,7 +11,7 @@ test.describe.configure({ mode: "serial" });
 const KEY = "ui.HOME-0.greeting";
 const DEFAULT = "Let’s launch your first wave.";
 
-async function appTextStub(body: { failReads?: boolean; reset?: boolean }) {
+async function appTextStub(body: { failReads?: boolean; reset?: string }) {
   const answer = await fetch(`${STUB_SUPABASE}/__app_text`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -20,8 +20,9 @@ async function appTextStub(body: { failReads?: boolean; reset?: boolean }) {
   if (!answer.ok) throw new Error(`stub app text failed: ${answer.status}`);
 }
 
-test.beforeEach(() => appTextStub({ reset: true, failReads: false }));
-test.afterEach(() => appTextStub({ reset: true, failReads: false }));
+// Only this file's key is reset, so the publish history tests (#289) can run beside it.
+test.beforeEach(() => appTextStub({ reset: KEY, failReads: false }));
+test.afterEach(() => appTextStub({ reset: KEY, failReads: false }));
 
 /** The App text card of one key. */
 const card = (page: Page, key: string) => page.getByRole("region", { name: key });
