@@ -18,13 +18,14 @@ describe("Oppenheimer story database", () => {
     }
   });
 
-  it("marks two to four confirmed key slices for every story", () => {
+  it("marks two to four key slices for every story, stored unconfirmed (KEY-UNCONFIRMED)", () => {
     for (const story of oppenheimerStories) {
       expect(story.keySlices.length).toBeGreaterThanOrEqual(2);
       expect(story.keySlices.length).toBeLessThanOrEqual(4);
 
       for (const keySlice of story.keySlices) {
-        expect(keySlice.confirmed).toBe(true);
+        // KEY-UNCONFIRMED (2026-11-15): the machine-derived key moments wait for review.
+        expect(keySlice.confirmed).toBe(false);
         expect(keySlice.factIds.length).toBeGreaterThan(0);
         expect(keySlice.keyLine.split(/\s+/).length).toBeLessThanOrEqual(18);
       }

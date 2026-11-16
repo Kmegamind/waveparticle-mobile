@@ -1,0 +1,20 @@
+[
+  {
+    "id": "oppenheimer",
+    "name": "J. Robert Oppenheimer",
+    "shortName": "Oppenheimer",
+    "tags": "Brilliant · Eloquent · Haunted",
+    "line": "I can give you the answer. Whether you should have asked it is your problem, not the equation’s.",
+    "portrait": "/companions/oppenheimer.png",
+    "enterHref": "/companions/oppenheimer"
+  },
+  {
+    "id": "moriarty",
+    "name": "Professor Moriarty",
+    "shortName": "Moriarty",
+    "tags": "Analytical · Enigmatic · Defiant",
+    "line": "The only way to defeat the devil is to become one yourself.",
+    "portrait": "/companions/moriarty.png",
+    "enterHref": null
+  }
+]
