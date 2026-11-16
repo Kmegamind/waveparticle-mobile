@@ -1,0 +1,1995 @@
+{
+  "bohr-difficulties": {
+    "id": "bohr-difficulties",
+    "goal": "I want to quit the bench, make myself a theoretical physicist, and write one real paper before the black mood comes back.",
+    "background": "I'm in Cambridge, in the spring, and I work at a laboratory bench. I am low in spirits, and the bench gives me nothing back. I am restless and tired of it. I keep a notebook in my coat and a pencil that needs sharpening.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Leave the laboratory bench and set out to learn theory.",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "I am tired, and the bench has stopped interesting me. I want out of experiments, but I have told nobody yet. A man should be sure before he says such a thing."
+          },
+          {
+            "at": "s2",
+            "text": "This spring I left a miserable room for quarters along the river Cam, halfway to Grantchester. It helped, but I still walk back to the bench each morning and dislike it."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Read the two new papers and find how they fit together.",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "I have decided to learn the trade of a theorist. Two new papers lie on my desk, and a new kind of physics is in them. I can't yet tell if I'm clever enough."
+          },
+          {
+            "at": "s4",
+            "text": "I read Heisenberg's paper, and then Schrodinger's wave theory of the atom. They look nothing alike. I sit with the notebook open and a cold teacup and cannot make them agree."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Get inside the new quantum mechanics among the physicists near me.",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "I suspect the two papers describe one theory in two dresses. I would like this to be an egg this time, not another cackle. So far I have said it to no one."
+          },
+          {
+            "at": "s6",
+            "text": "At the Kapitza Club quantum mechanics is all anyone discusses, and in a rudimentary way I am getting pretty interested. There is a young theorist there whose papers nobody follows. I haven't made up my mind about him."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Work my own problem through toward a paper.",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "I met Dirac this spring and told Wyman he would never amount to anything. His work was not easily understood, and he didn't mind. I was wrong, and I now think him absolutely grand."
+          },
+          {
+            "at": "s7",
+            "text": "My head is steadier, and a problem of my own lies on the desk with a page of working beside it. I mean to finish a paper before the black mood comes back."
+          },
+          {
+            "at": "s8",
+            "text": "All spring I worked steadily on the collision problem, or continuous spectrum, and it was hard work. Today I am out of my room and in the laboratory building, and the page is still unfinished."
+          }
+        ]
+      }
+    ]
+  },
+  "cross-examination": {
+    "id": "cross-examination",
+    "goal": "I want to get through Robb's questioning with my clearance and my word intact, while he reads from files I have never been allowed to see. I have to answer what I know and not guess.",
+    "background": "I'm in the witness chair in a hearing room, on the third day of a hearing into whether I keep my security clearance. Garrison, my lawyer, questions me first. Robb will follow him, and he reads from files I have never seen. Chevalier is my friend, and Frank's part in his approach to me is in question.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Clear Frank of any part in the Chevalier matter.",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "Garrison asks whether Frank had any part in the Chevalier approach. I have turned the matter over for years. I mean to answer it exactly, with my hands still on the arms of the chair."
+          },
+          {
+            "at": "s2",
+            "text": "I said I was very clear on it, that my memory is vivid and I thought certainly not fallible, and that Frank had nothing whatever to do with it. The microphone carried every word."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Answer Robb on the Party and my brother, exactly.",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "Garrison has finished his direct examination, and my lawyers thought it had gone well. Now Robb has the questions and a folder I can't see. I expect him to be careful with words, so I will be too."
+          },
+          {
+            "at": "s4",
+            "text": "Robb got me to agree that close ties to the Party do not fit with secret work. I asked whether he meant now or then. Of my brother I said, “In the case of a brother you don't make tests, at least I didn't.”"
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Own what I told Pash.",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "I called fellow traveler a repugnant word, and then said I was one, though I traveled much less fellow after 1939. Now Robb turns to Pash, the Army officer who questioned me. I know this will cost me."
+          },
+          {
+            "at": "s6",
+            "text": "Robb asked why I had mentioned Eltenton. I said I invented a cock-and-bull story. He asked if I told Pash the truth, and I said no, and that I lied to him."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Answer Robb on the transcript and on Jean.",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "I told him the lie was that Eltenton had tried to approach three members of the project through intermediaries. Asked why, I said, “Because I was an idiot.” Robb still has pages to read, and I am tired."
+          },
+          {
+            "at": "s8",
+            "text": "Robb read from the 1943 transcript. I didn't recall saying it but would not deny it, and he said they had a record of my voice. I said, “Sure,” and called the story a pure fabrication save one name."
+          },
+          {
+            "at": "s8",
+            "text": "The room is quiet now. Robb has moved on to Jean, a woman I once knew well, and I know this will be worse than the lies. I take a sip of water and wait."
+          }
+        ]
+      }
+    ]
+  },
+  "dreadful-weapon": {
+    "id": "dreadful-weapon",
+    "goal": "I want to get through my last day of questioning without walking into another of Robb's traps, and answer for the hydrogen bomb in my own words. I have to say plainly what I think.",
+    "background": "I'm in the witness chair at my hearing, on the last day of it. The question is whether I can be trusted with secrets. Robb has questioned me all day, and he keeps looking for a trap. I have a glass of water and a pipe I may not light.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Make Robb name the context before I answer him.",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "The wall clock says the day is nearly spent. Robb has left the hydrogen bomb until last, and I am wary of why. I sit up and wait for his question."
+          },
+          {
+            "at": "s2",
+            "text": "Robb asked whether, after the President's decision, I ever opposed building the bomb on moral grounds. I feel the trap in it. I want to know what he has in front of him before I answer."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Say what I felt about the bomb in my own words.",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "I told him I could very well have called it a dreadful weapon, but had no specific recollection. Now he wants to know why I would say it. I will tell him, and the truth is not simple."
+          },
+          {
+            "at": "s4",
+            "text": "I said I have always thought it a dreadful weapon, though as technical work it was a sweet and lovely job. He offered a moral revulsion. I said, “This is too strong,” and that I had grave concern and anxiety."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Stand by the letter I wrote about two promoters.",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "He tried moral qualms, and I asked him to leave the word moral out. When he settled for qualms, I said I knew no one without them. Now Robb reaches for a folder of old letters, and my jacket feels heavy."
+          },
+          {
+            "at": "s6",
+            "text": "Robb produced my letter to Conant, taken out of my own files. It says two experienced promoters, Ernest Lawrence and Edward Teller, had been at work. I wrote it, and I read it again now."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Say what I meant by one word, then leave the chair.",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "I said Lawrence did not talk to the Commission, and went to Congress and the military instead, which deserves some belittling. I said I pay great respects to them as promoters, and I did not do them justice."
+          },
+          {
+            "at": "s7",
+            "text": "Robb has taken one word from my letter and turns it over like a coin. I am tired, and I choose my own words slowly."
+          },
+          {
+            "at": "s8",
+            "text": "He asked if promoters was meant in an invidious sense. I said I had no idea, and did not mean it to be invidious now. One word of mine still holds the room."
+          }
+        ]
+      }
+    ]
+  },
+  "eagle-hill-garden": {
+    "id": "eagle-hill-garden",
+    "goal": "I want to find out exactly what Haakon told the FBI and check it against what I once told Pash, before the party swallows the evening.",
+    "background": "I am at my house at Eagle Hill, and a party is about to begin. Haakon, an old friend, has come in and stands beside me. I want to learn what he told the FBI. I also want to check it against what I once told Pash.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Get Haakon somewhere private and hear what he knows",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "Haakon had a look I knew from old friends. He was about to tell me something, and the first guests were not here yet. I wanted every word of it before the lamps filled with people."
+          },
+          {
+            "at": "s2",
+            "text": "Haakon told me about his visit from the FBI, and I felt my face go dark. The house has thin doors and too many ears. I did not want one person near enough to hear."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Make Haakon give me every detail of his interrogation",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "I said we should step outside, and Haakon thought I feared hidden microphones. I only wanted trees between us and the house. We walked to the far corner of the grounds."
+          },
+          {
+            "at": "s4",
+            "text": "He gave me the whole interrogation in order, who asked what and how he answered. I was shaken. I asked for one more detail, and then another."
+          },
+          {
+            "at": "s4",
+            "text": "Something in his story felt missing. I listened for the gap, and I was afraid I knew its name."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Tell Haakon I reported that talk too, and watch him",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "Haakon said he held back with the FBI about Eltenton. I stopped walking. Whatever I said next had to be true, and it had to be careful."
+          },
+          {
+            "at": "s6",
+            "text": "I told him he had done well, and that I had reported that conversation myself. I kept my voice even and my hands in my jacket. Then I waited for his answer."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Piece together what I told Pash before the party takes me",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "Haakon said yes, though he sounded unconvinced. My own old account to Pash began to nag at me. I could not recall my exact words, and that was worse than anything he had told me."
+          },
+          {
+            "at": "s8",
+            "text": "Haakon asked about the approaches to three scientists and the repeated tries for secrets. I gave him nothing. I kept trying to rebuild what I had told Pash, and I grew more tense with every step."
+          },
+          {
+            "at": "s8",
+            "text": "Voices carried from the house, and the party would not wait. I was tired and cold. I was not ready to go in."
+          }
+        ]
+      }
+    ]
+  },
+  "face-to-face-with-crouch": {
+    "id": "face-to-face-with-crouch",
+    "goal": "I want to convince the Justice Department lawyers that I never hosted the Communist meeting Crouch swears to, before his story becomes the official one.",
+    "background": "I am in a Justice Department interview room with my attorneys, Herb Marks and Joe Volpe. Government lawyers sit across a long table with a notepad and a pencil. They have a story from a man named Crouch, who swears I hosted a Communist meeting. I know the story, and I think it is false.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Deny the meeting plainly and say where I really was",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "Herb carried the briefcase and Joe held the door. I had been through this before. I meant to answer only what was asked, and to keep my hands still on the table."
+          },
+          {
+            "at": "s2",
+            "text": "The lawyers asked about a meeting at a certain address. I told them again that the story was false and that I had been somewhere else entirely. It was a short answer, and I meant to keep it short."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Give the lawyers names they can check",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "I said I did not know the Crouches, and that nobody had come to my house to talk of communism or Russia. I had read Crouch's testimony and found no such evening in it. A flat denial is thin, and I knew it."
+          },
+          {
+            "at": "s4",
+            "text": "Nobody asked me for more, but I gave it. I told the lawyers I had talked with my wife and with Kenneth May. Herb's pencil stopped, and I did not look at him."
+          },
+          {
+            "at": "s4",
+            "text": "Now they could call both of them. I could only hope two honest memories matched mine."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Face Crouch when he is brought into the room",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "I told them my wife and May both agreed with me. That was my whole defense, and it rested on two people. I kept my pipe in my pocket and waited for the next question."
+          },
+          {
+            "at": "s6",
+            "text": "The lawyers said Crouch was close by and asked to see us together. Herb and Joe looked at me, and I nodded. A stranger crossed the room and took my hand, and I held very still."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Make Crouch say exactly what I supposedly asked",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "Crouch turned to the lawyers and named me as the host of his meeting. He said he had given a talk on the Party line after Hitler invaded Russia. I told them at once that I did not know him."
+          },
+          {
+            "at": "s8",
+            "text": "Pressed for detail, Crouch said I had asked several questions after his talk. I cut in and asked what exactly I was supposed to have said."
+          },
+          {
+            "at": "s8",
+            "text": "I kept my hands flat on the table and my voice slow. If I let one wrong word stand, it would stand on the record."
+          }
+        ]
+      }
+    ]
+  },
+  "farewell-ceremony": {
+    "id": "farewell-ceremony",
+    "goal": "I want to leave the mesa today having told them the truth: that they can be proud of the work, and that they should be afraid of what nations will do with it.",
+    "background": "I am seated on a folding chair on the mesa, under the pines. The crowd has gathered in the sunlight, and the flag moves in the wind. I led this laboratory, and today I leave it. Dorothy McKibbin, whom I have known for years, is close by.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Sit still and find the words I will say",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "My name was on the program, and my turn was close. I was tired, and I was fond of every face out there. I did not yet know how much of the truth they would want."
+          },
+          {
+            "at": "s2",
+            "text": "Dorothy came by for a quick word before I spoke. She was kind, and she did not stay. I looked at the gravel path and wondered how to be honest without spoiling the day."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Rise, take the certificate, and thank them honestly",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "I had nothing on paper. I sat on my folding chair and turned the speech over, one sentence at a time. The easy part was thanking them."
+          },
+          {
+            "at": "s4",
+            "text": "A few minutes after Dorothy's hello I rose. Groves handed me the scrolled certificate, and I kept my voice low. The crowd leaned toward me, and I was not sure my own words would hold."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Temper their pride with the thing I fear",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "I told them I hoped everyone who worked here could look back on it with pride. I meant it. The pine needles shifted in the wind, and I knew the pleasant part of my speech was over."
+          },
+          {
+            "at": "s6",
+            "text": "Then I said the pride had to be tempered with a profound concern. Nobody coughed or moved. I was fond of them, and I was tired, and I would not soften it."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Say what the world must do, and then stop",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "I warned them that if atomic bombs joined the arsenals of nations, mankind would curse the names Los Alamos and Hiroshima. The mesa went silent except for the wind. I could not stop on a threat."
+          },
+          {
+            "at": "s8",
+            "text": "I told them the peoples of this world must unite or they will perish. I admitted the words were not new, and that other men had spoken them in other wars and failed."
+          },
+          {
+            "at": "s8",
+            "text": "I was near the end, and my voice stayed still. I did not want to leave them afraid with nothing to hold."
+          }
+        ]
+      }
+    ]
+  },
+  "fermi-award": {
+    "id": "fermi-award",
+    "goal": "I want to accept the Fermi Award at the White House without groveling or sulking, and say one true thing to the President while the room watches.",
+    "background": "I'm at the White House with my wife Kitty. Johnson is the President, and he is about to honor me. The government kept me at arm's length for a long time, and I haven't forgotten it. Today I intend to be civil, and to be honest.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Stand beside the President and take the medal calmly",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "Johnson has kept the ceremony on schedule, and I'm in the Cabinet Room beside him. My tie feels tight and the lamp is warm. I mean to look calm, whatever the room expects."
+          },
+          {
+            "at": "s2",
+            "text": "Kitty is bright with happiness next to me, and I keep my back straight and my face still. Somebody will call that cold. I would rather be thought stiff than sulky."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Speak to the room plainly, with a little warmth",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "I'm holding the medal, the plaque and the check, and I have no free hand for notes. It is my turn to speak. I want to be plain and warm, and I don't want to pretend the past was nothing."
+          },
+          {
+            "at": "s4",
+            "text": "I spoke of Jefferson and the brotherly spirit of science, and I admitted we have not always shown it. I said our quarrels were never about science. They come from what this age is testing."
+          },
+          {
+            "at": "s4",
+            "text": "Johnson is at my side, and I'm close to the end. One more thing is left to say, and it is meant for him. I can feel Kitty watching my hands."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Get through Johnson's answer and face Teller",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "I've said something pointed, and the room has gone quiet. The glass of water in front of me suddenly looks interesting. Johnson has to answer, and I can't guess how."
+          },
+          {
+            "at": "s6",
+            "text": "He answered kindly and turned to Kitty, and the check became a joke. People laughed, and I let out a breath I had been holding."
+          },
+          {
+            "at": "s6",
+            "text": "The speeches are over, and Teller is across the carpet. Everyone is watching to see what my face will do. Kitty has gone very still beside me."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Go and see Mrs. Kennedy",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "The crowd is thinning, and I'm tired. I have no idea what Mrs. Kennedy wants with me, and Kitty only straightens my jacket."
+          },
+          {
+            "at": "s8",
+            "text": "She asked to see us in her rooms, so Kitty and I climbed the stairs. She met us at the door. I wasn't sure what I would say."
+          }
+        ]
+      }
+    ]
+  },
+  "gadget-meeting": {
+    "id": "gadget-meeting",
+    "goal": "I want to keep my people building the bomb now that Germany is nearly beaten. I also want to give them a reason to stay that I can believe myself.",
+    "background": "I run the laboratory, and I'm in the cyclotron building tonight. Wilson leads one of our groups, and he has an idea I don't like. My people are uneasy about the work. I am uneasy too, but I keep that to myself.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Try to stop Wilson from stirring things up",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "Wilson has an idea, and I light a cigarette to give myself time. I keep my voice low and even. The difficulty is that he is usually right."
+          },
+          {
+            "at": "s2",
+            "text": "I warned him the security people would come down on us. He said a talk about something this big was owed. I put out the cigarette, and I had not changed his mind."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Go to the meeting and listen first",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "I'm at the door in my overcoat and scarf, with the notices on every wall. I haven't told Wilson I'm coming. I'm afraid of what I'll hear, and more afraid of not hearing it."
+          },
+          {
+            "at": "s4",
+            "text": "Wilson didn't expect me. Weisskopf was there, and about twenty of us sat on folding chairs in a building so cold I kept my gloves on."
+          },
+          {
+            "at": "s4",
+            "text": "My coffee is going cold in my hand, and the talk is just starting. I'm anxious about what they will say. I haven't decided yet whether I'll speak."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Stand up and argue for openness",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "They have doubts and no good answers, and the talk keeps circling one question. The light bulb sways a little in the draft. I put out my cigarette, because I'm going to speak."
+          },
+          {
+            "at": "s6",
+            "text": "I stood and spoke quietly, and the room went still. I could hear the chalk dust settle, or thought I could. I had to be exact."
+          },
+          {
+            "at": "s6",
+            "text": "I'm on my feet, and I can't promise them an easy conscience. What I can offer is a reason that doesn't depend on winning the war. My hands are cold in my pockets."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Ask them to keep working until the weapon is proven",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "I've told them the world must not be left in the dark, and now I have to ask for something harder. They half want to stop, and I want them to stay. I look at the blackboard, so I don't have to see their faces."
+          },
+          {
+            "at": "s8",
+            "text": "I said we must go on until the weapon could be shown to work. It was an awkward thing to ask in a cold room. Wilson was frowning at his notebook."
+          }
+        ]
+      }
+    ]
+  },
+  "griggs-in-princeton": {
+    "id": "griggs-in-princeton",
+    "goal": "I want Griggs to face what we actually advised on the H-bomb, without begging for his good opinion. He has the generals' ear, so I have to be plain and steady.",
+    "background": "I'm the director of the Institute, and I'm in a room there with a desk, a lamp and a window onto the lawn. Griggs is on his way in. He has the generals' ear, and he doubts me. I know it, and I mean to stay polite.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Put our H-bomb advice on the desk in front of him",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "The folder is on the blotter and my pipe is filled. Griggs is due, and the generals listen to him. I will be polite, and I will not ask him to like me."
+          },
+          {
+            "at": "s2",
+            "text": "He sat down, and I laid our report against rushing the H-bomb between us. I thought the paper could speak for me. I watched his face to see."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Keep my temper and my pride while the talk goes stiff",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "The report did him no good, and he sits very still behind it. If anything it was a flag in front of a bull. I decide to say nothing in my own favor."
+          },
+          {
+            "at": "s4",
+            "text": "I made no speeches and no jokes to win him over, and the talk went strained and short. My pipe went out, and I left it out."
+          },
+          {
+            "at": "s4",
+            "text": "Griggs is turning to Finletter, the Secretary of the Air Force, and I can tell the question will be a sharp one. I put down my pencil. My answer is ready, and it is not a soft one."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Stand by what I know about Finletter",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "He has put a story about Finletter to me, and he waits for me to back away. I could be vague, and I decide not to be. I won't lie to be liked."
+          },
+          {
+            "at": "s6",
+            "text": "I looked straight at him and said I had heard it told, and that I believed it. The coffee cup rattled when he set it down."
+          },
+          {
+            "at": "s6",
+            "text": "Griggs is angry now, and I keep my voice level. I will not hand him my proof, and I will not raise my voice. The pencil on the blotter is the only thing I touch."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Ask him straight what he thinks of me",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "The argument has left a sour feeling, and the ashtray is full of cold ash. Griggs sits stiffly by the window. I am tired, and I am done being careful about one thing."
+          },
+          {
+            "at": "s8",
+            "text": "Since slander was in the air, I asked whether he thought me pro-Russian or merely confused. He said he wished he knew. The lamp seemed very bright."
+          }
+        ]
+      }
+    ]
+  },
+  "groves-berkeley": {
+    "id": "groves-berkeley",
+    "goal": "I want to convince the general who runs the bomb project to build one central laboratory, with a place in it for me. I may only get one meeting, so I have to make it count.",
+    "background": "I am Robert Oppenheimer, a physicist at Berkeley. I am at a luncheon at the university, with a coffee cup in front of me and a napkin on my knee. General Groves, who runs the bomb project, sits a few chairs away. He knows my work by reputation. I know I may get one meeting with him, and no more.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Win the general's attention before he decides I am not worth his time",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "The general is courteous, but he watches every man at the table like a customer. I put out my cigarette and try to look easy. I want one good talk with him, and I do not know yet how I will get it."
+          },
+          {
+            "at": "s2",
+            "text": "We shook hands over the coffee cups, and he gave me nothing back. Now I am in my office with my papers squared on the desk. I expect him to call, and I am wary of how much I should want this."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Show Groves the groups overlap and need one roof",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "Groves sits in my chair by the desk and listens with his hat on his knee. He is tired and impatient, and he will not forgive a long speech. I have to pick the one fact that will matter to a man like him."
+          },
+          {
+            "at": "s4",
+            "text": "I told him the groups at Princeton, Chicago and Berkeley were sometimes duplicating each other's work. He did not argue. That gave me the nerve to say the harder thing, which was that something had to change."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Pitch the central laboratory and the problems nobody has faced",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "He has heard that the men should work in one place. Now I have to say what that place is. I pick up a piece of chalk and stand at the blackboard, in case words alone are not enough."
+          },
+          {
+            "at": "s6",
+            "text": "I described a central laboratory devoted to the bomb. I said it could come to grips with the chemical, metallurgical, engineering and ordnance problems that nobody had yet considered. I kept my voice flat and let the list do the work."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Suggest where the laboratory should stand and press on",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "Groves has stopped looking at the window and looks at the blackboard. He has come round to the idea of one laboratory. Now I have to say where it should stand, and I try to sound as if I do not mind."
+          },
+          {
+            "at": "s8",
+            "text": "I suggested an isolated rural site, not a large city. He was plainly intrigued, and I saw it fit his own concerns about security. Then the telephone rang, and he sent for me, with my case still half made."
+          }
+        ]
+      }
+    ]
+  },
+  "huac-closed-session": {
+    "id": "huac-closed-session",
+    "goal": "I want to get through Congress's closed hearing on atomic spies without looking as if I have something to hide, and I want to keep my brother out of it.",
+    "background": "I am Robert Oppenheimer, a physicist who now advises the government on atomic energy. I am standing at the door of a closed hearing room of Congress. Joe Volpe, a lawyer and a friend, is at my side with his briefcase. The committee is waiting inside. I know it wants to ask about atomic spies.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Answer the first questions slowly, with Joe at my side",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "In front of officials I choose my words slowly. The long table, the microphone and a water glass are already set out. I mean to answer exactly what is asked and nothing more."
+          },
+          {
+            "at": "s2",
+            "text": "I introduced Joe as the AEC's general counsel, and we sat down. Their counsel said they did not want to embarrass me, then asked about a communist cell among scientists. I said I had no such knowledge."
+          },
+          {
+            "at": "s2",
+            "text": "Now the questions turn to men who once worked with me. I have a pencil in my hand and nothing to write. My mouth is dry, but my voice is steady."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Answer for my old students, one name at a time",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "I said Weinberg's views after the war were not communist ones. I told them what I had said to de Silva about Peters, the German party and the camp. Each answer is one more thing they can hold me to."
+          },
+          {
+            "at": "s4",
+            "text": "I said one student had told me himself that he had been a member. I confirmed that Lomanitz was dismissed and inducted, that Fox had organized a union, and that May was an avowed Communist. Each name cost me something."
+          },
+          {
+            "at": "s4",
+            "text": "The students are done, and I am tired but steady. I keep the pencil still and wait. Joe shifts in his wooden chair and says nothing."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Answer what is asked and keep my brother out of it",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "Asked about Haakon, I called him the prize example of a parlor pink, but said I did not know if he was in the Party. I repeated that I had told him in violent terms to stay clear."
+          },
+          {
+            "at": "s5",
+            "text": "My water glass is still full. I have not touched it, because I do not want them to see my hand. Somewhere in this room a question about my family is waiting."
+          },
+          {
+            "at": "s6",
+            "text": "They did not ask about three other scientists. I denied that anyone else had approached me for atomic information. Then the talk turned toward my brother Frank, and I felt the cold go through me."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Let the room relax and answer the last questions plainly",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "I asked them not to press the questions about my brother, and said that if they mattered they could ask him. Their counsel withdrew the question. I let out a breath I had held a long time."
+          },
+          {
+            "at": "s8",
+            "text": "Before they adjourned, Congressman Nixon said he was tremendously impressed and mighty happy to have me in my post. All six came down and shook my hand. The easy mood felt too good to trust."
+          },
+          {
+            "at": "s8",
+            "text": "Now the room is easy and I am tempted to enjoy it. The lamp is warm, and the congressmen are smiling. Joe is watching me from his chair, and he is not smiling."
+          }
+        ]
+      }
+    ]
+  },
+  "interim-committee": {
+    "id": "interim-committee",
+    "goal": "I want the men who will decide to see that this is not just a bigger bomb, and I want to talk them out of keeping it a secret from the Russians.",
+    "background": "I am Robert Oppenheimer, a physicist who ran the laboratory that built the bomb. I am sitting at a long table in a committee room in Washington. Henry Stimson, the Secretary of War, is about to open the meeting. The men here will advise the President on what to do with the bomb. Nobody asked me to speak for the scientists, but I feel I must.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Give the committee honest numbers about what is coming",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "The water glass is full and the table is very long. I have a notebook, a pencil and a pipe, and a good deal to say. I am tired, and I doubt these men see what we have built."
+          },
+          {
+            "at": "s2",
+            "text": "Stimson said the decision on use belongs to the White House, not to us. He called the bomb a revolutionary change, maybe a Frankenstein, maybe the key to peace."
+          },
+          {
+            "at": "s2",
+            "text": "Now he turns to future development. I know my numbers will frighten them. I pick plain words and plan to say them slowly, with a pause after each."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Argue for sending the scientists home and for an open exchange",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "I told them a bomb of 10 million to 100 million tons of TNT might come within three years. Lawrence wanted a sizable stockpile and more plants to stay out in front, and Stimson said all agreed."
+          },
+          {
+            "at": "s3",
+            "text": "More plants will not make us wiser. I want most of the scientists to leave this work, and I know that asking it in this room sounds odd. My pipe has gone cold in my hand."
+          },
+          {
+            "at": "s4",
+            "text": "I said the project had only plucked the fruits of earlier research, and that the men should go home to avoid the sterility of wartime work. Bush agreed, and so did Compton and Fermi. Lawrence did not."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Argue for telling the Russians something without giving away the work",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "I said that offering an exchange before the bomb was used would strengthen our moral position. Stimson took it up and spoke of self-restraint and an international body with inspection. It was the first real relief I felt all morning."
+          },
+          {
+            "at": "s5",
+            "text": "Marshall sits across from me with his folder shut. He is the Army's chief of staff, and he does not smile. I know that inspection is the weak point in my idea."
+          },
+          {
+            "at": "s6",
+            "text": "Marshall warned against trusting inspection and called Russia the paramount concern. I admitted nobody knew what the Russians were doing. I said scientists share a bond, and that Russia had always been friendly to science."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Hold my ground when the room pushes back",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "I said we should not prejudge the Russian attitude. Then Marshall surprised me by defending the Russians at length. He even raised inviting two prominent Russian scientists to witness the test."
+          },
+          {
+            "at": "s7",
+            "text": "I did not expect help from the Army. My pipe has gone out, and I let it. I feel hopeful, and I know hope is a poor thing to bring to a table like this."
+          },
+          {
+            "at": "s8",
+            "text": "Byrnes protested vigorously. He feared Stalin would ask to be brought into the project. Bush answered that even the British had no blueprints of our plants, so the Russians could be told more without the designs."
+          }
+        ]
+      }
+    ]
+  },
+  "kitchen-martinis": {
+    "id": "kitchen-martinis",
+    "goal": "I want to give Haakon and Barbara a proper goodbye before we leave Berkeley. I also want to keep the work I cannot talk about out of the evening.",
+    "background": "I'm at home in Berkeley with Kitty, my wife. Hoke and Barbara are coming to dinner tonight. Hoke is an old friend, and Barbara is his wife and a friend to Kitty and me. They know I'm about to go away for work, and they know I won't talk about it.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Give Hoke and Barbara a proper goodbye at my own table",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "Kitty and I have asked Hoke and Barbara to dinner. It will be the last evening we spend with them in this house. I want it to be a good one, with nothing about my work at the table."
+          },
+          {
+            "at": "s2",
+            "text": "Kitty has lit the candle and set out the napkins. I'm tired from a week of packing, but I mean to be a good host. The bell will ring any minute."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Make the drinks and hear out what Hoke has to say",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "Our friends came in, and I took the gin and the vermouth to the kitchen counter. Hoke followed me in and stood by the stove. He looked like a man with something to say."
+          },
+          {
+            "at": "s4",
+            "text": "Hoke said he had seen George Eltenton lately. Eltenton knew a man at the Soviet consulate in San Francisco who could carry technical information to Soviet scientists. I kept stirring and said nothing."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Tell Hoke plainly what I think of the scheme",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "Hoke said he wasn't soliciting anything from me, only passing it on. The shaker was cold in my hand, and my face was getting hot."
+          },
+          {
+            "at": "s6",
+            "text": "I was angry. I think I said, “But that is treason,” though I'm not sure of the words. I know I told him it was a terrible thing to do."
+          },
+          {
+            "at": "s6",
+            "text": "I set the shaker down on the counter and breathed. A host shouldn't shout in his own kitchen. I wanted my voice back before Kitty heard it through the wall."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Carry the drinks out and rejoin Kitty and Barbara",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "Hoke agreed with me completely, we traded a remark or two, and that was the end of it. It was a short talk, but I could feel it in my shoulders."
+          },
+          {
+            "at": "s8",
+            "text": "The glasses were filled and there was nothing more to say. Kitty and Barbara were waiting by the lamp, so I put on my host's face and lifted the tray."
+          },
+          {
+            "at": "s8",
+            "text": "I meant to leave the kitchen talk behind with the dish towel and the wooden spoon. Eltenton was not going to sit down with us to dinner."
+          }
+        ]
+      }
+    ]
+  },
+  "letter-to-uncle-jim": {
+    "id": "letter-to-uncle-jim",
+    "goal": "I want to keep Washington from betting the country on a hydrogen bomb as its answer to the Russians, while the physicists I trust start drifting toward it.",
+    "background": "I'm in my office with a sheet of paper in front of me. Jim is an older friend whose judgment I trust. Washington listens to me, and I know it. A hard question about a bomb has come to my desk, and men I trust are starting to favor it.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Write to Jim and correct what I told him before",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "A blank sheet lies on my desk and the pen is uncapped. Jim has always told me straight what he thinks. I want him to see my doubts before anyone else's opinions reach him."
+          },
+          {
+            "at": "s2",
+            "text": "I came straight from the briefing and began a long letter to Jim. There is one thing I told him that I now have to take back. It is hard to write down, and the pen hovers over the blotter."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Name who is pushing and tell Jim what worries me",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "I admitted to Jim that I had leaned toward the super last time. Then I set it straight. It is still a weapon of unknown design, cost, deliverability and military value, and only the climate of opinion has changed."
+          },
+          {
+            "at": "s4",
+            "text": "I wrote that two experienced promoters have been at work, Ernest Lawrence and Edward Teller. What troubles me is that congressional and military people think the thing is the answer to the Russian advance."
+          },
+          {
+            "at": "s4",
+            "text": "I know my word carries weight, so I chose each sentence with care. I did not want to say more than I had decided."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Hear Hans out with Edward in the room",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "I wrote that it would be folly to oppose exploring the weapon, but staking the country on it seemed full of dangers. The Joint Chiefs were leaning toward a crash program, I added, and even Hans was thinking of Los Alamos."
+          },
+          {
+            "at": "s6",
+            "text": "Hans arrived in the afternoon with Edward, who was already going around the country recruiting. Edward spoke as though Hans had said yes. Hans said he'd come for my advice, and both of them looked at me."
+          },
+          {
+            "at": "s6",
+            "text": "I had no clean answer to give. Hans is a friend I trust, and I did not want to send him off with a guess."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Give them Jim's view and keep my own",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "I didn't give Hans the advice he was hoping for. I was as undecided and as troubled as he was. I could say that to Jim on paper, but not with Edward watching."
+          },
+          {
+            "at": "s8",
+            "text": "I said little about my own views on the Super. I did tell them that Jim was opposed to a crash program. It was true, and it was Jim's view, not mine to claim."
+          },
+          {
+            "at": "s8",
+            "text": "I knew each word would be carried out of the room. Edward in particular would repeat it wherever he went next."
+          }
+        ]
+      }
+    ]
+  },
+  "marry-a-friend": {
+    "id": "marry-a-friend",
+    "goal": "I want to make the hall see that Spain started this war, so that they give for the refugees, and then I want to tell Steve Nelson, Kitty's old friend, that I am marrying her.",
+    "background": "I'm in a public hall with rows of seats, a banner and a donation basket by the door. Steve Nelson is here tonight, and he doesn't know my news. Kitty is the woman I mean to marry, and she is an old friend of his. I have a speech to give about Spain, and my notes are in my jacket.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Open my case for the refugees with the cause of the war",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "The basket is on the table by the door, and the seats are filling. I'm nervous, and I've rewritten my notes twice in pencil. I want these people to give, and a plain appeal won't do it."
+          },
+          {
+            "at": "s2",
+            "text": "I was the featured speaker at the fundraiser for the Spanish refugees. I set my glass of water on the lectern and found my first sentence. I meant to start with the cause of the war, not with pity."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Speak well of the men who fought in Spain",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "I told them the fascist victory in Spain had led directly to the outbreak of general war in Europe. The hall went quiet, and I felt the room come with me. Now I had to speak of the men who went."
+          },
+          {
+            "at": "s4",
+            "text": "I said the men who had fought in Spain had bought the world time. It was a delaying action, and I called it honourable."
+          },
+          {
+            "at": "s4",
+            "text": "I kept my eyes on the back wall. Praise said aloud about a living man feels odd, and my tie felt tight."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Tell Nelson I am marrying a friend of his",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "Nelson was right there on the platform and heard all of it. The crowd was clapping and the basket was filling. My own news was still in my pocket with the pencil."
+          },
+          {
+            "at": "s6",
+            "text": "After the speeches I crossed to Nelson, smiling broadly. I said, “I'm going to marry a friend of yours, Steve.” He couldn't think who that could be."
+          },
+          {
+            "at": "s6",
+            "text": "He frowned and ran through every woman he knew. I enjoyed it a little too much."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Bring Kitty to Nelson across the hall",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "I told him, “I'm going to marry Kitty.” He exclaimed, “Kitty Dallet!” He looked like a man who had walked into a door."
+          },
+          {
+            "at": "s8",
+            "text": "I said, “She's back there, sitting in the hall,” and motioned to her. I hoped she would see me over the rows of seats."
+          },
+          {
+            "at": "s8",
+            "text": "Nelson stood still beside me. I was warm and nervous at once, and I had crushed my notes in one hand."
+          }
+        ]
+      }
+    ]
+  },
+  "midnight-pamphlet": {
+    "id": "midnight-pamphlet",
+    "goal": "I want to help Hoke make his antiwar pamphlet hold up tonight, while sensible people are turning hawkish, before a weak draft goes out under his League's name.",
+    "background": "I'm a physics professor at home in Berkeley, and it is late. The house is quiet, with a lamp lit on my desk and a lecture waiting beside it. Hoke is a friend of mine who belongs to a League that is against the war.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Let Hoke in and find out why he came",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "Someone is at my door with his hat in his hand, and it is Hoke. I have a lecture to finish and little patience tonight, but he is a friend."
+          },
+          {
+            "at": "s2",
+            "text": "I pushed the lecture aside and let him in from the cold. He kept turning his hat over, which told me he wanted something. I'd rather he said it quickly."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Read his pages carefully and decide what to tell him",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "Hoke wants my help with a pamphlet, and his pages are on the table between us. I have a glass in my hand and a pencil beside it. I dislike loose thinking, and lately his friends have been loose."
+          },
+          {
+            "at": "s4",
+            "text": "I sat in the armchair and read every page through, pencil in hand, marking nothing. Hoke watched my face and said nothing, and the lamp hummed. My mind was made up, and I didn't enjoy it."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Stand over Hoke and get new sentences onto paper",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "I got up and told him it was no good. He went pale but did not argue. A weak pamphlet under his League's name would do harm, and tonight there was still time."
+          },
+          {
+            "at": "s6",
+            "text": "Hoke is at the typewriter now, a blank sheet rolled in, looking unsure. I have no text on paper, only sentences in my head and a cigarette burning in the ashtray. I'll have to give them slowly enough for him to catch."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Pace the room and give the pamphlet a spine",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "I gave him the sentences one at a time, and he typed with two fingers. I paced between the window and the bookshelf, striking out my own words whenever they came out loose."
+          },
+          {
+            "at": "s8",
+            "text": "The pamphlet now argued hard for keeping America out of the European war, and for once it held together. Hoke's face had lost its worry, but my own back ached. The night was nearly spent."
+          }
+        ]
+      }
+    ]
+  },
+  "oval-office": {
+    "id": "oval-office",
+    "goal": "I want the President to see that the bomb needs international control first, before using it as a threat against Russia starts an arms race that kills millions.",
+    "background": "I'm in Washington, in a committee room. I led the laboratory that built the bomb, and I have come with a warning. A group of senators is waiting for me. I'm tired, and I know most of them won't want what I came to say.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Warn the senators what the bomb really means",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "The senators think the bomb is a weapon like any other. I rehearsed my words on the train, and none of them sounded gentle enough. My pencil is steady, but my stomach isn't."
+          },
+          {
+            "at": "s2",
+            "text": "I told them plainly that this weapon would one day be turned on us. When I finished, nobody had many questions. That worried me more than questions would have."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Walk with Wallace and tell him where policy is heading",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "Wallace has agreed to walk with me, and I have more to say than one morning allows. My overcoat is buttoned against the cold. I will try to put the worst of it into short sentences."
+          },
+          {
+            "at": "s4",
+            "text": "I told Wallace that Byrnes thinks the bomb is a club to wave at Russia. I said the Russians would work hard for bombs of their own, and that millions would die for it. He listened with his hands behind his back."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Ask Wallace about the President and wait my turn",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "I praised Stimson's memo, and Wallace said it had never reached the Cabinet. That shook me, because I had counted on that old man to speak for us. I told him the scientists in New Mexico had lost heart."
+          },
+          {
+            "at": "s6",
+            "text": "I asked Wallace whether seeing the President would help. He pointed me to Patterson, and we shook hands and went our ways. Now I sit with my hat on my knee and a folder I won't open."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Face the President and make the international problem plain",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "A man showed me into the Oval Office, and Truman sat across from me with a window behind him. I had a short speech ready. I could tell it would have to fit around his questions."
+          },
+          {
+            "at": "s8",
+            "text": "He wanted help with a bill in Congress, and I suggested we first define the international problem. Then he asked how soon the Russians would have a bomb of theirs. I said I didn't know, and he said he did: “Never.”"
+          }
+        ]
+      }
+    ]
+  },
+  "panel-final-report": {
+    "id": "panel-final-report",
+    "goal": "I want the Panel's verdict to reach the Secretary of War: there is no defense against this bomb, only ending war. I want it there before Washington mistakes owning the bomb for safety.",
+    "background": "I'm in my quiet office, with a pad of paper and a cold cup of coffee. I led the laboratory that built the bomb, and now I write for the Panel of scientists that advises the Secretary of War. Henry Stimson is the Secretary, and he will read what the Panel says.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Write plainly that nothing will defend us",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "Stimson will read whatever I put on this pad, and I mean it to say one thing. I'm tired, and I don't yet have the first line."
+          },
+          {
+            "at": "s2",
+            "text": "I gave the weekend to that pad, and the floor around my chair filled with crossed out pages. The first true sentence has to say that nothing can stop these weapons. I turned each word over with the pen before I let it stand."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Face Ernest and defend what I did",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "The central warning is on paper, and it did not make me feel lighter. Ernest is coming, and he will want to talk about the bomb. I would rather talk about almost anything else."
+          },
+          {
+            "at": "s4",
+            "text": "Ernest came the weekend after the second bomb fell, and found me worn out and gloomy. We were arguing before he had taken off his coat, about the show he wanted and I would not allow."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Finish the report with the point nobody wants to hear",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "I told Ernest he cared only for the rich and powerful, and I saw it land. He said the bomb was too terrible to be used again, and I wasn't comforted. Back at the pad I had the next page to write."
+          },
+          {
+            "at": "s6",
+            "text": "I wrote that we can't promise this nation lasting mastery of the field, and can't promise that mastery would protect us anyway. It is a hard sentence to hand a Secretary. I still had to find the way to end."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Take the finished letter to Washington",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "I closed by saying safety could rest only on making wars impossible, not on our skill at hurting an enemy. It was strange to tell Stimson that we had no defense, so soon after a victory. I won't trust the mail with these pages."
+          },
+          {
+            "at": "s8",
+            "text": "I took the letter to Washington myself, with the envelope on my knee the whole way. I wanted it in the right hands and no others. The coffee on the train was worse than mine."
+          }
+        ]
+      }
+    ]
+  },
+  "pash-interview": {
+    "id": "pash-interview",
+    "goal": "I want to point Army security at Eltenton and at the Soviet back door. I will not hand them the names of friends I know are innocent.",
+    "background": "I am in Johnson's office in Berkeley, with a desk, a lamp and a filing cabinet between me and the door. Johnson wants to talk with me, and so does an Army security officer named Pash, whom I have not met. General Groves, who runs the project I direct, knows I am here. I mean to give them Eltenton.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Meet Pash and bring the talk round to Eltenton",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "I have my hat in my hand and a plan in my head. I want the name Eltenton said in this room before I leave. The difficulty is that I have never met the officer who will ask the questions."
+          },
+          {
+            "at": "s2",
+            "text": "Pash was a stranger, and his reputation had reached me first. He praised General Groves and spoke of a child he could not see, handled by remote control. I told him any hour he liked was perfectly all right."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Tell Pash about the Russian offer and give him Eltenton",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "I had meant to warn Rossi Lomanitz that he had been indiscreet, but Pash cut me off. He had graver business, and asked whether other groups wanted the Rad Lab. I had only hearsay, and I chose my words slowly."
+          },
+          {
+            "at": "s4",
+            "text": "I said a man attached to the Soviet consul had offered to pass information along without danger of leak or scandal. I would be friendly to the Russians being told, but not by the back door. It was near a name."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Protect the men who were approached while Eltenton stays in view",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "Pash asked evenly for something more specific. I said the approaches always went to other people, who were troubled by them. Then I named Eltenton of Shell Development, a man to be watched, and called the whole business treasonable."
+          },
+          {
+            "at": "s6",
+            "text": "Pash pressed for the men who had been approached, and I politely refused. They were entirely innocent. I knew of two or three cases, two of them close colleagues at Los Alamos, and a third bound for Site X."
+          },
+          {
+            "at": "s6",
+            "text": "I would not name the third man, only say he was on the Berkeley faculty. Naming him would be a mistake, since the intermediary thought the whole thing the wrong idea. I said, “I don't think he supported it, and in fact I know it.”"
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Say where I stand on Communists and keep my friends out of it",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "Pash said he might come back for more names. I told him I was drawing a line between Eltenton, who took the initiative, and those who recoiled. He tried a little irony, and I said he was persistent and it was his duty."
+          },
+          {
+            "at": "s8",
+            "text": "I told him the Communist movement and a secret war job cannot go together, though many fine minds had seen something in it. I spoke of Lomanitz, and said the Nazis would give it a different color. Pash listened and returned to Eltenton."
+          },
+          {
+            "at": "s8",
+            "text": "My cigarette was down to the filter, and I was tired. Pash had not yet got all he wanted from me. I did not mean to leave a friend's name on his desk."
+          }
+        ]
+      }
+    ]
+  },
+  "shelter-island": {
+    "id": "shelter-island",
+    "goal": "I want these men to break open the meson puzzle before the conference ends today, and then I want to reach Boston in time for my degree from Harvard.",
+    "background": "I am at a small conference of theorists on Shelter Island, in a meeting room with a blackboard and a long table. The meson puzzle is on my mind, and there is chalk in my hand. A degree from Harvard waits for me in Boston, and I mean to be there for it. I want the puzzle settled first.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Lay out the meson puzzle and push the room to think",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "My coffee has gone cold on the long table. The mesons do not behave as they should, and nobody here can square it. I am impatient, and I mean to have an answer before anyone reaches for a hat."
+          },
+          {
+            "at": "s2",
+            "text": "I led the discussion on the third and last day, with chalk dust on my sleeve. The men sat looking at the blackboard. I knew the slow thinkers would need a push, and I was ready to give it politely."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Pull the talk together until someone sees the way out",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "I kept cutting in with questions that pointed somewhere, and I kept saying where we stood. Nobody offered a way out. I smiled, but I was wearing thin, and the blackboard was nearly full."
+          },
+          {
+            "at": "s4",
+            "text": "As I drew the threads together, Marshak went red in the face. He sat beside Pais and looked ready to burst. I stopped talking and watched him."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Get my friends and myself to Boston in time for the degree",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "Marshak stood and said, “Maybe there are two kinds of mesons.” One is made in plenty and breaks down into another that is barely absorbed. I wrote it in my notebook, then thought of Boston and the briefcase by my chair."
+          },
+          {
+            "at": "s6",
+            "text": "Weisskopf and several others heading back to Cambridge took up my invitation and flew with me. The plane was small, and I sat with my briefcase on my knees."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Keep the Navy from stopping us on the way to Boston",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "Halfway there we ran into a storm, and the pilot put us down at a Navy base in New London. Civilian aircraft were forbidden there. My degree was at stake, and so was my dry jacket."
+          },
+          {
+            "at": "s8",
+            "text": "As we taxied to the dock, an angry Navy captain was yelling at the pilot. I told the pilot, “Let me handle this.” Then I stepped off the plane and said, “My name is Oppenheimer.”"
+          },
+          {
+            "at": "s8",
+            "text": "Weisskopf and the others stayed behind me on the dock. I was tired, and I did not know what the captain would do with the name."
+          }
+        ]
+      }
+    ]
+  },
+  "site-search": {
+    "id": "site-search",
+    "goal": "I want to choose well, and I do not yet have the power to choose, so I have to see it clearly and say it simply.",
+    "background": "I am on the road northwest of Santa Fe, in a car with two men, riding out to see a canyon at Jemez Springs. I am a physicist from Berkeley, asked to run a laboratory the Army has not yet found a home for. Major Dudley has scouted dozens of sites. Edwin McMillan, a friend from Berkeley, came along.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Walk the canyon floor and see it plainly",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "Dudley thinks well of this canyon, and I remember it kindly. I have no power to choose, only eyes. My coat is thin, and the wind is already coming in at the car window."
+          },
+          {
+            "at": "s2",
+            "text": "The three of us drove out to Jemez Springs. From the road the ground looked wide enough, and I wanted to stand on it before I believed that."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Make the case against the canyon to Dudley",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "Once we stood in it, the flat land at the bottom was a thin snake of ground. I scuffed the dust with my boot, and it did not take long to find the edge."
+          },
+          {
+            "at": "s4",
+            "text": "McMillan and I told Dudley the floor was too narrow for a town. I added that there was no view of the mountains, and that the steep walls would be nearly impossible to fence in. Dudley had made up his mind."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Have another place ready to offer the Army",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "We were still arguing when General Groves showed up. He took one look at Jemez Springs and said, “This will never do.” My argument ended before I had finished it."
+          },
+          {
+            "at": "s6",
+            "text": "He turned to me and asked if there was something else around with prospects. I held my hat in both hands. I wanted to answer simply, and not as if I had planned it."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Take Groves to see the school on the high ground",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "I told him that up the canyon one comes out on top of the mesa, where a boys' school might be usable. McMillan said afterward that I offered it as though it were brand new."
+          },
+          {
+            "at": "s8",
+            "text": "We got back into the cars, reluctantly, and drove about thirty miles across the Pajarito Plateau. It was late afternoon when we reached the Los Alamos Ranch School, in a drizzly snowfall, with schoolboys in shorts on the playing field."
+          },
+          {
+            "at": "s8",
+            "text": "Groves walked the grounds, and I kept my hands in my coat. I had said what I could say, and the choice was still his."
+          }
+        ]
+      }
+    ]
+  },
+  "story1": {
+    "id": "story1",
+    "goal": "Keep one bank draft number unread before Hallam's accountant looks, and find out whether Holmes is as clever as London says. If that draft number is read, it leads to my cashier, and from the cashier anyone patient can follow the whole network.",
+    "background": "I am in my study near the London wharves, with the lamp lit. Voss, who runs my small jobs at the wharf, has brought me a report on Hallam, a wharf merchant. One bank draft number in Hallam's book leads to my cashier. Hallam's accountant checks that book next week. The papers keep praising a detective named Holmes, and I am curious.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Rewrite the entry so the draft number can never be read.",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "Voss's report lies open, three pages, with Hallam's figures copied in red ink. Eighty pounds went to Alder, which sold nothing, and the entry cannot simply vanish. So I have decided to rewrite it."
+          },
+          {
+            "at": "s1",
+            "text": "The gas bracket hisses and my tea has gone cold. I told Voss to carry the ledger out of the office and leave a revised copy in its place. Every total must stay exact."
+          },
+          {
+            "at": "s2",
+            "text": "I sit and wait for word. I mean the Alder money to read as cash paid out, with Pell, the night porter, to carry it. One wrong total would make the copy worse than the original."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Leave one loose thread for the detective to find.",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "The original ledger sits squared on my desk, and the morning paper is folded open at a column praising Holmes. Last night I left one thing open on purpose. Pell's sister Ada keeps his accounts, because he cannot add."
+          },
+          {
+            "at": "s4",
+            "text": "The police took Pell, and Ada came back with a chemist's receipt as his alibi. Pell was told nothing, and he thinks the book was always so. I find that restful."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Watch Ada's door and learn what the detective wants with the arrest.",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "I have taken a window above a chandler's, across from Ada's door. A handbill covers half the pane, and one slit is left open. Voss is to send word, and nobody has come up the stairs."
+          },
+          {
+            "at": "s5",
+            "text": "Holmes asked who keeps Pell's accounts, and Ada showed him her notebook of slow block capitals. He saw that the Alder signature was too fluent to be Pell's. He took my thread faster than I hoped."
+          },
+          {
+            "at": "s6",
+            "text": "Holmes studied the book before the accountant came. He saw a new voucher prefix on older entries, and the book balanced to the penny, which Hallam's clerk never managed."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Give the police a small truth and pay the carrier myself.",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "Holmes did not clear Pell, and he had him held. A match boy took a pitch where he could see Ada's door, so the arrest was bait. Voss says Holmes found the door I left open, and one I did not know."
+          },
+          {
+            "at": "s7",
+            "text": "Voss has set his hat on my desk and brushed the fog from his sleeve. Ferris waits in the hall and has not asked why. Sixteen five pound notes lie counted on the blotter, and I am deciding what the police may have."
+          },
+          {
+            "at": "s8",
+            "text": "Pell stayed held, and I would not reach for him or for Ada. The stationer who sold the ledger paper could point to Voss, and that was the real danger."
+          }
+        ]
+      }
+    ]
+  },
+  "strauss-ultimatum": {
+    "id": "strauss-ultimatum",
+    "goal": "I want to find out what Strauss wants from me, and keep my clearance and my name without being cornered. I have to listen closely and give nothing away that I cannot take back.",
+    "background": "I am J. Robert Oppenheimer, a physicist who has advised the government on atomic energy. I'm in the office of Strauss, the chairman of the Atomic Energy Commission. He asked me to come, and I don't know why. I have a chair, a desk between us, and my coat on my knee.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Find out what Strauss wants from me.",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "I sat down across the desk from Strauss. He was courteous, and I couldn't tell yet what he wanted. I meant to listen first and say very little."
+          },
+          {
+            "at": "s2",
+            "text": "Strauss began with the death of Admiral Parsons. Then he said Herb Marks had been in that morning about the Jenner Committee. I told him I'd known nothing of its plans, and I saw him watch my face."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Read the charges and keep my answer to myself.",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "Strauss said my file held a great deal of derogatory information, and that Borden's letter had made the President order an investigation. The first step, he said, was suspending my clearance. A letter of charges was drafted but not yet signed."
+          },
+          {
+            "at": "s4",
+            "text": "They let me read the draft right there in the office. It was the familiar rehash, truths and half-truths and some outright lies. I said many items could be denied, some were incorrect, and many were correct."
+          },
+          {
+            "at": "s4",
+            "text": "Nichols, the general manager, sat by with a pen in his hand. Everything I said would be written down. I was tired and wary, and no answer was due yet."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Leave the office without a yes, and gain some room.",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "By Nichols' notes, I raised resigning first, though the unsigned letter seemed to invite it. I was open to it at first. Then I said it “might not be too good from a public relations point of view.”"
+          },
+          {
+            "at": "s6",
+            "text": "I left without giving Strauss an answer. At noon the next day Nichols phoned, and I said I needed more time. He said brusquely that I “could not have any more time,” and gave me three hours."
+          },
+          {
+            "at": "s6",
+            "text": "I had three hours and no answer I could stand behind. I put down the receiver and looked out of the window. I wanted to be anywhere but beside that telephone."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Write an answer that refuses what Strauss offered.",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "An hour later I called Nichols back. I said I wanted to come to Washington and give my answer in person, on an afternoon train, and see Strauss the next morning."
+          },
+          {
+            "at": "s8",
+            "text": "After hours of strategizing, the lawyers and I drafted a one page letter to “Dear Lewis.” It made clear that Strauss had put resigning to me as a “possibly desirable alternative.”"
+          },
+          {
+            "at": "s8",
+            "text": "The first lines were on the page. I wanted every sentence plain and true, and none of them to hand him what he had asked for. I was tired, and the lamp was low."
+          }
+        ]
+      }
+    ]
+  },
+  "tolman-lecture": {
+    "id": "tolman-lecture",
+    "goal": "I want to give Berkeley's graduate students the new quantum physics whole, from the first week, before slowing down turns it into something smaller and false.",
+    "background": "I am J. Robert Oppenheimer, a young physicist newly come to Berkeley. I've been asked to teach the graduate students the new quantum physics. I have a course to prepare, a blackboard waiting, and colleagues I have yet to meet.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Build a course that teaches the physics whole.",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "The term was about to start, and I had a course to build. I knew what I wanted to teach, and I knew it would be hard to teach it whole."
+          },
+          {
+            "at": "s2",
+            "text": "I spent the first weeks on lectures and on the men down the corridor. I was restless at my desk, because the field was far too big for any sensible syllabus."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Open the course with the hardest idea, plainly.",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "I built the course to reach from Heisenberg's uncertainty principle to Pauli's latest thinking on quantum electrodynamics. It left out nothing I thought mattered. A cautious man would have cut it, and I didn't."
+          },
+          {
+            "at": "s4",
+            "text": "I began with wave particle duality and put the paradox as baldly as I could. I talked softly, without notes, stopping only to puff on my cigarette or turn to the board for an equation."
+          },
+          {
+            "at": "s4",
+            "text": "The room was very quiet, and the pencils moved slowly. I noticed it, and I went on anyway."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Keep the lectures moving while the students struggle.",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "Most of the students couldn't make sense of it. I saw them stop writing and look at one another. I thought the fault was theirs, and I was a little impatient."
+          },
+          {
+            "at": "s6",
+            "text": "When I was told I was going too fast, I slowed down, reluctantly. I chose shorter steps and plainer words, and I disliked every one of them."
+          },
+          {
+            "at": "s6",
+            "text": "Each lecture covered less ground. I felt the course shrinking into something smaller than the physics, and I couldn't sit still for it."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Ask a colleague for a straight answer.",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "Before long I told my department chairman, “I'm going so slowly that I'm not getting anywhere.” It was a plain complaint, and it settled nothing."
+          },
+          {
+            "at": "s8",
+            "text": "As the students filed out, I spotted Tolman at the back of the room and asked him what he thought. He is a colleague, and I trusted him to be blunt."
+          },
+          {
+            "at": "s8",
+            "text": "Chalk dust was still on my hands. I wanted a straight answer and not courtesy. I waited, and I braced for it."
+          }
+        ]
+      }
+    ]
+  },
+  "trinity": {
+    "id": "trinity",
+    "goal": "I want to test the atomic bomb before morning, because if this storm forces a delay, my exhausted people may not come back from it.",
+    "background": "I am J. Robert Oppenheimer, the physicist who leads the laboratory. We are at the desert test site, in the Base Camp mess hall, and the test of the bomb is set for tonight. Enrico Fermi, a fellow physicist, is here too. I am exhausted, and the weather is turning bad.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Judge whether the storm will let the shot go ahead.",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "The sky over the desert had turned the color of slate. I had slept very little for days. I wanted the shot tonight and nothing else."
+          },
+          {
+            "at": "s2",
+            "text": "I gulped coffee and smoked each cigarette down to the butt, and I read Baudelaire to steady myself. The storm hit the roof hard, with lightning outside. Fermi favored a postponement, because the wind might carry radioactive rain over us."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Stand under the sky and decide whether to go.",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "Hubbard, the weather adviser, said the storm would pass before sunrise and recommended moving the shot an hour later. General Groves paced the mess hall, then took me aside and gave me every reason to go ahead."
+          },
+          {
+            "at": "s4",
+            "text": "Groves took me out to the control center at South Shelter, less than six miles from the site. The wind was thirty miles an hour, with heavy thundershowers. We paced outside the bunker and looked at the sky every few minutes."
+          },
+          {
+            "at": "s4",
+            "text": "My people were worn past tiredness, and I knew how little was left in them. I was afraid a delay would cost more than the weather could."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Lie still and wait out the count.",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "Back inside, neither of us could stomach a delay. I said, “If we postpone, I'll never get my people up to pitch again.” We announced the shot and hoped for the best, and the skies began to clear."
+          },
+          {
+            "at": "s6",
+            "text": "Sam Allison's voice boomed over the loudspeaker, counting down. I lay face down outside the bunker with Frank, my brother, beside me. Near the end I said, “Lord, these affairs are hard on the heart.”"
+          },
+          {
+            "at": "s6",
+            "text": "The ground was cold under my chest, and I couldn't have lit a cigarette. I held still and let the count run out."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Say something true to the reporter.",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "At the announcer's shout there was a tremendous burst of light and then a deep growling roar. The tension went out of me all at once. Frank thinks we only said, “It worked.”"
+          },
+          {
+            "at": "s7",
+            "text": "Kistiakowsky, thrown down by the blast, hugged me and demanded his ten dollars. I showed him an empty wallet and said he'd have to wait. Ken Bainbridge shook my hand and said, “Now we're all sons of bitches.”"
+          },
+          {
+            "at": "s8",
+            "text": "Later that morning William Laurence, a reporter, asked me for a comment. By his account I called the effect “terrifying” and “not entirely undepressing.” After a moment I added, “Lots of boys not grown up yet will owe their life to it.”"
+          }
+        ]
+      }
+    ]
+  },
+  "truchas-morning": {
+    "id": "truchas-morning",
+    "goal": "I want to get us up North Truchas Peak this morning, whatever it costs, because we may not be this close again.",
+    "background": "I am at our camp by Lake Katherine, high in the mountains of New Mexico. I am a physicist, and I am on a trip with two companions, George and Roger. North Truchas Peak stands above the pines, and I badly want to reach it.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Get the camp moving toward North Truchas Peak.",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "My boots are stiff and my breath hangs in the air. George and Roger are stamping about the camp, and I am already looking at the peak above the pines. I want to be on it today."
+          },
+          {
+            "at": "s2",
+            "text": "The horses are gone, and I walked to the edge of the pines to look for them. I found rocks, ground and wind. Without them everything goes on our backs, and I said nothing about turning round."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Talk George and Roger into the climb.",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "All three of us feel the altitude. George would like to lie down, and Roger keeps rubbing his head. I have the map open on a rock, and the peak looks closer than it is."
+          },
+          {
+            "at": "s4",
+            "text": "I persuaded them, and it took more talk than I am proud of. They put their packs on without a word. I took the lead, a little ashamed of how glad I was."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Get George and Roger up the last stretch.",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "The trail has turned to loose rocks, and the wind pulls at my hat. The peak is 13,024 feet, and my legs feel every one. I tell the others the top is close, which is mostly true."
+          },
+          {
+            "at": "s6",
+            "text": "Thunder rolled across the ridge as we reached the top, and the rain came sideways. I stayed a minute longer than was wise. The lake lay far below, and I was not sorry to see it."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Get the two men down the mountain.",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "We walked back from the peak sopping wet, with water in our boots and coats heavy as sacks. George says nothing, and Roger has stopped being polite. I keep us moving, partly to stay warm."
+          },
+          {
+            "at": "s8",
+            "text": "We came to Los Pinos worn out, with the storm behind us. My hat was ruined and my feet hurt. I would still do the whole climb again."
+          }
+        ]
+      }
+    ]
+  },
+  "union-meeting": {
+    "id": "union-meeting",
+    "goal": "I want to bring the Radiation Lab people into the scientists' union. They work for the Army now, and if they won't stand together, nobody will.",
+    "background": "I am at my house on Eagle Hill in Berkeley. I am a physicist at the university, and I want the scientists' union to take in the people at the Radiation Lab. They work for the Army now. Martin Kamen is a chemist there, and I want him with us.",
+    "parts": [
+      {
+        "n": 1,
+        "title": "Get Kamen to come to my house.",
+        "slices": ["s1", "s2"],
+        "cards": [
+          {
+            "at": "s1",
+            "text": "Kamen stands by the door with his coat on, and I have a cigarette going. He is careful, and I need careful men. I mean to ask him straight out to come to my place."
+          },
+          {
+            "at": "s2",
+            "text": "Kamen said he would be there, and I counted that as half the room won. Now I move chairs, set out cups and empty the ashtray. I keep glancing at the front door."
+          }
+        ]
+      },
+      {
+        "n": 2,
+        "title": "Make the case for the union to the whole group.",
+        "slices": ["s3", "s4"],
+        "cards": [
+          {
+            "at": "s3",
+            "text": "The circle is full, Kamen is in it, and the lamp is low. I have my notebook and a speech I like. I am quick and warm tonight, and I am probably too sure."
+          },
+          {
+            "at": "s4",
+            "text": "Round the circle everybody said it was great, and I took that for a win. Kamen had not spoken yet, and I did not like how he held his cup."
+          }
+        ]
+      },
+      {
+        "n": 3,
+        "title": "Tell Lawrence about the union myself.",
+        "slices": ["s5", "s6"],
+        "cards": [
+          {
+            "at": "s5",
+            "text": "Kamen's question followed me up the stairs of the Lab. Lawrence runs the place and the Army pays for it, so he should hear this from me. I stand at his door with no speech ready."
+          },
+          {
+            "at": "s6",
+            "text": "I told Lawrence, and he blew a gasket. He saw a communist union reaching into his own laboratory, and he was furious. I sat very still and kept my cigarette low."
+          }
+        ]
+      },
+      {
+        "n": 4,
+        "title": "Square things with Kamen after the meeting.",
+        "slices": ["s7", "s8"],
+        "cards": [
+          {
+            "at": "s7",
+            "text": "Lawrence's anger sits in my chest like a cold cup of coffee. I do not want to carry it alone. Kamen asked the question, so Kamen should hear this first."
+          },
+          {
+            "at": "s8",
+            "text": "I found Kamen and told him I did not know, and that perhaps I had done the wrong thing. He listened with his coat still on. I was tired, and for once I made no speech."
+          }
+        ]
+      }
+    ]
+  }
+}

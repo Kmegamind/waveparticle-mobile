@@ -3582,6 +3582,47 @@ a {
   margin: 0;
 }
 
+/* ADM-06 Stories (issue 293): the story list and one story's cards, read-only. */
+.admin-back {
+  margin: 0 0 var(--space-row-after);
+}
+
+.admin-story-title,
+.admin-story-part {
+  font-size: var(--text-body-size);
+  font-weight: 700;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-card-list {
+  display: grid;
+  gap: var(--space-small-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-card {
+  border-top: 1px solid var(--hairline);
+  display: grid;
+  gap: var(--space-row-after);
+  min-width: 0;
+  padding-top: var(--space-small-gap);
+}
+
+.admin-card-body {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-card-problems {
+  font-size: var(--text-caption-size);
+  font-weight: 700;
+  margin: 0;
+  padding-left: var(--space-control-gap);
+}
+
 @media (min-width: 56.25rem) {
   .admin-shell {
     grid-template-columns: var(--admin-rail-width) minmax(0, 1fr);

@@ -3,7 +3,14 @@ import { baseUrlOf, signIn } from "./support/account";
 
 // #287: the content admin at /admin. The role comes from the Supabase stub's content_role().
 
-const ADMIN_PATHS = ["/admin", "/admin/app-text", "/admin/publish-history", "/admin/no-such-page"];
+const ADMIN_PATHS = [
+  "/admin",
+  "/admin/app-text",
+  "/admin/publish-history",
+  "/admin/stories",
+  "/admin/stories/site-search",
+  "/admin/no-such-page",
+];
 
 /** The visible text of the app's normal 404 page, for a path that never existed. */
 async function normalNotFoundText(page: Page) {

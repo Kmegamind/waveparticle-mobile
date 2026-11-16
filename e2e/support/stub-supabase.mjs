@@ -13,6 +13,8 @@
 //        when the token is STUB_PROMPTS_READ_TOKEN, otherwise no rows, as the real function (#282)
 //   POST /rest/v1/rpc/get_story_content  { reader_key } → the seed story content (src/content,
 //        docs/demo) when the key is STUB_CONTENT_READ_KEY, otherwise null, as the real function (#284)
+//   GET  /rest/v1/stories | story_parts | story_cards   the seed rows (#293): stories for any
+//                                     signed-in account, parts and cards for content editors only
 //   POST /rest/v1/rpc/content_role        the seeded contentRole ("admin", "writer") or null, as
 //                                          public.content_role() for the caller (#287)
 //   POST /rest/v1/rpc/delete_my_account   mirrors the migration (#103): the caller's rows, then
@@ -36,12 +38,16 @@ import { fileURLToPath } from "node:url";
 import { readPromptDirectory } from "../../scripts/prompts/prompt-files.mjs";
 import { readAppTextSeed } from "../../scripts/app-text/import.mjs";
 import { appDocument, readContentRows } from "../../scripts/content/content-files.mjs";
+import { readStoryDecks, storyCardRows } from "../../scripts/story-cards/import.mjs";
 
 const promptDirectory = fileURLToPath(new URL("../../docs/ai/prompts", import.meta.url));
 const promptReaderToken = process.env.STUB_PROMPTS_READ_TOKEN ?? "";
 const contentReadKey = process.env.STUB_CONTENT_READ_KEY ?? "";
 /** The story content, as get_story_content returns it once the import has run (#284). */
 const storyContent = appDocument(readContentRows());
+/** The story display rows and the story cards and part titles once both imports have run (#293). */
+const storyRows = readContentRows().stories;
+const storyCards = storyCardRows(readStoryDecks());
 
 const port = Number(process.env.STUB_SUPABASE_PORT ?? "3198");
 /** token → { user, tables } */
@@ -265,6 +271,24 @@ createServer(async (request, response) => {
   if (path === "/rest/v1/rpc/content_role" && request.method === "POST") {
     if (!dataset || dataset.deleted) return json(response, 401, { message: "JWT required" });
     return json(response, 200, dataset.contentRole);
+  }
+
+  // #293: stories are readable by signed-in accounts; story_parts and story_cards by content
+  // editors only (other accounts get no rows, as the policies; anonymous requests are refused).
+  const storyTable = path.match(/^\/rest\/v1\/(stories|story_parts|story_cards)$/);
+  if (storyTable && request.method === "GET") {
+    const user = dataset && !dataset.deleted ? dataset : null;
+    if (!user) return json(response, 401, { code: "42501", message: "permission denied" });
+    const editor = ["admin", "writer"].includes(user.contentRole);
+    const all = {
+      stories: storyRows,
+      story_parts: storyCards.parts,
+      story_cards: storyCards.cards.map((card) => ({ ...card, version: 1, published: true })),
+    }[storyTable[1]];
+    const visible = storyTable[1] === "stories" || editor ? all : [];
+    const params = [...url.searchParams.entries()];
+    const found = visible.filter((row) => matches(row, params));
+    return json(response, 200, ordered(found, url.searchParams.get("order")));
   }
 
   if (path === "/rest/v1/app_text" && request.method === "GET") {
