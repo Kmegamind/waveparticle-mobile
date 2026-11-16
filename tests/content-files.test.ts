@@ -85,9 +85,7 @@ describe("story content seed (#284)", () => {
 
   it("test_284_key_moments_are_stored_unconfirmed", () => {
     const rows = readContentRows(root);
-    const moments = rows.storyInputs.flatMap(
-      (row) => row.key_moments as { confirmed: boolean }[],
-    );
+    const moments = rows.storyInputs.flatMap((row) => row.key_moments as { confirmed: boolean }[]);
     expect(moments).toHaveLength(54);
     expect(moments.every((moment) => moment.confirmed === false)).toBe(true);
   });
@@ -107,9 +105,7 @@ describe("story content seed (#284)", () => {
     const before = seedFiles().map((file) => statSync(path.join(directory, file)).mtimeMs);
     const written = writeContentFiles(exportDocument(readContentRows(root)), directory);
     expect(written).toEqual([]);
-    expect(seedFiles().map((file) => statSync(path.join(directory, file)).mtimeMs)).toEqual(
-      before,
-    );
+    expect(seedFiles().map((file) => statSync(path.join(directory, file)).mtimeMs)).toEqual(before);
   });
 
   it("test_284_round_trip_restores_every_file_as_the_same_json", () => {
