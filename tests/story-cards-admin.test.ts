@@ -80,8 +80,26 @@ describe("CARD-LENGTH (#293 AC6)", () => {
 describe("ADM-06 Stories list (#293 AC3)", () => {
   it("test_293_ac3_lists_every_story_in_story_order_with_parts_and_cards", () => {
     expect(storyList(stories, parts, cards)).toEqual([
-      { id: "a", key: "opp.a", title: "First", sequence: 1, parts: 2, cards: 3, failing: 1 },
-      { id: "b", key: "opp.b", title: "Second", sequence: 2, parts: 1, cards: 1, failing: 0 },
+      {
+        id: "a",
+        key: "opp.a",
+        title: "First",
+        sequence: 1,
+        parts: 2,
+        cards: 3,
+        background: true,
+        failing: 1,
+      },
+      {
+        id: "b",
+        key: "opp.b",
+        title: "Second",
+        sequence: 2,
+        parts: 1,
+        cards: 1,
+        background: false,
+        failing: 0,
+      },
       {
         id: "c",
         key: "opp.c",
@@ -89,6 +107,7 @@ describe("ADM-06 Stories list (#293 AC3)", () => {
         sequence: 3,
         parts: 0,
         cards: 0,
+        background: false,
         failing: 0,
       },
     ]);

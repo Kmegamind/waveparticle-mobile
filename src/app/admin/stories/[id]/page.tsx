@@ -11,8 +11,8 @@ export const instant = false;
 const STORY_ID = /^[a-z0-9][a-z0-9-]*$/;
 
 // ADM-06, one story (#293): its background card, then its cards grouped by part with the part title
-// and each card's key, slice, version and length check. Read-only. Async at the top so that an
-// unknown story answers with a 404 status.
+// and each card's key, slice, version and length check. Read-only. An unknown story shows the
+// normal not-found page; the admin layout has already started streaming, so the status stays 200.
 export default async function AdminStory({ params }: PageProps<"/admin/stories/[id]">) {
   await connection();
   const { id } = await params;

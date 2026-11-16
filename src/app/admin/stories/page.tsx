@@ -53,7 +53,10 @@ async function StoryTable() {
                 <dt>Parts</dt>
                 <dd data-testid="parts">{row.parts}</dd>
                 <dt>Cards</dt>
-                <dd data-testid="cards">{row.cards} and a background card</dd>
+                <dd data-testid="cards">
+                  {row.cards} part {row.cards === 1 ? "card" : "cards"}
+                  {row.background ? " and a background card" : ", no background card"}
+                </dd>
                 {row.failing > 0 ? (
                   <>
                     <dt>Failing</dt>

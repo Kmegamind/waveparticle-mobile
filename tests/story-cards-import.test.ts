@@ -80,6 +80,15 @@ describe("story cards import (#293)", () => {
     expect(() => storyCardRows(decks, ["y"])).toThrow(/x/);
   });
 
+  it("test_293_review_a_repeated_part_number_or_a_missing_title_is_refused_by_name", () => {
+    const part = (n: number, title?: string) => ({ n, title, slices: ["s1"], cards: [] });
+    const deck = (parts: object[]) => ({ x: { id: "x", background: "Here.", parts } });
+    expect(() => storyCardRows(deck([part(1, "A."), part(1, "B.")]), ["x"])).toThrow(
+      /x: part 1 appears twice/,
+    );
+    expect(() => storyCardRows(deck([part(1)]), ["x"])).toThrow(/x: part 1 has no title/);
+  });
+
   it("test_293_ac2_sql_inserts_version_1_published_only_for_keys_without_rows", () => {
     const sql = storyCardsImportSql(rows());
     expect(sql.startsWith("-- Story cards")).toBe(true);

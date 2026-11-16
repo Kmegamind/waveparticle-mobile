@@ -43,6 +43,8 @@ export type StoryListRow = {
   parts: number;
   /** Part cards, without the background card. */
   cards: number;
+  /** Whether the story has a background card. */
+  background: boolean;
   /** Cards (background included) that fail CARD-LENGTH. */
   failing: number;
 };
@@ -180,6 +182,7 @@ export function storyList(
         sequence: detail.sequence,
         parts: detail.parts.length,
         cards: detail.parts.reduce((sum, part) => sum + part.cards.length, 0),
+        background: detail.background !== null,
         failing: all.filter((entry) => entry.problems.length > 0).length,
       };
     });

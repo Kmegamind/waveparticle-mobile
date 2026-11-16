@@ -22,7 +22,9 @@ test("test_293_ac3_a_writer_sees_the_26_stories_in_story_order_with_parts_and_ca
   await expect(stories).toHaveCount(26);
   await expect(stories.first()).toHaveAccessibleName("The Trade of a Theorist");
   await expect(stories.first().getByTestId("parts")).toHaveText("4");
-  await expect(stories.first().getByTestId("cards")).toHaveText("9 and a background card");
+  await expect(stories.first().getByTestId("cards")).toHaveText(
+    "9 part cards and a background card",
+  );
   await expect(stories.last()).toHaveAccessibleName("The Fermi Award");
   await expect(page.getByRole("button")).toHaveText(["Sign out"]);
 });

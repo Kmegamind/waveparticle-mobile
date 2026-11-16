@@ -68,9 +68,16 @@ export function storyCardRows(decks, storyIds = readStoryIds()) {
       position: 1,
       body: deck.background,
     });
+    const seen = new Set();
     for (const part of deck.parts) {
       if (!Number.isInteger(part.n) || part.n < 1 || part.n > 5) {
         throw new Error(`story ${storyId}: part ${part.n} is not 1 to 5`);
+      }
+      // A repeated part would share keys with the first one and its cards would be skipped.
+      if (seen.has(part.n)) throw new Error(`${storyId}: part ${part.n} appears twice`);
+      seen.add(part.n);
+      if (typeof part.title !== "string" || part.title.trim() === "") {
+        throw new Error(`${storyId}: part ${part.n} has no title`);
       }
       parts.push({ story_id: storyId, part: part.n, title: part.title });
       part.cards.forEach((card, index) => {
