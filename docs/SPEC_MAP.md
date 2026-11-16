@@ -1,6 +1,6 @@
 # Specification map
 
-Verified against decisions up to 2026-11-12 (the answers file described in section 5), code `7b2b72e`, replaces `docs/READINESS.md` and the planning file `PRODUCT_doc-map-and-open-decisions_2026-11-04_v1_draft.md` once the owner agrees.
+Verified against decisions up to 2026-11-12 (the answers file described in section 5), code `7b2b72e`, replaces `docs/READINESS.md` and the planning file `PRODUCT_doc-map-and-open-decisions_2026-11-04_v1_draft.md` once the owner agrees. Updated on 2026-11-16 (issue #295): Yue's answers of 2026-11-12 and the decisions of 2026-11-14 and 2026-11-15 are now in the decision log, and section 5 says which open items they settle.
 
 This file answers three questions: which specification documents exist, which are still good, and which skill writes the next one. It is written from three read-only audits of 2026-11-12 (product, AI, content). Nothing has been moved, renamed or deleted yet; the folder layout in section 2 is a plan for a later pull request.
 
@@ -19,7 +19,7 @@ Status words: **current** (use as is), **needs rewrite**, **missing**, **to arch
 
 | Document | Where | What it is for | Status and reason | Belongs to | Issues | Skill that writes it |
 |---|---|---|---|---|---|---|
-| Decision log | `docs/DECISIONS.md` | Every product decision with a date, and the list of superseded rules | **Current** to 2026-11-05. Yue's answers of 2026-11-12 are not recorded yet (a later pull request does that) | Whole product | Blocks every feature spec; open items in section 5 | superpowers:brainstorming, then edit the log by hand |
+| Decision log | `docs/DECISIONS.md` | Every product decision with a date, and the list of superseded rules | **Current** to 2026-11-15. Yue's answers of 2026-11-12 are recorded | Whole product | Blocks every feature spec; open items in section 5 | superpowers:brainstorming, then edit the log by hand |
 | Product requirements | `docs/PRD.md` | What the product must do, by requirement id | **Current**: searched for 17 superseded rules, found only in "removed" notes | Whole product | Epics #136 to #147 | writing-feature-spec for new sections |
 | Screens and jump rules | `docs/FLOW.md` | The screen registry (41 screens) and how they connect | **Needs rewrite (small)**: section 7 is resolved by prototype v2; account sign-in screens are missing from the registry; section 8 lists 21 open questions | Whole product | Screen stories in epics #139, #140, #142 | writing-feature-spec |
 | User stories | `docs/USER_STORIES.md` | 117 stories with acceptance criteria | **Current**: 117 stories match 117 issues. Nine stories wait on decisions that were never recorded | Whole product | #106, #107, #108, #109, #110, #111 are the unrecorded-decision ones | writing-feature-spec (acceptance tests section) |
@@ -65,13 +65,13 @@ The planning folder has two seven-document sets, one for Goals and one for the s
 
 | Document | Where | What it is for | Status and reason | Belongs to | Issues | Skill that writes it |
 |---|---|---|---|---|---|---|
-| AI index, goal split, stuck story, rest chat, safety, check and fallback, closing line, decisions and to-do (`AI_00`, `_01`, `_03`, `_04`, `_05`, `_06`, `_07`, `_09`) | `docs/ai/` | The first AI specifications | **Needs rewrite**: written before the decision log; 0 of 145 required changes are done; `AI_03`, `_04`, `_05`, `_09` are changes only and their original text was never imported | AI pipeline | epic #138, #40, #44, #56 to #61, #117 | writing-ai-feature-spec |
-| What each AI specification must change | `docs/ai/DIFFERENCES.md` | The work list for the rewrite | **Current**, with two stale items (introduction phrases, separate time-up card) | AI pipeline | #44 | None |
+| AI index, goal split, stuck story, rest chat, safety, check and fallback, closing line, decisions and to-do (`AI_00`, `_01`, `_03`, `_04`, `_05`, `_06`, `_07`, `_09`) | `docs/ai/` | The first AI specifications | **Needs rewrite**: written before the decision log; each file now opens with a status note naming the decisions that supersede it (#295), but the rewrite itself is not done; `AI_03`, `_04`, `_05`, `_09` are changes only and their original text was never imported. Since 2026-11-14 the step cards, the background card and the closing line are made ahead per story, not live (SHARED-STORY, CLOSING-AHEAD) | AI pipeline | epic #138, #40, #44, #56 to #61, #117 | writing-ai-feature-spec |
+| What each AI specification must change | `docs/ai/DIFFERENCES.md` | The work list for the rewrite | **Current**: updated in #295 for the decisions up to 2026-11-15 | AI pipeline | #44 | None |
 | Current planning prompt of the old web app | `docs/ai/AI_01a_current-planning-prompt.md` | Record of the old goal-split prompt | **Current as a record**; it is not the real planning prompt, which Yue will send | Goal start dialogue (NF7) | #40 | None |
 | Status and landing lines; step cards on the focus page; screen notes (`AI_02`, `AI_10`, `AI_08`) | `docs/ai/` | Authored-card design | **To archive** after the new step-cards specification exists (authored cards are no longer shown to users) | Story format and cards (NF5) | #43 | None |
 | Original versions of `AI_03`, `_04`, `_05`, `_09` | `1_Projects/Newfeatures/AI_Specs/*_v1_*` | Prompt text, output shapes, safety hook positions | **Keep until imported** into the rewrite, then archive. The version 2 files are the same as the repository copies | AI pipeline | #56, #59, #117 | None |
 | Canyon authored pool | `AI_Specs/AI_example_canyon-authored-pool_2026-10-29_v1_draft.json` | Authored example cards | **Keep as reference examples and evaluation material**, no longer user-facing backup text | Story format and cards (NF5) | #134 | writing-evaluation-plan |
-| Card model, immersion and in-task card prompts | `1_Projects/Newfeatures/PROMPTS_card-model_...`, `PROMPT_NF3_in-task-cards`, `PROMPT_NF6_immersion-fix` | Old card prompts | **To archive**: superseded by decisions X2, X3 and T1 (one card at step start; live generation) | Story format and cards (NF5) | None | None |
+| Card model, immersion and in-task card prompts | `1_Projects/Newfeatures/PROMPTS_card-model_...`, `PROMPT_NF3_in-task-cards`, `PROMPT_NF6_immersion-fix` | Old card prompts | **To archive**: superseded by decisions X2, X3, T1, SHARED-STORY and CARDS-PER-PART (one card at step start; cards made ahead per story part) | Story format and cards (NF5) | None | None |
 | Prompt snippet register and content rules (`NF5_prompt-snippets-register`, `NF5_content-rules-*`) | `PRDs_MomTest/` | Source of the check rules (Chinese) | **Needs import**: the rules must become one English rule table in code, then archive | Story format and cards (NF5) | #46 | writing-ai-feature-spec |
 | Prompt Canvas | `1_Projects/Newfeatures/Opp/Prompt Canvas.html` and the published page | A test bench for prompt wording | **Keep one copy as a test bench only**: holds one story's old 15-minute model; not a source of rules | AI pipeline | None | None |
 | Prompts in code | `src/prompts/` (does not exist yet); today `scripts/demo-prompts.mjs` and inline in the gateway code | The single source of prompt text, character-neutral | **Missing**; documents refer to prompts by identifier only | AI pipeline | #132, #44 | writing-ai-feature-spec (prompt reference section) |
@@ -139,7 +139,7 @@ The rule for where a new document goes: ask what question it answers. "What shou
 
 The audits suggest this order. Each step needs the one before it unless said otherwise.
 
-1. Record Yue's answers in the decision log (needs only Yue).
+1. Record Yue's answers in the decision log (needs only Yue). Done: decisions of 2026-11-12.
 2. Correct `docs/ai/DIFFERENCES.md` for its two stale items and import the missing original sections of `AI_03`, `AI_04`, `AI_05` (no dependency).
 3. Write the Character Pack specification (needs the reviewer-role answer in section 5).
 4. Write the pipeline specification, then one AI specification per feature, each with an evaluation plan.
@@ -152,14 +152,14 @@ The audits suggest this order. Each step needs the one before it unless said oth
 
 Source of this register: the "Decisions needed" parts of the three audit reports, `docs/DECISIONS.md` section 3, and Yue's answers in `/Users/yue/Documents/2. Wave Particle/5_Code/_handoff/2026-11-12-spec-audit/01_DECISIONS_FROM_YUE_2026-11-12.md` (the "answers file"; a later pull request moves them into the decision log, and this register then points there). In the answers file the Moriarty answers are numbered M1 to M6; they are not the same as decisions M5 and M6 in the decision log, which concern original test data.
 
-### 5.1 Answered by Yue on 2026-11-12 (recorded only in the answers file for now)
+### 5.1 Answered by Yue on 2026-11-12 (now in the decision log, section "Decisions of 2026-11-12")
 
 - **Moriarty pack questions.** Every story has its own goal and all serve the theme "The Invisible Empire"; the original-novel version is the base and the old television-style version is not used; he may say how he feels; story 8 is included with an open ending and new stories follow it; his relationship with the user is trust and the game is against Holmes; Yue reads the 31 cards of story 1 first and stories 2 to 7 wait.
 - **Pause message.** Not an instruction to the user. Each pause means his own story is blocked and a new stuck situation is generated; from the third pause it is much harder and he says he is worried he may fail. This replaces the wording in the decision log (rule F1), and it answers the AI audit's question about addressing the user.
 - **Return pop-up.** He may describe how the time felt in any words. Exact clock numbers are still open (5.2).
 - **Questions he cannot know.** He answers as a person of his own era would, and he may guess.
-- **First card and fallback.** The first card of the next step is generated during the previous step. No authored backup text is ever shown to users.
-- **Card length.** One to three sentences and at most 45 words; the background card at most 70 words. Revisit after real cards are read.
+- **First card and fallback.** The first card of the next step is generated during the previous step. No authored backup text is ever shown to users. (Recorded as NO-BACKUP. Since 2026-11-14 the cards are made ahead per story part and shared (SHARED-STORY, CARDS-PER-PART), so the rule about the next step's first card no longer applies; NO-BACKUP still holds for the live parts.)
+- **Card length.** One to three sentences and at most 45 words; the background card at most 70 words. Revisit after real cards are read. (Recorded as CARD-LENGTH and extended to the closing line by LEN-CARD.)
 - **Key moments.** The machine-derived ones are accepted for now and marked unconfirmed; to be discussed later.
 - **Dates.** No dates or ages are shown to users and no approximate-date flags are stored for display. The Life Path is grouped into named periods.
 - **Background knowledge in the planning database.** Cross-check it; import it if it can be used directly; otherwise Yue and the team decide the content together.
@@ -168,26 +168,19 @@ Source of this register: the "Decisions needed" parts of the three audit reports
 
 ### 5.2 Still open
 
+Settled since this register was written, and removed from the table: the conflict between the answers and the log (NO-BACKUP), the failure screen (FAIL-SCREEN), the mood of the closing line (END-TONE), who reads content (READ-STATUS), the time read from the goal text (GOAL-TIME), editing a plan (STEP-EDIT), the step count in his lines (NO-STEP-COUNT), reading aloud (NO-READ-ALOUD), which user test comes first (TEST-LATER), the account screens (ACCOUNT-SCREENS), what the summary record shows (SUMMARY-RECORD) and the other six companions (OTHER-COMPANIONS). The issues that planned authored fallbacks (#43, #62, #63, #134) may still need rewording.
+
 | Topic | What is being decided | Blocks |
 |---|---|---|
-| Conflict between the answers and the decision log | The log (rules C1, T3, D5, A6) says authored text is the fallback; Yue says there is no authored backup text. The log needs updating, and the issues that plan authored fallbacks (#43, #62, #63, #134) need rewording | #43, #62, #63, #134, #21 |
-| Failure screen | What the user sees if generation really fails, for example with no network | #21, every AI specification (section 7 of the template) |
-| Waiting time limit | How long the user waits for generation; it has to be measured | Every AI specification (speed budget) |
-| Exact clock numbers in the return pop-up | Whether he may say "ten minutes"; kept out for now | #57, #61, #69 |
-| Mood of the closing line | Whether pauses should change it; Yue did not understand the question and it is being re-explained. The audit recommends choosing the mood by whether every key moment was reached, or dropping it | #41 |
+| Waiting time limit and failure wording | How long the user waits for live generation, and the wording of the failure message; set by testing (TIME-LIMIT) | Every AI specification (speed budget) |
+| Exact clock numbers in the return pop-up | Whether he may say "ten minutes"; kept out for now (CLOCK-NUMBERS) | #57, #61, #69 |
 | Safety tier names | Crisis, stress and none (recommended) against the three names now in code and specifications | #117 |
 | Real planning prompt | Yue will send the prompt for splitting a goal; until then the gateway's prompt is used | #40 |
-| Who reads content and how it is recorded | One named reviewer role per layer and three states (drafted, checked by script, read by human); being re-explained | #46, #84 |
-| Goal dialogue reads the time from the goal text | Skip the time question when the goal states a length | #109 |
-| Editing a plan | Allowed minutes per step and whether steps get move buttons | #111 |
-| His lines never state the number of steps | Confirm the default as a rule | #110 |
-| Reading aloud | Whether to keep the writing rules for cards that read well aloud | #108 |
-| Which user test comes first | Toast test, pause-count test or history test | Test build content |
-| Account screens in the screen registry | Documentation change only | None |
-| What "Your record" shows on the summary | Plan length and focus time only, or also ideas | #75 |
-| The other six companions | Whether to record that they are out of scope until a content plan exists | #93 |
 | Benchmark run | Approve the 2 US dollar cap after the output limit is raised and provider retention is reviewed | #130 |
 | Provider data retention (decision log item A7b) | What the model provider keeps | #105 |
 | Phone features result (decision log item S2) | Engineering result on vibration, notifications and the clock | #153 |
 | Original test data (decision log items M5 and M6) | May be skipped | None |
+| Key moments review (KEY-REVIEW) | Yue and the content owner review the machine-derived key moments, stored unconfirmed | #45 |
+| Period names (PERIOD-NAMES) | The named periods of each Life Path, drafted for Yue to approve | Life Path |
+| Moriarty story 1 reading (MORIARTY-READ) | Yue marks which of the 31 cards sound like him; stories 2 to 7 wait | Moriarty pack |
 | Moriarty story 8 rework | Knowledge cut-off and forbidden words must be reworked because his path continues past the waterfall | Moriarty pack |

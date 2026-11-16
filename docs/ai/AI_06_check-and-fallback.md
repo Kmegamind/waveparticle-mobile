@@ -1,12 +1,17 @@
 Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIONS.md overrides this document where they differ.
 
+> **Status after the decisions up to 2026-11-15 (#295).** The file name says "fallback" for history only: **there is no fallback ladder.** No stored or pre-written text ever stands in for a failed or slow live message (NO-BACKUP, NO-FALLBACK-TABLES).
+> - **Live outputs** (the goal split, the pause message, the rest reply, the return pop-up): parse, clean, check; a failing output is generated again with the failure reason within the time limit; if it still fails, the app shows one calm message in its own voice, for example "He is not here right now. Please try again.", with Retry, and the step clock does not start (FAIL-SCREEN). The time limit and the wording are set by testing (TIME-LIMIT).
+> - **Made-ahead outputs** (the background card, the step story cards, the closing line): the same checks run before publishing; a card that fails or is over its length limit cannot be published, and it is read by a person first (SHARED-STORY, CLOSING-AHEAD, LEN-CARD, READ-STATUS). Users see only published content, so these never fail on screen.
+> - Section 5 (fallback ladder) is withdrawn; section 4 is updated for the decided lengths and checks.
+
 # AI-6 · Check and fallback pipeline
 
 > Part of the [AI index](AI_00_index.md). Sources: canvas "Output check" node and rules page (10 rules, retry once, backup), NF5 v1.1 §2 (R01 to R22, P01 to P03), NF3 pool checks, runtime design §4.3. This is code, not a model. It owns the fallback ladder for AI-1, 3, 4, 7.
 
 ## 1. Purpose
 
-Nothing a model writes reaches the screen until it has been parsed, cleaned, checked against written rules, and (if it fails) retried once and then replaced by an authored line. The pipeline must be the same for every model-written line so a rule fixed once is fixed everywhere.
+Nothing a model writes reaches the screen until it has been parsed, cleaned and checked against written rules. A failing live line is generated again within the time limit and otherwise replaced by the app's failure message, never by an authored line (NO-BACKUP, FAIL-SCREEN); a failing made-ahead line cannot be published. The pipeline must be the same for every model-written line so a rule fixed once is fixed everywhere.
 
 ## 2. Trigger and screens
 
@@ -15,7 +20,7 @@ Runs after every model call in AI-1b (plan only), AI-3 (R1, R2), AI-4 (C1), AI-7
 ## 3. Pipeline (canvas behaviour, made explicit)
 
 ```
-generate → parse → clean → rules → [hit with level "retry"?] → retry once (same prompt) → rules → still hit / parse fail / error / timeout → authored fallback → log
+generate → parse → clean → rules → [hit with level "retry"?] → generate again with the failure reason, within the time limit → rules → still hit / parse fail / error / timeout → failure message with Retry (live) or not publishable (made ahead) → log
 ```
 
 | Step | Detail | Canvas reference |
@@ -24,7 +29,7 @@ generate → parse → clean → rules → [hit with level "retry"?] → retry o
 | clean | Strip wrapping quotes and a leading "Oppenheimer:", curly apostrophes → straight | `clean()` |
 | rules | Each enabled rule that applies to this AI-n (see §4). Level `retry` blocks, `warn` is logged only | `runChecks`, severity |
 | retry | **Once**. No loop. Same prompt (no extra "don't do X" appended) | `tries < 2` |
-| fallback | By AI-n, §5 | backup replies, `fb = !card` |
+| failure | Live: the failure message with Retry (FAIL-SCREEN). Made ahead: not publishable | (canvas backup replies are not used, NO-BACKUP) |
 | log | `source = model/authored`, `rejected_rules[]` (IDs only), latency. **Never** raw user text | NF3/NF6 logging |
 
 ## 4. Rules: canvas ID ↔ NF5 ID ↔ where it applies
@@ -33,8 +38,8 @@ Canvas rules are the ten in `DEFAULT_RULES`; NF5 rules are R01 to R22. They over
 
 | Rule | Canvas ID | NF5 ID | Meaning | T | C | E | L | S |
 |---|---|---|---|---|---|---|---|---|
-| Too long | `len` | R17, R18 | Canvas: more than 4 sentences or 320 characters. NF5: per type (SL ≤ 14 to 18 words; LC ≤ 2 sentences; EN ≤ 2 sentences, 35 words). Use the stricter per type | ✔ | ✔ | ✔ | ✔ | name ≤ 80 chars |
-| Non-English | `cjk` | (language auto-detect) | Any Chinese character in an English line. Chinese has its own authored set | ✔ | ✔ | ✔ | ✔ | — |
+| Too long | `len` | R17, R18 | Decided limits: step story card 1 to 3 sentences and at most 45 words; background card at most 70 words; closing line 1 to 3 sentences and at most 45 words (LEN-CARD); pause message 1 or 2 sentences and at most 30 words (LEN-PAUSE). Older canvas and NF5 limits are replaced | ✔ | ✔ | ✔ | ✔ | name ≤ 80 chars |
+| Non-English | `cjk` | (language auto-detect) | Any Chinese character in an English line. English only (L1) | ✔ | ✔ | ✔ | ✔ | — |
 | Dash | `dash` | R11 | `—`, `–`, `--` | ✔ | ✔ | ✔ | ✔ | — |
 | Banned words | `ban` | — (NF3 taboo list) | bro, vibes, no cap, "as an AI". Per character list | ✔ | ✔ | ✔ | ✔ | — |
 | Clock time, duration | `clock` | R02, R03 | Digits with ":", a.m./p.m., o'clock, "half past", "(ten) minutes". Canvas exempts "5:30" for Trinity; **the Canyon has no exemption** | ✔ | ✔ | ✔ | ✔ | — |
@@ -44,7 +49,7 @@ Canvas rules are the ten in `DEFAULT_RULES`; NF5 rules are R01 to R22. They over
 | Later knowledge | `know` | R19 | Story `probe_words` appear and the user did not write them. Canvas: Trinity list; Canyon: database list | ✔ | ✔ | ✔ | ✔ | — |
 | Blaming | `blame` | R08 | "you again", "finally came back", "welcome back", "while you were away". Canvas: only on resume | ✔ | ✔ | ✔ | ✔ | — |
 | **Missing in canvas, in NF5** | | | | | | | | |
-| No question | — | R01 | One-way lines have none. **Chat: open (AI-4 §11)** | ✔ | ? | ✔ | ✔ | — |
+| No question | — | R01 | One-way lines have none. A rest reply may end on its one question (CHAT-QUESTION-END) | ✔ | at most one | ✔ | ✔ | — |
 | Not to the user | — | R04, R05 | No you / we in one-way lines | ✔ | — | ✔ (default) | ✔ | — |
 | No hook | — | R06 | next, more, later, soon, tomorrow, "find out" | ✔ | ✔ (hypothesis) | ✔ | ✔ | — |
 | No praise, coaching | — | R07 | great, well done, proud, streak | ✔ | ✔ | ✔ | ✔ | — |
@@ -52,11 +57,18 @@ Canvas rules are the ten in `DEFAULT_RULES`; NF5 rules are R01 to R22. They over
 | No open ending | — | R14 | Must end with a full stop | ✔ | ✔ | ✔ | ✔ | — |
 | No own name | — | R15 | He never says "Oppenheimer" or "Robert" | ✔ | ✔ | ✔ | ✔ | — |
 | Pool duplicates | — | P01 to P03 | Exact, near (≥ 70%), same three-word opener ≥ 3 times | — | — | repeated-opener check | ✔ | — |
-| Not a repeat in this run | — | NF3 `used_ids` | | ✔ | ✔ | — | — | — |
+| Not a repeat in this run | — | NF3 `used_ids` | Rest replies are not checked against this list (CHAT-NO-RUN-LIST) | ✔ | — | — | — | — |
+| **Added by the decisions** | | | | | | | | |
+| No year, date or age | — | — | Cards reject a year, a date or an age (DATES-ADMIN-ONLY) | ✔ | — | ✔ | ✔ | — |
+| No step count | — | — | Never the number of Steps or how many are left (NO-STEP-COUNT) | ✔ | ✔ | ✔ | ✔ | — |
+| Something new | — | — | A card that repeats earlier information fails (CARD-NEW) | — | — | — | ✔ | — |
+| Spoiler | — | — | Rest replies pass the same spoiler check as the story cards, against the parts the user has not reached (CHAT-SPOILER-CHECK) | — | ✔ | — | — | — |
 
 The canvas's check rules page already supports editing patterns, a strip list, a level, and a "test field". **Add the NF5-only rows there** (hypothesis for the next canvas version) so one page tests everything.
 
 ## 5. Fallback ladder by AI
+
+> **Withdrawn** (NO-BACKUP, FAIL-SCREEN, NO-FALLBACK-TABLES). Every authored or bundled entry in this table is gone; only the goal split's failure screen with "Try again" and the one-step plan built in code remain. Kept as history.
 
 | AI | Model fails or hits twice | Final fallback | Never |
 |---|---|---|---|
@@ -81,7 +93,7 @@ Reading: the one rule that does the blocking is the advising rule, and in the R1
 
 ## 7. Latency and cost
 
-Pure code, under 10 ms per line. A retry costs a full model call; set the retry budget by AI: AI-3 and AI-4 one retry, AI-1b one retry then GD-F, AI-7 one retry.
+Pure code, under 10 ms per line. A retry costs a full model call. Live calls retry within the waiting time limit, which is set by testing (TIME-LIMIT); made-ahead content has no runtime budget.
 
 ## 8. Evaluation cases
 
@@ -93,13 +105,13 @@ Pure code, under 10 ms per line. A retry costs a full model call; set the retry 
 | 4 | "The mesa is where it all ends up." (c1) | Blocked: later knowledge (story-gate, not in `probe_words`: add) |
 | 5 | "Tom brought me tea." | Blocked by name gate |
 | 6 | "Hubbard says…" in the Canyon | Blocked by name gate (not allowed in this story) |
-| 7 | Model returns `{"story":""}` | Parse fail → retry → fallback |
-| 8 | Two failures in AI-4 | `rest_chat_fallback` line, no error |
+| 7 | Model returns `{"story":""}` | Parse fail → generate again → failure message with Retry (FAIL-SCREEN) |
+| 8 | AI-4 keeps failing within the time limit | Failure message with Retry; no stored line (NO-BACKUP) |
 | 9 | Pool of 8 authored lines, three start "I'm out at…" | P03 warn |
 
 ## 9. Open questions
 
 1. **Single source of truth for rules**: NF5 says the script and its doc are the authority; the canvas has its own regex copy. Hypothesis: export the NF5 rules into the canvas rule format so there is one list.
-2. Retry once and then fallback is the canvas and NF5 (GD: "only try once, no loop") behaviour; no source asks for a second retry.
+2. Retry once and then fallback was the canvas and NF5 behaviour. Replaced: live calls regenerate within the time limit, then show the failure message (NO-BACKUP, FAIL-SCREEN).
 3. Canvas `blame` is on resume only; with AI-3 one-call design the "resume" kind may not exist. Keep the rule on R2 and HOME-2 lines.
-4. Chinese rules have no owner yet (NF5 §6).
+4. Closed: Chinese rules are not needed, English only (L1).

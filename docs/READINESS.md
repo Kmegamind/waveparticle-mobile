@@ -1,6 +1,8 @@
 # Readiness check: can development start?
 
-Date: 2026-11-05. Status: draft. This checks what a feature normally needs before an engineering team builds it, against what exists. "Ready" means an engineer could start from the document without asking the product owner. Nothing here was tested with real users; the earlier test list may have been simulated.
+Date: 2026-11-05. Status: superseded by `docs/SPEC_MAP.md`; kept for history. The content and AI rows below were corrected on 2026-11-16 for the decisions up to 2026-11-15 (issue #295).
+
+Original status: draft. This checks what a feature normally needs before an engineering team builds it, against what exists. "Ready" means an engineer could start from the document without asking the product owner. Nothing here was tested with real users; the earlier test list may have been simulated.
 
 ## 1. Result
 
@@ -37,11 +39,12 @@ Development of the repository setup (Sprint 1) can start now. Feature work shoul
 | Item | State | Blocks |
 |---|---|---|
 | Story database (26 stories, facts) | Ready | |
-| Pre-written fallback cards | Two stories only; generic fallback lines for the rest are not written | Blocks Sprint 2 |
+| Pre-written fallback cards | Not needed: no stored text is shown when generation fails (NO-BACKUP, NO-FALLBACK-TABLES). The authored cards of two stories are reference examples and evaluation material only | |
+| Made-ahead story cards and closing lines | Made once per story part, read by a person, then published (SHARED-STORY, CARDS-PER-PART, CLOSING-AHEAD, READ-STATUS) | Blocks showing a story to users |
 | Planning prompt for goal splitting | Exists in the old web app (`AI_01a`); needs an update for step descriptions of one or two sentences and no maximum number of steps | Blocks Sprint 1 |
-| Prompts for the card stack, the background card, the stuck story, the rest conversation and the return pop-up | Specs exist but are older than the decisions | Blocks Sprint 2 and 3; `ai/DIFFERENCES.md` lists what each AI spec must change |
+| Prompts for making the story cards, the background card and the closing line ahead, and the live prompts for the stuck story, the rest conversation and the return pop-up | Specs exist but are older than the decisions | Blocks Sprint 2 and 3; `ai/DIFFERENCES.md` lists what each AI spec must change |
 | Safety: classifier design, hotline list by region, English test sets, legal and clinical review | Not done | Blocks Sprint 3 |
-| Checks on generated text (first person, no future facts, no clock times) | Exist as scripts for authored content; not yet running on live output | Blocks Sprint 2 |
+| Checks on generated text (first person, no future facts, no clock times) | Exist as scripts for authored content; must run before made-ahead content is published and on every live output | Blocks Sprint 2 |
 
 ## 6. Engineering documents
 
@@ -65,7 +68,7 @@ Not planned: analytics events and success measures. Measurement will be designed
 |---|---|---|
 | 1 | Repository, environments, continuous integration, sign-up and login, a deployed empty app, spikes | Technology check (done), repository structure, technical design (short version) |
 | 2 | Goal dialogue and the focus page with the clock | Planning prompt update, design tokens settled |
-| 3 | Story cards, background card, the AI pipeline | Card prompts updated, fallback lines, checks running on live output |
+| 3 | Story cards, background card, the AI pipeline | Card prompts updated, made-ahead cards read and published, the failure message for live calls (FAIL-SCREEN), checks running |
 | 4 | Pause and the rest conversation, safety | Stuck-story and chat prompts updated, safety design and legal review |
 | 5 | Goals, history, session record, Me | None beyond the stories |
 | 6 | Companions, Life Path, Home states | Chapter order rules in place |

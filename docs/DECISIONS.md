@@ -4,6 +4,8 @@ This file records every product decision that overrides an older document. When 
 
 Decider: Yue (product owner). Dates are the day the decision was given.
 
+The specification documents were brought in line with the decisions up to 2026-11-15 in issue #295.
+
 ## 1. Decided
 
 ### Scope and platform

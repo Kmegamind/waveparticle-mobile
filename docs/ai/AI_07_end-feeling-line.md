@@ -1,5 +1,7 @@
 Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIONS.md overrides this document where they differ.
 
+> **Status after the decisions up to 2026-11-15 (#295): this describes a live call; the closing line is now made ahead.** The closing line is made ahead once per story with the story's cards, read by a person and published with them, and shared by all users (CLOSING-AHEAD, SHARED-STORY, READ-STATUS). It is 1 to 3 sentences and at most 45 words (LEN-CARD); a line over the limit cannot be published. It tells what happened to the character that day and how he feels about it; it does not count the user's pauses and does not judge the user (END-TONE). So the run-dependent inputs below (`snags`, `mode` smooth or rough, the done tasks of one run) and the live timing in section 8 are superseded, and there is no `closing_fallback` (NO-FALLBACK-TABLES). The `closing_line` prompt is a prompt for making stories ahead. Kept as history for its voice rules.
+
 # AI-7 · End-of-story feeling line
 
 > Part of the [AI index](AI_00_index.md). **Supported by sources** (runtime design decision 4 and §4; NF3 pool §2 END row). The prompt text below is the runtime design's own draft (§4.2), lightly adapted; the canvas has no END block. Marked optional in the task, but the sources do ask for it.
@@ -23,8 +25,8 @@ One call per run, stored with the run. END also lists the user's steps as a plai
 | `persona` | Character | Persona and `tone` from the database | Fixed |
 | `story.goal` | Story | Database `notebook.goal` | Fixed |
 | `happened` | Story | `happened` of the **done** tasks only | Per run |
-| `snags` | Story | Run log: `stuck_events` with the AI-3 `back` line, or the authored pair | Per run |
-| `mode` | Rules | `smooth` or `rough` derived from the log (rough = at least one stuck event; threshold hypothesis) | Per run |
+| `snags` | Story | Superseded: the closing line is made ahead and does not depend on the user's pauses (CLOSING-AHEAD, END-TONE) | — |
+| `mode` | Rules | Superseded: no smooth or rough mode (END-TONE) | — |
 | `last_moment` | Story | The last `happened` line of the last completed task | Per run |
 | `probe_words` | Rules | Database | Fixed |
 
@@ -76,7 +78,7 @@ Plain text accepted; stored with `mode`, `source`, `rejected_rules[]`.
 
 ## 7. Fallback
 
-Retry once → `closing_fallback.smooth` or `.rough` (story level, 2 each; Trinity has them). Canyon ones do not exist yet.
+Withdrawn. A made-ahead closing line that fails the checks cannot be published; there is no `closing_fallback` (NO-FALLBACK-TABLES, CLOSING-AHEAD).
 
 ## 8. Latency and cost
 

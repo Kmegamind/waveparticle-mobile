@@ -1,5 +1,7 @@
 Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIONS.md overrides this document where they differ.
 
+> **Status after the decisions up to 2026-11-15 (#295).** The goal split stays a live call (SHARED-STORY). The prompt text below is a placeholder; the prompt the gateway sends is `docs/ai/prompts/plan_split.md` (#282), and the real planning prompt is still to come (P1). Superseded here: the feeling answer (D1e); the follow-up question to a vague goal (D1f); `n.max`, `n.hint` and story capacity (T2, no maximum number of Steps); quick replies and typed time rounded to 15 (TIME-SLIDER: a slider from 0 to 3 hours, and GOAL-TIME: a time in the goal text is shown and can be changed); writing in the goal's language (L1). When the user edits a Step's minutes, it uses −5 and +5 or a typed whole number from 1 to 1440, with the reason shown in words at either end (STEP-EDIT, #249); the "multiple of 15" limits below are placeholder behaviour, not decisions. On failure after retrying within the time limit the failure screen applies (GD-F, FAIL-SCREEN).
+
 # AI-1 · Goal split
 
 > Part of the [AI index](AI_00_index.md). **Prompt text below is new (hypothesis): no source contains the current `/api/generate-tasks` prompt, and I did not read the server code.** Behaviour rules come from NF7 v6 and the runtime design.

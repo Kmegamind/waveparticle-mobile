@@ -1,5 +1,7 @@
 Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIONS.md overrides this document where they differ.
 
+> **Status after the decisions up to 2026-11-15 (#295): superseded as a runtime design.** There are no authored state, landing, time-up or Home pools picked by code, and no bundled lines (NO-BACKUP, NO-FALLBACK-TABLES, T8). The background card and the step story cards are **made ahead once per story part** by the `step_cards` prompt, which is now a prompt for making stories ahead, not a live call (SHARED-STORY, CARDS-PER-PART). They are read by a person before publishing (READ-STATUS) and shared by all users; the app spreads the parts across the user's Steps with plain code. A step story card is 1 to 3 sentences and at most 45 words, the background card at most 70 words (LEN-CARD); every card contains something new (CARD-NEW) and never states the number of Steps (NO-STEP-COUNT). The Canyon lines below are reference examples and evaluation material only. Kept as history.
+
 # AI-2 · His status and landing lines (the spine)
 
 > Part of the [AI index](AI_00_index.md). **Runtime source: authored pools picked by code. No runtime model call.** The only model use is offline drafting (§4). Sources: NF3 content pool §2 to §4, NF5 §1 to §2 and §9, runtime design §7, canvas blocks `start` / `complete`.
@@ -47,6 +49,8 @@ The runtime picks lines. To **write** the pool, use the canvas P3b blocks with `
 1. **INTRO** (Character) · 2. **Relationship** (Character) · 3. **Goal** (Story) · 4. **You now** (Story, `entry.news`, `entry.why`) · 5. **Mood** (Character, start = focused, complete = happy) · 6. **Just landed** (complete only) · 7. **What is next** (complete, with a next step) · 8. **Last thing** (complete, last step) · 9. **Rules** · 10. **User says** (system signal) · 11. **Output**.
 
 Canyon text for the blocks (canvas wording, changed only where marked):
+
+> The INTRO block names an exact date. Exact dates are never passed to a card prompt, and the checks reject a year, date or age in a card (DATES-ADMIN-ONLY).
 
 ```
 INTRO (Character)
@@ -121,6 +125,8 @@ Left out on purpose: "This is the place" (the database says "by one account"; it
 NF5 rules R01 to R15, R17 to R19 (one-way lines): no question, no clock or duration, no "you", no "we", no hook, no praise, no source label, no stage words, no dash, no "!" or emoji, no open ending, no own name, length, sentence count, knowledge cut-off. Pool checks P01 to P03. **Leak check** (NF3): entry-state lines may not contain facts of their own slice or later. Human "next test": does anything on the screen invite the user to keep reading? (NF5 §3).
 
 ## 7. Fallback
+
+> **Withdrawn.** No bundled or ambient lines are shown (NO-BACKUP, NO-FALLBACK-TABLES). Cards are read from the published story content.
 
 F3: bundled lines (at least 2 per entry state) → story `ambient` (4 lines) → keep the line on screen. No error text, no retry, no spinner (NF6 F3). L1/L2 have no fallback need: they are pure authored data.
 

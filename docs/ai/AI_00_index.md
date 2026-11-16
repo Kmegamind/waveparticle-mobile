@@ -1,5 +1,11 @@
 Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIONS.md overrides this document where they differ.
 
+> **Status after the decisions up to 2026-11-15 (#295).** This index is a historical draft; the decision log is the rule. In particular:
+> - The background card, the step story cards and the closing line are **made ahead once per story**, cards per story part, read by a person before publishing and shared by all users (SHARED-STORY, CARDS-PER-PART, CLOSING-AHEAD, READ-STATUS). The app spreads the parts across the user's Steps with plain code (`src/lib/story/start.ts`), with no model call. AI-2 and AI-7 below are therefore not runtime calls, and the authored spine of section 2 is gone.
+> - Only the pause message (AI-3), the rest conversation (AI-4), the return pop-up and the goal split (AI-1) are generated live. No stored or pre-written text ever stands in for a failed or slow live message; after retrying within the time limit the app shows one calm message in its own voice with Retry, and the clock does not start (NO-BACKUP, FAIL-SCREEN). Every "Fallback" cell below that names an authored line or pool is withdrawn (NO-FALLBACK-TABLES).
+> - There is no third-Pause warning (F1, PAUSE-3). Safety has two tiers in the first demo (A5b). English only (L1). Prompts are built from four versioned parts (PROMPT-PARTS) and live in the database (#282).
+> - The Canyon example sheet in section 4 carries a date (16 Nov 1942); exact dates are never passed to a card prompt (DATES-ADMIN-ONLY).
+
 # AI features · index, classification, screen map, decisions
 
 > **Date**: 2026-10-29 · **Status**: v1 draft, for Yue to review · **Language**: English (prompts are English-only)
@@ -31,6 +37,8 @@ Specs: [AI-1](AI_01_goal-split.md) · [AI-2](AI_02_status-and-landing-lines.md) 
 ---
 
 ## 2. The hybrid decision (rest and status lines: authored or model?)
+
+> **Superseded.** The authored spine and the authored fallbacks are withdrawn (NO-BACKUP, SHARED-STORY, NO-FALLBACK-TABLES). Kept as history.
 
 **The conflict.** NF6 v4 says R1's line comes "from an authored pool with no model call", and the runtime design (§7.3, Q6) says rest items come "from the library, not generated". The Prompt Canvas generates rest chat and a stuck story with a model. Both are partly right.
 
@@ -121,6 +129,8 @@ Not used in his lines (it is later knowledge or an attributed quote): "This is t
 ---
 
 ## 5. Decisions needed from Yue
+
+> **Historical.** These D-AI items were settled or replaced by the decision log: D-AI-1 by SHARED-STORY and NO-BACKUP, D-AI-2 by R1 (the return pop-up), D-AI-4 by F1 and PAUSE-3, D-AI-5 by A5 and A5b, D-AI-6 by CLOSING-AHEAD, D-AI-7 by NO-BACKUP (no `rest_chat_fallback`), D-AI-9 by L1. D-AI-8 stays open as A7b.
 
 | # | Decision | Recommendation |
 |---|---|---|
