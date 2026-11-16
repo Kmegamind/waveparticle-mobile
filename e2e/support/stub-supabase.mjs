@@ -22,8 +22,13 @@
 //                                     editors get every row
 //   POST /rest/v1/rpc/save_app_text_draft | publish_app_text | roll_back_app_text
 //                                     mirror the migration, with its editor check
-//   POST /__app_text  { failReads?: boolean, reset?: boolean }   published reads without a user
-//                                     session answer 503 while failReads is on (database down)
+//                                     publish and roll back also write a publish history row (#289)
+//   POST /rest/v1/rpc/list_publish_history   the history, newest first, with the editor's email
+//                                     and is_current, for content editors only (403 otherwise)
+//   POST /__app_text  { failReads?: boolean, reset?: true | "<key>" }   published reads without a
+//                                     user session answer 503 while failReads is on (database
+//                                     down); reset puts every key (true) or one key back to the
+//                                     seed and removes the matching history rows
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import { readPromptDirectory } from "../../scripts/prompts/prompt-files.mjs";
@@ -50,23 +55,33 @@ function seededAppText() {
 }
 let appText = seededAppText();
 let appTextFailReads = false;
+/** The shared publish history (#289): { id, kind, item_key, version, action, acted_by, email, acted_at }. */
+let publishHistory = [];
+let nextHistoryId = 1;
 
-/** The same checks as private.set_published_app_text; returns an error message or null. */
-function setPublished(key, version, action) {
+/** The same checks and history insert as private.set_published_app_text (20261118000000). */
+function setPublished(key, version, action, user) {
   const rows = appText.filter((row) => row.key === key);
   const target = rows.find((row) => row.version === version);
   if (!target) return `no app text ${key} version ${version}`;
   if (target.published) return "already published";
   const current = rows.find((row) => row.published);
-  if (
-    action === "roll_back" &&
-    (!current || version >= current.version || target.published_at === null)
-  ) {
-    return "roll back needs an earlier published version";
+  if (action === "roll_back" && (!current || target.published_at === null)) {
+    return "roll back needs a version that was published before";
   }
   if (current) current.published = false;
   target.published = true;
   target.published_at = new Date().toISOString();
+  publishHistory.push({
+    id: nextHistoryId++,
+    kind: "app_text",
+    item_key: key,
+    version,
+    action,
+    acted_by: user.id,
+    acted_by_email: user.email ?? null,
+    acted_at: target.published_at,
+  });
   return null;
 }
 
@@ -174,7 +189,17 @@ createServer(async (request, response) => {
 
   if (path === "/__app_text" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
-    if (body.reset) appText = seededAppText();
+    if (body.reset === true) {
+      appText = seededAppText();
+      publishHistory = [];
+    } else if (typeof body.reset === "string") {
+      const key = body.reset;
+      appText = [
+        ...appText.filter((row) => row.key !== key),
+        ...seededAppText().filter((row) => row.key === key),
+      ];
+      publishHistory = publishHistory.filter((row) => row.item_key !== key);
+    }
     if (typeof body.failReads === "boolean") appTextFailReads = body.failReads;
     return json(response, 200, { ok: true, failReads: appTextFailReads });
   }
@@ -266,8 +291,30 @@ createServer(async (request, response) => {
       return json(response, 200, version);
     }
     const action = appTextRpc[1] === "publish_app_text" ? "publish" : "roll_back";
-    const problem = setPublished(body.text_key, body.text_version, action);
+    const problem = setPublished(body.text_key, body.text_version, action, dataset.user);
     return problem ? json(response, 400, { code: "P0001", message: problem }) : json(response, 204);
+  }
+
+  if (path === "/rest/v1/rpc/list_publish_history" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    const editor = dataset && !dataset.deleted && ["admin", "writer"].includes(dataset.contentRole);
+    if (!editor) {
+      return json(response, 403, {
+        code: "42501",
+        message: "only a content editor may read the publish history",
+      });
+    }
+    const limit = Math.min(Math.max(Number(body.row_limit ?? 100) || 100, 1), 500);
+    const rows = [...publishHistory]
+      .sort((left, right) => right.id - left.id)
+      .slice(0, limit)
+      .map((row) => ({
+        ...row,
+        is_current: appText.some(
+          (text) => text.key === row.item_key && text.version === row.version && text.published,
+        ),
+      }));
+    return json(response, 200, rows);
   }
 
   if (path === "/rest/v1/rpc/delete_my_account" && request.method === "POST") {

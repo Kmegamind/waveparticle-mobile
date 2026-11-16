@@ -69,7 +69,8 @@ test("test_287_ac3_a_writer_sees_the_admin_shell", async ({ page, context }) => 
 
   await menu.getByRole("link", { name: /Publish history/ }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Publish history" })).toBeVisible();
-  await expect(page.getByText(/#289/)).toBeVisible();
+  // #289 replaced the placeholder with the history list.
+  await expect(page.getByText(/#289/)).toHaveCount(0);
 });
 
 test("test_287_ac3_an_admin_sees_the_admin_shell", async ({ page, context }) => {

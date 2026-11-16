@@ -14,7 +14,7 @@ const PROBLEMS: Record<Exclude<AppTextWriteResult, { ok: true }>["error"], strin
 
 const noSubscription = () => () => {};
 
-const STATE_LABEL = { published: "Published", draft: "Draft", earlier: "Earlier" } as const;
+const STATE_LABEL = { published: "Published", draft: "Draft", earlier: "Earlier version" } as const;
 
 /** One key on ADM-07: its published text, a newer draft, the editor and its versions. */
 export function AppTextEditor({ row }: { row: AppTextAdminRow }) {

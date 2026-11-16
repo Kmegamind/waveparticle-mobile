@@ -75,6 +75,14 @@ edit, changes nothing; run it after every change that adds keys to `src/content/
 Without the migration or the seed the app shows the code defaults, so the screens look the same. No
 new setting is needed: published rows are read with the public key.
 
+## Publish history
+Every publish and roll back writes a row to `public.publish_history` (#289,
+`docs/decisions/0018`), shown at `/admin/publish-history`. Run the migration
+`supabase/migrations/20261118000000_publish_history.sql` after the app text migration. It also
+replaces `private.set_published_app_text` (the history insert, and roll back to any version
+published before). Until it runs, publish and roll back work without history rows and the page says
+the history could not be read; publishes made before it have no rows. No new setting is needed.
+
 ## After each deploy
 - Smoke test: open the deployed home page and confirm the product name is
   visible. To run the end-to-end test against a deployed address instead of a local

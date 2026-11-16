@@ -29,7 +29,7 @@ export type AppTextAdminRow = {
   published: { version: number; body: string } | null;
   /** The newest version newer than the published one, if any. */
   draft: { version: number; body: string } | null;
-  /** Newest first. Roll back is offered only on an earlier version that was published before. */
+  /** Newest first. Roll back is offered on every version that was published before. */
   versions: { version: number; body: string; state: AppTextVersionState; canRollBack: boolean }[];
 };
 
@@ -43,8 +43,15 @@ export function appTextAdminRows(rows: AppTextVersionRow[]): AppTextAdminRow[] {
       .filter((row) => row.key === key)
       .sort((left, right) => right.version - left.version);
     const current = versions.find((row) => row.published) ?? null;
-    const newest = versions[0] ?? null;
-    const draft = newest && (!current || newest.version > current.version) ? newest : null;
+    // The newer draft: the newest version above the published one that was never published. A
+    // version published before and rolled back past is an earlier version, not a draft (#289).
+    const draft =
+      versions.find(
+        (row) =>
+          !row.published &&
+          row.published_at === null &&
+          (!current || row.version > current.version),
+      ) ?? null;
     return {
       key,
       screen: screenOf(key),
@@ -54,14 +61,15 @@ export function appTextAdminRows(rows: AppTextVersionRow[]): AppTextAdminRow[] {
       versions: versions.map((row) => {
         const state: AppTextVersionState = row.published
           ? "published"
-          : !current || row.version > current.version
-            ? "draft"
-            : "earlier";
+          : row.published_at !== null
+            ? "earlier"
+            : "draft";
         return {
           version: row.version,
           body: row.body,
           state,
-          canRollBack: state === "earlier" && current !== null && row.published_at !== null,
+          // Any version published before can be published again (#289, docs/decisions/0018).
+          canRollBack: state === "earlier" && current !== null,
         };
       }),
     };
