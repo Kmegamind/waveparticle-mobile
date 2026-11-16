@@ -84,6 +84,19 @@ replaces `private.set_published_app_text` (the history insert, and roll back to 
 published before). Until it runs, publish and roll back work without history rows and the page says
 the history could not be read; publishes made before it have no rows. No new setting is needed.
 
+## Story cards
+The pre-written story cards (#293, `docs/decisions/0020`) live in `public.story_cards` and
+`public.story_parts`, shown at `/admin/stories`. Run the migration
+`supabase/migrations/20261120000000_story_cards.sql` after the story content migration and its
+import (#284), then load the cards as version 1, published:
+
+```sh
+node scripts/story-cards/import.mjs > story-cards-import.sql   # paste into the Supabase SQL editor
+```
+
+A card that already has a row is left alone, so running it again changes nothing. No new setting
+is needed, and the phone screens do not read these tables yet.
+
 ## After each deploy
 - Smoke test: open the deployed home page and confirm the product name is
   visible. To run the end-to-end test against a deployed address instead of a local
