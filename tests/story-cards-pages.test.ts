@@ -1,0 +1,67 @@
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+
+// #293 AC3, AC5: the ADM-06 Stories pages exist in the admin, and the phone keeps its card source.
+
+const root = path.join(import.meta.dirname, "..");
+const source = path.join(root, "src");
+const read = (file: string) => readFileSync(path.join(root, file), "utf8");
+
+function filesUnder(directory: string): string[] {
+  return readdirSync(directory).flatMap((name) => {
+    const full = path.join(directory, name);
+    if (statSync(full).isDirectory()) return filesUnder(full);
+    return /\.(ts|tsx|mjs|js)$/.test(name) ? [full] : [];
+  });
+}
+
+/** Where the stored cards may be read: the admin pages and their view code only. */
+const ADMIN_ONLY = [path.join("app", "admin"), path.join("lib", "story-cards")];
+
+describe("ADM-06 Stories (#293)", () => {
+  it("test_293_ac3_the_admin_menu_lists_stories_as_adm_06", () => {
+    const shell = read("src/app/admin/admin-shell.tsx");
+    expect(shell).toContain('{ href: "/admin/stories", id: "ADM-06", label: "Stories" }');
+  });
+
+  it("test_293_both_pages_say_the_cards_are_unreviewed_drafts", () => {
+    for (const file of ["src/app/admin/stories/page.tsx", "src/app/admin/stories/[id]/page.tsx"]) {
+      expect(read(file), file).toContain("<UnreviewedNotice />");
+    }
+    expect(read("src/app/admin/stories/unreviewed-notice.tsx")).toContain(
+      "AI-written drafts that no person has read yet",
+    );
+  });
+
+  it("test_293_ac3_pages_read_through_the_signed_in_users_own_client", () => {
+    const reader = read("src/lib/story-cards/reader.ts");
+    expect(reader).toMatch(/from\("story_cards"\)/);
+    expect(reader).toMatch(/from\("story_parts"\)/);
+    expect(reader).toMatch(/from\("stories"\)/);
+    for (const file of ["src/app/admin/stories/page.tsx", "src/app/admin/stories/[id]/page.tsx"]) {
+      expect(read(file), file).toContain("createSupabaseServerClient");
+      expect(read(file), file).not.toMatch(/service[_-]?role/i);
+    }
+  });
+
+  it("test_293_read_only_no_form_or_server_action_on_the_stories_pages", () => {
+    const files = filesUnder(path.join(source, "app", "admin", "stories"));
+    for (const file of files) {
+      const text = readFileSync(file, "utf8");
+      expect(text, file).not.toMatch(/"use server"|<form|<button|\.rpc\(|\.insert\(|\.update\(/);
+    }
+  });
+
+  it("test_293_ac5_the_phone_screens_keep_their_current_card_source", () => {
+    const offending: string[] = [];
+    for (const file of filesUnder(source)) {
+      const relative = path.relative(source, file);
+      if (ADMIN_ONLY.some((allowed) => relative.startsWith(allowed))) continue;
+      const text = readFileSync(file, "utf8");
+      if (/\bstory_cards\b|\bstory_parts\b|story-decks|story-cards\//.test(text))
+        offending.push(relative);
+    }
+    expect(offending).toEqual([]);
+  });
+});

@@ -8,7 +8,13 @@ import { SignOutButton } from "../auth/auth-form";
 // The admin shell of the content-admin prototype (#287): the product name and "Content admin", the
 // menu in groups with each page's id (decision NAMING), and Sign out. Later issues add pages here.
 const GROUPS = [
-  { heading: "Content", pages: [{ href: "/admin/app-text", id: "ADM-07", label: "App text" }] },
+  {
+    heading: "Content",
+    pages: [
+      { href: "/admin/stories", id: "ADM-06", label: "Stories" },
+      { href: "/admin/app-text", id: "ADM-07", label: "App text" },
+    ],
+  },
   {
     heading: "Review and logs",
     pages: [{ href: "/admin/publish-history", id: "ADM-12", label: "Publish history" }],
