@@ -4,10 +4,6 @@ import { describe, expect, it } from "vitest";
 import { accountPathsFor, ACCOUNT_PATHS } from "@/app/_session/paths";
 import { showsHeader, showsTabBar } from "@/app/shell-rules";
 import { isSessionPath } from "@/app/try/session-paths";
-import { seedContent } from "./support/seed-content";
-
-// The story content as the app reads it (#284), from the seed files.
-const seed = seedContent();
 
 // Issue #258: where the summary and the Life Path live, on top of the signed-in focus page (#257).
 

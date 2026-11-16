@@ -13,10 +13,13 @@ const deployed = process.env.E2E_BASE_URL;
 
 // The server's prompt reader token (#282); the stub answers get_active_prompts only to it.
 const promptsReadToken = "e2e-prompts-reader";
+// The server's story content reader key (#284); the stub answers get_story_content only to it.
+const contentReadKey = "e2e-content-reader";
 
 const appEnv = {
   NEXT_PUBLIC_SUPABASE_URL: `http://127.0.0.1:${supabaseStubPort}`,
   PROMPTS_READ_TOKEN: promptsReadToken,
+  CONTENT_READ_KEY: contentReadKey,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: "playwright-placeholder",
   // Turns on the sign-in-free test path (#208) for the e2e servers only.
   PROTOTYPE_ENABLED: "1",
@@ -48,6 +51,7 @@ export default defineConfig({
           env: {
             STUB_SUPABASE_PORT: String(supabaseStubPort),
             STUB_PROMPTS_READ_TOKEN: promptsReadToken,
+            STUB_CONTENT_READ_KEY: contentReadKey,
           },
           reuseExistingServer: !process.env.CI,
           timeout: 30_000,
