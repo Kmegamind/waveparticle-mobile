@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { getStoryContent } from "@/lib/content/repository";
 import { meView } from "@/lib/me/me-view";
 import { readProfile } from "@/lib/me/supabase-profile";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
@@ -20,11 +21,12 @@ async function MeContent() {
   const client = await createSupabaseServerClient();
   const user = await getCurrentUser(client);
   if (!user) redirect("/auth/sign-in");
-  const [progress, profile] = await Promise.all([
+  const [progress, profile, content] = await Promise.all([
     createSupabaseProgressStore(client).read(user.id, user.id),
     readProfile(client, user.id),
+    getStoryContent(),
   ]);
-  const view = meView(progress);
+  const view = meView(progress, content.companions);
   const email = user.email ?? "";
   const href = view.current
     ? continueHref({ id: view.current.goalId, status: "in_progress" })

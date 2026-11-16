@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { getStoryContent } from "@/lib/content/repository";
 import { readGoalsData } from "@/lib/goals/goals-reader";
 import { parseTab } from "@/lib/goals/goals-view";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -18,6 +19,11 @@ async function GoalsContent({ searchParams }: PageProps<"/goals">) {
   const client = await createSupabaseServerClient();
   const user = await getCurrentUser(client);
   if (!user) redirect("/auth/sign-in");
-  const [data, params] = await Promise.all([readGoalsData(client, user.id), searchParams]);
+  const [rows, content, params] = await Promise.all([
+    readGoalsData(client, user.id),
+    getStoryContent(),
+    searchParams,
+  ]);
+  const data = { ...rows, companions: content.companions };
   return <GoalsScreen data={data} initialTab={parseTab(params.tab)} />;
 }

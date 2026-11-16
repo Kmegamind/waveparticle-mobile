@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { GoalKind, GoalStatus, GoalsData } from "./goals-view";
+import type { GoalKind, GoalStatus, GoalsRows } from "./goals-view";
 
 /**
  * Reads what the Goals area shows (#73, #78, #80) through the signed-in user's own client, so
@@ -60,7 +60,7 @@ async function rows(query: Query): Promise<Row[]> {
 export async function readGoalsData(
   client: Pick<SupabaseClient, "from">,
   userId: string,
-): Promise<GoalsData> {
+): Promise<GoalsRows> {
   const from = (table: string) => client.from(table) as unknown as Query;
   const goalRows = await rows(from("goals").select("*").eq("user_id", userId));
   const goalIds = goalRows.map((row) => text(row.id));

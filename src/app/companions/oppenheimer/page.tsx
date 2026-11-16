@@ -2,9 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { PERIOD_STATUS } from "@/content/oppenheimer/periods";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
-import { lifePath } from "@/lib/summary/life-path";
+import { getStoryContent } from "@/lib/content/repository";
+import { PERIOD_STATUS, lifePath } from "@/lib/summary/life-path";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { LifePathList } from "./life-path-list";
@@ -22,7 +22,8 @@ async function LifePathContent() {
   const client = await createSupabaseServerClient();
   const user = await getCurrentUser(client);
   if (!user) redirect("/auth/sign-in");
-  const view = lifePath(await createSupabaseProgressStore(client).read(user.id, user.id));
+  const progress = await createSupabaseProgressStore(client).read(user.id, user.id);
+  const view = lifePath(await getStoryContent(), progress);
 
   return (
     <main className="app-screen life-path">

@@ -1,5 +1,6 @@
 "use server";
 
+import { getStoryContent } from "@/lib/content/repository";
 import { createServerModelGateway } from "@/lib/model-gateway/server";
 import { accountReturnLine, accountStepCards } from "@/lib/progress/account-lines";
 import { applyFocusSnapshot, type FocusSnapshot } from "@/lib/progress/focus-session";
@@ -25,14 +26,17 @@ function gateway() {
   return modelIsConfigured() ? createServerModelGateway() : null;
 }
 
+/** The story content, or null when it cannot be read (the line then fails, #284). */
+const storyContent = () => getStoryContent().catch(() => null);
+
 export async function loadAccountStepCards(request: unknown): Promise<StepCardsResponse> {
   if (!(await signedInUser())) return { status: "failed" };
-  return accountStepCards(request, gateway());
+  return accountStepCards(await storyContent(), request, gateway());
 }
 
 export async function loadAccountReturnLine(request: unknown): Promise<LineResponse> {
   if (!(await signedInUser())) return { status: "failed" };
-  return accountReturnLine(request, gateway());
+  return accountReturnLine(await storyContent(), request, gateway());
 }
 
 /**

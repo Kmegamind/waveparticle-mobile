@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { oppenheimerStories } from "@/content/oppenheimer";
+import { seedStoryRecords } from "./support/seed-content";
 import { createModelGateway, type ModelGateway } from "@/lib/model-gateway";
 import { checkCompanionLine } from "@/lib/model-gateway/checks";
 import type { ModelProvider } from "@/lib/model-gateway";
@@ -12,6 +12,10 @@ import { maxStoryCards } from "@/lib/prototype/session";
 import { startStory } from "@/lib/story/start";
 import { seedPromptSource, seedLineLimits } from "./support/seed-prompts";
 import type { CompanionKind } from "@/lib/model-gateway/types";
+import { seedContent } from "./support/seed-content";
+
+// The story content as the app reads it (#284), from the seed files.
+const seed = seedContent();
 
 // #282: the length limits are data in the prompt rows; tests use the seed's.
 const checkLine = (text: string, kind: CompanionKind, forbidTerms: string[] = []) =>
@@ -19,7 +23,7 @@ const checkLine = (text: string, kind: CompanionKind, forbidTerms: string[] = []
 
 // #43 US-AI-2 (criteria corrected 2026-11-13) and #216.
 
-const siteSearch = oppenheimerStories.find((story) => story.id === "site-search")!;
+const siteSearch = seedStoryRecords().find((story) => story.id === "site-search")!;
 const words = (count: number, word = "dust") =>
   `I ${Array.from({ length: count - 1 }, () => word).join(" ")}.`;
 
@@ -49,14 +53,14 @@ const request = (overrides: Partial<StepCardsRequest> = {}): StepCardsRequest =>
 
 describe("#216 the step-cards prompt holds no user-written text", () => {
   it("the request has no Step title: a title sent anyway never reaches the gateway", async () => {
-    const normal = normaliseStepCardsRequest({
+    const normal = normaliseStepCardsRequest(seed, {
       ...request(),
       stepTitle: "Write the methods section of my lab report",
       goal: "Finish my thesis",
     });
     expect(normal).not.toBeNull();
     const { gateway, writeStepCards } = recordingGateway();
-    await cardsForStep(normal!, gateway);
+    await cardsForStep(seed, normal!, gateway);
     const sent = JSON.stringify(writeStepCards.mock.calls);
     expect(sent).not.toContain("Write the methods section");
     expect(sent).not.toContain("Finish my thesis");
@@ -80,7 +84,7 @@ describe("#43 AC1 the Story is divided across the Plan's Steps", () => {
       plan.map((minutes) => ({ minutes })),
     );
     const { gateway, writeStepCards } = recordingGateway();
-    await cardsForStep(request({ index: 1, planMinutes: plan }), gateway);
+    await cardsForStep(seed, request({ index: 1, planMinutes: plan }), gateway);
     const input = (writeStepCards.mock.calls[0] as unknown as [Record<string, unknown>])[0];
 
     const text = (id: string) => siteSearch.facts.find((fact) => fact.id === id)!.text;
@@ -105,7 +109,7 @@ describe("#43 AC1 the Story is divided across the Plan's Steps", () => {
 
   it("asks for the background card as the first card of Step 1", async () => {
     const { gateway, writeStepCards } = recordingGateway();
-    await cardsForStep(request({ index: 0 }), gateway);
+    await cardsForStep(seed, request({ index: 0 }), gateway);
     expect(writeStepCards).toHaveBeenCalledWith(expect.objectContaining({ background: true }));
   });
 
@@ -196,7 +200,7 @@ describe("#43 AC2 CARD-NEW every card says something new", () => {
   it("the page's earlier cards reach the gateway as the run's earlier lines", async () => {
     const { gateway, writeStepCards } = recordingGateway();
     const earlierCards = ["I drove out to Jemez Springs.", "The canyon walls close in."];
-    await cardsForStep(request({ earlierCards }), gateway);
+    await cardsForStep(seed, request({ earlierCards }), gateway);
     expect(writeStepCards).toHaveBeenCalledWith(
       expect.objectContaining({ earlierLines: earlierCards }),
     );
@@ -235,22 +239,30 @@ describe("#43 AC3 generated again within the time limit, then the failure messag
     const { gateway } = {
       gateway: { writeStepCards: async () => result } as unknown as ModelGateway,
     };
-    expect(await cardsForStep(request(), gateway)).toEqual({ status: "failed" });
+    expect(await cardsForStep(seed, request(), gateway)).toEqual({ status: "failed" });
   });
 });
 
 describe("#43 the request from the page is checked (it is a public endpoint)", () => {
   it("keeps numbers and earlier cards within limits and drops everything else", () => {
-    expect(normaliseStepCardsRequest(null)).toBeNull();
+    expect(normaliseStepCardsRequest(seed, null)).toBeNull();
     expect(
-      normaliseStepCardsRequest({ index: 3, planMinutes: [10, 10], earlierCards: [] }),
+      normaliseStepCardsRequest(seed, { index: 3, planMinutes: [10, 10], earlierCards: [] }),
     ).toBeNull();
-    expect(normaliseStepCardsRequest({ index: 0, planMinutes: [], earlierCards: [] })).toBeNull();
-    expect(normaliseStepCardsRequest({ index: 0, planMinutes: [0], earlierCards: [] })).toBeNull();
     expect(
-      normaliseStepCardsRequest({ index: 0, planMinutes: Array(51).fill(10), earlierCards: [] }),
+      normaliseStepCardsRequest(seed, { index: 0, planMinutes: [], earlierCards: [] }),
     ).toBeNull();
-    const many = normaliseStepCardsRequest({
+    expect(
+      normaliseStepCardsRequest(seed, { index: 0, planMinutes: [0], earlierCards: [] }),
+    ).toBeNull();
+    expect(
+      normaliseStepCardsRequest(seed, {
+        index: 0,
+        planMinutes: Array(51).fill(10),
+        earlierCards: [],
+      }),
+    ).toBeNull();
+    const many = normaliseStepCardsRequest(seed, {
       index: 0,
       planMinutes: [10],
       earlierCards: [...Array(80).fill("I wait."), 5, "x".repeat(601)],
@@ -273,7 +285,7 @@ describe("#43 review: the prompt marks what is new in this Step (CARD-NEW)", () 
     );
     const text = (id: string) => siteSearch.facts.find((fact) => fact.id === id)!.text;
     const { gateway, writeStepCards } = recordingGateway();
-    await cardsForStep(request({ index: 1, planMinutes: plan }), gateway);
+    await cardsForStep(seed, request({ index: 1, planMinutes: plan }), gateway);
     const input = (writeStepCards.mock.calls[0] as unknown as [Record<string, string>])[0];
     for (const id of brief.steps[1].factIds) expect(input.stepFacts).toContain(text(id));
     for (const id of brief.steps[0].factIds) {
@@ -297,7 +309,7 @@ describe("#43 review: the prompt marks what is new in this Step (CARD-NEW)", () 
   it("a Step with no facts of its own is told that nothing new happens", async () => {
     const plan = Array.from({ length: 14 }, () => 5);
     const { gateway, writeStepCards } = recordingGateway();
-    await cardsForStep(request({ index: 13, planMinutes: plan }), gateway);
+    await cardsForStep(seed, request({ index: 13, planMinutes: plan }), gateway);
     const input = (writeStepCards.mock.calls[0] as unknown as [Record<string, string>])[0];
     expect(input.stepFacts).toBe("");
 

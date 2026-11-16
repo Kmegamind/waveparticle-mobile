@@ -1,4 +1,4 @@
-import type { KeySlice, OppenheimerStory, StoryFact } from "../../content/oppenheimer";
+import type { KeySlice, StoryFact, StoryFacts } from "../content/types";
 
 export type PlanStep = {
   minutes: number;
@@ -42,7 +42,7 @@ type Stretch = {
 };
 
 /** Builds the story brief for Start. No model is called. */
-export function startStory(story: OppenheimerStory, plan: PlanStep[]): StoryStart {
+export function startStory(story: StoryFacts, plan: PlanStep[]): StoryStart {
   if (plan.length < 1) {
     throw new RangeError("A plan needs at least one step");
   }
@@ -97,7 +97,7 @@ export function startStory(story: OppenheimerStory, plan: PlanStep[]): StoryStar
   };
 }
 
-function locateKeys(story: OppenheimerStory): LocatedKey[] {
+function locateKeys(story: StoryFacts): LocatedKey[] {
   const indexById = new Map(story.facts.map((fact, index) => [fact.id, index]));
   const located = story.keySlices.map((slice) => {
     const indexes = slice.factIds.map((id) => {
@@ -235,7 +235,7 @@ function evenSizes(length: number, partCount: number): number[] {
 }
 
 function instructionFor(
-  story: OppenheimerStory,
+  story: StoryFacts,
   keys: LocatedKey[],
   steps: StoryStepShare[],
   mergedKeyMoments: MergedKeyMoment[],

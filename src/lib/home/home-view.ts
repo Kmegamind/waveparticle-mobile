@@ -1,4 +1,5 @@
-import { companionById, type CompanionId } from "@/content/companions";
+import { companionById, type CompanionId } from "@/lib/content/companions";
+import type { Companion } from "@/lib/content/types";
 import type {
   AccountProgress,
   ProgressGoal,
@@ -66,7 +67,11 @@ function openSession(goal: ProgressGoal, sessions: ProgressSession[]) {
   return sessions.find((session) => session.goalId === goal.id && session.state === "open");
 }
 
-function card(goal: ProgressGoal, sessions: ProgressSession[]): HomeGoalCard {
+function card(
+  companions: Companion[],
+  goal: ProgressGoal,
+  sessions: ProgressSession[],
+): HomeGoalCard {
   const open = openSession(goal, sessions);
   const steps = byPosition(goal.steps);
   const sessionSteps = open ? byPosition(open.steps) : [];
@@ -81,35 +86,40 @@ function card(goal: ProgressGoal, sessions: ProgressSession[]): HomeGoalCard {
   return {
     goalId: goal.id,
     title: goal.title,
-    companion: companionById(open?.companionId ?? "").shortName,
+    companion: companionById(companions, open?.companionId ?? "").shortName,
     stepLabel,
     line: cards[0]?.text ?? null,
     status: "in_progress",
   };
 }
 
-function companionsOf(sessions: ProgressSession[]): CompanionId[] {
+function companionsOf(companions: Companion[], sessions: ProgressSession[]): CompanionId[] {
   const ids: CompanionId[] = [];
   for (const session of sessions) {
     if (session.state === "restarted") continue;
-    const id = companionById(session.companionId).id;
+    const id = companionById(companions, session.companionId).id;
     if (!ids.includes(id)) ids.push(id);
   }
   return ids;
 }
 
-function companionOfGoal(goal: ProgressGoal, sessions: ProgressSession[]): string {
+function companionOfGoal(
+  companions: Companion[],
+  goal: ProgressGoal,
+  sessions: ProgressSession[],
+): string {
   const own = sessions.find(
     (session) => session.goalId === goal.id && session.state !== "restarted",
   );
-  return companionById(own?.companionId ?? "").shortName;
+  return companionById(companions, own?.companionId ?? "").shortName;
 }
 
-export function homeView(progress: AccountProgress): HomeView {
+/** `companions` comes from the story content (#284). */
+export function homeView(progress: AccountProgress, allCompanions: Companion[]): HomeView {
   const { goals, sessions } = progress;
   // The first-visit card only for an account that never started a Goal (#90 AC3).
   if (goals.length === 0) return { kind: "first" };
-  const companions = companionsOf(sessions);
+  const companions = companionsOf(allCompanions, sessions);
 
   const inProgress = goals
     .filter((goal) => goal.status === "in_progress")
@@ -117,12 +127,12 @@ export function homeView(progress: AccountProgress): HomeView {
   if (inProgress.length > 0) {
     return {
       kind: "goal",
-      card: card(inProgress[0], sessions),
+      card: card(allCompanions, inProgress[0], sessions),
       companions,
       inProgress: inProgress.map((goal) => ({
         goalId: goal.id,
         title: goal.title,
-        companion: companionOfGoal(goal, sessions),
+        companion: companionOfGoal(allCompanions, goal, sessions),
       })),
     };
   }

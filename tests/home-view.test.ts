@@ -6,6 +6,10 @@ import type {
   SessionLine,
 } from "@/lib/progress/account-progress";
 import { homeView } from "@/lib/home/home-view";
+import { seedContent } from "./support/seed-content";
+
+// The story content as the app reads it (#284), from the seed files.
+const seed = seedContent();
 
 // #268: Home's state comes from the account only (#90).
 
@@ -83,9 +87,9 @@ const account = (goals: ProgressGoal[], sessions: ProgressSession[] = []): Accou
 
 describe("#268 AC1 AC2 first visit", () => {
   it("first visit only when the account has no Goal", () => {
-    expect(homeView(account([]))).toEqual({ kind: "first" });
-    expect(homeView(account([goal("a", "done", ["One"])])).kind).toBe("none");
-    expect(homeView(account([goal("a", "on_hold", ["One"])])).kind).toBe("none");
+    expect(homeView(account([]), seed.companions)).toEqual({ kind: "first" });
+    expect(homeView(account([goal("a", "done", ["One"])]), seed.companions).kind).toBe("none");
+    expect(homeView(account([goal("a", "on_hold", ["One"])]), seed.companions).kind).toBe("none");
   });
 });
 
@@ -105,6 +109,7 @@ describe("#268 AC3 the Goal card", () => {
           ]),
         ],
       ),
+      seed.companions,
     );
     if (view.kind !== "goal") throw new Error(view.kind);
     expect(view.card.goalId).toBe("newer");
@@ -118,11 +123,13 @@ describe("#268 AC3 the Goal card", () => {
       if (view.kind !== "goal") throw new Error(view.kind);
       return view.card;
     };
-    expect(card(homeView(account([g], [session(g, "open", 1)]))).stepLabel).toBe("Step 2: Draft");
-    expect(card(homeView(account([g]))).stepLabel).toBe("Step 1: Outline");
-    expect(card(homeView(account([g]))).line).toBeNull();
+    expect(card(homeView(account([g], [session(g, "open", 1)]), seed.companions)).stepLabel).toBe(
+      "Step 2: Draft",
+    );
+    expect(card(homeView(account([g]), seed.companions)).stepLabel).toBe("Step 1: Outline");
+    expect(card(homeView(account([g]), seed.companions)).line).toBeNull();
     const single = goal("s", "in_progress", ["Only"]);
-    expect(card(homeView(account([single]))).stepLabel).toBe("Only");
+    expect(card(homeView(account([single]), seed.companions)).stepLabel).toBe("Only");
   });
 
   it("his line is the newest shown card of the open session", () => {
@@ -139,6 +146,7 @@ describe("#268 AC3 the Goal card", () => {
           ]),
         ],
       ),
+      seed.companions,
     );
     if (view.kind !== "goal") throw new Error(view.kind);
     expect(view.card.line).toBe("Newest card.");
@@ -156,12 +164,12 @@ describe("#268 AC5 AC6 nothing in progress", () => {
     const older = session(done[0], "completed", 1, [
       line("k0", null, "closing", "An older line.", "2026-11-11T10:00:00.000Z"),
     ]);
-    const view = homeView(account(done, [older, finished]));
+    const view = homeView(account(done, [older, finished]), seed.companions);
     if (view.kind !== "none") throw new Error(view.kind);
     expect(view.carriedLine).toBe("I still carry the doubt.");
     expect(view.replay.map((item) => item.goalId)).toEqual(["d4", "d1", "d3"]);
 
-    const held = homeView(account([goal("h", "on_hold", ["One"])]));
+    const held = homeView(account([goal("h", "on_hold", ["One"])]), seed.companions);
     expect(held).toEqual({ kind: "none", carriedLine: null, replay: [], companions: [] });
   });
 });
@@ -180,10 +188,11 @@ describe("#268 AC3 My Companions", () => {
           },
         ],
       ),
+      seed.companions,
     );
     if (withMoriarty.kind !== "goal") throw new Error(withMoriarty.kind);
     expect(withMoriarty.companions).toEqual(["oppenheimer", "moriarty"]);
-    const restartedOnly = homeView(account([g], [session(g, "restarted", 0)]));
+    const restartedOnly = homeView(account([g], [session(g, "restarted", 0)]), seed.companions);
     if (restartedOnly.kind !== "goal") throw new Error(restartedOnly.kind);
     expect(restartedOnly.companions).toEqual([]);
   });

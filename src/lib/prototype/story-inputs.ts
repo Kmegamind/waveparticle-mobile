@@ -1,16 +1,22 @@
-import { oppenheimerStories, type OppenheimerStory } from "@/content/oppenheimer";
-import { RAW_STORY_INPUTS } from "./story-inputs-data";
+import type { OppenheimerStory, Story, StoryContent } from "@/lib/content/types";
 
 /**
- * The generation inputs of every Oppenheimer story on the test path (#254). They come from the
- * stage 0 files in docs/demo/<story-id>.stage0.json (PR #218): AI-drafted, read by nobody (their
- * `_note` says so). Only the fields that the prompts already use are read here: who he is, the
- * place, the goal sentence and the forbidden terms, plus the first "where now" line for the goal
- * dialogue opening. Stored text inside the files (authored cards, example lines, people's lines)
- * is never read, so it cannot reach the page (NO-BACKUP).
+ * The stories of a run and their inputs (#254), read from the story content snapshot
+ * (`getStoryContent()`, #284). Display texts come from the story's display fields (title, goal
+ * sentence, "Who I am", opening); the model inputs come from `story.inputs`, server side only.
+ * Stored text inside the stage 0 inputs (authored cards, example lines, people's lines) is never
+ * read, so it cannot reach the page (NO-BACKUP for the live parts).
  */
 
-export const STORY_IDS: readonly string[] = oppenheimerStories.map((story) => story.id);
+/** The Companion whose stories a run plays (Release 1: Oppenheimer). */
+export const RUN_STORIES_COMPANION = "oppenheimer";
+
+/** The run's story ids in story order. */
+export function storyIds(content: StoryContent): string[] {
+  return content.stories
+    .filter((story) => story.companionId === RUN_STORIES_COMPANION)
+    .map((story) => story.id);
+}
 
 export type StoryProfile = {
   id: string;
@@ -47,56 +53,51 @@ type StageZero = {
 
 export const OPENING_QUESTION = "What are you working on?";
 
-export function isStoryId(value: unknown): value is string {
-  return typeof value === "string" && STORY_IDS.includes(value);
+export function isStoryId(content: StoryContent, value: unknown): value is string {
+  return typeof value === "string" && storyIds(content).includes(value);
 }
 
-/** The input file as stored. For validation and tests only; the page never gets it. */
-export function rawStoryInputs(id: string): unknown {
-  const raw = RAW_STORY_INPUTS[id];
-  if (!raw) throw new Error(`no inputs for story ${id}`);
-  return raw;
-}
-
-function stageZero(id: string): StageZero {
-  return rawStoryInputs(id) as StageZero;
-}
-
-function storyRecord(id: string): OppenheimerStory {
-  const story = oppenheimerStories.find((item) => item.id === id);
+/** One story of the run; throws for an id that is not one. */
+export function storyById(content: StoryContent, id: string): Story {
+  const story = content.stories.find(
+    (item) => item.id === id && item.companionId === RUN_STORIES_COMPANION,
+  );
   if (!story) throw new Error(`no story ${id}`);
   return story;
 }
 
 const text = (value: unknown): string => (typeof value === "string" ? value.trim() : "");
 
-export function generationInputs(id: string): GenerationInputs {
-  const raw = stageZero(id);
-  const listed = Array.isArray(raw.story?.forbidTerms)
-    ? raw.story.forbidTerms.filter((term): term is string => typeof term === "string")
+type StageZeroStory = { place?: unknown; forbidTerms?: unknown };
+
+export function generationInputs(content: StoryContent, id: string): GenerationInputs {
+  const story = storyById(content, id);
+  const stage = (story.inputs.stageZero.story ?? {}) as StageZeroStory;
+  const listed = Array.isArray(stage.forbidTerms)
+    ? stage.forbidTerms.filter((term): term is string => typeof term === "string")
     : [];
   return {
-    who: text(raw.who),
-    place: text(raw.story?.place),
-    goalShort: text(raw.story?.goalShort),
-    forbidTerms: [...new Set([...storyRecord(id).forbiddenTerms, ...listed])],
+    who: story.who.trim(),
+    place: text(stage.place),
+    goalShort: story.goalShort.trim(),
+    forbidTerms: [...new Set([...story.inputs.forbiddenTerms, ...listed])],
   };
 }
 
-export function storyProfile(id: string): StoryProfile {
-  const raw = stageZero(id);
+export function storyProfile(content: StoryContent, id: string): StoryProfile {
+  const story = storyById(content, id);
   return {
     id,
-    title: storyRecord(id).title,
-    goalShort: text(raw.story?.goalShort),
-    who: text(raw.who),
-    opening: `${text(raw.whereNow?.s1)} ${OPENING_QUESTION}`,
+    title: story.title,
+    goalShort: story.goalShort.trim(),
+    who: story.who.trim(),
+    opening: story.opening,
   };
 }
 
-/** Every story's profile, in story order, for the test path's pages. */
-export function storyProfiles(): StoryProfile[] {
-  return STORY_IDS.map(storyProfile);
+/** Every story's profile, in story order, for the pages. */
+export function storyProfiles(content: StoryContent): StoryProfile[] {
+  return storyIds(content).map((id) => storyProfile(content, id));
 }
 
 /**

@@ -1,10 +1,10 @@
-import { oppenheimerStories, type OppenheimerStory } from "@/content/oppenheimer";
+import { storyFacts, type Story, type StoryContent } from "@/lib/content/types";
 import type { ModelGateway } from "@/lib/model-gateway";
 import { MODEL_GATEWAY_ENV_NAMES } from "@/lib/model-gateway/server";
 import { startStory } from "@/lib/story/start";
 import { maxStoryCards, type StepCards } from "./session";
 import { DEFAULT_STORY_ID } from "./story-ids";
-import { generationInputs, isStoryId } from "./story-inputs";
+import { generationInputs, isStoryId, storyById } from "./story-inputs";
 import { loadTestStory } from "./test-story";
 
 /**
@@ -38,7 +38,12 @@ const MAX_CARD_LENGTH = 600;
  * drop every other field (a Step title or Goal sent anyway never goes further). Null when the
  * request cannot describe a Step of a Plan.
  */
-export function normaliseStepCardsRequest(raw: unknown): StepCardsRequest | null {
+export function normaliseStepCardsRequest(
+  content: StoryContent | null,
+  raw: unknown,
+): StepCardsRequest | null {
+  // Without the story content no story can be checked, so no request is accepted (#284).
+  if (!content) return null;
   if (typeof raw !== "object" || raw === null) return null;
   const value = raw as Record<string, unknown>;
   const planMinutes = value.planMinutes;
@@ -68,7 +73,7 @@ export function normaliseStepCardsRequest(raw: unknown): StepCardsRequest | null
     .slice(-MAX_EARLIER_CARDS);
   const storyId = value.storyId === undefined ? DEFAULT_STORY_ID : value.storyId;
   // An unknown story is refused, never swapped for another one (#254 AC5).
-  if (!isStoryId(storyId)) return null;
+  if (!isStoryId(content, storyId)) return null;
   return { storyId, index, planMinutes: [...planMinutes] as number[], earlierCards };
 }
 
@@ -84,7 +89,8 @@ export function modelIsConfigured(env: Record<string, string | undefined> = proc
  * prompt gets the facts of this Step and the Steps before it, never a later Step's facts, and the
  * key lines this Step must use (US-CON-2).
  */
-function stepBrief(story: OppenheimerStory, request: StepCardsRequest) {
+function stepBrief(content: StoryContent, record: Story, request: StepCardsRequest) {
+  const story = storyFacts(record);
   const brief = startStory(
     story,
     request.planMinutes.map((minutes) => ({ minutes })),
@@ -94,7 +100,7 @@ function stepBrief(story: OppenheimerStory, request: StepCardsRequest) {
     story.facts.filter((fact) => ids.has(fact.id)).map((fact) => fact.text);
   const earlier = new Set(brief.steps.slice(0, request.index).flatMap((step) => step.factIds));
   // #254: who he is, the place and the goal sentence come from this story's own inputs.
-  const inputs = generationInputs(story.id);
+  const inputs = generationInputs(content, story.id);
   const facts = [inputs.who, `Place: ${inputs.place}.`, inputs.goalShort, ...textOf(earlier)];
   // CARD-NEW: this Step's own facts go separately, so the prompt says what is new. A Plan with
   // more Steps than the Story has facts gives the later Steps none (startStory).
@@ -114,6 +120,7 @@ function testCards(index: number): StepCards {
 }
 
 export async function cardsForStep(
+  content: StoryContent,
   request: StepCardsRequest,
   gateway: ModelGateway | null,
 ): Promise<StepCardsResponse> {
@@ -121,9 +128,8 @@ export async function cardsForStep(
   try {
     // No user-written text leaves the server (#216): only the Story side and numbers.
     const storyId = request.storyId ?? DEFAULT_STORY_ID;
-    const story = oppenheimerStories.find((item) => item.id === storyId);
-    if (!story) return { status: "failed" };
-    const { share, facts, stepFacts, mustUse, stepCount } = stepBrief(story, request);
+    const story = storyById(content, storyId);
+    const { share, facts, stepFacts, mustUse, stepCount } = stepBrief(content, story, request);
     const minutes = request.planMinutes[request.index];
     const result = await gateway.writeStepCards({
       minutes,
@@ -134,7 +140,7 @@ export async function cardsForStep(
       storyCards: maxStoryCards(minutes),
       background: request.index === 0,
       mustUse,
-      forbidTerms: generationInputs(story.id).forbidTerms,
+      forbidTerms: generationInputs(content, story.id).forbidTerms,
       // CARD-NEW: his cards already shown in this run.
       earlierLines: request.earlierCards,
     });

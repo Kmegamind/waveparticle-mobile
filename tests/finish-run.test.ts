@@ -10,6 +10,10 @@ import {
 import { generationInputs } from "@/lib/prototype/story-inputs";
 import { closingInputFor, finishAccountRun, summaryOf } from "@/lib/summary/finish-run";
 import { createMemoryRunWriter } from "@/lib/summary/run-writer";
+import { seedContent } from "./support/seed-content";
+
+// The story content as the app reads it (#284), from the seed files.
+const seed = seedContent();
 
 // Issue #258 on #257: END reads the account's completed session and adds his live closing line.
 
@@ -90,12 +94,13 @@ const deps = (store: ProgressStore, gateway: ModelGateway | null) => ({
   gateway,
   wait: async () => undefined,
   nowIso: NOW,
+  loadContent: async () => seed,
 });
 
 describe("#258 AC2 what END shows of the account's session", () => {
   it("gives the story title, the Goal, the Steps in order and the plan length", async () => {
     const store = await storeWith({});
-    expect(summaryOf(await store.read(USER, USER), SESSION)).toEqual({
+    expect(summaryOf(seed, await store.read(USER, USER), SESSION)).toEqual({
       sessionId: SESSION,
       storyTitle: "The Trade of a Theorist",
       goalTitle: GOAL_TEXT,
@@ -108,18 +113,18 @@ describe("#258 AC2 what END shows of the account's session", () => {
   it("is null for an unknown session and says when the session is not finished", async () => {
     const store = await storeWith({ sessions: [session({ state: "open" })] });
     const progress = await store.read(USER, USER);
-    expect(summaryOf(progress, OTHER)).toBeNull();
-    expect(summaryOf(progress, SESSION)?.finished).toBe(false);
+    expect(summaryOf(seed, progress, OTHER)).toBeNull();
+    expect(summaryOf(seed, progress, SESSION)?.finished).toBe(false);
   });
 });
 
 describe("#258 AC3 the closing call gets no text from the user", () => {
   it("holds the story's inputs and facts, never a Step title or the Goal", () => {
-    const closing = closingInputFor("bohr-difficulties", [10, 20], ["I open the notebook."]);
+    const closing = closingInputFor(seed, "bohr-difficulties", [10, 20], ["I open the notebook."]);
     const sent = JSON.stringify(closing);
-    expect(sent).toContain(generationInputs("bohr-difficulties").who);
+    expect(sent).toContain(generationInputs(seed, "bohr-difficulties").who);
     expect(closing.lastMoment.length).toBeGreaterThan(0);
-    expect(closing.forbidTerms).toEqual(generationInputs("bohr-difficulties").forbidTerms);
+    expect(closing.forbidTerms).toEqual(generationInputs(seed, "bohr-difficulties").forbidTerms);
     expect(sent).not.toContain(STEP_TITLE);
     expect(sent).not.toContain(GOAL_TEXT);
   });

@@ -1,25 +1,31 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { oppenheimerStories } from "@/content/oppenheimer";
 import type { ModelGateway } from "@/lib/model-gateway";
 import { cardsForStep, normaliseStepCardsRequest } from "@/lib/prototype/focus-cards";
 import { pauseMessageFor, restReplyFor, returnLineFor } from "@/lib/prototype/rest-lines";
 import { syncSession } from "@/lib/prototype/session";
 import { DEFAULT_STORY_ID, pickStory } from "@/lib/prototype/story-ids";
 import {
-  STORY_IDS,
   generationInputs,
-  rawStoryInputs,
   storyProfile,
+  storyIds,
   storyProfiles,
   validateStoryInputs,
 } from "@/lib/prototype/story-inputs";
+import { seedContent, seedStoryRecords } from "./support/seed-content";
+
+// The story content as the app reads it (#284), from the seed files.
+const seed = seedContent();
 
 // Issue #254: every Oppenheimer story on the test path generates from its own inputs.
 
 const root = path.resolve(__dirname, "..");
 const read = (file: string) => readFileSync(path.join(root, file), "utf8");
+// #284: the seed files (loaded into the database by scripts/content/import.mjs).
+const oppenheimerStories = seedStoryRecords();
+const STORY_IDS = storyIds(seed);
+const rawStoryInputs = (id: string): unknown => JSON.parse(read(`docs/demo/${id}.stage0.json`));
 const storyOf = (id: string) => oppenheimerStories.find((story) => story.id === id)!;
 
 function recordingGateway(
@@ -95,12 +101,12 @@ describe("#254 AC2 every story's input file is valid", () => {
 describe("#254 AC1 each story generates only from its own inputs", () => {
   it.each(STORY_IDS)("%s: the generation inputs are that file's who, place and goal", (id) => {
     const raw = rawStoryInputs(id) as { who: string; story: Record<string, unknown> };
-    expect(generationInputs(id)).toMatchObject({
+    expect(generationInputs(seed, id)).toMatchObject({
       who: raw.who,
       place: raw.story.place,
       goalShort: raw.story.goalShort,
     });
-    expect(generationInputs(id).forbidTerms).toEqual(
+    expect(generationInputs(seed, id).forbidTerms).toEqual(
       expect.arrayContaining([
         ...storyOf(id).forbiddenTerms,
         ...(raw.story.forbidTerms as string[]),
@@ -111,24 +117,25 @@ describe("#254 AC1 each story generates only from its own inputs", () => {
   it("the cards for bohr-difficulties use its own facts and nothing from site-search", async () => {
     const { gateway, writeStepCards } = recordingGateway();
     await cardsForStep(
+      seed,
       { storyId: "bohr-difficulties", index: 0, planMinutes: [20, 20], earlierCards: [] },
       gateway,
     );
     const input = (writeStepCards.mock.calls[0] as unknown as [Record<string, unknown>])[0];
     const sent = JSON.stringify(input);
-    expect(sent).toContain(generationInputs("bohr-difficulties").who);
+    expect(sent).toContain(generationInputs(seed, "bohr-difficulties").who);
     expect(sent).toContain(storyOf("bohr-difficulties").facts[0].text);
     expect(sent).not.toContain("Jemez");
-    expect(sent).not.toContain(generationInputs("site-search").who);
-    expect(input.forbidTerms).toEqual(generationInputs("bohr-difficulties").forbidTerms);
+    expect(sent).not.toContain(generationInputs(seed, "site-search").who);
+    expect(input.forbidTerms).toEqual(generationInputs(seed, "bohr-difficulties").forbidTerms);
   });
 
   it("his pause message for a story uses that story's inputs", async () => {
     const { gateway, writeStuckStory } = recordingGateway();
-    await pauseMessageFor({ storyId: "trinity", pauseNumber: 1, lastCard: "" }, gateway);
+    await pauseMessageFor(seed, { storyId: "trinity", pauseNumber: 1, lastCard: "" }, gateway);
     const sent = JSON.stringify(writeStuckStory.mock.calls);
-    expect(sent).toContain(generationInputs("trinity").who);
-    expect(sent).not.toContain(generationInputs("site-search").who);
+    expect(sent).toContain(generationInputs(seed, "trinity").who);
+    expect(sent).not.toContain(generationInputs(seed, "site-search").who);
   });
 
   it("no card or line source imports the chapter 8 file directly", () => {
@@ -145,7 +152,7 @@ describe("#254 AC3 a chapter starts from its own opening, goal sentence and Who 
       whereNow: { s1: string };
       story: { title: string; goalShort: string };
     };
-    const profile = storyProfile(id);
+    const profile = storyProfile(seed, id);
     expect(profile).toEqual({
       id,
       title: storyOf(id).title,
@@ -162,14 +169,22 @@ describe("#254 AC3 a chapter starts from its own opening, goal sentence and Who 
 
 describe("#254 AC4 no stored card text reaches the page when a model is configured", () => {
   it.each(STORY_IDS)("%s: profiles and generation inputs hold no stored line", (id) => {
-    const reaching = JSON.stringify([storyProfile(id), generationInputs(id), storyProfiles()]);
+    const reaching = JSON.stringify([
+      storyProfile(seed, id),
+      generationInputs(seed, id),
+      storyProfiles(seed),
+    ]);
     for (const line of storedLines(id)) expect(reaching, line).not.toContain(line);
   });
 
   it.each(STORY_IDS)("%s: a failed generation is a failure, never a stored card", async (id) => {
     const { gateway } = recordingGateway({ source: "failed", reason: "checks" });
     expect(
-      await cardsForStep({ storyId: id, index: 0, planMinutes: [20], earlierCards: [] }, gateway),
+      await cardsForStep(
+        seed,
+        { storyId: id, index: 0, planMinutes: [20], earlierCards: [] },
+        gateway,
+      ),
     ).toEqual({ status: "failed" });
   });
 
@@ -182,6 +197,7 @@ describe("#254 AC4 no stored card text reaches the page when a model is configur
       cards: ["I set the lamp down.", "I turn the ink jar."],
     });
     const result = await cardsForStep(
+      seed,
       { storyId: "bohr-difficulties", index: 0, planMinutes: [20], earlierCards: [] },
       gateway,
     );
@@ -199,7 +215,7 @@ describe("#254 AC4 no stored card text reaches the page when a model is configur
 describe("#254 AC5 the request keeps its story", () => {
   it("keeps a known story, refuses an unknown one, and reads an old request as chapter 8", () => {
     expect(
-      normaliseStepCardsRequest({
+      normaliseStepCardsRequest(seed, {
         storyId: "trinity",
         index: 0,
         planMinutes: [10],
@@ -207,10 +223,15 @@ describe("#254 AC5 the request keeps its story", () => {
       }),
     ).toMatchObject({ storyId: "trinity" });
     expect(
-      normaliseStepCardsRequest({ storyId: "nope", index: 0, planMinutes: [10], earlierCards: [] }),
+      normaliseStepCardsRequest(seed, {
+        storyId: "nope",
+        index: 0,
+        planMinutes: [10],
+        earlierCards: [],
+      }),
     ).toBeNull();
     expect(
-      normaliseStepCardsRequest({ index: 0, planMinutes: [10], earlierCards: [] }),
+      normaliseStepCardsRequest(seed, { index: 0, planMinutes: [10], earlierCards: [] }),
     ).toMatchObject({
       storyId: "site-search",
     });
@@ -230,17 +251,18 @@ describe("#254 review: the story never switches", () => {
     const writeRestReply = vi.fn();
     const writeReturnPopup = vi.fn();
     Object.assign(gateway, { writeRestReply, writeReturnPopup });
-    expect(await pauseMessageFor({ storyId: "nope", pauseNumber: 1 }, gateway)).toEqual({
+    expect(await pauseMessageFor(seed, { storyId: "nope", pauseNumber: 1 }, gateway)).toEqual({
       status: "failed",
     });
     expect(
       await restReplyFor(
+        seed,
         { storyId: "nope", message: "hello", history: [], replyIndex: 0 },
         gateway,
       ),
     ).toEqual({ status: "failed" });
     expect(
-      await returnLineFor({ storyId: "nope", trigger: "rest", awayMinutes: 3 }, gateway),
+      await returnLineFor(seed, { storyId: "nope", trigger: "rest", awayMinutes: 3 }, gateway),
     ).toEqual({ status: "failed" });
     expect(writeStuckStory).not.toHaveBeenCalled();
     expect(writeRestReply).not.toHaveBeenCalled();
@@ -258,7 +280,7 @@ describe("#254 review: the story never switches", () => {
   });
 
   it("every screen picks the story the same way: the chosen one, else chapter 8", () => {
-    const stories = storyProfiles();
+    const stories = storyProfiles(seed);
     expect(pickStory(stories, "trinity").id).toBe("trinity");
     expect(pickStory(stories, undefined).id).toBe(DEFAULT_STORY_ID);
     expect(pickStory(stories, "nope").id).toBe(DEFAULT_STORY_ID);

@@ -3,6 +3,7 @@ import path from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import { seedContent } from "./support/seed-content";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => undefined }) }));
 // Sign out builds a Supabase client while rendering; it is not what these tests check.
@@ -39,6 +40,7 @@ describe("#69 AC3 the Continue link", () => {
     // #268 replaced the Home list with the prototype's Goal card; Continue sits in that card.
     const html = renderToStaticMarkup(
       createElement(ProtectedHome, {
+        companions: seedContent().companions,
         view: {
           kind: "goal",
           card: {

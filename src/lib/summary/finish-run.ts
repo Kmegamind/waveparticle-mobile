@@ -1,12 +1,12 @@
 import { createHash } from "node:crypto";
-import { oppenheimerStories } from "@/content/oppenheimer";
+import { storyFacts, type StoryContent } from "@/lib/content/types";
 import type { ClosingLineInput, ModelGateway } from "@/lib/model-gateway";
 import type {
   AccountProgress,
   ProgressSession,
   ProgressStore,
 } from "@/lib/progress/account-progress";
-import { STORY_IDS, generationInputs, storyProfile } from "@/lib/prototype/story-inputs";
+import { generationInputs, storyById, storyIds, storyProfile } from "@/lib/prototype/story-inputs";
 import { startStory } from "@/lib/story/start";
 import type { FinishShown } from "./run";
 import { RUN_COMPANION_ID, type RunWriter } from "./run-writer";
@@ -51,14 +51,18 @@ export type SummaryView = {
   finished: boolean;
 };
 
-export function summaryOf(progress: AccountProgress, sessionId: string): SummaryView | null {
+export function summaryOf(
+  content: StoryContent,
+  progress: AccountProgress,
+  sessionId: string,
+): SummaryView | null {
   const session = ownSession(progress, sessionId);
   const goal = session && progress.goals.find((item) => item.id === session.goalId);
-  if (!session || !goal || !STORY_IDS.includes(session.storyId)) return null;
+  if (!session || !goal || !storyIds(content).includes(session.storyId)) return null;
   const steps = byPosition(goal.steps);
   return {
     sessionId,
-    storyTitle: storyProfile(session.storyId).title,
+    storyTitle: storyProfile(content, session.storyId).title,
     goalTitle: goal.title,
     steps: steps.map((step) => step.title),
     planMinutes: steps.reduce((total, step) => total + step.minutes, 0),
@@ -66,19 +70,14 @@ export function summaryOf(progress: AccountProgress, sessionId: string): Summary
   };
 }
 
-function storyRecord(storyId: string) {
-  const story = oppenheimerStories.find((item) => item.id === storyId);
-  if (!story) throw new Error(`Unknown story ${storyId}`);
-  return story;
-}
-
 /** The closing call's input: the story's own inputs and the facts of this run, no user text. */
 export function closingInputFor(
+  content: StoryContent,
   storyId: string,
   minutes: number[],
   earlierLines: string[],
 ): ClosingLineInput {
-  const story = storyRecord(storyId);
+  const story = storyFacts(storyById(content, storyId));
   const brief = startStory(
     story,
     minutes.map((value) => ({ minutes: value })),
@@ -90,7 +89,7 @@ export function closingInputFor(
       .map((fact) => fact.text)
       .join(" ");
   };
-  const inputs = generationInputs(storyId);
+  const inputs = generationInputs(content, storyId);
   const allIds = brief.steps.flatMap((step) => step.factIds);
   // A Plan with more Steps than facts leaves the last Steps without facts; the last moment is the
   // last Step that has any.
@@ -112,8 +111,13 @@ const completedOf = (progress: AccountProgress, storyId: string) =>
   );
 
 /** The next story after this one, only for its first completion and only when one exists. */
-export function nextStoryAfter(before: AccountProgress, storyId: string): string | null {
+export function nextStoryAfter(
+  content: StoryContent,
+  before: AccountProgress,
+  storyId: string,
+): string | null {
   if (completedOf(before, storyId).length > 0) return null;
+  const STORY_IDS = storyIds(content);
   const index = STORY_IDS.indexOf(storyId);
   return index >= 0 && index + 1 < STORY_IDS.length ? STORY_IDS[index + 1] : null;
 }
@@ -132,17 +136,23 @@ type Deps = {
   store: ProgressStore;
   writer: RunWriter;
   gateway: ModelGateway | null;
+  /** The story content (#284); a failed read fails the finish, never another story. */
+  loadContent: () => Promise<StoryContent>;
   nowIso: string;
   wait?: (ms: number) => Promise<void>;
 };
 
-function shownOf(session: ProgressSession, progress: AccountProgress): FinishShown {
+function shownOf(
+  content: StoryContent,
+  session: ProgressSession,
+  progress: AccountProgress,
+): FinishShown {
   const others = { ...progress, sessions: progress.sessions.filter((item) => item !== session) };
   return {
     closingLine: session.closingLine ?? "",
     // Empty only when the write of the carried line failed; END then shows the closing line alone.
     carryLine: session.lines.find((line) => line.kind === "closing")?.text ?? "",
-    next: nextStoryAfter(others, session.storyId),
+    next: nextStoryAfter(content, others, session.storyId),
   };
 }
 
@@ -167,18 +177,30 @@ export async function finishAccountRun(raw: unknown, deps: Deps): Promise<Finish
   const userId = deps.userId;
   const sessionId = sessionIdOf(raw);
   if (!sessionId) return { status: "invalid" };
+  let content: StoryContent;
+  try {
+    content = await deps.loadContent();
+  } catch {
+    return { status: "failed" };
+  }
   const progress = await deps.store.read(userId, userId);
   const session = ownSession(progress, sessionId);
   const goal = session && progress.goals.find((item) => item.id === session.goalId);
-  if (!session || !goal || session.state !== "completed" || !STORY_IDS.includes(session.storyId)) {
+  if (
+    !session ||
+    !goal ||
+    session.state !== "completed" ||
+    !storyIds(content).includes(session.storyId)
+  ) {
     return { status: "not-finished" };
   }
   // Never generated again: a reload, a retry or another tab shows the stored lines.
-  if (session.closingLine) return { status: "ok", shown: shownOf(session, progress) };
+  if (session.closingLine) return { status: "ok", shown: shownOf(content, session, progress) };
   if (!deps.gateway) return { status: "failed" };
 
   const result = await deps.gateway.writeClosingLine(
     closingInputFor(
+      content,
       session.storyId,
       byPosition(goal.steps).map((step) => step.minutes),
       shownLines(session),
@@ -188,7 +210,7 @@ export async function finishAccountRun(raw: unknown, deps: Deps): Promise<Finish
 
   try {
     const claim = await deps.writer.claimClosingLine(sessionId, result.closingLine);
-    if (claim === "taken") return await waitForOtherTab(sessionId, deps);
+    if (claim === "taken") return await waitForOtherTab(content, sessionId, deps);
     await deps.writer.insertClosingLine(sessionId, {
       id: closingRowId(sessionId),
       sessionStepId: null,
@@ -209,6 +231,7 @@ export async function finishAccountRun(raw: unknown, deps: Deps): Promise<Finish
       closingLine: result.closingLine,
       carryLine: result.carryLine,
       next: nextStoryAfter(
+        content,
         { ...progress, sessions: progress.sessions.filter((item) => item !== session) },
         session.storyId,
       ),
@@ -217,7 +240,11 @@ export async function finishAccountRun(raw: unknown, deps: Deps): Promise<Finish
 }
 
 /** Another tab stored the lines first: show them once its carried line is written too. */
-async function waitForOtherTab(sessionId: string, deps: Deps): Promise<FinishOutcome> {
+async function waitForOtherTab(
+  content: StoryContent,
+  sessionId: string,
+  deps: Deps,
+): Promise<FinishOutcome> {
   const wait = deps.wait ?? ((ms: number) => new Promise<void>((done) => setTimeout(done, ms)));
   const userId = deps.userId as string;
   let last: FinishOutcome = { status: "failed" };
@@ -225,7 +252,7 @@ async function waitForOtherTab(sessionId: string, deps: Deps): Promise<FinishOut
     const progress = await deps.store.read(userId, userId);
     const saved = ownSession(progress, sessionId);
     if (saved?.closingLine) {
-      last = { status: "ok", shown: shownOf(saved, progress) };
+      last = { status: "ok", shown: shownOf(content, saved, progress) };
       if (saved.lines.some((line) => line.kind === "closing")) return last;
     }
     await wait(WAIT_FOR_OTHER_TAB_MS);

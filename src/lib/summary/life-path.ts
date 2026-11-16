@@ -1,13 +1,20 @@
-import { PERIOD_DRAFTS } from "@/content/oppenheimer/periods";
+import type { StoryContent } from "@/lib/content/types";
 import type { AccountProgress } from "@/lib/progress/account-progress";
-import { STORY_IDS, storyProfile } from "@/lib/prototype/story-inputs";
+import { storyById, storyIds, storyProfile } from "@/lib/prototype/story-inputs";
 import { COMPANION_ID } from "./finish-run";
 
 /**
  * Oppenheimer's Life Path for one account (#258, #50, #51, CPAGE). A story is finished when the
  * account has a completed session for it; the current story is the first one in order that is not
- * finished (play is in order; new users start at chapter 1, M1). No dates, ages or counts.
+ * finished (play is in order; new users start at chapter 1, M1). No dates, ages or counts. The
+ * periods are the stories' `period` names, in story order (#284).
  */
+/**
+ * The status of the period names (PERIODS, 2026-11-12). The names are each story's `period`; they
+ * are the drafts of prototype v4 and not approved yet (docs/DECISIONS.md, open item PERIOD-NAMES).
+ */
+export const PERIOD_STATUS = "draft, not approved (PERIOD-NAMES)";
+
 export type LifePathRow = {
   id: string;
   title: string;
@@ -28,8 +35,13 @@ export type LifePathView = {
  * `startId` is the account's starting story (#97 AC2): the stories before it are "his memory" rows
  * and are never played. Under M1 every account starts at chapter 1, so there are none yet.
  */
-export function lifePath(progress: AccountProgress, startId: string = STORY_IDS[0]): LifePathView {
-  const start = Math.max(0, STORY_IDS.indexOf(startId));
+export function lifePath(
+  content: StoryContent,
+  progress: AccountProgress,
+  startId?: string,
+): LifePathView {
+  const STORY_IDS = storyIds(content);
+  const start = Math.max(0, STORY_IDS.indexOf(startId ?? STORY_IDS[0]));
   const firstLine = new Map<string, string>();
   for (const session of progress.sessions) {
     if (session.state !== "completed" || session.companionId !== COMPANION_ID) continue;
@@ -37,7 +49,7 @@ export function lifePath(progress: AccountProgress, startId: string = STORY_IDS[
   }
   const currentId = STORY_IDS.slice(start).find((id) => !firstLine.has(id)) ?? null;
   const row = (id: string): LifePathRow => {
-    const profile = storyProfile(id);
+    const profile = storyProfile(content, id);
     if (firstLine.has(id)) {
       return { id, title: profile.title, state: "finished", line: firstLine.get(id) || null };
     }
@@ -48,13 +60,23 @@ export function lifePath(progress: AccountProgress, startId: string = STORY_IDS[
       return { id, title: profile.title, state: "current", line: profile.goalShort };
     return { id, title: profile.title, state: "later", line: null };
   };
-  return {
-    periods: PERIOD_DRAFTS.map((period) => ({ name: period.name, rows: period.storyIds.map(row) })),
-    currentId,
-  };
+  const periods: LifePathView["periods"] = [];
+  for (const id of STORY_IDS) {
+    const name = storyById(content, id).period;
+    const last = periods.at(-1);
+    if (last && last.name === name) last.rows.push(row(id));
+    else periods.push({ name, rows: [row(id)] });
+  }
+  return { periods, currentId };
 }
 
-/** The story a new signed-in session plays (#258 AC10): the current one, or the last story. */
-export function storyForNewSession(progress: AccountProgress): string {
-  return lifePath(progress).currentId ?? STORY_IDS[STORY_IDS.length - 1];
+/**
+ * The story a new signed-in session plays (#258 AC10): the current one, or the last story. Null
+ * when the run has no stories at all; then no session is opened.
+ */
+export function storyForNewSession(
+  content: StoryContent,
+  progress: AccountProgress,
+): string | null {
+  return lifePath(content, progress).currentId ?? storyIds(content).at(-1) ?? null;
 }

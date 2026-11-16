@@ -1,5 +1,5 @@
-import { oppenheimerStories } from "@/content/oppenheimer";
-import { storyProfile } from "@/lib/prototype/story-inputs";
+import type { Companion, StoryContent } from "@/lib/content/types";
+import { isStoryId, storyById } from "@/lib/prototype/story-inputs";
 import type { AccountProgress } from "@/lib/progress/account-progress";
 import { doneSteps, historyEntry } from "./me-view";
 
@@ -21,10 +21,11 @@ export type SessionRecordView = {
 export function sessionRecord(
   progress: AccountProgress,
   sessionId: string,
+  companions: Companion[],
 ): SessionRecordView | null {
   const session = progress.sessions.find((item) => item.id === sessionId);
   if (!session) return null;
-  const entry = historyEntry(progress, session);
+  const entry = historyEntry(progress, session, companions);
   if (!entry) return null;
   return {
     goalTitle: entry.goalTitle,
@@ -47,12 +48,16 @@ export type StoryRecordView = {
 
 const CARD_KINDS = new Set(["background", "story_card"]);
 
-export function storyRecord(progress: AccountProgress, sessionId: string): StoryRecordView | null {
+export function storyRecord(
+  content: StoryContent,
+  progress: AccountProgress,
+  sessionId: string,
+): StoryRecordView | null {
   const session = progress.sessions.find((item) => item.id === sessionId);
   if (!session || session.state !== "completed") return null;
   const goal = progress.goals.find((item) => item.id === session.goalId);
-  const story = oppenheimerStories.find((item) => item.id === session.storyId);
-  if (!goal || !story) return null;
+  if (!goal || !isStoryId(content, session.storyId)) return null;
+  const story = storyById(content, session.storyId);
   const steps = [...session.steps]
     .sort((left, right) => left.position - right.position)
     .map((sessionStep) => ({
@@ -63,11 +68,11 @@ export function storyRecord(progress: AccountProgress, sessionId: string): Story
         .map((line) => line.text),
     }));
   return {
-    storyTitle: storyProfile(story.id).title,
+    storyTitle: story.title,
     steps,
     closingLine: session.closingLine,
     keyMoments: session.mergedKeyMoments
-      .map((index) => story.keySlices[index]?.keyLine)
+      .map((index) => story.inputs.keySlices[index]?.keyLine)
       .filter((text): text is string => typeof text === "string"),
   };
 }
