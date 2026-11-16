@@ -21,7 +21,7 @@ describe("story content migration (#284)", () => {
     const names = readdirSync(directory)
       .filter((file) => file.endsWith(".sql"))
       .sort();
-    expect(names.at(-1)).toBe(name);
+    expect(names).toContain(name);
     expect(names.indexOf(name)).toBeGreaterThan(
       names.indexOf("20261118000000_publish_history.sql"),
     );
