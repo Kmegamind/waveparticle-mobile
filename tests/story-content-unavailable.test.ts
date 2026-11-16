@@ -40,7 +40,7 @@ describe("story content unavailable (#284)", () => {
       history: [],
       replyIndex: 0,
     };
-    const back = { storyId: "site-search", trigger: "resume" as const, awayMinutes: 5 };
+    const back = { storyId: "site-search", trigger: "rest" as const, awayMinutes: 5 };
     expect(await pauseMessageFor(null, pause, null)).toEqual({ status: "failed" });
     expect(await restReplyFor(null, rest, null)).toEqual({ status: "failed" });
     expect(await returnLineFor(null, back, null)).toEqual({ status: "failed" });
