@@ -60,6 +60,23 @@ describe("story content unavailable (#284)", () => {
     expect(await accountRestReply(null, crisis, gateway)).toEqual({ status: "crisis" });
   });
 
+  it("test_284_a_crisis_message_never_waits_for_the_content_read", async () => {
+    // Review finding: during an outage the read takes up to its time limit; the gate comes first.
+    const crisis = {
+      storyId: "site-search",
+      message: "I want to kill myself",
+      history: [],
+      replyIndex: 0,
+    };
+    const load = vi.fn(async () => seedContent());
+    expect(await restReplyFor(load, crisis, gateway)).toEqual({ status: "crisis" });
+    expect(await accountRestReply(load, crisis, gateway)).toEqual({ status: "crisis" });
+    expect(load).not.toHaveBeenCalled();
+    const calm = { ...crisis, message: "How is the work going?" };
+    expect((await restReplyFor(load, calm, gateway)).status).toBe("ok");
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
   it("test_284_finishing_a_run_fails_without_content_and_calls_no_model", async () => {
     const read = vi.fn();
     const writeClosingLine = vi.fn();

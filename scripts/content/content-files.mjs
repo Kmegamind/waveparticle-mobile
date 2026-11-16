@@ -36,9 +36,26 @@ const stageZeroFile = (id) => path.join(CONTENT_FILES.stageZeroDirectory, `${id}
 
 const openingOf = (place) => `${place} ${OPENING_QUESTION}`;
 
-function placeOf(opening) {
+/**
+ * The opening place of a stored opening. The files keep the place only and the import adds the
+ * question back, so an opening without the question cannot be written to the files unchanged.
+ */
+function placeOf(storyId, opening) {
   const suffix = ` ${OPENING_QUESTION}`;
-  return opening.endsWith(suffix) ? opening.slice(0, -suffix.length) : opening;
+  if (!opening.endsWith(suffix)) {
+    throw new Error(`${storyId}: the opening must end with "${suffix}"`);
+  }
+  return opening.slice(0, -suffix.length);
+}
+
+/** The stage 0 parts the export writes the display texts into; named when one is missing. */
+function stageZeroParts(storyId, stageZero) {
+  for (const part of ["story", "whereNow"]) {
+    const value = stageZero?.[part];
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      throw new Error(`${storyId}: stage_zero has no ${part} object`);
+    }
+  }
 }
 
 /**
@@ -97,31 +114,41 @@ export function readContentRows(root = defaultRoot) {
 }
 
 const byPosition = (left, right) => left.position - right.position;
-const bySequence = (left, right) => left.sequence - right.sequence;
+
+/** Stories in Companion order, then story order, as the database functions sort them. */
+function inStoryOrder(companions, stories) {
+  const position = new Map(companions.map((row) => [row.id, row.position]));
+  return [...stories].sort(
+    (left, right) =>
+      (position.get(left.companion_id) ?? 0) - (position.get(right.companion_id) ?? 0) ||
+      left.sequence - right.sequence,
+  );
+}
 
 /**
  * What `get_story_content` returns: the Companions and, for each story, its display fields and
- * the model inputs. No date and no provenance (DATES-ADMIN-ONLY).
+ * the model inputs. No date and no provenance (DATES-ADMIN-ONLY). A story without an inputs row
+ * is left out, so one unfinished row in the table editor does not stop every page.
  */
 export function appDocument(rows) {
   const inputsOf = new Map(rows.storyInputs.map((row) => [row.story_id, row]));
   return {
     companions: [...rows.companions].sort(byPosition),
-    stories: [...rows.stories].sort(bySequence).map((story) => {
-      const inputs = inputsOf.get(story.id);
-      return {
-        ...story,
-        inputs: inputs
-          ? {
-              goal: inputs.goal,
-              facts: inputs.facts,
-              forbidden_terms: inputs.forbidden_terms,
-              key_moments: inputs.key_moments,
-              stage_zero: inputs.stage_zero,
-            }
-          : null,
-      };
-    }),
+    stories: inStoryOrder(rows.companions, rows.stories)
+      .filter((story) => inputsOf.has(story.id))
+      .map((story) => {
+        const inputs = inputsOf.get(story.id);
+        return {
+          ...story,
+          inputs: {
+            goal: inputs.goal,
+            facts: inputs.facts,
+            forbidden_terms: inputs.forbidden_terms,
+            key_moments: inputs.key_moments,
+            stage_zero: inputs.stage_zero,
+          },
+        };
+      }),
   };
 }
 
@@ -129,7 +156,7 @@ export function appDocument(rows) {
 export function exportDocument(rows) {
   return {
     companions: [...rows.companions].sort(byPosition),
-    stories: [...rows.stories].sort(bySequence),
+    stories: inStoryOrder(rows.companions, rows.stories),
     story_inputs: [...rows.storyInputs],
   };
 }
@@ -155,6 +182,13 @@ export function contentFilesOf(document) {
   for (const story of document.stories) {
     const inputs = inputsOf.get(story.id);
     if (!inputs) throw new Error(`story ${story.id} has no inputs`);
+    // The files hold Oppenheimer's stories only; another Companion's stories need files of their own.
+    if (story.companion_id !== STORIES_COMPANION) {
+      throw new Error(
+        `story ${story.id} belongs to ${story.companion_id}; only ${STORIES_COMPANION}'s stories have files`,
+      );
+    }
+    stageZeroParts(story.id, inputs.stage_zero);
     const last = periods.at(-1);
     if (last && last.name === story.period) last.storyIds.push(story.id);
     else periods.push({ name: story.period, storyIds: [story.id] });
@@ -174,7 +208,7 @@ export function contentFilesOf(document) {
     stage.story.title = story.title;
     stage.story.date = inputs.date;
     stage.story.goalShort = story.goal_short;
-    stage.whereNow.s1 = placeOf(story.opening);
+    stage.whereNow.s1 = placeOf(story.id, story.opening);
     files.set(stageZeroFile(story.id), stage);
   }
   files.set(CONTENT_FILES.stories, records);

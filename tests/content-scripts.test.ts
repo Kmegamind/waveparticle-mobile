@@ -30,10 +30,18 @@ describe("story content scripts (#284)", () => {
   it("test_284_import_quotes_text_that_contains_quotes_and_dollar_signs", () => {
     const rows = readContentRows(root);
     rows.stories[0].title = "It's $content$ and $$ here";
+    expect(importSql(rows)).toContain("'It''s $content$ and $$ here'");
+  });
+
+  it("test_284_import_text_ending_like_a_quote_marker_cannot_end_the_string", () => {
+    // Review finding: "evil $content" next to a $content$ marker closed the string early.
+    const rows = readContentRows(root);
+    rows.stories[0].title = "evil $content";
+    rows.companions[0].line = "x'); select 1; --";
     const sql = importSql(rows);
-    const tag = sql.match(/\$(content_\d+)\$It's/)?.[1];
-    expect(tag).toBeDefined();
-    expect(sql).toContain(`$${tag}$It's $content$ and $$ here$${tag}$`);
+    expect(sql).toContain("'evil $content'");
+    expect(sql).toContain("'x''); select 1; --'");
+    expect(sql).not.toMatch(/\$content\$/);
   });
 
   it("test_284_import_refuses_a_story_without_a_companion", () => {

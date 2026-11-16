@@ -93,7 +93,8 @@ create table private.content_reader (
 );
 
 -- Everything the app needs, for the server only: without a known reader key it returns null.
--- Companions in display order; stories in companion and story order, each with its inputs.
+-- Companions in display order; stories in companion and story order, each with its inputs. A
+-- story that has no inputs row yet is left out.
 create function public.get_story_content(reader_key text)
 returns json
 language sql
@@ -113,14 +114,15 @@ as $$
       select json_agg(json_build_object(
         'id', s.id, 'companion_id', s.companion_id, 'sequence', s.sequence, 'title', s.title,
         'period', s.period, 'goal_short', s.goal_short, 'who', s.who, 'opening', s.opening,
-        'inputs', case when i.story_id is null then null else json_build_object(
+        'inputs', json_build_object(
           'goal', i.goal, 'facts', i.facts, 'forbidden_terms', i.forbidden_terms,
           'key_moments', i.key_moments, 'stage_zero', i.stage_zero
-        ) end
+        )
       ) order by c.position, s.sequence)
       from public.stories s
       join public.companions c on c.id = s.companion_id
-      left join public.story_inputs i on i.story_id = s.id
+      -- A story without its inputs row yet is left out, so the other stories still load.
+      join public.story_inputs i on i.story_id = s.id
     ), '[]'::json)
   )
   where exists (

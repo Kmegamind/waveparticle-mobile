@@ -18,9 +18,11 @@ export async function loadFocusPlan(
 ): Promise<{ plan: AccountFocusPlan; goalLine: string } | null> {
   const store = createSupabaseProgressStore(client);
   const [progress, content] = await Promise.all([store.read(userId, userId), getStoryContent()]);
+  // A new session plays the Life Path's current story (#258); an open one keeps its own.
+  const storyId = storyForNewSession(content, progress);
+  if (!storyId) return null;
   const opened = openFocusSession(progress, goalId, {
-    // A new session plays the Life Path's current story (#258); an open one keeps its own.
-    storyId: storyForNewSession(content, progress),
+    storyId,
     newId: () => crypto.randomUUID(),
   });
   if (!opened) return null;

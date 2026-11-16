@@ -6,10 +6,14 @@ import type { Companion } from "./types";
  */
 export type CompanionId = string;
 
-/**
- * The Companion with this id. Sessions stored before companions existed read as the first
- * Companion (Oppenheimer, position 1).
- */
+/** Sessions stored before companions existed belong to Oppenheimer. */
+export const DEFAULT_COMPANION_ID = "oppenheimer";
+
+/** The Companion with this id; an unknown or missing id reads as Oppenheimer. */
 export function companionById(companions: Companion[], id: string): Companion {
-  return companions.find((companion) => companion.id === id) ?? companions[0];
+  return (
+    companions.find((companion) => companion.id === id) ??
+    companions.find((companion) => companion.id === DEFAULT_COMPANION_ID) ??
+    companions[0]
+  );
 }

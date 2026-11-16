@@ -15,11 +15,14 @@ import { readContentRows } from "./content-files.mjs";
 
 const defaultRoot = fileURLToPath(new URL("../..", import.meta.url));
 
-/** A dollar-quoted SQL string whose marker does not occur in the text. */
+/**
+ * A standard SQL string: single quotes, each quote doubled. Postgres reads backslashes literally
+ * (standard_conforming_strings is on by default), so no value can end the string early. A NUL
+ * character cannot be stored in Postgres text and is refused.
+ */
 function quote(text) {
-  let tag = "$content$";
-  for (let n = 1; text.includes(tag); n += 1) tag = `$content_${n}$`;
-  return `${tag}${text}${tag}`;
+  if (text.includes("\0")) throw new Error("a text contains a NUL character");
+  return `'${text.replaceAll("'", "''")}'`;
 }
 
 const literal = (value) => {
@@ -67,6 +70,7 @@ export function importSql(rows) {
   return [
     "-- Story content from src/content and docs/demo (scripts/content/import.mjs, #284).",
     "begin;",
+    "set local standard_conforming_strings = on;",
     // Positions and sequences are checked at commit, so a reordering can be imported.
     "set constraints all deferred;",
     ...rows.companions.map((row) => upsert("companions", "id", row)),

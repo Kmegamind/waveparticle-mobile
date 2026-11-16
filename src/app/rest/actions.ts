@@ -30,5 +30,5 @@ export async function loadAccountPauseMessage(request: unknown): Promise<LineRes
 /** His reply on the rest page. The safety gate runs first, before any model call. */
 export async function loadAccountRestReply(request: unknown): Promise<RestReplyResponse> {
   if (!(await isSignedIn())) return { status: "failed" };
-  return accountRestReply(await storyContent(), request, gateway());
+  return accountRestReply(storyContent, request, gateway());
 }

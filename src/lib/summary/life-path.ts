@@ -70,7 +70,13 @@ export function lifePath(
   return { periods, currentId };
 }
 
-/** The story a new signed-in session plays (#258 AC10): the current one, or the last story. */
-export function storyForNewSession(content: StoryContent, progress: AccountProgress): string {
-  return lifePath(content, progress).currentId ?? storyIds(content).at(-1) ?? "";
+/**
+ * The story a new signed-in session plays (#258 AC10): the current one, or the last story. Null
+ * when the run has no stories at all; then no session is opened.
+ */
+export function storyForNewSession(
+  content: StoryContent,
+  progress: AccountProgress,
+): string | null {
+  return lifePath(content, progress).currentId ?? storyIds(content).at(-1) ?? null;
 }

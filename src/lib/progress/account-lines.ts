@@ -14,6 +14,7 @@ import {
   pauseMessageFor,
   restReplyFor,
   returnLineFor,
+  type ContentSource,
   type LineResponse,
   type RestReplyResponse,
 } from "@/lib/prototype/rest-lines";
@@ -56,7 +57,7 @@ export async function accountPauseMessage(
 }
 
 export async function accountRestReply(
-  content: StoryContent | null,
+  content: ContentSource,
   raw: unknown,
   gateway: ModelGateway | null,
 ): Promise<RestReplyResponse> {

@@ -137,3 +137,25 @@ describe("story content seed (#284)", () => {
     expect(file.story.goalShort).toBe("An edited goal sentence.");
   });
 });
+
+describe("story content export guards (#284 review)", () => {
+  it("test_284_export_refuses_an_opening_without_the_question", () => {
+    const document = exportDocument(readContentRows(root));
+    document.stories[0].opening = "Los Alamos, late. What is on your mind?";
+    expect(() => writeContentFiles(document, copyOfSeed())).toThrow(
+      /bohr-difficulties: the opening must end with " What are you working on\?"/,
+    );
+  });
+
+  it("test_284_export_refuses_a_story_of_another_companion_until_it_has_its_own_files", () => {
+    const document = exportDocument(readContentRows(root));
+    document.stories[0].companion_id = "moriarty";
+    expect(() => writeContentFiles(document, copyOfSeed())).toThrow(/bohr-difficulties.*moriarty/);
+  });
+
+  it("test_284_export_names_the_story_when_its_stage_zero_lost_a_part", () => {
+    const document = exportDocument(readContentRows(root));
+    delete (document.story_inputs[0].stage_zero as Record<string, unknown>).whereNow;
+    expect(() => writeContentFiles(document, copyOfSeed())).toThrow(/stage_zero.*whereNow/);
+  });
+});

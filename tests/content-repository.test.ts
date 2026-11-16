@@ -46,8 +46,17 @@ describe("parseStoryContent (#284)", () => {
     expect(() => parseStoryContent(null)).toThrow();
     expect(() => parseStoryContent({ companions: [], stories: [] })).toThrow(/no Companions/);
     const broken = seedDocument();
-    (broken.stories[0] as { inputs: unknown }).inputs = null;
+    (broken.stories[0] as { inputs: unknown }).inputs = { facts: "not a list" };
     expect(() => parseStoryContent(broken)).toThrow(/bohr-difficulties/);
+  });
+
+  it("test_284_a_story_without_inputs_is_left_out_not_every_page_failed", () => {
+    // Review finding: a story row added before its inputs row must not stop Home, Goals and Me.
+    const partial = seedDocument();
+    (partial.stories[0] as { inputs: unknown }).inputs = null;
+    const content = parseStoryContent(partial);
+    expect(content.stories.map((story) => story.id)).not.toContain("bohr-difficulties");
+    expect(content.stories).toHaveLength(25);
   });
 });
 

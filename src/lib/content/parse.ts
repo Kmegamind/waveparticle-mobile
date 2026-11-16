@@ -3,7 +3,8 @@ import type { Companion, KeySlice, Story, StoryContent, StoryFact } from "./type
 /**
  * Turns the document `get_story_content` returns (supabase/migrations/20261119000000_story_content.sql)
  * into the app's snapshot. Anything that is not story content throws: the read then counts as
- * failed, and no partial content is used.
+ * failed, and no partial content is used. The one exception is a story whose inputs row does not
+ * exist yet (`inputs` null): it is left out, so one unfinished row does not stop every page.
  */
 
 type Row = Record<string, unknown>;
@@ -85,7 +86,9 @@ export function parseStoryContent(document: unknown): StoryContent {
   if (!Array.isArray(document.stories)) throw new Error("story content has no story list");
   const companions = document.companions.map(companionOf);
   const known = new Set(companions.map((companion) => companion.id));
-  const stories = document.stories.map(storyOf);
+  const stories = document.stories
+    .filter((story) => !(isRow(story) && story.inputs === null))
+    .map(storyOf);
   for (const story of stories) {
     if (!known.has(story.companionId)) throw new Error(`story ${story.id}: unknown Companion`);
   }

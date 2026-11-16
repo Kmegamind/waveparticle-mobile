@@ -109,13 +109,23 @@ export async function pauseMessageFor(
   return ask(() => gateway.writeStuckStory(input));
 }
 
+/**
+ * The story content for a rest reply: the snapshot, or a loader that is called only after the
+ * safety gate, so a crisis message never waits for a content read (#284).
+ */
+export type ContentSource = StoryContent | null | (() => Promise<StoryContent | null>);
+
+const contentOf = async (source: ContentSource) =>
+  typeof source === "function" ? source() : source;
+
 export async function restReplyFor(
-  content: StoryContent | null,
+  source: ContentSource,
   request: { storyId?: string; message: string; history: RestMessage[]; replyIndex: number },
   gateway: ModelGateway | null,
 ): Promise<RestReplyResponse> {
   // The safety gate runs first: a crisis message is never sent to the model (US-SAF-1).
   if (gateFreeText(request.message).action === "crisis-page") return { status: "crisis" };
+  const content = await contentOf(source);
   const storyId = storyOf(content, request.storyId);
   if (content === null || storyId === null) return { status: "failed" };
   if (!gateway) {

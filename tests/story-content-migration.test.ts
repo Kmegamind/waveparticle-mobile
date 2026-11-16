@@ -93,6 +93,12 @@ describe("story content migration (#284)", () => {
     }
   });
 
+  it("test_284_the_app_reader_leaves_out_a_story_without_inputs", () => {
+    const body = functionBody("get_story_content");
+    expect(body).toMatch(/\bjoin public\.story_inputs i on i\.story_id = s\.id/);
+    expect(body).not.toMatch(/left join public\.story_inputs/);
+  });
+
   it("test_284_the_app_reader_never_returns_the_date_or_provenance", () => {
     const body = functionBody("get_story_content");
     expect(body).not.toMatch(/\bdate\b/);
