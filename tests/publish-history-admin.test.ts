@@ -133,7 +133,8 @@ describe("ADM-12 rows (#289)", () => {
     expect(actions).not.toMatch(/service_role|SERVICE_ROLE/);
     const page = read("src/app/admin/publish-history/page.tsx");
     expect(page).toContain("readPublishHistory(");
-    expect(page).not.toMatch(/#289/);
+    // The placeholder text is gone.
+    expect(page).not.toContain("once issue #289");
   });
 });
 

@@ -108,7 +108,8 @@ test("test_289_ac3_an_account_without_a_role_cannot_read_the_history", async ({
   await expect(page.getByRole("article")).toHaveCount(0);
 
   // The database itself refuses the list to a no-role account and to anon.
-  for (const headers of [{ authorization: `Bearer ${account.token}` }, {}]) {
+  const callers: Record<string, string>[] = [{ authorization: `Bearer ${account.token}` }, {}];
+  for (const headers of callers) {
     const answer = await fetch(`${STUB_SUPABASE}/rest/v1/rpc/list_publish_history`, {
       method: "POST",
       headers: { ...headers, "content-type": "application/json" },

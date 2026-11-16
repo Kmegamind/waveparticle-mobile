@@ -3547,6 +3547,41 @@ a {
   min-height: 1lh;
 }
 
+/* ADM-12 Publish history (issue 289): one card per publish or roll back, like the App text cards. */
+.admin-history-facts {
+  display: grid;
+  gap: var(--space-row-after) var(--space-control-gap);
+  grid-template-columns: auto minmax(0, 1fr);
+  margin: 0;
+}
+
+.admin-history-facts dt {
+  color: var(--ink-2);
+  font-size: var(--text-overline-size);
+  font-weight: 700;
+  letter-spacing: var(--overline-tracking);
+  text-transform: uppercase;
+}
+
+.admin-history-facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-history-action {
+  display: grid;
+  gap: var(--space-row-after);
+  justify-items: start;
+}
+
+.admin-history-note {
+  color: var(--ink-2);
+  font-size: var(--text-caption-size);
+  font-weight: 700;
+  margin: 0;
+}
+
 @media (min-width: 56.25rem) {
   .admin-shell {
     grid-template-columns: var(--admin-rail-width) minmax(0, 1fr);
