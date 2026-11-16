@@ -3,7 +3,13 @@ import path from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { COMPANIONS, companionById } from "@/content/companions";
+import { companionById as byId } from "@/lib/content/companions";
+import { seedContent } from "./support/seed-content";
+
+// The story content as the app reads it (#284), from the seed files.
+const seed = seedContent();
+const COMPANIONS = seed.companions;
+const companionById = (id: string) => byId(COMPANIONS, id);
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => undefined }) }));
 const { CompanionsList, enterFor, reasonFor } = await import("@/app/companions/companions-list");
@@ -38,7 +44,7 @@ describe("#268 AC7 companion data", () => {
 
 describe("#268 AC7 the Companions list (COMP)", () => {
   it("Companions shows one radio per companion and Enter starts disabled", () => {
-    const html = renderToStaticMarkup(createElement(CompanionsList));
+    const html = renderToStaticMarkup(createElement(CompanionsList, { companions: COMPANIONS }));
     expect(html).toContain('role="radiogroup"');
     expect(html.match(/role="radio"/g)).toHaveLength(2);
     expect(html).toContain("J. Robert Oppenheimer");
@@ -49,13 +55,13 @@ describe("#268 AC7 the Companions list (COMP)", () => {
   });
 
   it("Enter on Oppenheimer opens his Life Path", () => {
-    expect(enterFor("oppenheimer")).toBe("/companions/oppenheimer");
-    expect(enterFor(null)).toBeNull();
-    expect(reasonFor("oppenheimer")).toBeNull();
+    expect(enterFor(seed.companions, "oppenheimer")).toBe("/companions/oppenheimer");
+    expect(enterFor(seed.companions, null)).toBeNull();
+    expect(reasonFor(seed.companions, "oppenheimer")).toBeNull();
   });
 
   it("Moriarty keeps Enter disabled with a visible reason", () => {
-    expect(enterFor("moriarty")).toBeNull();
-    expect(reasonFor("moriarty")).toBe("His stories are not ready yet.");
+    expect(enterFor(seed.companions, "moriarty")).toBeNull();
+    expect(reasonFor(seed.companions, "moriarty")).toBe("His stories are not ready yet.");
   });
 });

@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
+import { getStoryContent } from "@/lib/content/repository";
 import { storyRecord } from "@/lib/me/records";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -23,7 +24,7 @@ async function StoryRecordContent({
   const { session } = await params;
   const id = decodeURIComponent(session);
   const progress = await createSupabaseProgressStore(client).read(user.id, user.id);
-  const record = storyRecord(progress, id);
+  const record = storyRecord(await getStoryContent(), progress, id);
   if (!record) notFound();
   return (
     <main className="app-screen me-page">

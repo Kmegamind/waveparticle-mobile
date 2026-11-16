@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
+import { getStoryContent } from "@/lib/content/repository";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { CompanionsList } from "./companions-list";
@@ -20,7 +21,7 @@ async function CompanionsContent() {
     <main className="app-screen comp-page">
       <h1>Companions</h1>
       <p className="comp-subtitle">Choose who sits at the desk with you.</p>
-      <CompanionsList />
+      <CompanionsList companions={(await getStoryContent()).companions} />
     </main>
   );
 }

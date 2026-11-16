@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { PERIOD_DRAFTS, PERIOD_STATUS } from "@/content/oppenheimer/periods";
 import type { AccountProgress, ProgressSession } from "@/lib/progress/account-progress";
-import { STORY_IDS, storyProfile } from "@/lib/prototype/story-inputs";
-import { lifePath, storyForNewSession } from "@/lib/summary/life-path";
+import { storyIds, storyProfile } from "@/lib/prototype/story-inputs";
+import { PERIOD_STATUS, lifePath, storyForNewSession } from "@/lib/summary/life-path";
+import { seedContent } from "./support/seed-content";
+
+// The story content as the app reads it (#284), from the seed files.
+const seed = seedContent();
+const STORY_IDS = storyIds(seed);
+// The periods as the Life Path groups them: each story's `period`, in story order (#284).
+const PERIOD_DRAFTS = lifePath(seed, { userId: "u", goals: [], sessions: [] }).periods.map(
+  (period) => ({ name: period.name, storyIds: period.rows.map((row) => row.id) }),
+);
 
 // Issue #258 (#50, #51): the Life Path with named periods and one current Story.
 
@@ -45,7 +53,7 @@ describe("#258 AC7 the periods (PERIODS)", () => {
   });
 
   it("shows no dates or ages", () => {
-    const text = JSON.stringify(lifePath(account([])));
+    const text = JSON.stringify(lifePath(seed, account([])));
     expect(text).not.toMatch(/\b1[89]\d\d\b/);
     expect(text).not.toMatch(/\bage\b|\baged\b|years old/i);
   });
@@ -53,14 +61,14 @@ describe("#258 AC7 the periods (PERIODS)", () => {
 
 describe("#258 AC8 AC9 one current story (#50, #51)", () => {
   it("starts a new account at chapter 1, with every later story by title only", () => {
-    const view = lifePath(account([]));
+    const view = lifePath(seed, account([]));
     expect(view.currentId).toBe("bohr-difficulties");
     const all = rows(view);
     expect(all[0]).toEqual({
       id: "bohr-difficulties",
       title: "The Trade of a Theorist",
       state: "current",
-      line: storyProfile("bohr-difficulties").goalShort,
+      line: storyProfile(seed, "bohr-difficulties").goalShort,
     });
     expect(all.slice(1).every((row) => row.state === "later" && row.line === null)).toBe(true);
     expect(all.filter((row) => row.state === "current")).toHaveLength(1);
@@ -68,6 +76,7 @@ describe("#258 AC8 AC9 one current story (#50, #51)", () => {
 
   it("current is the first story without a completion", () => {
     const view = lifePath(
+      seed,
       account([
         session("bohr-difficulties", "completed", "I sent it off."),
         session("site-search", "completed", "I chose the mesa."),
@@ -85,6 +94,7 @@ describe("#258 AC8 AC9 one current story (#50, #51)", () => {
 
   it("shows the line of the first completion and ignores restarted runs", () => {
     const view = lifePath(
+      seed,
       account([
         session("bohr-difficulties", "restarted", "I gave up."),
         session("bohr-difficulties", "completed", "First."),
@@ -95,29 +105,32 @@ describe("#258 AC8 AC9 one current story (#50, #51)", () => {
   });
 
   it("has no current story once every story is finished", () => {
-    const view = lifePath(account(STORY_IDS.map((id) => session(id, "completed", "Done."))));
+    const view = lifePath(seed, account(STORY_IDS.map((id) => session(id, "completed", "Done."))));
     expect(view.currentId).toBeNull();
   });
 });
 
 describe("#258 AC10 a new signed-in run plays the current story", () => {
   it("is chapter 1 for a new account and the next one after a finished story", () => {
-    expect(storyForNewSession(account([]))).toBe("bohr-difficulties");
+    expect(storyForNewSession(seed, account([]))).toBe("bohr-difficulties");
     expect(
-      storyForNewSession(account([session("bohr-difficulties", "completed", "I sent it off.")])),
+      storyForNewSession(
+        seed,
+        account([session("bohr-difficulties", "completed", "I sent it off.")]),
+      ),
     ).toBe("tolman-lecture");
   });
 
   it("stays on the last story once the path is finished", () => {
     expect(
-      storyForNewSession(account(STORY_IDS.map((id) => session(id, "completed", "Done.")))),
+      storyForNewSession(seed, account(STORY_IDS.map((id) => session(id, "completed", "Done.")))),
     ).toBe("fermi-award");
   });
 });
 
 describe("#272 AC4 (#97 AC2) memory rows before the account's starting point", () => {
   it("marks the stories before a later start as his memory, never playable", () => {
-    const view = lifePath(account([]), "site-search");
+    const view = lifePath(seed, account([]), "site-search");
     const all = rows(view);
     const index = all.findIndex((row) => row.id === "site-search");
     expect(all.slice(0, index).every((row) => row.state === "memory")).toBe(true);
@@ -125,7 +138,7 @@ describe("#272 AC4 (#97 AC2) memory rows before the account's starting point", (
       id: "bohr-difficulties",
       title: "The Trade of a Theorist",
       state: "memory",
-      line: storyProfile("bohr-difficulties").goalShort,
+      line: storyProfile(seed, "bohr-difficulties").goalShort,
     });
     expect(view.currentId).toBe("site-search");
     expect(all[index].state).toBe("current");
@@ -133,6 +146,7 @@ describe("#272 AC4 (#97 AC2) memory rows before the account's starting point", (
 
   it("keeps a finished story finished even before the start", () => {
     const view = lifePath(
+      seed,
       account([session("tolman-lecture", "completed", "I taught it whole.")]),
       "site-search",
     );
@@ -143,6 +157,6 @@ describe("#272 AC4 (#97 AC2) memory rows before the account's starting point", (
   });
 
   it("has no memory rows for the default start, chapter 1 (M1)", () => {
-    expect(rows(lifePath(account([]))).some((row) => row.state === "memory")).toBe(false);
+    expect(rows(lifePath(seed, account([]))).some((row) => row.state === "memory")).toBe(false);
   });
 });

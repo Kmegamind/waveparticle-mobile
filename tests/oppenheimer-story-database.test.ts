@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { oppenheimerStories } from "../src/content/oppenheimer";
+import { seedStoryRecords } from "./support/seed-content";
+
+// The seed file of the story content (#284: loaded into the database by scripts/content/import.mjs).
+const oppenheimerStories = seedStoryRecords();
 
 describe("Oppenheimer story database", () => {
   it("loads all 26 stories with the required story fields", () => {

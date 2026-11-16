@@ -1,5 +1,6 @@
 "use server";
 
+import { getStoryContent } from "@/lib/content/repository";
 import { createServerModelGateway } from "@/lib/model-gateway/server";
 import { modelIsConfigured } from "@/lib/prototype/focus-cards";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
@@ -22,6 +23,7 @@ export async function finishRunAction(input: unknown): Promise<FinishOutcome> {
       store: createSupabaseProgressStore(client),
       writer: createSupabaseRunWriter(client),
       gateway: modelIsConfigured() ? createServerModelGateway() : null,
+      loadContent: getStoryContent,
       nowIso: new Date().toISOString(),
     });
   } catch {

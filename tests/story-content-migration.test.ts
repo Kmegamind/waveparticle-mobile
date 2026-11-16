@@ -43,7 +43,7 @@ describe("story content migration (#284)", () => {
     expect(code()).toMatch(/companion_id text not null references public\.companions/);
     expect(code()).toMatch(/unique \(companion_id, sequence\)/);
     // Dates are kept for writers (DATES-ADMIN-ONLY), in the closed table.
-    expect(code()).toMatch(/create table public\.story_inputs \([^;]*\bdate text\b/s);
+    expect(code()).toMatch(/create table public\.story_inputs \([^;]*\bdate text\b/);
     expect(code()).not.toMatch(/description/);
   });
 

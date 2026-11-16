@@ -3,28 +3,30 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type KeyboardEvent } from "react";
-import { COMPANIONS, companionById, type CompanionId } from "@/content/companions";
+import { companionById, type CompanionId } from "@/lib/content/companions";
+import type { Companion } from "@/lib/content/types";
 
 /** Where Enter goes for the selected Companion; null keeps it disabled (#268 AC7, #93). */
-export function enterFor(id: CompanionId | null): string | null {
-  return id ? companionById(id).enterHref : null;
+export function enterFor(companions: Companion[], id: CompanionId | null): string | null {
+  return id ? companionById(companions, id).enterHref : null;
 }
 
 /** The visible reason when a selected Companion cannot be entered (DESIGN 6.1). */
-export function reasonFor(id: CompanionId | null): string | null {
-  return id && enterFor(id) === null ? "His stories are not ready yet." : null;
+export function reasonFor(companions: Companion[], id: CompanionId | null): string | null {
+  return id && enterFor(companions, id) === null ? "His stories are not ready yet." : null;
 }
 
 /**
  * COMP: select a Companion, then one Enter. A radio group, so arrow keys move the selection and
  * the state is announced. No "last observed" line, no long profile, no moving effects.
  */
-export function CompanionsList() {
+export function CompanionsList({ companions }: { companions: Companion[] }) {
+  const COMPANIONS = companions;
   const router = useRouter();
   const [selected, setSelected] = useState<CompanionId | null>(null);
   const rows = useRef<(HTMLButtonElement | null)[]>([]);
-  const href = enterFor(selected);
-  const reason = reasonFor(selected);
+  const href = enterFor(companions, selected);
+  const reason = reasonFor(companions, selected);
 
   function onKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
     const step = event.key === "ArrowDown" || event.key === "ArrowRight" ? 1 : 0;

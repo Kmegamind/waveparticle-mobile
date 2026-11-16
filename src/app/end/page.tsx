@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { getAppTexts } from "@/lib/app-text/repository";
 import { AppTextProvider } from "@/lib/app-text/provider";
+import { getStoryContent } from "@/lib/content/repository";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
 import { summaryOf } from "@/lib/summary/finish-run";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -24,7 +25,11 @@ async function EndContent({ searchParams }: Pick<PageProps<"/end">, "searchParam
   const progress = await createSupabaseProgressStore(client)
     .read(user.id, user.id)
     .catch(() => null);
-  const view = progress && typeof session === "string" ? summaryOf(progress, session) : null;
+  const content = await getStoryContent().catch(() => null);
+  const view =
+    progress && content && typeof session === "string"
+      ? summaryOf(content, progress, session)
+      : null;
   return (
     <AppTextProvider texts={await getAppTexts()}>
       {view ? <EndScreen view={view} /> : <NoSummary />}

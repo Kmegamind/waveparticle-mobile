@@ -11,6 +11,7 @@ import {
   type GoalsData,
   type ViewOptions,
 } from "@/lib/goals/goals-view";
+import { seedContent } from "./support/seed-content";
 
 // Wednesday 2026-11-11, 15:00 in Berlin.
 const NOW = new Date("2026-11-11T14:00:00Z");
@@ -154,6 +155,7 @@ function data(): GoalsData {
       { sessionId: "x-l", stepId: "s-l1", doneAt: "2026-11-03T10:30:00Z" },
       { sessionId: "x-empty", stepId: "s-l1", doneAt: null },
     ],
+    companions: seedContent().companions,
   };
 }
 

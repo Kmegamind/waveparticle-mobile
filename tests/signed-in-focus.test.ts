@@ -28,6 +28,10 @@ import {
   undoDone,
   visibleCards,
 } from "@/lib/prototype/session";
+import { seedContent } from "./support/seed-content";
+
+// The story content as the app reads it (#284), from the seed files.
+const seed = seedContent();
 
 const read = (path: string) => readFileSync(path, "utf8");
 const NOW = "2026-11-13T10:00:00.000Z";
@@ -319,23 +323,26 @@ describe("#257 AC5 the signed-in pages never show test data", () => {
   it("every line fails without the model instead of using stored text", async () => {
     await expect(
       accountStepCards(
+        seed,
         { storyId: "site-search", index: 0, planMinutes: [10], earlierCards: [] },
         null,
       ),
     ).resolves.toEqual({ status: "failed" });
-    await expect(accountReturnLine({ trigger: "rest", awayMinutes: 3 }, null)).resolves.toEqual({
+    await expect(
+      accountReturnLine(seed, { trigger: "rest", awayMinutes: 3 }, null),
+    ).resolves.toEqual({
       status: "failed",
     });
     await expect(
-      accountPauseMessage({ pauseNumber: 1, stepTitle: "Draft" }, null),
+      accountPauseMessage(seed, { pauseNumber: 1, stepTitle: "Draft" }, null),
     ).resolves.toEqual({ status: "failed" });
     await expect(
-      accountRestReply({ message: "Hello", history: [], replyIndex: 0 }, null),
+      accountRestReply(seed, { message: "Hello", history: [], replyIndex: 0 }, null),
     ).resolves.toEqual({ status: "failed" });
   });
 
   it("a malformed card request fails", async () => {
-    await expect(accountStepCards({ index: 3, planMinutes: [10] }, null)).resolves.toEqual({
+    await expect(accountStepCards(seed, { index: 3, planMinutes: [10] }, null)).resolves.toEqual({
       status: "failed",
     });
   });

@@ -48,14 +48,17 @@ function hasKey(value: unknown, key: string): boolean {
 describe("story content seed (#284)", () => {
   it("test_284_reads_26_stories_and_two_companions_moriarty_without_stories", () => {
     const rows = readContentRows(root);
-    expect(rows.companions.map((row) => row.id)).toEqual(["oppenheimer", "moriarty"]);
+    expect(rows.companions.map((row: { id: string }) => row.id)).toEqual([
+      "oppenheimer",
+      "moriarty",
+    ]);
     expect(rows.stories).toHaveLength(26);
     expect(rows.storyInputs).toHaveLength(26);
     expect(rows.stories.every((row) => row.companion_id === "oppenheimer")).toBe(true);
     expect(rows.stories.map((row) => row.sequence)).toEqual(
       Array.from({ length: 26 }, (_, index) => index + 1),
     );
-    const moriarty = rows.companions.find((row) => row.id === "moriarty");
+    const moriarty = rows.companions.find((row: { id: string }) => row.id === "moriarty");
     expect(moriarty?.enter_href).toBeNull();
   });
 

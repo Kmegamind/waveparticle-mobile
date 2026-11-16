@@ -4,6 +4,10 @@ import { describe, expect, it } from "vitest";
 import { accountPathsFor, ACCOUNT_PATHS } from "@/app/_session/paths";
 import { showsHeader, showsTabBar } from "@/app/shell-rules";
 import { isSessionPath } from "@/app/try/session-paths";
+import { seedContent } from "./support/seed-content";
+
+// The story content as the app reads it (#284), from the seed files.
+const seed = seedContent();
 
 // Issue #258: where the summary and the Life Path live, on top of the signed-in focus page (#257).
 
@@ -32,7 +36,7 @@ describe("#258 AC1 the summary is a signed-in session page", () => {
 describe("#258 AC10 a signed-in run plays the Life Path's current story", () => {
   it("a new account session takes the current story, not chapter 8", () => {
     const source = read("src/app/focus/account-progress.ts");
-    expect(source).toContain("storyForNewSession(progress)");
+    expect(source).toContain("storyForNewSession(content, progress)");
     expect(source).not.toContain("storyId: DEFAULT_STORY_ID");
   });
 });
@@ -40,8 +44,9 @@ describe("#258 AC10 a signed-in run plays the Life Path's current story", () => 
 describe("#258 AC7 AC8 the Life Path", () => {
   it("is a child page of Companions with the tab bar", () => {
     expect(showsTabBar("/companions/oppenheimer")).toBe(true);
-    // #268: the Companions list opens it with Enter; the address comes from the companion data.
-    expect(read("src/content/companions.ts")).toContain('enterHref: "/companions/oppenheimer"');
+    // #268: the Companions list opens it with Enter; the address comes from the companion data
+    // (#284: the seed of the companions table).
+    expect(read("src/content/companions.json")).toContain('"enterHref": "/companions/oppenheimer"');
   });
 
   it("Begin opens the goal dialogue", () => {

@@ -1,3 +1,4 @@
+import { getStoryContent } from "@/lib/content/repository";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
 import { openFocusSession, type AccountFocusPlan } from "@/lib/progress/focus-session";
 import { storyProfiles } from "@/lib/prototype/story-inputs";
@@ -16,10 +17,10 @@ export async function loadFocusPlan(
   create: boolean,
 ): Promise<{ plan: AccountFocusPlan; goalLine: string } | null> {
   const store = createSupabaseProgressStore(client);
-  const progress = await store.read(userId, userId);
+  const [progress, content] = await Promise.all([store.read(userId, userId), getStoryContent()]);
   const opened = openFocusSession(progress, goalId, {
     // A new session plays the Life Path's current story (#258); an open one keeps its own.
-    storyId: storyForNewSession(progress),
+    storyId: storyForNewSession(content, progress),
     newId: () => crypto.randomUUID(),
   });
   if (!opened) return null;
@@ -30,6 +31,6 @@ export async function loadFocusPlan(
       await store.write(userId, { userId, goals: [], sessions: [session] });
     }
   }
-  const goalLine = pickStory(storyProfiles(), opened.plan.storyId).goalShort;
+  const goalLine = pickStory(storyProfiles(content), opened.plan.storyId).goalShort;
   return { plan: opened.plan, goalLine };
 }

@@ -1,5 +1,6 @@
 "use server";
 
+import { getStoryContent } from "@/lib/content/repository";
 import { createServerModelGateway } from "@/lib/model-gateway/server";
 import { isPrototypeEnabled } from "@/lib/prototype/config";
 import {
@@ -19,10 +20,11 @@ import type { ReturnTrigger } from "@/lib/prototype/session";
  */
 export async function loadStepCards(request: StepCardsRequest): Promise<StepCardsResponse> {
   if (!isPrototypeEnabled()) return { status: "failed" };
-  const normal = normaliseStepCardsRequest(request);
-  if (!normal) return { status: "failed" };
+  const content = await getStoryContent().catch(() => null);
+  const normal = normaliseStepCardsRequest(content, request);
+  if (!content || !normal) return { status: "failed" };
   const gateway = modelIsConfigured() ? createServerModelGateway() : null;
-  return cardsForStep(normal, gateway);
+  return cardsForStep(content, normal, gateway);
 }
 
 /**
@@ -37,5 +39,6 @@ export async function loadReturnLine(request: {
   if (!isPrototypeEnabled()) return { status: "failed" };
   // TODO(cost cap): apply the per-browser daily cap from the goal-dialogue PR once it is on main.
   const gateway = modelIsConfigured() ? createServerModelGateway() : null;
-  return returnLineFor(normaliseReturnRequest(request), gateway);
+  const content = await getStoryContent().catch(() => null);
+  return returnLineFor(content, normaliseReturnRequest(request), gateway);
 }

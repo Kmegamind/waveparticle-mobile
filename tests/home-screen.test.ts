@@ -4,6 +4,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { HomeView } from "@/lib/home/home-view";
+import { seedContent } from "./support/seed-content";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: () => undefined }) }));
 vi.mock("@/app/home-actions", () => ({ setGoalStatusAction: async () => ({ status: "failed" }) }));
@@ -43,7 +44,9 @@ const noneView: HomeView = {
 };
 
 const render = (view: HomeView, continueHref: string | null = FOCUS) =>
-  renderToStaticMarkup(createElement(ProtectedHome, { view, continueHref }));
+  renderToStaticMarkup(
+    createElement(ProtectedHome, { companions: seedContent().companions, view, continueHref }),
+  );
 
 describe("#268 AC2 HOME-0", () => {
   it("HOME-0 shows one card and nothing else", () => {

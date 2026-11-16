@@ -3,6 +3,10 @@ import { cardsForStep, modelIsConfigured } from "@/lib/prototype/focus-cards";
 import { parseSpeed } from "@/lib/prototype/session";
 import { loadTestStory } from "@/lib/prototype/test-story";
 import type { ModelGateway } from "@/lib/model-gateway";
+import { seedContent } from "./support/seed-content";
+
+// The story content as the app reads it (#284), from the seed files.
+const seed = seedContent();
 
 const story = loadTestStory();
 
@@ -16,7 +20,11 @@ function gatewayReturning(result: Awaited<ReturnType<ModelGateway["writeStepCard
 
 describe("#12 AC1 and #17 AC3 test data: Step 1 opens with the background card", () => {
   it("uses the background card as Step 1's one opening card", async () => {
-    const result = await cardsForStep({ index: 0, planMinutes: [20], earlierCards: [] }, null);
+    const result = await cardsForStep(
+      seed,
+      { index: 0, planMinutes: [20], earlierCards: [] },
+      null,
+    );
     expect(result).toEqual({
       status: "ok",
       isTestData: true,
@@ -25,7 +33,11 @@ describe("#12 AC1 and #17 AC3 test data: Step 1 opens with the background card",
   });
 
   it("opens later Steps with the card about what he just finished", async () => {
-    const result = await cardsForStep({ index: 1, planMinutes: [20, 20], earlierCards: [] }, null);
+    const result = await cardsForStep(
+      seed,
+      { index: 1, planMinutes: [20, 20], earlierCards: [] },
+      null,
+    );
     expect(result.status).toBe("ok");
     if (result.status !== "ok") return;
     expect(result.cards.opening).toBe(story.steps[1].cards[0]);
@@ -41,6 +53,7 @@ describe("FAIL-SCREEN with the model configured", () => {
       cards: ["one", "two", "three"],
     });
     const result = await cardsForStep(
+      seed,
       { index: 2, planMinutes: [20, 20, 15], earlierCards: [] },
       gateway,
     );
@@ -56,7 +69,7 @@ describe("FAIL-SCREEN with the model configured", () => {
 
   it("never sends the Goal text to the model", async () => {
     const { gateway, writeStepCards } = gatewayReturning({ source: "generated", cards: ["a"] });
-    await cardsForStep({ index: 0, planMinutes: [15], earlierCards: [] }, gateway);
+    await cardsForStep(seed, { index: 0, planMinutes: [15], earlierCards: [] }, gateway);
     expect(JSON.stringify(writeStepCards.mock.calls)).not.toContain("Write the report");
   });
 
@@ -74,7 +87,7 @@ describe("FAIL-SCREEN with the model configured", () => {
     for (const outcome of outcomes) {
       const { gateway } = gatewayReturning(outcome);
       expect(
-        await cardsForStep({ index: 0, planMinutes: [15], earlierCards: [] }, gateway),
+        await cardsForStep(seed, { index: 0, planMinutes: [15], earlierCards: [] }, gateway),
       ).toEqual({
         status: "failed",
       });

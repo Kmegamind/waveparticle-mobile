@@ -3,7 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useState } from "react";
-import { companionById } from "@/content/companions";
+import { companionById } from "@/lib/content/companions";
+import type { Companion } from "@/lib/content/types";
 import { useAppText } from "@/lib/app-text/provider";
 import type { HomeView } from "@/lib/home/home-view";
 import { ContinueLink } from "./continue-link";
@@ -15,9 +16,12 @@ import { HomeGoalOptions, HomeToast, type HomeToastState } from "./home-goal-opt
  * comes from the account through `homeView`; nothing here is sample data.
  */
 export function ProtectedHome({
+  companions,
   view,
   continueHref,
 }: {
+  /** The Companions, from the story content (#284); display fields only. */
+  companions: Companion[];
   view: HomeView;
   /** From #69's `continueHref`: null when the Goal is not in progress. */
   continueHref: string | null;
@@ -28,7 +32,7 @@ export function ProtectedHome({
   return (
     <main className="app-screen home-page">
       <h1 className="sr-only">Home</h1>
-      {view.kind === "first" ? <FirstVisit /> : <DeskHeader />}
+      {view.kind === "first" ? <FirstVisit /> : <DeskHeader companions={companions} />}
       {view.kind === "goal" ? (
         <>
           <section aria-label="Goal" className="home-card">
@@ -52,7 +56,7 @@ export function ProtectedHome({
               Start something else
             </Link>
           </section>
-          <MyCompanions ids={view.companions} />
+          <MyCompanions companions={companions} ids={view.companions} />
           <section aria-labelledby="home-in-progress" className="home-section">
             <h2 className="focus-label" id="home-in-progress">
               In progress
@@ -76,7 +80,7 @@ export function ProtectedHome({
                 alt="Oppenheimer"
                 className="home-trace-portrait"
                 height={96}
-                src={companionById("oppenheimer").portrait}
+                src={companionById(companions, "oppenheimer").portrait}
                 width={96}
               />
               <p className="focus-label">With Oppenheimer</p>
@@ -128,8 +132,8 @@ function FirstVisit() {
   );
 }
 
-function DeskHeader() {
-  const opp = companionById("oppenheimer");
+function DeskHeader({ companions }: { companions: Companion[] }) {
+  const opp = companionById(companions, "oppenheimer");
   return (
     <header className="home-desk">
       <Image alt="" className="home-desk-portrait" height={40} src={opp.portrait} width={40} />
@@ -138,7 +142,7 @@ function DeskHeader() {
   );
 }
 
-function MyCompanions({ ids }: { ids: string[] }) {
+function MyCompanions({ companions, ids }: { companions: Companion[]; ids: string[] }) {
   if (ids.length === 0) return null;
   return (
     <section aria-labelledby="home-companions" className="home-section">
@@ -147,7 +151,7 @@ function MyCompanions({ ids }: { ids: string[] }) {
       </h2>
       <ul className="home-portraits">
         {ids.map((id) => {
-          const companion = companionById(id);
+          const companion = companionById(companions, id);
           return (
             <li key={companion.id}>
               <Image

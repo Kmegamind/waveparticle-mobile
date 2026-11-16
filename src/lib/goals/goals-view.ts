@@ -1,5 +1,6 @@
 import { continueHref } from "@/app/continue-link";
-import { companionById } from "@/content/companions";
+import { companionById } from "@/lib/content/companions";
+import type { Companion } from "@/lib/content/types";
 
 /**
  * The Goals area of prototype v4 (#73, #77, #78, #79, #80): what each tab, row and detail page
@@ -37,7 +38,12 @@ export type GoalsData = {
     lastActiveAt: string | null;
   }[];
   sessionSteps: { sessionId: string; stepId: string; doneAt: string | null }[];
+  /** The Companions, from the story content (#284). */
+  companions: Companion[];
 };
+
+/** What the database read of the account returns; the page adds the Companions. */
+export type GoalsRows = Omit<GoalsData, "companions">;
 
 export type RowAction = "continue" | "start" | "resume" | "reopen";
 
@@ -171,7 +177,7 @@ function indexData(data: GoalsData) {
   }
   for (const steps of stepsOf.values()) steps.sort((left, right) => left.position - right.position);
   const stepById = new Map(data.steps.map((step) => [step.id, step]));
-  return { sessionsOf, doneOf, stepsOf, stepById };
+  return { sessionsOf, doneOf, stepsOf, stepById, companions: data.companions };
 }
 
 type Index = ReturnType<typeof indexData>;
@@ -193,7 +199,7 @@ function companionOf(goal: Goal, index: Index) {
   const newest = [...(index.sessionsOf.get(goal.id) ?? [])].sort(
     (left, right) => sessionTime(right) - sessionTime(left),
   )[0];
-  return companionById(newest?.companionId ?? "oppenheimer");
+  return companionById(index.companions, newest?.companionId ?? "oppenheimer");
 }
 
 function activityOf(goal: Goal, index: Index, options: ViewOptions): string | null {

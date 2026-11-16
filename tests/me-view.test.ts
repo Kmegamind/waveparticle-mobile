@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { oppenheimerStories } from "@/content/oppenheimer";
 import { homeView } from "@/lib/home/home-view";
 import { meView } from "@/lib/me/me-view";
 import { sessionRecord, storyRecord } from "@/lib/me/records";
@@ -9,10 +8,14 @@ import type {
   ProgressSession,
   SessionLine,
 } from "@/lib/progress/account-progress";
+import { seedContent } from "./support/seed-content";
+
+// The story content as the app reads it (#284), from the seed files.
+const seed = seedContent();
 
 // #81, #82, #75, #94: the Me area reads the account only.
 
-const STORY = oppenheimerStories[0];
+const STORY = { id: seed.stories[0].id, keySlices: seed.stories[0].inputs.keySlices };
 
 function goal(id: string, status: ProgressGoal["status"], steps: [string, number][]): ProgressGoal {
   return {
@@ -101,6 +104,7 @@ describe("#82 #75 history", () => {
           session(c, "open", [null]),
         ],
       ),
+      seed.companions,
     );
     expect(view.history.map((entry) => [entry.goalTitle, entry.minutes])).toEqual([
       ["b title", 15],
@@ -116,16 +120,16 @@ describe("#81 current and on-hold Goals", () => {
     const b = goal("b", "in_progress", [["Read", 15]]);
     const h = goal("h", "on_hold", [["Wait", 5]]);
     const progress = account([b, h], [session(b, "open", [null])]);
-    const home = homeView(progress);
+    const home = homeView(progress, seed.companions);
     if (home.kind !== "goal") throw new Error(home.kind);
-    const view = meView(progress);
+    const view = meView(progress, seed.companions);
     expect(view.current).toEqual({
       goalId: home.card.goalId,
       title: "b title",
       companion: "Oppenheimer",
     });
     expect(view.onHold).toEqual([{ goalId: "h", title: "h title" }]);
-    expect(meView(account([h], [])).current).toBeNull();
+    expect(meView(account([h], []), seed.companions).current).toBeNull();
   });
 });
 
@@ -136,7 +140,7 @@ describe("#75 the session record", () => {
       ["Write", 20],
     ]);
     const open = session(a, "open", ["2026-11-03T10:00:00.000Z", null]);
-    expect(sessionRecord(account([a], [open]), open.id)).toEqual({
+    expect(sessionRecord(account([a], [open]), open.id, seed.companions)).toEqual({
       goalTitle: "a title",
       firstDoneAt: "2026-11-03T10:00:00.000Z",
       minutes: 30,
@@ -144,12 +148,12 @@ describe("#75 the session record", () => {
       storyRecordHref: null,
     });
     const done = session(a, "completed", ["2026-11-03T10:00:00.000Z", "2026-11-03T11:00:00.000Z"]);
-    expect(sessionRecord(account([a], [done]), done.id)?.storyRecordHref).toBe(
+    expect(sessionRecord(account([a], [done]), done.id, seed.companions)?.storyRecordHref).toBe(
       `/me/history/${done.id}/chapter`,
     );
-    expect(sessionRecord(account([a], [done]), "nope")).toBeNull();
+    expect(sessionRecord(account([a], [done]), "nope", seed.companions)).toBeNull();
     const none = session(a, "open", [null, null]);
-    expect(sessionRecord(account([a], [none]), none.id)).toBeNull();
+    expect(sessionRecord(account([a], [none]), none.id, seed.companions)).toBeNull();
   });
 });
 
@@ -170,7 +174,7 @@ describe("#94 the record of a finished Story", () => {
       ],
     });
     done.closingLine = "The day ended at the mesa.";
-    expect(storyRecord(account([a], [done]), done.id)).toEqual({
+    expect(storyRecord(seed, account([a], [done]), done.id)).toEqual({
       storyTitle: expect.any(String),
       steps: [
         { title: "Gather", cards: ["Background.", "Later card."] },
@@ -184,7 +188,7 @@ describe("#94 the record of a finished Story", () => {
   it("has no record for an unknown or unfinished session", () => {
     const a = goal("a", "in_progress", [["Gather", 30]]);
     const open = session(a, "open", ["2026-11-03T10:00:00.000Z"]);
-    expect(storyRecord(account([a], [open]), open.id)).toBeNull();
-    expect(storyRecord(account([a], [open]), "nope")).toBeNull();
+    expect(storyRecord(seed, account([a], [open]), open.id)).toBeNull();
+    expect(storyRecord(seed, account([a], [open]), "nope")).toBeNull();
   });
 });

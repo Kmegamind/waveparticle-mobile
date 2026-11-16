@@ -1,5 +1,6 @@
 "use server";
 
+import { getStoryContent } from "@/lib/content/repository";
 import { createServerModelGateway } from "@/lib/model-gateway/server";
 import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { modelIsConfigured } from "@/lib/prototype/focus-cards";
@@ -19,6 +20,9 @@ function gateway() {
   return modelIsConfigured() ? createServerModelGateway() : null;
 }
 
+/** The story content, or null when it cannot be read (the line then fails, #284). */
+const storyContent = () => getStoryContent().catch(() => null);
+
 /** His first message on /try/rest. Nothing about the request is logged. */
 export async function loadPauseMessage(request: {
   storyId?: string;
@@ -27,7 +31,7 @@ export async function loadPauseMessage(request: {
   lastCard?: string;
 }): Promise<LineResponse> {
   if (!isPrototypeEnabled()) return { status: "failed" };
-  return pauseMessageFor(normalisePauseRequest(request), gateway());
+  return pauseMessageFor(await storyContent(), normalisePauseRequest(request), gateway());
 }
 
 /** His reply to one message on /try/rest. The safety gate runs again here, before any model call. */
@@ -38,5 +42,5 @@ export async function loadRestReply(request: {
   replyIndex: number;
 }): Promise<RestReplyResponse> {
   if (!isPrototypeEnabled()) return { status: "failed" };
-  return restReplyFor(normaliseRestRequest(request), gateway());
+  return restReplyFor(await storyContent(), normaliseRestRequest(request), gateway());
 }

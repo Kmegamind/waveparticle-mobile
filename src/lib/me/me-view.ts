@@ -1,4 +1,5 @@
-import { companionById } from "@/content/companions";
+import { companionById } from "@/lib/content/companions";
+import type { Companion } from "@/lib/content/types";
 import { homeView } from "@/lib/home/home-view";
 import type { AccountProgress, ProgressSession } from "@/lib/progress/account-progress";
 
@@ -41,6 +42,7 @@ export function doneSteps(progress: AccountProgress, session: ProgressSession) {
 export function historyEntry(
   progress: AccountProgress,
   session: ProgressSession,
+  companions: Companion[],
 ): HistoryEntry | null {
   const goal = progress.goals.find((item) => item.id === session.goalId);
   const done = doneSteps(progress, session);
@@ -48,14 +50,14 @@ export function historyEntry(
   return {
     sessionId: session.id,
     goalTitle: goal.title,
-    companion: companionById(session.companionId).shortName,
+    companion: companionById(companions, session.companionId).shortName,
     firstDoneAt: done.map((step) => step.doneAt).sort()[0],
     minutes: done.reduce((sum, step) => sum + step.minutes, 0),
   };
 }
 
-export function meView(progress: AccountProgress): MeView {
-  const home = homeView(progress);
+export function meView(progress: AccountProgress, companions: Companion[]): MeView {
+  const home = homeView(progress, companions);
   const current =
     home.kind === "goal"
       ? { goalId: home.card.goalId, title: home.card.title, companion: home.card.companion }
@@ -64,7 +66,7 @@ export function meView(progress: AccountProgress): MeView {
     .filter((goal) => goal.status === "on_hold")
     .map((goal) => ({ goalId: goal.id, title: goal.title }));
   const history = progress.sessions
-    .map((session) => historyEntry(progress, session))
+    .map((session) => historyEntry(progress, session, companions))
     .filter((entry): entry is HistoryEntry => entry !== null)
     .sort((left, right) => right.firstDoneAt.localeCompare(left.firstDoneAt));
   return { current, onHold, history };

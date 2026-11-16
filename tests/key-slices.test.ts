@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { oppenheimerStories, type OppenheimerStory } from "../src/content/oppenheimer";
+import type { OppenheimerStory } from "../src/lib/content/types";
+import { seedStoryRecords } from "./support/seed-content";
+
+const oppenheimerStories = seedStoryRecords();
 import { startStory } from "../src/lib/story/start";
 
 const FUTURE = /\b(will|won't|going to)\b|'ll/i;

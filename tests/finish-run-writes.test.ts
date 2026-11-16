@@ -3,6 +3,9 @@ import type { ModelGateway } from "@/lib/model-gateway";
 import { createMemoryProgressStore, type ProgressSession } from "@/lib/progress/account-progress";
 import { finishAccountRun } from "@/lib/summary/finish-run";
 import { createMemoryRunWriter, createSupabaseRunWriter } from "@/lib/summary/run-writer";
+import { seedContent } from "./support/seed-content";
+
+const seed = seedContent();
 
 // Issue #258, final review: saving the lines is safe against a second tab and a write that fails
 // halfway, and it touches only this session's rows.
@@ -64,7 +67,14 @@ describe("#258 review I1: a second tab during the call never mixes two runs' lin
       { closingLine: "I sent it off.", carryLine: "I wonder about Born." },
       { closingLine: "I kept it a day longer.", carryLine: "I doubt the method." },
     ]);
-    const deps = { userId: USER, store, writer, gateway, nowIso: NOW };
+    const deps = {
+      userId: USER,
+      store,
+      writer,
+      gateway,
+      nowIso: NOW,
+      loadContent: async () => seed,
+    };
     const [first, second] = await Promise.all([
       finishAccountRun(input, deps),
       finishAccountRun(input, deps),
@@ -90,7 +100,15 @@ describe("#258 review I2: a write that fails halfway can be retried", () => {
     const { gateway, writeClosingLine } = slowGateway([
       { closingLine: "I sent it off.", carryLine: "I wonder about Born." },
     ]);
-    const deps = { userId: USER, store, writer, gateway, nowIso: NOW, wait: async () => undefined };
+    const deps = {
+      userId: USER,
+      store,
+      writer,
+      gateway,
+      nowIso: NOW,
+      wait: async () => undefined,
+      loadContent: async () => seed,
+    };
     expect(await finishAccountRun(input, deps)).toEqual({ status: "failed" });
     writer.insertClosingLine = insert;
     expect(await finishAccountRun(input, deps)).toEqual({
