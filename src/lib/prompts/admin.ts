@@ -1,5 +1,10 @@
 import type { ContentRole } from "@/lib/admin/roles";
 import { promptRowProblems } from "@/lib/model-gateway";
+import type {
+  PromptDetail,
+  PromptVersionState,
+  PromptWriteError,
+} from "@/lib/admin/prompt-editor-types";
 import { lineDiff, settingsText, type DiffLine } from "./diff";
 import { PROMPT_KEYS, type PromptKey, type PromptRow } from "./repository";
 
@@ -7,6 +12,8 @@ import { PROMPT_KEYS, type PromptKey, type PromptRow } from "./repository";
 // its buttons. Server code only. The rows come from public.list_prompt_versions(), which answers
 // content editors only. Every save is a new draft version; only the admin role publishes or rolls
 // back, and only a version the gateway can use (its own row check, promptRowProblems).
+
+export type { PromptDetail, PromptVersionState, PromptWriteError };
 
 /** One row as `public.list_prompt_versions` returns it. */
 export type PromptVersionRow = {
@@ -37,31 +44,12 @@ export const PROMPT_BODY_MAX_LENGTH = 20_000;
 /** The longest note the admin saves. */
 export const PROMPT_NOTE_MAX_LENGTH = 500;
 
-export type PromptVersionState = "active" | "draft" | "earlier";
-
 export type PromptListRow = {
   key: PromptKey;
   purpose: string;
   active: { version: number; settings: string[] } | null;
   /** The newest draft above the active version, or null. */
   draftVersion: number | null;
-};
-
-export type PromptDetail = {
-  key: PromptKey;
-  purpose: string;
-  active: { version: number; body: string; params: Record<string, unknown>; note: string } | null;
-  draft: {
-    version: number;
-    body: string;
-    params: Record<string, unknown>;
-    note: string;
-    problems: string[];
-    bodyDiff: DiffLine[];
-    settingsDiff: DiffLine[];
-  } | null;
-  /** Newest first. */
-  versions: { version: number; state: PromptVersionState; note: string; createdAt: string }[];
 };
 
 export const isPromptKey = (key: unknown): key is PromptKey =>
@@ -157,17 +145,6 @@ export function promptDetail(key: string, rows: PromptVersionRow[]): PromptDetai
 export type PromptWrite =
   | { kind: "save"; key: string; body: string; settings: string; note: string }
   | { kind: "publish" | "roll_back"; key: string; version: number };
-
-export type PromptWriteError =
-  | "not-allowed"
-  | "invalid"
-  | "blank"
-  | "too-long"
-  | "note-too-long"
-  | "settings-json"
-  | "unchanged"
-  | "checks-failed"
-  | "failed";
 
 export type PromptWriteResult =
   { ok: true; version?: number } | { ok: false; error: PromptWriteError; problems?: string[] };

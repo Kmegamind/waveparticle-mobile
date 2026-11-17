@@ -2,8 +2,7 @@
 
 import { useId, useState, useSyncExternalStore, useTransition } from "react";
 import type { ContentRole } from "@/lib/admin/roles";
-import type { DiffLine } from "@/lib/prompts/diff";
-import type { PromptDetail, PromptWriteError } from "@/lib/prompts/admin";
+import type { DiffLine, PromptDetail, PromptWriteError } from "@/lib/admin/prompt-editor-types";
 import { publishPromptAction, savePromptDraftAction, type SavePromptResult } from "../actions";
 
 const PROBLEMS: Record<PromptWriteError, string> = {

@@ -3707,7 +3707,7 @@ a {
 .admin-diff-mark {
   flex: none;
   font-weight: 700;
-  width: 1ch;
+  width: var(--space-control-gap);
 }
 
 .admin-diff-added,

@@ -2,7 +2,9 @@
 // prompt text and for its settings. Each line is the same, added or removed; the page shows the
 // kind as a visible + or − so it is never carried by colour alone.
 
-export type DiffLine = { kind: "same" | "added" | "removed"; text: string };
+import type { DiffLine } from "@/lib/admin/prompt-editor-types";
+
+export type { DiffLine };
 
 /** The lines of `after` against `before`, from their longest common run of lines. */
 export function lineDiff(before: string, after: string): DiffLine[] {
