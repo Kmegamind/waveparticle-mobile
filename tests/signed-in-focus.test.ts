@@ -13,8 +13,8 @@ import {
   accountPauseMessage,
   accountRestReply,
   accountReturnLine,
-  accountStepCards,
 } from "@/lib/progress/account-lines";
+import { premadeStepCards } from "@/lib/progress/premade-cards";
 import { isSessionPath } from "@/app/try/session-paths";
 import {
   completeStep,
@@ -238,6 +238,22 @@ describe("#257 AC3 and AC4 progress is recorded on the account", () => {
     expect(kinds.filter((kind) => kind === "pause_message")).toHaveLength(1);
   });
 
+  it("test_300_shown_pre_made_cards_are_recorded_as_authored_his_live_lines_as_generated", () => {
+    const progress = opened();
+    const plan = planOf(progress);
+    let session = startRest(runningSession(plan), 1_000);
+    session = addFirstRestMessage(session, "The film will not dry.");
+    const result = applyFocusSnapshot(progress, snapshotOf(plan.sessionId, session), {
+      now: NOW,
+      newId: ids(),
+      userId: "user-1",
+    });
+    const sources = Object.fromEntries(
+      result!.session.lines.map((line) => [line.kind, line.source]),
+    );
+    expect(sources).toEqual({ background: "authored", pause_message: "generated" });
+  });
+
   it("refuses a session that is not this account's open or completed session", () => {
     const progress = opened();
     const plan = planOf(progress);
@@ -313,6 +329,39 @@ describe("#257 AC4 and AC6 a reopened page shows the stored lines again", () => 
     expect(seeded.steps[0].clock).not.toBeNull();
   });
 
+  it("test_300_review_a_rebuilt_current_step_asks_for_its_remaining_pre_made_cards", () => {
+    const progress = opened();
+    const plan = planOf(progress);
+    const session = tick(runningSession(plan), 5 * 60_000);
+    const recorded = applyFocusSnapshot(progress, snapshotOf(plan.sessionId, session), {
+      now: NOW,
+      newId: ids(),
+      userId: "user-1",
+    });
+    const reopened = planOf({ ...progress, sessions: [recorded!.session] });
+    const seeded = seedFocusSession(reopened, 1, 10_000);
+    // Only the shown cards are on the account, so the current Step is marked partial.
+    expect(seeded.steps[0].cards?.partial).toBe(true);
+    const clock = seeded.steps[0].clock;
+    const full = setStepCards(
+      seeded,
+      0,
+      { opening: "Background.", story: ["One.", "Two."], premade: true },
+      20_000,
+    );
+    expect(full.steps[0].cards).toEqual({
+      opening: "Background.",
+      story: ["One.", "Two."],
+      premade: true,
+    });
+    expect(full.steps[0].shownStory).toBe(1);
+    expect(full.steps[0].clock).toEqual(clock);
+    expect(visibleCards(full, 0, 20_000)).toEqual(["Background.", "One."]);
+    // A Step whose cards are complete is never replaced.
+    const again = setStepCards(full, 0, { opening: "X.", story: [], premade: true }, 30_000);
+    expect(again).toBe(full);
+  });
+
   it("each account session has its own browser key", () => {
     expect(accountSessionKey("abc")).toBe("waveparticle.session.abc");
     expect(accountSessionKey("abc")).not.toBe("waveparticle.prototype.session");
@@ -321,11 +370,16 @@ describe("#257 AC4 and AC6 a reopened page shows the stored lines again", () => 
 
 describe("#257 AC5 the signed-in pages never show test data", () => {
   it("every line fails without the model instead of using stored text", async () => {
+    // #300: his cards are the story's published pre-made cards, not test data: with none
+    // published, the cards fail too (FAIL-PREMADE).
     await expect(
-      accountStepCards(
-        seed,
-        { storyId: "site-search", index: 0, planMinutes: [10], earlierCards: [] },
-        null,
+      premadeStepCards(
+        { sessionId: "4f0a7c2e-8d1b-4c3a-9e2f-1a2b3c4d5e6f", index: 0 },
+        {
+          readSession: async () => ({ storyId: "site-search", stepCount: 1, cardVersions: null }),
+          pinVersions: async () => undefined,
+          readDeck: async () => null,
+        },
       ),
     ).resolves.toEqual({ status: "failed" });
     await expect(
@@ -342,7 +396,12 @@ describe("#257 AC5 the signed-in pages never show test data", () => {
   });
 
   it("a malformed card request fails", async () => {
-    await expect(accountStepCards(seed, { index: 3, planMinutes: [10] }, null)).resolves.toEqual({
+    const deps = {
+      readSession: async () => ({ storyId: "site-search", stepCount: 1, cardVersions: null }),
+      pinVersions: async () => undefined,
+      readDeck: async () => null,
+    };
+    await expect(premadeStepCards({ index: 3, planMinutes: [10] }, deps)).resolves.toEqual({
       status: "failed",
     });
   });

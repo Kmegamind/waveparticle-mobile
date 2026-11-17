@@ -259,7 +259,9 @@ export function applyFocusSnapshot(
       seq,
       kind: line.kind,
       cardId: null,
-      source: "generated",
+      // #300: his cards are the story's pre-made cards; the pause message and return pop-up are
+      // still written live.
+      source: CARD_KINDS.includes(line.kind) ? "authored" : "generated",
       text: line.text,
       pauseNumber,
       shownAt: deps.now,
@@ -301,7 +303,12 @@ export function seedFocusSession(
       if (cards.length === 0) return step;
       return {
         ...step,
-        cards: { opening: cards[0], story: cards.slice(1) },
+        // #300: the current Step's other pre-made cards are asked for again (pinned, so the
+        // shown ones stay the same).
+        cards:
+          index === current
+            ? { opening: cards[0], story: cards.slice(1), partial: true as const }
+            : { opening: cards[0], story: cards.slice(1) },
         shownStory: cards.length - 1,
         clock: index === current ? createClock(step.targetSeconds, nowMs) : null,
       };

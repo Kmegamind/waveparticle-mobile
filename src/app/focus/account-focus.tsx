@@ -42,7 +42,9 @@ export function AccountFocus({
         storageKey: accountSessionKey(plan.sessionId),
         goalLine,
         plan: sessionPlanOf(plan),
-        loadStepCards: loadAccountStepCards,
+        // #300: the pre-made cards of this session, by Step; nothing else goes to the server.
+        loadStepCards: (request) =>
+          loadAccountStepCards({ sessionId: plan.sessionId, index: request.index }),
         loadReturnLine: loadAccountReturnLine,
         seed,
         onProgress: record,

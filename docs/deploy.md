@@ -95,7 +95,11 @@ node scripts/story-cards/import.mjs > story-cards-import.sql   # paste into the 
 ```
 
 A card that already has a row is left alone, so running it again changes nothing. No new setting
-is needed, and the phone screens do not read these tables yet.
+is needed.
+
+The signed-in focus page reads the published cards (#300, `docs/decisions/0021`): run
+`supabase/migrations/20261121000000_premade_cards.sql` before deploying that change, or the focus
+page shows the failure screen. It uses the existing `CONTENT_READ_KEY`.
 
 ## After each deploy
 - Smoke test: open the deployed home page and confirm the product name is
