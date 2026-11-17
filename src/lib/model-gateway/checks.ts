@@ -15,17 +15,43 @@ const HOOK = /\b(more|later|tomorrow|soon|continue|find out|next)\b(?!\s+to\b)/i
 const PRAISE = /\b(great|well done|proud|streak)\b/i;
 const EXCLAIM_OR_EMOJI = /!|\p{Extended_Pictographic}/u;
 const LINK = /https?:\/\/|www\./i;
-const OWN_NAME = /\b(oppenheimer|robert)\b/i;
+/**
+ * The Companion whose name the `name` check uses when a caller gives none. Every server caller
+ * passes the story's Companion (#302); this keeps older callers checked as before.
+ */
+export const DEFAULT_COMPANION_NAME = "J. Robert Oppenheimer";
+/** Words of a name that are titles, not the name itself ("Professor Moriarty", "Count Dracula"). */
+const TITLES = new Set(["professor", "doctor", "dr", "mr", "mrs", "miss", "sir", "lord", "count"]);
 const BLAME = /\b(you again|finally came back|welcome back|while you were away)\b/i;
 const FIRST_PERSON = /(^|[^\p{L}])I\b|\b(my|me|mine)\b/iu;
 
-export function cleanLine(text: string): string {
-  return text
+/**
+ * The words of a Companion's name that he must never say of himself: each word of three letters or
+ * more that is not a title. "J. Robert Oppenheimer" gives robert and oppenheimer.
+ */
+export function ownNameWords(companionName: string): string[] {
+  return companionName
+    .toLowerCase()
+    .split(/[^\p{L}'-]+/u)
+    .filter((word) => word.length >= 3 && !TITLES.has(word));
+}
+
+const escape = (word: string) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+function ownNamePattern(companionName: string): RegExp | null {
+  const words = ownNameWords(companionName);
+  return words.length === 0 ? null : new RegExp(`\\b(${words.map(escape).join("|")})\\b`, "i");
+}
+
+export function cleanLine(text: string, companionName = DEFAULT_COMPANION_NAME): string {
+  // A speaker label ("Oppenheimer: ...") is dropped; any word of his name counts as the label.
+  const label = ownNamePattern(companionName);
+  const cleaned = text
     .trim()
     .replace(/[’‘]/g, "'")
-    .replace(/^["']|["']$/g, "")
-    .replace(/^oppenheimer:\s*/i, "")
-    .trim();
+    .replace(/^["']|["']$/g, "");
+  const labelled = label && new RegExp(`^${label.source}:\\s*`, "i");
+  return (labelled ? cleaned.replace(labelled, "") : cleaned).trim();
 }
 
 function sentences(text: string): number {
@@ -86,8 +112,10 @@ export function checkCompanionLine(
   kind: CompanionKind,
   forbidTerms: string[],
   limits: LineLimits,
+  companionName = DEFAULT_COMPANION_NAME,
 ): { ok: true; text: string } | { ok: false; rejectedRules: string[] } {
-  const text = cleanLine(raw);
+  const text = cleanLine(raw, companionName);
+  const ownName = ownNamePattern(companionName);
   const rejected: string[] = [];
   const sentenceCount = sentences(text);
   const wordCount = words(text);
@@ -110,7 +138,8 @@ export function checkCompanionLine(
   // A rest reply may end on its one question (CHAT-QUESTION-END); every other line ends with a full stop.
   const endsWell = text.endsWith(".") || (kind === "rest_reply" && text.endsWith("?"));
   push(rejected, "form", EXCLAIM_OR_EMOJI.test(text) || LINK.test(text) || !endsWell);
-  push(rejected, "name", OWN_NAME.test(text));
+  // He never names himself (#302: the name of the Companion speaking, not a fixed one).
+  push(rejected, "name", ownName !== null && ownName.test(text));
   push(rejected, "first_person", !FIRST_PERSON.test(text));
   push(rejected, "blame", kind === "return_popup" && BLAME.test(text));
   push(rejected, "len", lengthFails(limits, sentenceCount, wordCount));

@@ -104,6 +104,7 @@ export async function pauseMessageFor(
     pauseNumber: request.pauseNumber,
     facts: stuckFacts(content, request.pauseNumber, storyId),
     forbidTerms: generationInputs(content, storyId).forbidTerms,
+    companionName: generationInputs(content, storyId).companionName,
     lastCard: request.lastCard,
   };
   return ask(() => gateway.writeStuckStory(input));
@@ -140,6 +141,7 @@ export async function restReplyFor(
     gateway.writeRestReply({
       userMessage: request.message.slice(0, MAX_MESSAGE_CHARS),
       facts: restFacts(content, history, storyId),
+      companionName: generationInputs(content, storyId).companionName,
     }),
   );
 }
@@ -160,6 +162,7 @@ export async function returnLineFor(
     facts: baseFacts(content, storyId),
     awayMinutes: request.awayMinutes,
     forbidTerms: generationInputs(content, storyId).forbidTerms,
+    companionName: generationInputs(content, storyId).companionName,
   };
   const result = await ask(() => gateway.writeReturnPopup(input));
   if (result.status === "ok" && HAS_NUMBER.test(result.text)) return { status: "failed" };

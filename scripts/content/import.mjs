@@ -4,6 +4,11 @@
 //
 //   node scripts/content/import.mjs > story-content-import.sql
 //   node scripts/content/import.mjs | psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1
+//   node scripts/content/import.mjs --companion moriarty > moriarty-import.sql
+//
+// Every Companion in src/content/companions.json is written; --companion <id> limits the stories to
+// that Companion's (#302). A story whose screen lines are missing stops it before any SQL is
+// printed, with the list of what is missing.
 //
 // Every row is inserted or, when it exists, replaced by the files' version, in one transaction.
 // Running it twice changes nothing. It does not delete rows that are no longer in the files.
@@ -82,6 +87,19 @@ export function importSql(rows) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
-  const root = process.argv[2] ? path.resolve(process.argv[2]) : defaultRoot;
-  process.stdout.write(importSql(readContentRows(root)));
+  const args = process.argv.slice(2);
+  const flag = args.indexOf("--companion");
+  const companion = flag === -1 ? undefined : args[flag + 1];
+  if (flag !== -1 && !companion) {
+    console.error("Usage: node scripts/content/import.mjs [root] [--companion <id>]");
+    process.exit(1);
+  }
+  const rest = flag === -1 ? args : args.filter((_, index) => index !== flag && index !== flag + 1);
+  const root = rest[0] ? path.resolve(rest[0]) : defaultRoot;
+  try {
+    process.stdout.write(importSql(readContentRows(root, { companion })));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
 }

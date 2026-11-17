@@ -256,6 +256,7 @@ export function createModelGateway(options: {
             acceptLine(raw, "story", "stuck_story", input.forbidTerms ?? [], limits, {
               earlierLines: input.earlierLines ?? [],
               lastCard: input.lastCard,
+              companionName: input.companionName,
             }),
         };
       });
@@ -265,7 +266,8 @@ export function createModelGateway(options: {
         const limits = lineLimits(row, checks(row));
         return {
           prompt: restPrompt(input, row),
-          accept: (raw) => acceptLine(raw, "reply", "rest_reply", [], limits, null),
+          accept: (raw) =>
+            acceptLine(raw, "reply", "rest_reply", [], limits, null, input.companionName),
         };
       });
     },
@@ -277,6 +279,7 @@ export function createModelGateway(options: {
           accept: (raw) =>
             acceptLine(raw, "returnLine", "return_popup", input.forbidTerms ?? [], limits, {
               earlierLines: input.earlierLines ?? [],
+              companionName: input.companionName,
             }),
         };
       });
@@ -334,7 +337,7 @@ function acceptCards(
     if (typeof card !== "string") return { ok: false, rejectedRules: ["parse"] };
     const kind = position === 0 && input.background ? "background_card" : "step_card";
     const limits = kind === "background_card" ? rules.backgroundCard : rules.stepCard;
-    const checked = checkCompanionLine(card, kind, forbidTerms, limits);
+    const checked = checkCompanionLine(card, kind, forbidTerms, limits, input.companionName);
     if (!checked.ok) return checked;
     // Each card is a one-way line: it is checked against the run and the cards before it.
     const runRules = checkRunList(checked.text, [...earlierLines, ...accepted]);
@@ -351,12 +354,13 @@ function acceptLine(
   kind: "stuck_story" | "rest_reply" | "return_popup" | "closing_line",
   forbidTerms: string[],
   limits: LineLimits,
-  runList: { earlierLines: string[]; lastCard?: string } | null,
+  runList: { earlierLines: string[]; lastCard?: string; companionName?: string } | null,
+  companionName = runList?.companionName,
 ): Attempt<{ source: "generated"; text: string }> {
   const parsed = parseModelJson(raw);
   const line = isRecord(parsed) ? parsed[key] : undefined;
   if (typeof line !== "string") return { ok: false, rejectedRules: ["parse"] };
-  const checked = checkCompanionLine(line, kind, forbidTerms, limits);
+  const checked = checkCompanionLine(line, kind, forbidTerms, limits, companionName);
   if (!checked.ok) return checked;
   if (runList) {
     const rules = checkRunList(checked.text, runList.earlierLines);
@@ -383,7 +387,7 @@ function acceptClosing(
     "closing_line",
     input.forbidTerms ?? [],
     limits,
-    { earlierLines },
+    { earlierLines, companionName: input.companionName },
   );
   if (!closing.ok) return closing;
   const carry = acceptLine(
@@ -392,7 +396,7 @@ function acceptClosing(
     "closing_line",
     input.forbidTerms ?? [],
     limits,
-    { earlierLines: [...earlierLines, closing.value.text] },
+    { earlierLines: [...earlierLines, closing.value.text], companionName: input.companionName },
   );
   if (!carry.ok) return carry;
   return {

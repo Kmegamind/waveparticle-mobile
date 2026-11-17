@@ -30,6 +30,8 @@ export type StoryProfile = {
 };
 
 export type GenerationInputs = {
+  /** The full name of the story's Companion, for the gateway's `name` check (#302). */
+  companionName: string;
   who: string;
   place: string;
   goalShort: string;
@@ -76,7 +78,10 @@ export function generationInputs(content: StoryContent, id: string): GenerationI
   const listed = Array.isArray(stage.forbidTerms)
     ? stage.forbidTerms.filter((term): term is string => typeof term === "string")
     : [];
+  const companion = content.companions.find((item) => item.id === story.companionId);
+  if (!companion) throw new Error(`story ${id}: unknown Companion ${story.companionId}`);
   return {
+    companionName: companion.name,
     who: story.who.trim(),
     place: text(stage.place),
     goalShort: story.goalShort.trim(),

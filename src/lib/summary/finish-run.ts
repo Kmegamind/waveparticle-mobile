@@ -99,6 +99,7 @@ export function closingInputFor(
     lastMoment: factText(lastIds),
     forbidTerms: inputs.forbidTerms,
     earlierLines,
+    companionName: inputs.companionName,
   };
 }
 

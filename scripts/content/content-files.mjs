@@ -1,12 +1,17 @@
-// The story content files (#284): the seed of the `companions`, `stories` and `story_inputs`
-// tables. Shared by the import and export scripts, the e2e Supabase stub and the tests. The app
-// never imports these files; it reads the tables through src/lib/content/repository.ts.
+// The story content files (#284, any Companion since #302): the seed of the `companions`,
+// `stories` and `story_inputs` tables. Shared by the import and export scripts, the e2e Supabase
+// stub and the tests. The app never imports these files; it reads the tables through
+// src/lib/content/repository.ts.
 //
 // Files (paths relative to the repository root):
-//   src/content/companions.json               the Companions, in display order
-//   src/content/oppenheimer/stories.json      each story's record (title, date, facts, key moments)
-//   src/content/oppenheimer/periods.json      the Life Path periods, each with its story ids
+//   src/content/companions.json               the Companions, in display order, each with its
+//                                             mode (historical or fictional) and key code (NAMING)
+//   src/content/<companion>/stories.json      each story's record (title, date, facts, key moments)
+//   src/content/<companion>/periods.json      the Life Path periods, each with its story ids
 //   docs/demo/<story-id>.stage0.json          each story's generation inputs (stage 0)
+//
+// A Companion without a stories.json has no stories yet. stories.json and periods.json are the
+// shape the book-to-story pipeline exports (`storydb.py export`).
 //
 // Each text the screens show is stored once, in the display tables, under the name the screens
 // use: `title`, `goal_short` (the goal sentence), `who` (the "Who I am" line), `opening` (the goal
@@ -18,18 +23,25 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
 
+const contentDirectory = path.join("src", "content");
+
 export const CONTENT_FILES = {
-  companions: path.join("src", "content", "companions.json"),
-  stories: path.join("src", "content", "oppenheimer", "stories.json"),
-  periods: path.join("src", "content", "oppenheimer", "periods.json"),
+  companions: path.join(contentDirectory, "companions.json"),
+  /** @param {string} companionId */
+  stories: (companionId) => path.join(contentDirectory, companionId, "stories.json"),
+  /** @param {string} companionId */
+  periods: (companionId) => path.join(contentDirectory, companionId, "periods.json"),
   stageZeroDirectory: path.join("docs", "demo"),
 };
 
 /** The goal dialogue's question after the opening place (the screen shows both). */
 export const OPENING_QUESTION = "What are you working on?";
 
+/** FICTION-RULES: the two kinds of Companion. */
+export const MODES = ["historical", "fictional"];
+const KEY_CODE = /^[a-z]{2,8}$/;
+
 const defaultRoot = fileURLToPath(new URL("../..", import.meta.url));
-const STORIES_COMPANION = "oppenheimer";
 
 const readJson = (root, file) => JSON.parse(readFileSync(path.join(root, file), "utf8"));
 const stageZeroFile = (id) => path.join(CONTENT_FILES.stageZeroDirectory, `${id}.stage0.json`);
@@ -58,12 +70,32 @@ function stageZeroParts(storyId, stageZero) {
   }
 }
 
+const filled = (value) => typeof value === "string" && value.trim() !== "";
+
 /**
- * The rows of the three tables, read from the files, as the database holds them.
- * @param {string} [root]
+ * What a story still lacks before the screens can show it: its stage 0 file, or the three screen
+ * lines inside it. An empty list when nothing is missing.
  */
-export function readContentRows(root = defaultRoot) {
-  const companions = readJson(root, CONTENT_FILES.companions).map((companion, index) => ({
+function missingScreenLines(stage, storyId) {
+  if (stage === undefined) return [`no ${stageZeroFile(storyId)}`];
+  const missing = [];
+  if (!filled(stage?.who)) missing.push('no "Who I am" line (who)');
+  if (!filled(stage?.story?.goalShort)) missing.push("no goal sentence (story.goalShort)");
+  if (!filled(stage?.whereNow?.s1)) missing.push("no opening place (whereNow.s1)");
+  return missing;
+}
+
+function companionRow(companion, index) {
+  const where = companion?.id ?? `Companion ${index + 1}`;
+  if (!MODES.includes(companion.mode)) {
+    throw new Error(`${where}: mode must be ${MODES.join(" or ")} in ${CONTENT_FILES.companions}`);
+  }
+  if (typeof companion.keyCode !== "string" || !KEY_CODE.test(companion.keyCode)) {
+    throw new Error(
+      `${where}: keyCode must be 2 to 8 lower-case letters (NAMING) in ${CONTENT_FILES.companions}`,
+    );
+  }
+  return {
     id: companion.id,
     position: index + 1,
     name: companion.name,
@@ -72,43 +104,84 @@ export function readContentRows(root = defaultRoot) {
     line: companion.line,
     portrait: companion.portrait,
     enter_href: companion.enterHref ?? null,
-  }));
-  const periodOf = new Map();
-  for (const period of readJson(root, CONTENT_FILES.periods)) {
-    for (const id of period.storyIds) periodOf.set(id, period.name);
+    mode: companion.mode,
+    key_code: companion.keyCode,
+  };
+}
+
+/**
+ * The rows of the three tables, read from the files, as the database holds them. Every Companion
+ * row is read; `companion` limits the stories to that Companion's. A story whose screen lines are
+ * missing stops the read, with one line per story naming what is missing.
+ * @param {string} [root]
+ * @param {{ companion?: string }} [options]
+ */
+export function readContentRows(root = defaultRoot, options = {}) {
+  const companions = readJson(root, CONTENT_FILES.companions).map(companionRow);
+  const keyCodes = new Set();
+  for (const row of companions) {
+    if (keyCodes.has(row.key_code)) throw new Error(`${row.id}: keyCode ${row.key_code} is taken`);
+    keyCodes.add(row.key_code);
+  }
+  if (options.companion && !companions.some((row) => row.id === options.companion)) {
+    throw new Error(`no Companion ${options.companion} in ${CONTENT_FILES.companions}`);
   }
   const stories = [];
   const storyInputs = [];
-  for (const record of readJson(root, CONTENT_FILES.stories)) {
-    const stage = readJson(root, stageZeroFile(record.id));
-    if (!periodOf.has(record.id)) throw new Error(`story ${record.id} has no period`);
-    stories.push({
-      id: record.id,
-      companion_id: STORIES_COMPANION,
-      sequence: record.sequence,
-      title: record.title,
-      period: periodOf.get(record.id),
-      goal_short: stage.story.goalShort,
-      who: stage.who,
-      opening: openingOf(stage.whereNow.s1),
-    });
-    // Same key order as the file: each display text and the date are kept in one place only.
-    const stageZero = structuredClone(stage);
-    stageZero.who = null;
-    stageZero.story.title = null;
-    stageZero.story.date = null;
-    stageZero.story.goalShort = null;
-    stageZero.whereNow.s1 = null;
-    storyInputs.push({
-      story_id: record.id,
-      date: record.date,
-      goal: record.goal,
-      facts: record.facts,
-      forbidden_terms: record.forbiddenTerms,
-      key_moments: record.keySlices,
-      provenance: record.provenance,
-      stage_zero: stageZero,
-    });
+  const problems = [];
+  const seen = new Set();
+  for (const companion of companions) {
+    if (options.companion && companion.id !== options.companion) continue;
+    // A Companion without a stories file has no stories yet.
+    if (!existsSync(path.join(root, CONTENT_FILES.stories(companion.id)))) continue;
+    const periodOf = new Map();
+    for (const period of readJson(root, CONTENT_FILES.periods(companion.id))) {
+      for (const id of period.storyIds) periodOf.set(id, period.name);
+    }
+    for (const record of readJson(root, CONTENT_FILES.stories(companion.id))) {
+      if (seen.has(record.id)) throw new Error(`story ${record.id} appears twice`);
+      seen.add(record.id);
+      if (!periodOf.has(record.id)) throw new Error(`story ${record.id} has no period`);
+      const file = path.join(root, stageZeroFile(record.id));
+      const stage = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : undefined;
+      const missing = missingScreenLines(stage, record.id);
+      if (missing.length > 0) {
+        problems.push(`- ${record.id}: ${missing.join(", ")}`);
+        continue;
+      }
+      stories.push({
+        id: record.id,
+        companion_id: companion.id,
+        sequence: record.sequence,
+        title: record.title,
+        period: periodOf.get(record.id),
+        goal_short: stage.story.goalShort,
+        who: stage.who,
+        opening: openingOf(stage.whereNow.s1),
+      });
+      // Same key order as the file: each display text and the date are kept in one place only.
+      const stageZero = structuredClone(stage);
+      stageZero.who = null;
+      stageZero.story.title = null;
+      stageZero.story.date = null;
+      stageZero.story.goalShort = null;
+      stageZero.whereNow.s1 = null;
+      storyInputs.push({
+        story_id: record.id,
+        date: record.date,
+        goal: record.goal,
+        facts: record.facts,
+        forbidden_terms: record.forbiddenTerms,
+        key_moments: record.keySlices,
+        provenance: record.provenance,
+        stage_zero: stageZero,
+      });
+    }
+  }
+  if (problems.length > 0) {
+    throw new Error(
+      `These stories cannot be imported yet; nothing was written:\n${problems.join("\n")}`,
+    );
   }
   return { companions, stories, storyInputs };
 }
@@ -161,6 +234,14 @@ export function exportDocument(rows) {
   };
 }
 
+function required(row, column) {
+  const value = row[column];
+  if (typeof value !== "string" || value === "") {
+    throw new Error(`Companion ${row.id} has no ${column}: run the #302 migration first`);
+  }
+  return value;
+}
+
 /** The file contents for an export document, keyed by relative path. */
 export function contentFilesOf(document) {
   const files = new Map();
@@ -174,21 +255,26 @@ export function contentFilesOf(document) {
       line: row.line,
       portrait: row.portrait,
       enterHref: row.enter_href ?? null,
+      // Until the #302 migration has run, the export has neither; refuse rather than drop them.
+      mode: required(row, "mode"),
+      keyCode: required(row, "key_code"),
     })),
   );
   const inputsOf = new Map(document.story_inputs.map((row) => [row.story_id, row]));
-  const periods = [];
-  const records = [];
+  const companionIds = new Set(document.companions.map((row) => row.id));
+  /** Per Companion, in story order: its periods and its story records. */
+  const byCompanion = new Map();
   for (const story of document.stories) {
     const inputs = inputsOf.get(story.id);
     if (!inputs) throw new Error(`story ${story.id} has no inputs`);
-    // The files hold Oppenheimer's stories only; another Companion's stories need files of their own.
-    if (story.companion_id !== STORIES_COMPANION) {
-      throw new Error(
-        `story ${story.id} belongs to ${story.companion_id}; only ${STORIES_COMPANION}'s stories have files`,
-      );
+    if (!companionIds.has(story.companion_id)) {
+      throw new Error(`story ${story.id} names an unknown Companion: ${story.companion_id}`);
     }
     stageZeroParts(story.id, inputs.stage_zero);
+    if (!byCompanion.has(story.companion_id)) {
+      byCompanion.set(story.companion_id, { periods: [], records: [] });
+    }
+    const { periods, records } = byCompanion.get(story.companion_id);
     const last = periods.at(-1);
     if (last && last.name === story.period) last.storyIds.push(story.id);
     else periods.push({ name: story.period, storyIds: [story.id] });
@@ -211,8 +297,10 @@ export function contentFilesOf(document) {
     stage.whereNow.s1 = placeOf(story.id, story.opening);
     files.set(stageZeroFile(story.id), stage);
   }
-  files.set(CONTENT_FILES.stories, records);
-  files.set(CONTENT_FILES.periods, periods);
+  for (const [companionId, { periods, records }] of byCompanion) {
+    files.set(CONTENT_FILES.stories(companionId), records);
+    files.set(CONTENT_FILES.periods(companionId), periods);
+  }
   return files;
 }
 

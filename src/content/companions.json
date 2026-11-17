@@ -6,7 +6,9 @@
     "tags": "Brilliant · Eloquent · Haunted",
     "line": "I can give you the answer. Whether you should have asked it is your problem, not the equation’s.",
     "portrait": "/companions/oppenheimer.png",
-    "enterHref": "/companions/oppenheimer"
+    "enterHref": "/companions/oppenheimer",
+    "mode": "historical",
+    "keyCode": "opp"
   },
   {
     "id": "moriarty",
@@ -15,6 +17,8 @@
     "tags": "Analytical · Enigmatic · Defiant",
     "line": "The only way to defeat the devil is to become one yourself.",
     "portrait": "/companions/moriarty.png",
-    "enterHref": null
+    "enterHref": null,
+    "mode": "fictional",
+    "keyCode": "mor"
   }
 ]

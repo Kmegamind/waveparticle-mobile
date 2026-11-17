@@ -38,6 +38,7 @@ usage in the model provider's dashboard.
 ## Secrets
 `PROMPTS_READ_TOKEN` (server only, Production and Preview) lets the server read the prompts table; see `docs/ai/prompts/README.md` (#282).
 `CONTENT_READ_KEY` (server only, Production and Preview) lets the server read the story content (#284, `docs/decisions/0019`). Make one with `node scripts/content/token.mjs`: it prints the key for Vercel and one SQL line that stores only its SHA-256 in `private.content_reader`. Then load the content with `node scripts/content/import.mjs` (prints SQL for the SQL editor) and redeploy. Without the migration, the key and the import, the pages that show story content fail.
+Before the next content import after #302, run `supabase/migrations/20261122000000_companion_mode.sql` (each Companion's `mode` and `key_code`, `docs/decisions/0022`). The import loads every Companion in `src/content/companions.json`; `node scripts/content/import.mjs --companion <id>` loads only that Companion's stories. A story whose screen lines are missing stops the import and is listed.
 Real values live in the platform's environment settings or CI secrets. `.env.example` lists the names.
 
 ## Admin roles
