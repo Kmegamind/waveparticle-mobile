@@ -37,6 +37,11 @@ export type StepCards = {
    * never cut by the 1 to 5 limit, which applies to live cards only.
    */
   premade?: true;
+  /**
+   * Rebuilt on another device from the cards already shown (#300): the Step asks for its cards
+   * again, and the full set replaces these, keeping the shown count and the clock.
+   */
+  partial?: true;
 };
 
 export type StepRun = {
@@ -135,6 +140,11 @@ function newSession(plan: SessionPlan, speed: number): FocusSession {
   };
 }
 
+/** True while a Step has no cards yet, or only the shown cards of a rebuilt session (#300). */
+export function needsCards(step: StepRun | undefined): boolean {
+  return !step?.cards || step.cards.partial === true;
+}
+
 /** Keeps a stored session for the same plan and speed; otherwise starts a new one. */
 export function syncSession(
   stored: FocusSession | null,
@@ -163,12 +173,14 @@ export function setStepCards(
   nowMs: number,
 ): FocusSession {
   const step = session.steps[index];
-  if (!step || step.cards) return session;
+  if (!step || (step.cards && !step.cards.partial)) return session;
   const minutes = (step.targetSeconds * session.speed) / 60;
   const limited = cards.premade
     ? { opening: cards.opening, story: [...cards.story], premade: true as const }
     : { opening: cards.opening, story: cards.story.slice(0, maxStoryCards(minutes)) };
   let next: StepRun = { ...step, cards: limited };
+  // A partial Step already runs: its clock and shown cards stay as they are.
+  if (step.cards?.partial) return replaceStep(session, index, next);
   if (index === session.current && !next.clock) {
     const startAt = Math.max(nowMs, session.holdUntilMs ?? 0);
     next = { ...next, clock: createClock(step.targetSeconds, startAt) };

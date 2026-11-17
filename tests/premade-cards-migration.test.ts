@@ -49,7 +49,11 @@ describe("pre-made cards migration (#300)", () => {
     const body = reader();
     expect(body).toMatch(/c\.story_id = story/);
     expect(body).toMatch(/versions is null and c\.published/);
-    expect(body).toMatch(/versions is not null and \(versions ->> c\.key\)::integer = c\.version/);
+    // Review: a user may write their own session's card_versions, so a pinned read returns only
+    // versions that were published at some point, never a draft.
+    expect(body).toMatch(
+      /versions is not null and c\.published_at is not null and \(versions ->> c\.key\)::integer = c\.version/,
+    );
     for (const field of ["'key'", "'version'", "'kind'", "'part'", "'position'", "'body'"]) {
       expect(body).toContain(field);
     }

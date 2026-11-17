@@ -33,5 +33,9 @@ every Step's cards.
 
 ## Consequences
 - The signed-in focus page no longer needs the model for cards and never waits for generation.
-- A second device rebuilds a session from the cards already shown, as before; the unshown cards of
-  the current Step are not fetched again (unchanged behaviour).
+- A second device rebuilds a session from the cards already shown; the current Step then asks for
+  its pinned cards again, so its unshown cards still arrive.
+- A pinned read returns only versions that were published at some point, because a session's owner
+  can write its `card_versions`.
+- A session opened before this change keeps the live cards it already has; its later Steps get the
+  pre-made cards (only while such sessions are still open).

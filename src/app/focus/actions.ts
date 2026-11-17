@@ -56,6 +56,7 @@ export async function loadAccountStepCards(request: unknown): Promise<StepCardsR
       };
     },
     pinVersions: async (sessionId, versions) => {
+      // An error is not thrown here: the session is read again and checked right after.
       await client
         .from("sessions")
         .update({ card_versions: versions })
@@ -64,6 +65,7 @@ export async function loadAccountStepCards(request: unknown): Promise<StepCardsR
         .is("card_versions", null);
     },
     readDeck: (storyId, versions) => readStoryCardsFromSupabase({ storyId, versions }),
+    log: (event) => console.warn(JSON.stringify({ source: "story-cards", ...event })),
   });
 }
 

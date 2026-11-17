@@ -21,6 +21,8 @@ export type PremadeDeps = {
   pinVersions: (sessionId: string, versions: CardVersions) => Promise<void>;
   /** Published cards when `versions` is null, otherwise exactly those versions. */
   readDeck: (storyId: string, versions: CardVersions | null) => Promise<StoryDeck | null>;
+  /** A server log line naming the event only: never card text, ids or the error. */
+  log?: (event: { event: "story_cards_read_failed" }) => void;
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -87,6 +89,7 @@ export async function premadeStepCards(
       },
     };
   } catch {
+    deps.log?.({ event: "story_cards_read_failed" });
     return { status: "failed" };
   }
 }

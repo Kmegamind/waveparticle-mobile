@@ -11,6 +11,7 @@ import {
   completeStep,
   isFinished,
   isHolding,
+  needsCards,
   loadSession,
   parseSpeed,
   pauseSession,
@@ -202,11 +203,11 @@ export function FocusBody({ host }: { host: FocusHost }) {
   // in, so the next Step's request carries them (NO-BACKUP, CARD-NEW).
   useEffect(() => {
     if (finished) return;
-    if (!session.steps[index]?.cards && !failed[index]) fetchCards(index);
+    if (needsCards(session.steps[index]) && !failed[index]) fetchCards(index);
     if (
       session.steps[index]?.cards &&
       index + 1 < total &&
-      !session.steps[index + 1]?.cards &&
+      needsCards(session.steps[index + 1]) &&
       !failed[index + 1]
     ) {
       fetchCards(index + 1);

@@ -329,6 +329,39 @@ describe("#257 AC4 and AC6 a reopened page shows the stored lines again", () => 
     expect(seeded.steps[0].clock).not.toBeNull();
   });
 
+  it("test_300_review_a_rebuilt_current_step_asks_for_its_remaining_pre_made_cards", () => {
+    const progress = opened();
+    const plan = planOf(progress);
+    const session = tick(runningSession(plan), 5 * 60_000);
+    const recorded = applyFocusSnapshot(progress, snapshotOf(plan.sessionId, session), {
+      now: NOW,
+      newId: ids(),
+      userId: "user-1",
+    });
+    const reopened = planOf({ ...progress, sessions: [recorded!.session] });
+    const seeded = seedFocusSession(reopened, 1, 10_000);
+    // Only the shown cards are on the account, so the current Step is marked partial.
+    expect(seeded.steps[0].cards?.partial).toBe(true);
+    const clock = seeded.steps[0].clock;
+    const full = setStepCards(
+      seeded,
+      0,
+      { opening: "Background.", story: ["One.", "Two."], premade: true },
+      20_000,
+    );
+    expect(full.steps[0].cards).toEqual({
+      opening: "Background.",
+      story: ["One.", "Two."],
+      premade: true,
+    });
+    expect(full.steps[0].shownStory).toBe(1);
+    expect(full.steps[0].clock).toEqual(clock);
+    expect(visibleCards(full, 0, 20_000)).toEqual(["Background.", "One."]);
+    // A Step whose cards are complete is never replaced.
+    const again = setStepCards(full, 0, { opening: "X.", story: [], premade: true }, 30_000);
+    expect(again).toBe(full);
+  });
+
   it("each account session has its own browser key", () => {
     expect(accountSessionKey("abc")).toBe("waveparticle.session.abc");
     expect(accountSessionKey("abc")).not.toBe("waveparticle.prototype.session");

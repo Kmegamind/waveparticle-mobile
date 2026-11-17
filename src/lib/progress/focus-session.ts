@@ -303,7 +303,12 @@ export function seedFocusSession(
       if (cards.length === 0) return step;
       return {
         ...step,
-        cards: { opening: cards[0], story: cards.slice(1) },
+        // #300: the current Step's other pre-made cards are asked for again (pinned, so the
+        // shown ones stay the same).
+        cards:
+          index === current
+            ? { opening: cards[0], story: cards.slice(1), partial: true as const }
+            : { opening: cards[0], story: cards.slice(1) },
         shownStory: cards.length - 1,
         clock: index === current ? createClock(step.targetSeconds, nowMs) : null,
       };

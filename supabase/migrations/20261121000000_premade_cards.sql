@@ -33,7 +33,9 @@ as $$
       where c.story_id = story
         and (
           (versions is null and c.published)
-          or (versions is not null and (versions ->> c.key)::integer = c.version)
+          -- A session's owner can write its card_versions, so a pinned read returns only versions
+          -- that were published at some point (published_at stays set), never a draft.
+          or (versions is not null and c.published_at is not null and (versions ->> c.key)::integer = c.version)
         )
     ), '[]'::json)
   )

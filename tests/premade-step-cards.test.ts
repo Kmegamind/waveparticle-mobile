@@ -149,6 +149,24 @@ describe("pre-made cards on the signed-in focus page (#300)", () => {
     });
   });
 
+  it("test_300_review_a_failed_read_is_logged_by_event_only", async () => {
+    const down = world();
+    down.readDeck.mockRejectedValue(new Error("secret detail"));
+    const log = vi.fn();
+    await premadeStepCards({ sessionId: SESSION, index: 0 }, { ...down.deps, log });
+    expect(log).toHaveBeenCalledWith({ event: "story_cards_read_failed" });
+    expect(JSON.stringify(log.mock.calls)).not.toContain("secret");
+  });
+
+  it("test_300_review_the_focus_page_asks_again_for_a_partial_step", () => {
+    const body = readFileSync(
+      path.join(import.meta.dirname, "..", "src/app/_session/focus-body.tsx"),
+      "utf8",
+    );
+    expect(body).toContain("needsCards(session.steps[index])");
+    expect(body).toContain("needsCards(session.steps[index + 1])");
+  });
+
   it("test_300_another_accounts_session_or_a_bad_request_fails", async () => {
     const { deps } = world();
     for (const raw of [
