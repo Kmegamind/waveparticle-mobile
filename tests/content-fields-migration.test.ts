@@ -33,10 +33,14 @@ describe("content fields migration (#309)", () => {
     expect(code()).toMatch(
       /alter table public\.companions\s+add column who text not null default ''/,
     );
-    expect(code()).toMatch(/alter table public\.stories\s+add column path text not null default ''/);
+    expect(code()).toMatch(
+      /alter table public\.stories\s+add column path text not null default ''/,
+    );
     expect(code()).toMatch(/create table public\.content_fields \(/);
     expect(code()).toMatch(/primary key \(key, version\)/);
-    expect(code()).toMatch(/body text not null check \(body ~ '\\S'\) check \(char_length\(body\) <= 1000\)/);
+    expect(code()).toMatch(
+      /body text not null check \(body ~ '\\S'\) check \(char_length\(body\) <= 1000\)/,
+    );
     expect(code()).toMatch(
       /create unique index content_fields_one_published_per_key\s+on public\.content_fields \(key\) where published/,
     );
@@ -59,7 +63,9 @@ describe("content fields migration (#309)", () => {
     expect(save).toMatch(/current_body ~ '\\S'/);
     expect(save).toMatch(/values \(field_key, 1, [^)]*current_body, true, now\(\)/);
     // The draft itself: not published.
-    expect(save).toMatch(/insert into public\.content_fields \([^)]*\)\s+values \([^;]*field_body[^;]*\);/);
+    expect(save).toMatch(
+      /insert into public\.content_fields \([^)]*\)\s+values \([^;]*field_body[^;]*\);/,
+    );
     expect(save).not.toMatch(/update public\.(companions|stories)/);
     expect(save).not.toMatch(/apply_content_field/);
   });
@@ -95,7 +101,16 @@ describe("content fields migration (#309)", () => {
     expect(set).toMatch(/'story_field'/);
     expect(set).toMatch(/auth\.uid\(\)/);
     const apply = fn("private.apply_content_field");
-    for (const column of ["name", "tags", "who", "title", "goal_short", "opening", "path", "period"]) {
+    for (const column of [
+      "name",
+      "tags",
+      "who",
+      "title",
+      "goal_short",
+      "opening",
+      "path",
+      "period",
+    ]) {
       expect(apply, column).toMatch(new RegExp(`set ${column} = field_body`));
     }
     // A period name renames every story of that period.

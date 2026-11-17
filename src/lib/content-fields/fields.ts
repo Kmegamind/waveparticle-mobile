@@ -109,7 +109,11 @@ export function fieldProblems(
   if (text.length > limit) return [`Keep it to ${limit} characters or fewer.`];
   const problems = datesProblems(text);
   if (/\{age\}/i.test(text)) problems.push("Mentions an age ({age}). Ages stay in the admin.");
-  if (key.item === "story" && key.field === "opening" && !text.trimEnd().endsWith(OPENING_QUESTION)) {
+  if (
+    key.item === "story" &&
+    key.field === "opening" &&
+    !text.trimEnd().endsWith(OPENING_QUESTION)
+  ) {
     problems.push(`End the opening with "${OPENING_QUESTION}"`);
   }
   if (key.item === "story" && key.field === "period") {

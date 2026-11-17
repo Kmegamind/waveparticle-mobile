@@ -22,7 +22,11 @@ const story = (storyId: string, field: string) => parseFieldKey(`opp.${storyId}.
 
 describe("content fields (#309)", () => {
   it("test_309_field_keys_name_the_companion_or_story_and_the_field", () => {
-    expect(parseFieldKey("chr.opp.name")).toEqual({ item: "companion", code: "opp", field: "name" });
+    expect(parseFieldKey("chr.opp.name")).toEqual({
+      item: "companion",
+      code: "opp",
+      field: "name",
+    });
     expect(parseFieldKey("chr.opp.period.2")).toEqual({
       item: "companion",
       code: "opp",
@@ -77,9 +81,9 @@ describe("content fields (#309)", () => {
     expect(fieldProblems(opening, "I am at the lab.", { stories })).toEqual([
       'End the opening with "What are you working on?"',
     ]);
-    expect(fieldProblems(opening, "I am at the lab. What are you working on?", { stories })).toEqual(
-      [],
-    );
+    expect(
+      fieldProblems(opening, "I am at the lab. What are you working on?", { stories }),
+    ).toEqual([]);
   });
 
   it("test_309_ac2_a_story_moves_only_to_a_neighbouring_period_and_never_empties_one", () => {
