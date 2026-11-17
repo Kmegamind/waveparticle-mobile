@@ -115,6 +115,8 @@ describe("ADM-12 rows (#289)", () => {
         return { ok: true } as const;
       },
       story_card: async () => ({ ok: false, error: "failed" }) as const,
+      companion_field: async () => ({ ok: false, error: "failed" }) as const,
+      story_field: async () => ({ ok: false, error: "failed" }) as const,
     };
     expect(
       await rollBackHistoryItem({ kind: "app_text", key: "ui.S1.back", version: 2 }, handlers),
@@ -170,6 +172,8 @@ describe("ADM-12 story card rows (#304)", () => {
         calls.push([key, n]);
         return { ok: true } as const;
       },
+      companion_field: async () => ({ ok: false, error: "failed" }) as const,
+      story_field: async () => ({ ok: false, error: "failed" }) as const,
     };
     expect(
       await rollBackHistoryItem(
@@ -228,5 +232,58 @@ describe("App text after a roll back (#289, known issue from #288)", () => {
   it("test_289_the_editor_labels_an_earlier_version_in_words", () => {
     const editor = read("src/app/admin/app-text/app-text-editor.tsx");
     expect(editor).toContain('earlier: "Earlier version"');
+  });
+});
+
+describe("ADM-12 Companion and story field rows (#309)", () => {
+  const field = (kind: string, overrides: Partial<PublishHistoryRow> = {}) =>
+    history({
+      kind,
+      item_key: kind === "story_field" ? "opp.trinity.title" : "chr.opp.name",
+      ...overrides,
+    });
+
+  it("test_309_ac5_field_rows_are_labelled_and_offer_roll_back_to_an_admin_only", () => {
+    const rows = [field("companion_field", { id: 2 }), field("story_field", { id: 1 })];
+    expect(
+      publishHistoryEntries(rows, "admin").map((entry) => [entry.kindLabel, entry.canRollBack]),
+    ).toEqual([
+      ["Companion field", true],
+      ["Story field", true],
+    ]);
+    expect(publishHistoryEntries(rows, "writer").map((entry) => entry.canRollBack)).toEqual([
+      false,
+      false,
+    ]);
+  });
+
+  it("test_309_ac5_roll_back_of_a_field_row_uses_the_field_path", async () => {
+    const calls: unknown[] = [];
+    const handlers = {
+      app_text: async () => ({ ok: false, error: "failed" }) as const,
+      story_card: async () => ({ ok: false, error: "failed" }) as const,
+      companion_field: async (key: string, n: number) => {
+        calls.push(["companion", key, n]);
+        return { ok: true } as const;
+      },
+      story_field: async (key: string, n: number) => {
+        calls.push(["story", key, n]);
+        return { ok: true } as const;
+      },
+    };
+    await rollBackHistoryItem(
+      { kind: "companion_field", key: "chr.opp.name", version: 1 },
+      handlers,
+    );
+    await rollBackHistoryItem(
+      { kind: "story_field", key: "opp.trinity.title", version: 3 },
+      handlers,
+    );
+    expect(calls).toEqual([
+      ["companion", "chr.opp.name", 1],
+      ["story", "opp.trinity.title", 3],
+    ]);
+    const actions = read("src/app/admin/publish-history/actions.ts");
+    expect(actions).toContain("rollBackContentFieldAction");
   });
 });

@@ -23,7 +23,7 @@ describe("story card editing migration (#304)", () => {
     const names = readdirSync(migrations)
       .filter((file) => file.endsWith(".sql"))
       .sort();
-    expect(names.at(-1)).toBe(MIGRATION);
+    expect(names).toContain(MIGRATION);
     expect(names.indexOf(MIGRATION)).toBeGreaterThan(
       names.indexOf("20261121000000_premade_cards.sql"),
     );

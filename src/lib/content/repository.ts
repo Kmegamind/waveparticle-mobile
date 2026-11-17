@@ -140,3 +140,6 @@ const serverRepository = createContentRepository({
 
 /** The Companions and their stories. Server only; throws `StoryContentUnavailable`. */
 export const getStoryContent = serverRepository.getStoryContent;
+
+/** Forgets this server's copy, so the next read sees a field just published (#309). */
+export const clearStoryContentCache = serverRepository.clear;

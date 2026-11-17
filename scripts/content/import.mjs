@@ -12,7 +12,9 @@
 //
 // Every row is inserted or, when it exists, replaced by the files' version, in one transaction.
 // Running it twice changes nothing. It does not delete rows that are no longer in the files.
-// Run the export first if the tables were edited, or those edits are replaced.
+// The fields the admin edits (#309: a Companion's name and tags; a story's title, period, goal
+// sentence, "Who I am" and opening) are written only for a new row: on an existing row the
+// published text of the admin stays. Run the export first if the tables were edited otherwise.
 
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -37,13 +39,21 @@ const literal = (value) => {
   return `${quote(JSON.stringify(value))}::json`;
 };
 
+/** The columns the admin edits and publishes (#309): an existing row keeps them. */
+const EDITED_IN_ADMIN = {
+  companions: ["name", "tags"],
+  stories: ["title", "period", "goal_short", "who", "opening"],
+  story_inputs: [],
+};
+
 function upsert(table, key, row) {
+  const kept = EDITED_IN_ADMIN[table] ?? [];
   const columns = Object.keys(row);
   const values = columns.map((column) =>
     column === key ? `'${row[column]}'` : literal(row[column]),
   );
   const updates = columns
-    .filter((column) => column !== key)
+    .filter((column) => column !== key && !kept.includes(column))
     .map((column) => `${column} = excluded.${column}`);
   return (
     `insert into public.${table} (${columns.join(", ")}) values (${values.join(", ")})\n` +

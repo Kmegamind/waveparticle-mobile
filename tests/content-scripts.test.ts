@@ -27,6 +27,29 @@ describe("story content scripts (#284)", () => {
     expect(storyRows.some((line) => line.includes("moriarty"))).toBe(false);
   });
 
+  it("test_309_ac6_import_keeps_the_fields_edited_in_the_admin", () => {
+    const sql = importSql(readContentRows(root));
+    const statements = sql.split(";\n");
+    const updatesOf = (table: string) =>
+      statements
+        .filter((statement) => statement.startsWith(`insert into public.${table} `))
+        .map((statement) => statement.slice(statement.indexOf("do update set")));
+    const companionUpdates = updatesOf("companions");
+    const storyUpdates = updatesOf("stories");
+    expect(companionUpdates).toHaveLength(2);
+    expect(storyUpdates).toHaveLength(26);
+    for (const update of companionUpdates) {
+      expect(update).not.toMatch(/\b(name|tags) = excluded/);
+      expect(update).toMatch(/\bline = excluded\.line/);
+    }
+    for (const update of storyUpdates) {
+      expect(update).not.toMatch(/\b(title|period|goal_short|who|opening) = excluded/);
+      expect(update).toMatch(/\bsequence = excluded\.sequence/);
+    }
+    // A new row still gets every field from the files.
+    expect(sql).toMatch(/insert into public\.stories \(id, companion_id, sequence, title, period/);
+  });
+
   it("test_284_import_quotes_text_that_contains_quotes_and_dollar_signs", () => {
     const rows = readContentRows(root);
     rows.stories[0].title = "It's $content$ and $$ here";
