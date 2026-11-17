@@ -9,6 +9,7 @@ const PROBLEMS: Record<string, string> = {
   invalid: "This version cannot be rolled back to.",
   blank: "This version cannot be rolled back to.",
   "too-long": "This version cannot be rolled back to.",
+  "checks-failed": "The gateway cannot use this version, so it was not rolled back.",
   failed: "Could not roll back. Please try again.",
 };
 

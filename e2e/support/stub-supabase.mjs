@@ -9,8 +9,12 @@
 //   GET  /health
 //   GET  /auth/v1/user                (Authorization: Bearer <token>)
 //   GET|PATCH /rest/v1/<table>?…      eq., in.(…), order, limit, select (all columns returned)
-//   POST /rest/v1/rpc/get_active_prompts  { reader_token } → the seed prompts in docs/ai/prompts
-//        when the token is STUB_PROMPTS_READ_TOKEN, otherwise no rows, as the real function (#282)
+//   POST /rest/v1/rpc/get_active_prompts  { reader_token } → the active prompts (the seed in
+//        docs/ai/prompts as version 1, then as published in ADM-08) when the token is
+//        STUB_PROMPTS_READ_TOKEN, otherwise no rows, as the real function (#282)
+//   POST /rest/v1/rpc/list_prompt_versions (editors), save_prompt_draft (editors),
+//        publish_prompt | roll_back_prompt (admin only), as 20261124000000 (#308);
+//        POST /__prompts { reset: true } puts the prompts and their history back
 //   POST /rest/v1/rpc/get_story_content  { reader_key } → the seed story content (src/content,
 //        docs/demo) when the key is STUB_CONTENT_READ_KEY, otherwise null, as the real function (#284)
 //   GET  /rest/v1/stories | story_parts | story_cards   the seed rows (#293): stories for any
@@ -63,6 +67,46 @@ const seededCardVersions = () =>
   }));
 let cardVersions = seededCardVersions();
 let partTitles = storyCards.parts.map((part) => ({ ...part }));
+
+/** Every prompt version (#308): the seed as version 1, active, as after the import. */
+const seededPrompts = () =>
+  readPromptDirectory(promptDirectory).map((row) => ({
+    key: row.key,
+    version: 1,
+    active: true,
+    body: row.body,
+    params: row.params,
+    note: row.note ?? "",
+    created_at: "2026-11-14T00:00:00Z",
+    activated_at: "2026-11-14T00:00:00Z",
+  }));
+let promptVersions = seededPrompts();
+
+/** The same checks and history insert as private.set_active_prompt (20261124000000). */
+function setActivePrompt(key, version, action, user) {
+  const rows = promptVersions.filter((row) => row.key === key);
+  const target = rows.find((row) => row.version === version);
+  if (!target) return `no prompt ${key} version ${version}`;
+  if (target.active) return "already active";
+  const current = rows.find((row) => row.active);
+  if (action === "roll_back" && (!current || target.activated_at === null)) {
+    return "roll back needs a version that was active before";
+  }
+  if (current) current.active = false;
+  target.active = true;
+  target.activated_at = new Date().toISOString();
+  publishHistory.push({
+    id: nextHistoryId++,
+    kind: "prompt",
+    item_key: key,
+    version,
+    action,
+    acted_by: user.id,
+    acted_by_email: user.email ?? null,
+    acted_at: target.activated_at,
+  });
+  return null;
+}
 
 /** The same checks and history insert as private.set_published_story_card (20261123000000). */
 function setPublishedCard(key, version, action, user) {
@@ -302,7 +346,61 @@ createServer(async (request, response) => {
   if (path === "/rest/v1/rpc/get_active_prompts" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
     const allowed = promptReaderToken.length > 0 && body.reader_token === promptReaderToken;
-    return json(response, 200, allowed ? readPromptDirectory(promptDirectory) : []);
+    const active = promptVersions
+      .filter((row) => row.active)
+      .map(({ key, version, body, params, note }) => ({ key, version, body, params, note }));
+    return json(response, 200, allowed ? active : []);
+  }
+
+  if (path === "/__prompts" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    if (body.reset === true) {
+      promptVersions = seededPrompts();
+      publishHistory = publishHistory.filter((row) => row.kind !== "prompt");
+    }
+    return json(response, 204);
+  }
+
+  // #308: prompt versions and drafts (editors), publish and roll back (admin only).
+  const promptRpc = path.match(
+    /^\/rest\/v1\/rpc\/(list_prompt_versions|save_prompt_draft|publish_prompt|roll_back_prompt)$/,
+  );
+  if (promptRpc && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    const role = dataset && !dataset.deleted ? dataset.contentRole : null;
+    const needsAdmin = promptRpc[1] === "publish_prompt" || promptRpc[1] === "roll_back_prompt";
+    if (needsAdmin ? role !== "admin" : !["admin", "writer"].includes(role)) {
+      return json(response, 403, { code: "42501", message: "not allowed" });
+    }
+    if (promptRpc[1] === "list_prompt_versions") {
+      const rows = [...promptVersions].sort((left, right) =>
+        left.key === right.key ? right.version - left.version : left.key < right.key ? -1 : 1,
+      );
+      return json(response, 200, rows);
+    }
+    if (promptRpc[1] === "save_prompt_draft") {
+      const params = body.prompt_params;
+      if (typeof params !== "object" || params === null || Array.isArray(params)) {
+        return json(response, 400, { code: "22023", message: "settings must be an object" });
+      }
+      const rows = promptVersions.filter((row) => row.key === body.prompt_key);
+      if (rows.length === 0) return json(response, 404, { code: "P0002", message: "no prompt" });
+      const version = Math.max(...rows.map((row) => row.version)) + 1;
+      promptVersions.push({
+        key: body.prompt_key,
+        version,
+        active: false,
+        body: body.prompt_body,
+        params,
+        note: body.prompt_note ?? "",
+        created_at: new Date().toISOString(),
+        activated_at: null,
+      });
+      return json(response, 200, version);
+    }
+    const action = promptRpc[1] === "publish_prompt" ? "publish" : "roll_back";
+    const problem = setActivePrompt(body.prompt_key, body.prompt_version, action, dataset.user);
+    return problem ? json(response, 400, { code: "P0001", message: problem }) : json(response, 204);
   }
 
   if (path === "/rest/v1/rpc/get_story_content" && request.method === "POST") {
@@ -466,9 +564,16 @@ createServer(async (request, response) => {
       .slice(0, limit)
       .map((row) => ({
         ...row,
-        is_current: (row.kind === "story_card" ? cardVersions : appText).some(
-          (text) => text.key === row.item_key && text.version === row.version && text.published,
-        ),
+        is_current:
+          row.kind === "prompt"
+            ? promptVersions.some(
+                (prompt) =>
+                  prompt.key === row.item_key && prompt.version === row.version && prompt.active,
+              )
+            : (row.kind === "story_card" ? cardVersions : appText).some(
+                (text) =>
+                  text.key === row.item_key && text.version === row.version && text.published,
+              ),
       }));
     return json(response, 200, rows);
   }
