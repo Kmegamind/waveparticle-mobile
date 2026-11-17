@@ -240,6 +240,18 @@ Yue answered the 19 questions that the specs clean-up (issue #295, pull request 
 | US-CON-5 | 2026-11-17 | The user story US-CON-5 is settled by CARD-NEW. | The unrecorded "blocked by C3" is removed. |
 | US-FMT-7 | 2026-11-17 | The user story US-FMT-7 stays parked and unchanged. | |
 
+### Decisions of 2026-11-18
+
+Yue approved these five recommendations on 2026-11-17 and 2026-11-18. They answer the points that pull request #299 left open. Recorded in issue #305.
+
+| Id | Date | Decision | Consequences |
+|---|---|---|---|
+| CARD-TIMING | 2026-11-18 | Cards arrive evenly through the Step's time, as before. The last card of a Step arrives at the end of the Step; it is not a special card. The first card of the next Step is simply the story's next card, at the start of that Step. | Settles the timing that CARDS-SPREAD left open. |
+| NO-MERGED-MOMENTS | 2026-11-18 | The summary no longer lists "merged key moments". | Withdraws US-MAP-9 AC4 and C2's summary list. |
+| LEAK-BY-PART-ONLY | 2026-11-18 | FR-STORY-9 ("a card is limited to what he knew where the Step starts") is replaced by the spoiler check against the parts after the card's own part (LEAK-BY-PART), because parts can be split across Steps. | |
+| REST-OFFLINE | 2026-11-18 | The rest page offline also shows the failure screen with Retry. | Removes the "no retry" line of R-OFF. |
+| CLOSING-FAIL | 2026-11-18 | If the closing line cannot be loaded, the summary shows the failure screen with Retry. | The summary has no clock, so FAIL-PREMADE's "the clock does not start" does not apply there. |
+
 ## 2. Superseded rules (do not implement)
 
 | Rule | Replaced by |
@@ -272,6 +284,10 @@ Yue answered the 19 questions that the specs clean-up (issue #295, pull request 
 | A later Step opens with a card about what he just finished (T9); the last card of a Step says he is still at it at 00:00 (T8); 1 to 5 cards per Step, extra cards ignored (T7) | CARDS-SPREAD |
 | A key slice ends a Step (C2) | LEAK-BY-PART |
 | "No connection. You can still go back to your Step." (R-OFF) | OFFLINE-RESUME |
+| The summary lists the merged key moments, one first-person line each (C2, US-MAP-9 AC4) | NO-MERGED-MOMENTS |
+| During a Step all cards presuppose only what he could know where the Step starts (FR-STORY-9) | LEAK-BY-PART-ONLY |
+| No retry on the rest page without network (R-OFF) | REST-OFFLINE |
+| "The clock does not start" when the closing line fails to load (FAIL-PREMADE, on the summary) | CLOSING-FAIL |
 | His last message before Back is never a question | CHAT-QUESTION-END |
 
 ## 3. Open

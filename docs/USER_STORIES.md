@@ -365,11 +365,11 @@ These rules come from the product principles and from decisions. They are repeat
 **Acceptance criteria**
 - Given the Life Path, then no row and no current card shows a count, a percentage, a progress bar, a countdown, a "locked" label or a source label.
 - Given the current card or any row, then no scene marker, key-moment marker or turning-point mark is shown.
-- Given a finished Story's record (US-MAP-10) or the summary after merged Steps (US-MAP-9), then key moments may appear there, and nowhere else.
+- Given a finished Story's record (US-MAP-10), then key moments may appear there, and nowhere else. The summary lists no merged key moments (NO-MERGED-MOMENTS).
 
 **Priority:** Must · **Area:** Story map and Companions (NF2) · **Screens:** CPAGE, COMP · **Depends on:** US-MAP-3 · **Size:** S · **Source:** DEC M3 (decided 2026-11-05); SM02 SM-9; SM00 D7
 
-### US-MAP-9 · Summary after the last Step, with merged key moments
+### US-MAP-9 · Summary after the last Step
 
 **As a** user who has just finished the last Step, **I want** one calm summary, **so that** I get a clear ending without a score.
 
@@ -378,7 +378,7 @@ These rules come from the product principles and from decisions. They are repeat
 - Given the summary, then it shows his closing feeling in the first person, one thing he is carrying that he has not resolved, and my Steps as a plain list with no "3/3" and no percentage.
 - Given the record on the summary, then it shows only the plan length and the focus time, with no verdict (SUMMARY-RECORD).
 - Given the summary, then it offers Next and Home; nothing starts automatically and Next opens the Life Path with the next Story as current.
-- Given my Plan had fewer Steps than the Story has key moments, then the summary lists the key moments that were merged, one first-person line each; if nothing was merged, no such list appears.
+- ~~Given my Plan had fewer Steps than the Story has key moments, then the summary lists the key moments that were merged.~~ Withdrawn (NO-MERGED-MOMENTS): the summary lists no merged key moments.
 - Given I was the last user to finish a Story that was already played, then Next is absent and Home remains.
 - Given I finish the final Story of the path, then the path ends with one line from him and no further rows.
 
@@ -432,7 +432,7 @@ These rules come from the product principles and from decisions. They are repeat
 - Given a Story, then it has 2 to 5 parts (STORY-PARTS), and its cards are made for each part, with the key slices as must-use facts (US-AI-2).
 - Given I press Start on a Plan of x Steps (any number), then the app spreads the Story's parts across the x Steps with plain code and no model call (CARDS-PER-PART; for example 4 parts and 2 Steps gives parts 1 and 2 in Step 1 and parts 3 and 4 in Step 2); the cards of all parts are spread in story order, no card is ever dropped, every Step gets at least one new card, and with more Steps than parts a part's cards are split across neighbouring Steps (CARDS-SPREAD).
 - Given a card, then the spoiler check runs when it is made and before publishing, against the parts after the card's own part (LEAK-BY-PART).
-- Given there are fewer Steps than key slices, then the later key slices are merged into the last Step, and the summary lists every merged key moment, one first-person line each (US-MAP-9).
+- Given there are fewer Steps than key slices, then the later key slices are merged into the last Step; the summary lists no merged key moments (NO-MERGED-MOMENTS).
 - Given there is only one Step, then there are no next-Step cards and the Story goes straight to the summary.
 - Given the number of Steps, then it never depends on the number of Slices.
 
@@ -654,7 +654,7 @@ These rules come from the product principles and from decisions. They are repeat
 
 **Acceptance criteria**
 - Given a Step of y minutes, then its n story cards are the cards that the app spreads to that Step in story order (CARDS-PER-PART, CARDS-SPREAD); n is at least 1 and has no upper limit, and no card is ever dropped (CARDS-SPREAD).
-- Given n cards, then they are spread evenly through the y minutes of foreground time: more cards in a Step come closer together, fewer come further apart (CARDS-SPREAD).
+- Given n cards, then they are spread evenly through the y minutes of foreground time: more cards in a Step come closer together, fewer come further apart (CARDS-SPREAD). The last card arrives at the end of the Step, and the next Step's first card is the story's next card at the start of that Step (CARD-TIMING).
 - Given the first Step opens, then its opening card is the background card (US-FMT-11), which is not one of the n story cards. There is no special "just finished" card at the start of a later Step and no special "still at it" card at 00:00 (CARDS-SPREAD).
 
 **Priority:** Must · **Area:** Story format and cards (NF5) · **Screens:** F1 · **Depends on:** US-FMT-1, US-AI-2 · **Size:** M · **Source:** DEC T1 (decided 2026-11-05), CARDS-PER-PART, CARDS-SPREAD (replaces T7's card limit, T8's last card and T9's opening card for later Steps)
@@ -912,13 +912,14 @@ These rules come from the product principles and from decisions. They are repeat
 
 **Acceptance criteria**
 - Given his card fails to load on the focus page, then one calm message in the app's own voice with a Retry button is shown (for example "He is not here right now. Please try again."), the Step clock does not start, and no stored or authored line stands in (FAIL-SCREEN, NO-BACKUP).
-- Given the rest page has no network, then the same failure message with Retry is shown in place of his message, no stored message stands in, and the input field is disabled (FAIL-SCREEN, NO-BACKUP).
+- Given the rest page has no network, then the same failure message with Retry is shown in place of his message, no stored message stands in, and the input field is disabled (FAIL-SCREEN, NO-BACKUP, REST-OFFLINE).
 - Given I go back to a Step while offline, then the failure screen with Retry is shown (OFFLINE-RESUME).
-- Given the pre-made cards or the closing line fail to load, then the failure screen with Retry is shown and the clock does not start (FAIL-PREMADE).
+- Given the pre-made cards fail to load, then the failure screen with Retry is shown and the clock does not start (FAIL-PREMADE).
+- Given the closing line fails to load, then the summary shows the failure screen with Retry; the summary has no clock (CLOSING-FAIL).
 - Given either failure, then Back and the Done and Pause buttons still work.
 - Given the failure message, then it is the app's own text (APP-TEXT), not story text; its wording and the time limit are set by testing (TIME-LIMIT).
 
-**Priority:** Must · **Area:** Focus and rest (NF6) · **Screens:** F3, R-OFF · **Depends on:** US-FOC-1, US-FOC-13 · **Size:** S · **Source:** PROTO F3, R-OFF; US-NF6 NF6-23; DEC NO-BACKUP, FAIL-SCREEN, FAIL-PREMADE, OFFLINE-RESUME, APP-TEXT
+**Priority:** Must · **Area:** Focus and rest (NF6) · **Screens:** F3, R-OFF · **Depends on:** US-FOC-1, US-FOC-13 · **Size:** S · **Source:** PROTO F3, R-OFF; US-NF6 NF6-23; DEC NO-BACKUP, FAIL-SCREEN, FAIL-PREMADE, OFFLINE-RESUME, REST-OFFLINE, CLOSING-FAIL, APP-TEXT
 
 ### US-FOC-17 · "Who I am" sheet from his portrait
 
@@ -1560,7 +1561,7 @@ These stories appeared in older documents and are not in the backlog, either bec
 | Short introduction phrases for each person in later cards, and people stored as data with introduction phrases | SM07 section 1.5; NF3v1 section 4 (US-FMT-5 and US-CON-3 of the first sweep) | Decision M2 (refined): no phrases in later cards; the background card introduces the people and names are not tappable. Both stories are removed; the rule lives in US-FMT-11. |
 | The optional feeling question in the goal dialogue, its reaction line and the state word that made Home show lighter things (US-GD-4, US-HOME-10 of the first sweep) | NF7v6 sections 2.1 and 3; NF4v4 section 2 (P3) | Decision D1e: the goal dialogue is the goal, the time, then the split question. Both stories are removed. |
 | A separate time-up card at 00:00 | NF6v7 section 4 | Decision T8: the n-th story card arrives at 00:00; at 00:00 only the light vibration happens (US-FOC-4). |
-| Scene markers and turning-point marks on the map | NF3v1 section 3.3; SM07 section 2 (life-level marks) | Decision M3: no markers on rows or the current card. Key moments appear only in the Story record and in the summary after merged Steps (US-MAP-9, US-MAP-10). |
+| Scene markers and turning-point marks on the map | NF3v1 section 3.3; SM07 section 2 (life-level marks) | Decision M3: no markers on rows or the current card. Key moments appear only in the Story record (US-MAP-10); the summary lists none (NO-MERGED-MOMENTS). |
 | A user-facing switch that turns the Story off | SM07 section 3 | Decision M4: out of scope. Only an internal research flag remains (US-MAP-11). "Quiet" mode is decided after a test. |
 | Notification when the user leaves mid-Step (level 2) and app blocking (level 3) | NF6v7 section 3 | Decision F4: only level 1 (the character's card about his own situation on return, now the return pop-up, US-FOC-19). Level 2 is neither built nor tested; level 3 is never built. This is a Won't. |
 | The rest conversation ends after the Kth reply with a pre-written closing and a greyed input | US-NF6 NF6-14 | Superseded by the decision of no chat reply limit (AI09v2, D-AI-4); see US-FOC-14. |

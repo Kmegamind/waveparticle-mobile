@@ -271,7 +271,6 @@ One run of one Goal against one Story. The planning documents call this a "run" 
 | seed | Makes non-repeating picks reproducible. |
 | last active time | The clock freezes when the app leaves the screen, unless the keep-running setting is on (Decided, F2). |
 | background card | The story's published background card as shown (2.13). One per session. |
-| merged key moments | Key moments that did not get their own step (section 4). The summary lists each with its key line (Decided, C2). |
 | closing line | The story's published closing line, made ahead with its cards (CLOSING-AHEAD, END-TONE; section 6). |
 | log | Which step is done (a step on which Done was pressed and not undone), and for each step which pauses and return events happened. The goal text is not repeated in the log. |
 
@@ -376,7 +375,7 @@ The card that opens the first step of a goal (Decided, T4, T9). It is not progre
 
 ### 2.14 Card pacing
 
-Decided (CARDS-SPREAD, T1): the cards of all parts are spread across the user's steps in story order. No card is ever dropped, so there is no upper limit on a step's cards. A step's n is the number of cards it receives; every step gets at least one new card. More cards in a step means closer together, fewer means further apart. The n story cards arrive at y/n, 2y/n, and so on up to y minutes after the step starts, where y is the step's minutes: interval = step minutes / n. There is no special "just finished" card at the start of a later step and no special "still at it" card at 00:00.
+Decided (CARDS-SPREAD, T1): the cards of all parts are spread across the user's steps in story order. No card is ever dropped, so there is no upper limit on a step's cards. A step's n is the number of cards it receives; every step gets at least one new card. More cards in a step means closer together, fewer means further apart. The n story cards arrive at y/n, 2y/n, and so on up to y minutes after the step starts, where y is the step's minutes: interval = step minutes / n. The last card arrives at the end of the step, and the first card of the next step is the story's next card at the start of that step (CARD-TIMING). There is no special "just finished" card at the start of a later step and no special "still at it" card at 00:00.
 
 | Field | Rule |
 |---|---|
@@ -412,13 +411,13 @@ Let N be the number of steps the user confirmed. There is no maximum (Decided, T
 2. **Facts a card may use.** A card of a part may use the facts of that part, in order. It never uses the facts of later parts, the story's ending words (the forbid list) or the per-fact leak words. The spoiler check runs when cards are made and again before publishing, against the parts after the card's own part (LEAK-BY-PART).
 3. **Key moments.** They are inputs the AI must use (section 4). A key moment no longer ends a step (LEAK-BY-PART).
 4. **Opening card of step k.** Step 1 opens with the background card (2.13) as its one card. A later step has no special opening card; it continues with its share of the story's cards (CARDS-SPREAD). There is no screen between steps.
-5. **Cards while a step runs.** The step's n story cards arrive at y/n, 2y/n ... y minutes (2.14). No special card arrives at 00:00 (CARDS-SPREAD).
+5. **Cards while a step runs.** The step's n story cards arrive at y/n, 2y/n ... y minutes (2.14). The last of them arrives at 00:00 but is not a special card (CARDS-SPREAD, CARD-TIMING).
 6. **Last step.** Done on the last step goes straight to the summary. There is no landing screen and no "next" card.
 7. **N equals 1.** One step covers the whole story and receives all its cards (CARDS-SPREAD); the summary and the closing line carry the rest, and the summary lists the key moments.
 
 ## 4. Key slices
 
-Decided (C2): each story has two to four key slices (key moments), confirmed by the content owner. Today the 54 machine-derived key moments are stored as unconfirmed and wait for review (KEY-UNCONFIRMED, KEY-REVIEW). "A key slice ends a step" is withdrawn (LEAK-BY-PART). When there are fewer steps than key slices, the summary lists the merged key moments, one first-person line each. The stronger rule (never offer fewer steps than key slices) was not chosen, and the goal dialogue does not forbid few steps. Key moments are inputs the AI must use when the story's cards are made ahead (T3, SHARED-STORY); the summary lists any that were merged.
+Decided (C2): each story has two to four key slices (key moments), confirmed by the content owner. Today the 54 machine-derived key moments are stored as unconfirmed and wait for review (KEY-UNCONFIRMED, KEY-REVIEW). "A key slice ends a step" is withdrawn (LEAK-BY-PART). The summary does not list merged key moments (NO-MERGED-MOMENTS). The stronger rule (never offer fewer steps than key slices) was not chosen, and the goal dialogue does not forbid few steps. Key moments are inputs the AI must use when the story's cards are made ahead (T3, SHARED-STORY).
 
 Draft rules from the story database workstream that follow from this:
 
@@ -432,7 +431,7 @@ The import marks key slices on all 26 stories. The slice ids below are an earlie
 | `site-search` | s4 (Groves says the canyon will never do), s6 (he names the mesa and the boys' school), s8 (Groves says "this is the place") |
 | `trinity` | s4 (the time of the shot is fixed), s6 (the light and the roar) |
 
-How the cut fell for `site-search` with the key slices s4, s6, s8 under the withdrawn rule that a key slice ends a step (kept as a record; LEAK-BY-PART withdraws it):
+How the cut fell for `site-search` with the key slices s4, s6, s8 under the withdrawn rule that a key slice ends a step (kept as a record; LEAK-BY-PART withdraws it, and NO-MERGED-MOMENTS withdraws the "End screen lists" column):
 
 | N | Steps | Landing shown at the end of each step | End screen lists |
 |---|---|---|---|
@@ -444,7 +443,7 @@ How the cut fell for `site-search` with the key slices s4, s6, s8 under the with
 
 For N above 5 there is no limit (Decided, T2). The "landing shown" column describes the authored reference cards.
 
-Today `startStory` still follows that cut (code follow-up of LEAK-BY-PART). Extra steps are split inside the stretch with the most facts, larger parts first, and a tie goes to the earlier stretch. Facts after the last key slice stay in that step until the plan has a spare step, which then takes those facts so the key slice can end the step before them. When there are fewer steps than key slices, the later key slices merge into the last step and the summary lists each merged key line. When nothing was merged, that list is empty: for N of 3 or more in the table, the summary does not list s8, because that key slice ended its own step (US-MAP-9). One step has no next-step card and goes straight to the summary. The step count is the plan's count and does not depend on the number of slices.
+Today `startStory` still follows that cut (code follow-up of LEAK-BY-PART). Extra steps are split inside the stretch with the most facts, larger parts first, and a tie goes to the earlier stretch. Facts after the last key slice stay in that step until the plan has a spare step, which then takes those facts so the key slice can end the step before them. When there are fewer steps than key slices, the later key slices merge into the last step; the summary lists nothing for them (NO-MERGED-MOMENTS). One step has no next-step card and goes straight to the summary. The step count is the plan's count and does not depend on the number of slices.
 
 ## 5. Which card appears when
 
@@ -476,11 +475,10 @@ Card count of a step: n, the cards it receives, at least 1 and no upper limit; n
 | Plan: step titles, descriptions and minutes | Live, from the planning prompt (P1) | Failure message with Retry; the typed text is kept |
 | Background card | Made ahead, once per story (SHARED-STORY) | If it fails to load: failure screen with Retry; the clock does not start (FAIL-PREMADE) |
 | Story cards | Made ahead, once per story part, from the story's facts and key moments (SHARED-STORY, CARDS-PER-PART) | If they fail to load: failure screen with Retry; the clock does not start (FAIL-PREMADE) |
-| Closing line | Made ahead with the story's cards (CLOSING-AHEAD); END-TONE applies | If it fails to load: failure screen with Retry (FAIL-PREMADE) |
+| Closing line | Made ahead with the story's cards (CLOSING-AHEAD); END-TONE applies | If it fails to load: failure screen with Retry on the summary (CLOSING-FAIL) |
 | His message on the rest page (snag) | Live (C1, F1, PAUSE-3), from allowed props, names and rules; receives the pause number | Failure message with Retry |
 | Return pop-up text | Live (T6, R1) | Failure message with Retry |
 | Rest chat reply | Live, no message limit (R2, A3); passes the spoiler check (CHAT-SPOILER-CHECK) | Failure message with Retry |
-| Key lines (merged key moments on the summary) | Authored from the story database (C2), unconfirmed until reviewed (KEY-UNCONFIRMED) | None needed |
 | Story goal, where-now | Authored from the story database | None needed |
 | Safety response | Code plus a small classifier (A5b); system voice | Keyword layer alone if the classifier fails |
 
@@ -650,7 +648,6 @@ sessions(
   started_at timestamptz, last_active_at timestamptz, completed_at timestamptz,
   background_card text,
   background_card_source text,               -- authored or generated; null when there is no background card
-  merged_key_moments jsonb,                  -- key moments that did not get their own step
   closing_line text
 )
 -- one goal has at most one session with state = 'open' (partial unique index)
