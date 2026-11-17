@@ -258,3 +258,66 @@ function instructionFor(
 
   return lines.join("\n");
 }
+
+/** One Step's pre-made cards: the card it opens with, then the cards that arrive during it. */
+export type SpreadStep<T> = { opening: T; story: T[] };
+
+/**
+ * CARDS-PER-PART and CARDS-SPREAD (#300): spreads a story's pre-made cards across the user's Steps
+ * in story order. No model call and no card is dropped or repeated. The background card opens
+ * Step 1; every other Step opens with the story's next card. With no more Steps than parts, whole
+ * parts stay together (an extra part goes to an earlier Step); with more Steps than parts, a
+ * part's cards are split across neighbouring Steps, the extra Steps going to the parts with the
+ * most cards per Step. A Plan with more Steps than the story has cards gets one card per Step,
+ * then the later Steps stay on the last card.
+ */
+export function spreadCards<T>(
+  deck: { background: T; parts: T[][] },
+  stepCount: number,
+): SpreadStep<T>[] {
+  if (!Number.isInteger(stepCount) || stepCount < 1) {
+    throw new RangeError("A plan needs at least one step");
+  }
+  const parts = deck.parts.filter((part) => part.length > 0);
+  const cards = parts.flat();
+  if (cards.length === 0) throw new RangeError("A story needs at least one part card");
+
+  let groups: T[][];
+  if (stepCount >= cards.length) {
+    groups = cards.map((card) => [card]);
+  } else if (stepCount <= parts.length) {
+    let cursor = 0;
+    groups = evenSizes(parts.length, stepCount).map((size) => {
+      const group = parts.slice(cursor, cursor + size).flat();
+      cursor += size;
+      return group;
+    });
+  } else {
+    const stepsPerPart = parts.map(() => 1);
+    for (let extra = stepCount - parts.length; extra > 0; extra -= 1) {
+      let best = -1;
+      for (let index = 0; index < parts.length; index += 1) {
+        if (stepsPerPart[index] >= parts[index].length) continue;
+        const ratio = parts[index].length / stepsPerPart[index];
+        if (best === -1 || ratio > parts[best].length / stepsPerPart[best]) best = index;
+      }
+      stepsPerPart[best] += 1;
+    }
+    groups = parts.flatMap((part, index) => {
+      let cursor = 0;
+      return evenSizes(part.length, stepsPerPart[index]).map((size) => {
+        const group = part.slice(cursor, cursor + size);
+        cursor += size;
+        return group;
+      });
+    });
+  }
+
+  const last = cards[cards.length - 1];
+  return Array.from({ length: stepCount }, (_, index) => {
+    const group = groups[index] ?? [];
+    if (index === 0) return { opening: deck.background, story: group };
+    if (group.length === 0) return { opening: last, story: [] };
+    return { opening: group[0], story: group.slice(1) };
+  });
+}
