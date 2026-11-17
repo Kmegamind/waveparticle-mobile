@@ -1,5 +1,5 @@
 import { BANNED } from "@/lib/model-gateway/checks";
-import { cardLengthProblems } from "./admin";
+import { cardLengthProblems, type LeaksFor, type StoryCardRow } from "./admin";
 
 // The checks the admin runs on every save of a story card (#304), each failure in plain words:
 // CARD-LENGTH (LEN-CARD), no year, date or age (DATES-ADMIN-ONLY), the spoiler check against the
@@ -80,4 +80,25 @@ export function cardProblems(
   const banned = card.body.match(BANNED);
   if (banned) problems.push(`Uses a banned word ("${banned[0]}").`);
   return problems;
+}
+
+/** Which part each slice's cards sit in, from a story's card rows (every version). */
+export function slicePartsOf(cards: StoryCardRow[]): Map<string, number> {
+  const parts = new Map<string, number>();
+  for (const row of cards) {
+    if (row.kind === "part" && row.slice && row.part !== null && !parts.has(row.slice)) {
+      parts.set(row.slice, row.part);
+    }
+  }
+  return parts;
+}
+
+/** The spoiler words of one story by part; every part answers null without its story inputs. */
+export function leaksForStory(
+  cards: StoryCardRow[],
+  stageZero: Record<string, unknown> | null,
+): LeaksFor {
+  if (!stageZero) return () => null;
+  const slicePart = slicePartsOf(cards);
+  return (part) => laterPartLeaks(stageZero, slicePart, part);
 }

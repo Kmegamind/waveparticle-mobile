@@ -1,6 +1,8 @@
+import { cardProblems } from "./checks";
+
 // The Stories admin page (ADM-06, #293): the story list with its part and card counts, one story's
-// background card and cards grouped by part, and the CARD-LENGTH check that marks a card as
-// failing. Read-only; server code only. The rows come from `public.stories`, `public.story_parts`
+// background card and cards grouped by part, each card's versions and newer draft (#304), and the
+// card checks that mark a version as failing (src/lib/story-cards/checks.ts). Server code only. The rows come from `public.stories`, `public.story_parts`
 // and `public.story_cards` through the signed-in editor's own client.
 
 /** One row of `public.stories`, as the page reads it. */
@@ -20,7 +22,17 @@ export type StoryCardRow = {
   position: number;
   body: string;
   published: boolean;
+  /** The last time this version became the published one; null for a draft never published. */
+  published_at: string | null;
 };
+
+export type StoryCardVersionState = "published" | "draft" | "earlier";
+
+/**
+ * For one story: the spoiler words after a part (null part: the background card), or null when
+ * the story inputs could not be read (#304, LEAK-BY-PART).
+ */
+export type LeaksFor = (part: number | null) => string[] | null;
 
 export type StoryCardView = {
   key: string;
@@ -30,8 +42,19 @@ export type StoryCardView = {
   position: number;
   body: string;
   words: number;
-  /** CARD-LENGTH problems; empty when the card passes. */
+  /** The shown version's problems (the #304 checks); empty when it passes. */
   problems: string[];
+  kind: StoryCardRow["kind"];
+  part: number | null;
+  /** The newest version above the published one that was never published, with its problems. */
+  draft: { version: number; body: string; problems: string[] } | null;
+  /** Newest first. Roll back is offered on every version that was published before. */
+  versions: {
+    version: number;
+    body: string;
+    state: StoryCardVersionState;
+    canRollBack: boolean;
+  }[];
 };
 
 export type StoryListRow = {
@@ -45,7 +68,7 @@ export type StoryListRow = {
   cards: number;
   /** Whether the story has a background card. */
   background: boolean;
-  /** Cards (background included) that fail CARD-LENGTH. */
+  /** Cards (background included) whose shown version fails a check (#304). */
   failing: number;
 };
 
@@ -117,25 +140,65 @@ function shownVersions(cards: StoryCardRow[]): StoryCardRow[] {
   return [...byKey.values()];
 }
 
-const view = (row: StoryCardRow): StoryCardView => ({
-  key: row.key,
-  version: row.version,
-  published: row.published,
-  slice: row.slice,
-  position: row.position,
-  body: row.body,
-  words: wordCount(row.body),
-  problems: cardLengthProblems(row.kind, row.body),
-});
+const noLeaks: LeaksFor = () => [];
+
+/** One card: its shown version, a newer draft and every version (#304). */
+function view(row: StoryCardRow, all: StoryCardRow[], leaksFor: LeaksFor): StoryCardView {
+  const problemsOf = (body: string) =>
+    cardProblems({ kind: row.kind, part: row.part, body }, leaksFor(row.part));
+  const versions = all
+    .filter((entry) => entry.key === row.key)
+    .sort((left, right) => right.version - left.version);
+  const current = versions.find((entry) => entry.published) ?? null;
+  // As app text (#288, #289): a version published before and rolled back past is an earlier
+  // version, not a draft.
+  const draft =
+    versions.find(
+      (entry) =>
+        !entry.published &&
+        entry.published_at === null &&
+        (!current || entry.version > current.version),
+    ) ?? null;
+  return {
+    key: row.key,
+    version: row.version,
+    published: row.published,
+    slice: row.slice,
+    position: row.position,
+    body: row.body,
+    words: wordCount(row.body),
+    problems: problemsOf(row.body),
+    kind: row.kind,
+    part: row.part,
+    draft: draft
+      ? { version: draft.version, body: draft.body, problems: problemsOf(draft.body) }
+      : null,
+    versions: versions.map((entry) => {
+      const state: StoryCardVersionState = entry.published
+        ? "published"
+        : entry.published_at !== null
+          ? "earlier"
+          : "draft";
+      return {
+        version: entry.version,
+        body: entry.body,
+        state,
+        canRollBack: state === "earlier" && current !== null,
+      };
+    }),
+  };
+}
 
 /** One story's background card and parts, from all rows. */
 export function storyDetail(
   story: StoryRow,
   parts: StoryPartRow[],
   cards: StoryCardRow[],
+  leaksFor: LeaksFor = noLeaks,
 ): StoryDetail | null {
   if (!story) return null;
-  const shown = shownVersions(cards.filter((row) => row.story_id === story.id));
+  const own = cards.filter((row) => row.story_id === story.id);
+  const shown = shownVersions(own);
   const background = shown.find((row) => row.kind === "background");
   const titles = new Map(
     parts.filter((row) => row.story_id === story.id).map((row) => [row.part, row.title]),
@@ -149,14 +212,14 @@ export function storyDetail(
     key: `${COMPANION_SHORT}.${story.id}`,
     title: story.title,
     sequence: story.sequence,
-    background: background ? view(background) : null,
+    background: background ? view(background, own, leaksFor) : null,
     parts: numbers.map((part) => ({
       part,
       title: titles.get(part) ?? null,
       cards: partCards
         .filter((row) => row.part === part)
         .sort((left, right) => left.position - right.position)
-        .map(view),
+        .map((row) => view(row, own, leaksFor)),
     })),
   };
 }
@@ -166,11 +229,12 @@ export function storyList(
   stories: StoryRow[],
   parts: StoryPartRow[],
   cards: StoryCardRow[],
+  leaksOf: (storyId: string) => LeaksFor = () => noLeaks,
 ): StoryListRow[] {
   return [...stories]
     .sort((left, right) => left.sequence - right.sequence)
     .map((story) => {
-      const detail = storyDetail(story, parts, cards)!;
+      const detail = storyDetail(story, parts, cards, leaksOf(story.id))!;
       const all = [
         ...(detail.background ? [detail.background] : []),
         ...detail.parts.flatMap((part) => part.cards),

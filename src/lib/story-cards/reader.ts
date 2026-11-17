@@ -27,7 +27,7 @@ export async function readStoryCardsData(
     let parts = client.from("story_parts").select("story_id, part, title");
     let cards = client
       .from("story_cards")
-      .select("key, version, story_id, kind, part, slice, position, body, published");
+      .select("key, version, story_id, kind, part, slice, position, body, published, published_at");
     if (storyId) {
       stories = stories.eq("id", storyId);
       parts = parts.eq("story_id", storyId);
