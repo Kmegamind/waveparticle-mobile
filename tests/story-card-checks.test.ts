@@ -70,6 +70,16 @@ describe("story card checks (#304)", () => {
     ).toEqual([]);
   });
 
+  it("test_304_ac3_smart_quotes_and_line_breaks_do_not_hide_a_later_parts_words", () => {
+    const leaks = ["rutherford's office", "can't tell you"];
+    expect(cardProblems(part("I sat in Rutherford’s office."), leaks)).toEqual([
+      `Mentions "rutherford's office", which comes in a later part.`,
+    ]);
+    expect(cardProblems(part("He said, I can't\ntell  you."), leaks)).toEqual([
+      `Mentions "can't tell you", which comes in a later part.`,
+    ]);
+  });
+
   it("test_304_ac3_banned_words_fail", () => {
     expect(cardProblems(part("The vibes in the lab are low."), [])).toEqual([
       'Uses a banned word ("vibes").',

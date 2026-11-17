@@ -56,8 +56,13 @@ export function laterPartLeaks(
 }
 
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const mentions = (text: string, word: string) =>
-  new RegExp(`(?<![\\p{L}\\p{N}])${escape(word.trim())}(?![\\p{L}\\p{N}])`, "iu").test(text);
+/** Curly quotes as straight ones, so text pasted from a word processor or a phone still matches. */
+const plainQuotes = (text: string) => text.replace(/[‘’ʼ′]/g, "'").replace(/[“”″]/g, '"');
+/** A spoiler word or phrase on word boundaries; any run of spaces or line breaks between words. */
+const mentions = (text: string, word: string) => {
+  const phrase = plainQuotes(word.trim()).split(/\s+/).map(escape).join("\\s+");
+  return new RegExp(`(?<![\\p{L}\\p{N}])${phrase}(?![\\p{L}\\p{N}])`, "iu").test(plainQuotes(text));
+};
 
 export const LEAKS_UNREADABLE =
   "The spoiler check could not run: the story inputs could not be read.";
