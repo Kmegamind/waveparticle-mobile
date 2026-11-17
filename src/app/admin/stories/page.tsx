@@ -2,21 +2,22 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { storyList } from "@/lib/story-cards/admin";
-import { readStoryCardsData } from "@/lib/story-cards/reader";
+import { leaksForStory } from "@/lib/story-cards/checks";
+import { readStageZeros, readStoryCardsData } from "@/lib/story-cards/reader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { UnreviewedNotice } from "./unreviewed-notice";
 
-// ADM-06 Stories (#293): Oppenheimer's stories in story order with their number of parts and cards.
-// Read-only. The layout already checked the role; the rows come through the signed-in user's own
-// client, whose policies show the cards to content editors only.
+// ADM-06 Stories (#293, #304): Oppenheimer's stories in story order with their number of parts and
+// cards, and how many cards fail a check. The layout already checked the role; the rows come
+// through the signed-in user's own client, whose policies show the cards to content editors only.
 export default function AdminStories() {
   return (
     <>
       <h1>Stories</h1>
       <p className="admin-lede">
-        Oppenheimer&apos;s stories in story order. Open a story to read its background card and its
-        cards, grouped by part. A card longer than CARD-LENGTH allows (a part card: 1 to 3
-        sentences, at most 45 words; the background card: at most 70 words) is marked as failing.
+        Oppenheimer&apos;s stories in story order. Open a story to read and edit its background
+        card, its cards and its part titles. A card that fails a check (its length, a year, date or
+        age, a word from a later part, or a banned word) is counted as failing.
       </p>
       <UnreviewedNotice />
       <Suspense fallback={null}>
@@ -29,8 +30,13 @@ export default function AdminStories() {
 async function StoryTable() {
   await connection();
   const client = await createSupabaseServerClient();
-  const data = await readStoryCardsData(client);
-  const rows = storyList(data.stories, data.parts, data.cards);
+  const [data, zeros] = await Promise.all([readStoryCardsData(client), readStageZeros()]);
+  const rows = storyList(data.stories, data.parts, data.cards, (storyId) =>
+    leaksForStory(
+      data.cards.filter((card) => card.story_id === storyId),
+      zeros?.get(storyId) ?? null,
+    ),
+  );
   return (
     <>
       {data.ok ? null : (
@@ -61,8 +67,7 @@ async function StoryTable() {
                   <>
                     <dt>Failing</dt>
                     <dd>
-                      {row.failing} {row.failing === 1 ? "card is" : "cards are"} over the length
-                      limit
+                      {row.failing} {row.failing === 1 ? "card fails" : "cards fail"} a check
                     </dd>
                   </>
                 ) : null}

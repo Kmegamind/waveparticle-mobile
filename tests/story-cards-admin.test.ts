@@ -22,6 +22,7 @@ const card = (overrides: Partial<StoryCardRow>): StoryCardRow => ({
   position: 1,
   body: "I sit.",
   published: true,
+  published_at: overrides.published === false ? null : "2026-11-16T00:00:00Z",
   ...overrides,
 });
 

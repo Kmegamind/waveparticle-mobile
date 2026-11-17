@@ -45,12 +45,28 @@ describe("ADM-06 Stories (#293)", () => {
     }
   });
 
-  it("test_293_read_only_no_form_or_server_action_on_the_stories_pages", () => {
+  // #304 replaces #293's read-only rule: the story page edits cards through server actions, which
+  // write only through the database functions (no direct insert or update on a table).
+  it("test_304_writes_go_only_through_the_role_checked_server_actions", () => {
     const files = filesUnder(path.join(source, "app", "admin", "stories"));
     for (const file of files) {
       const text = readFileSync(file, "utf8");
-      expect(text, file).not.toMatch(/"use server"|<form|<button|\.rpc\(|\.insert\(|\.update\(/);
+      expect(text, file).not.toMatch(
+        /\.insert\(|\.update\(|\.upsert\(|\.delete\(|service[_-]?role/i,
+      );
     }
+    const actions = read("src/app/admin/stories/actions.ts");
+    expect(actions.startsWith('"use server";')).toBe(true);
+    expect(actions).toContain("getCurrentUser(client)");
+    expect(actions).toContain("readContentRole(client)");
+    expect(actions).toContain("writeStoryCard(");
+    expect(actions).toContain("storedCardProblems(client, key, version)");
+  });
+
+  it("test_304_ac8_the_phone_read_never_asks_for_drafts", () => {
+    const repository = read("src/lib/content/repository.ts");
+    expect(repository).toMatch(/rpc\("get_story_cards"/);
+    expect(repository).not.toMatch(/from\("story_cards"\)/);
   });
 
   it("test_293_ac5_the_phone_screens_keep_their_current_card_source", () => {

@@ -102,6 +102,13 @@ The signed-in focus page reads the published cards (#300, `docs/decisions/0021`)
 `supabase/migrations/20261121000000_premade_cards.sql` before deploying that change, or the focus
 page shows the failure screen. It uses the existing `CONTENT_READ_KEY`.
 
+Editing and publishing cards in the admin (#304, `docs/decisions/0023`): run
+`supabase/migrations/20261123000000_story_card_editing.sql` after the story cards, pre-made cards
+and publish history migrations. It adds the functions behind Save draft, Save title, Publish and
+Roll back (Publish and Roll back for the `admin` role only) and lets the publish history list
+story cards. It changes no card and no phone read. Until it runs, the Stories page still shows
+the cards, but saving says the change could not be saved. No new setting is needed.
+
 ## After each deploy
 - Smoke test: open the deployed home page and confirm the product name is
   visible. To run the end-to-end test against a deployed address instead of a local
