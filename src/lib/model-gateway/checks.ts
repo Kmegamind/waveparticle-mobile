@@ -3,7 +3,8 @@ import type { CompanionKind, GeneratedPlan } from "./types";
 const FAILURE_WORDING = /\b(error|failed|failure|timeout|exception|undefined)\b/i;
 const CJK = /[\u3400-\u9fff]/;
 const DASH = /—|–|--/;
-const BANNED = /\b(bro|vibes|no cap|as an ai)\b/i;
+/** Banned words in any line of his (also used by the admin card checks, #304). */
+export const BANNED = /\b(bro|vibes|no cap|as an ai)\b/i;
 const CLOCK =
   /\b\d{1,2}:\d{2}\b|\b(?:a\.m\.|p\.m\.)\b|\b\d{1,2}\s*(?:am|pm)\b|\bo'clock\b|\bhalf past\b|\b\d+\s+minutes?\b/i;
 const BACKSTAGE =
