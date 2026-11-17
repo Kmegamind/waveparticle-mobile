@@ -1,12 +1,21 @@
 # The gateway's prompts (#282)
 
 Every prompt the model gateway sends lives in the Supabase table `public.prompts`. The files in
-this folder are its seed and its copy in the repository. Edit a prompt in either place:
+this folder are its seed and its copy in the repository. Edit a prompt in the admin, or in either
+of the other two places:
+
+- **Admin (ADM-08, `/admin/prompts`, #308):** an admin or writer saves the text, settings (JSON)
+  and a note as a new draft version and sees the diff against the active version. Only an admin
+  publishes, and only a version the gateway can use (no unknown `{{name}}`, no missing setting).
+  Every publish is a row in Publish history, where it can be rolled back. This is the only way
+  that records who changed what.
 
 - **Table editor (no deploy):** change the text or settings of a row, or add a row with the next
   version and make it active. The app uses the change within one minute.
 - **Files:** edit a file here, then load it with the import below. Write the table back to these
   files with the export.
+
+The table editor and the import make a version active without a Publish history row.
 
 | Key | Used for |
 |---|---|

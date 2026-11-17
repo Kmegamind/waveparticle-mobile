@@ -109,6 +109,15 @@ Roll back (Publish and Roll back for the `admin` role only) and lets the publish
 story cards. It changes no card and no phone read. Until it runs, the Stories page still shows
 the cards, but saving says the change could not be saved. No new setting is needed.
 
+## Prompt editing
+Editing the prompts in the admin (#308, `docs/decisions/0024`): run
+`supabase/migrations/20261124000000_prompt_editing.sql` after the prompts migration and its import
+(#282) and the story card editing migration (#304). It adds who and when columns to
+`public.prompts` and the functions behind ADM-08 (list, Save draft, and admin-only Publish and Roll
+back with a `prompt` row in Publish history). It changes no prompt and not the server's read.
+Until it runs, the Prompts page says the prompts could not be read; the app keeps using the
+active prompts. No new setting is needed.
+
 ## After each deploy
 - Smoke test: open the deployed home page and confirm the product name is
   visible. To run the end-to-end test against a deployed address instead of a local
