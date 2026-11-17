@@ -121,3 +121,51 @@ test("test_309_ac2_a_story_moves_only_to_a_neighbouring_period", async ({ page, 
     "After the war",
   ]);
 });
+
+test("test_309_ac4_a_moved_story_follows_its_new_period_when_that_period_is_renamed", async ({
+  page,
+  context,
+}) => {
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto("/admin/companions/oppenheimer/stories/huac-closed-session");
+  const move = "opp.huac-closed-session.period";
+  await fieldOf(page, move)
+    .getByLabel(`Text for ${move}`)
+    .selectOption("The Manhattan Project years");
+  await fieldOf(page, move).getByRole("button", { name: "Save draft" }).click();
+  await expect(fieldOf(page, move).getByRole("status")).toContainText("Draft v2 saved.");
+  await fieldOf(page, move).getByRole("button", { name: "Publish v2" }).click();
+  await expect(fieldOf(page, move).getByRole("status")).toHaveText("Published v2.");
+  expect((await appStory("huac-closed-session")).period).toBe("The Manhattan Project years");
+
+  // Period 3 is the Manhattan Project years, now with this story at its end.
+  await page.goto("/admin/companions/oppenheimer");
+  const rename = "chr.opp.period.3";
+  await save(page, rename, "The project years");
+  await fieldOf(page, rename).getByRole("button", { name: "Publish v2" }).click();
+  await expect(fieldOf(page, rename).getByRole("status")).toHaveText("Published v2.");
+  expect((await appStory("huac-closed-session")).period).toBe("The project years");
+  expect((await appStory("trinity")).period).toBe("The project years");
+  expect((await appStory("letter-to-uncle-jim")).period).toBe("After the war");
+});
+
+test("test_309_ac1_a_blank_new_field_starts_at_version_1", async ({ page, context }) => {
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto("/admin/companions/oppenheimer/stories/fermi-award");
+  const key = "opp.fermi-award.path";
+  const field = fieldOf(page, key);
+  await expect(field).toContainText("Not written yet.");
+  await save(page, key, "I take the award and say very little.");
+  await expect(field.getByRole("status")).toHaveText(
+    "Draft v1 saved. The app still shows the published text.",
+  );
+  await field.getByRole("button", { name: "Publish v1" }).click();
+  await expect(field.getByRole("status")).toHaveText("Published v1.");
+  await page.reload();
+  const published = fieldOf(page, key);
+  await expect(published.locator(".admin-card-body").first()).toHaveText(
+    "I take the award and say very little.",
+  );
+  // One version only: nothing to roll back to.
+  await expect(published.getByText(/^Versions/)).toHaveCount(0);
+});
