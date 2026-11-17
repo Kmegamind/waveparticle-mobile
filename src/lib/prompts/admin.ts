@@ -196,10 +196,12 @@ export async function writePrompt(
     const rows = await deps.readVersions();
     if (!rows) return { ok: false, error: "failed" };
     const newest = versionsOf(write.key, rows).versions[0];
+    // A blank note keeps the newest note's meaning: the editor starts a new draft with an empty
+    // note, so pressing Save draft without an edit must not make a copy.
     if (
       newest &&
       newest.body === write.body &&
-      newest.note === note &&
+      (note.trim() === "" || newest.note === note) &&
       settingsText(newest.params) === settingsText(params)
     ) {
       return { ok: false, error: "unchanged" };

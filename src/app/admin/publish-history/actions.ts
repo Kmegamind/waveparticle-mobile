@@ -24,7 +24,9 @@ export async function rollBackFromHistoryAction(
       story_card: (itemKey, itemVersion) => rollBackStoryCardAction(itemKey, itemVersion),
       prompt: async (itemKey, itemVersion) => {
         const result = await rollBackPromptAction(itemKey, itemVersion);
-        return result.ok ? { ok: true } : { ok: false, error: result.error };
+        return result.ok
+          ? { ok: true }
+          : { ok: false, error: result.error, problems: result.problems };
       },
     },
   );

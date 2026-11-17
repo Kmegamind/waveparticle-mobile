@@ -193,3 +193,24 @@ describe("ADM-08 publish and roll back (#308 AC5, AC7)", () => {
     });
   });
 });
+
+describe("ADM-08 save with the page's start values (#308 review)", () => {
+  it("test_308_ac3_save_with_no_edits_and_an_empty_note_is_unchanged", async () => {
+    const calls: unknown[] = [];
+    const only = rows().slice(0, 1); // v1 active, note "seed"
+    const result = await writePrompt(
+      { kind: "save", key: "rest_reply", body: seed.body, settings, note: "" },
+      {
+        userId: "u1",
+        role: "writer",
+        rpc: async (name, args) => {
+          calls.push([name, args]);
+          return { data: 2, error: null };
+        },
+        readVersions: async () => only,
+      },
+    );
+    expect(result).toEqual({ ok: false, error: "unchanged" });
+    expect(calls).toEqual([]);
+  });
+});

@@ -59,3 +59,15 @@ describe("ADM-08 Prompts pages (#308)", () => {
     );
   });
 });
+
+describe("ADM-12 roll back of a prompt (#308 review)", () => {
+  it("test_308_ac7_history_roll_back_keeps_the_reasons", () => {
+    const actions = read("src/app/admin/publish-history/actions.ts");
+    expect(actions).toContain("problems: result.problems");
+    const button = read("src/app/admin/publish-history/roll-back-button.tsx");
+    expect(button).toMatch(/problems\.map\(/);
+    expect(read("src/lib/publish-history/admin.ts")).toMatch(
+      /\{ ok: false; error: string; problems\?: string\[\] \}/,
+    );
+  });
+});

@@ -1,7 +1,7 @@
 import type { ContentRole } from "@/lib/admin/roles";
 
 /** What a roll back answers: ok, or an error key the page puts in words. */
-export type RollBackResult = { ok: true } | { ok: false; error: string };
+export type RollBackResult = { ok: true } | { ok: false; error: string; problems?: string[] };
 
 // ADM-12 Publish history (#289, docs/decisions/0018): what the page lists and how its Roll back
 // button reaches the roll back path of each kind of content. Server code only. The rows come from
