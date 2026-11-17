@@ -17,6 +17,10 @@ const GROUPS = [
     ],
   },
   {
+    heading: "AI rules",
+    pages: [{ href: "/admin/prompts", id: "ADM-08", label: "Prompts" }],
+  },
+  {
     heading: "Review and logs",
     pages: [{ href: "/admin/publish-history", id: "ADM-12", label: "Publish history" }],
   },

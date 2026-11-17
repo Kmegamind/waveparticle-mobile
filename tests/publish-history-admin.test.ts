@@ -287,3 +287,39 @@ describe("ADM-12 Companion and story field rows (#309)", () => {
     expect(actions).toContain("rollBackContentFieldAction");
   });
 });
+
+describe("ADM-12 prompt rows (#308)", () => {
+  const prompt = (overrides: Partial<PublishHistoryRow>) =>
+    history({ kind: "prompt", item_key: "rest_reply", ...overrides });
+
+  it("test_308_ac6_history_labels_prompt_rows_and_offers_roll_back_to_admins_only", () => {
+    const rows = [prompt({ id: 2 }), prompt({ id: 1, is_current: true })];
+    expect(
+      publishHistoryEntries(rows, "admin").map((entry) => [entry.kindLabel, entry.canRollBack]),
+    ).toEqual([
+      ["Prompt", true],
+      ["Prompt", false],
+    ]);
+    expect(publishHistoryEntries(rows, "writer").map((entry) => entry.canRollBack)).toEqual([
+      false,
+      false,
+    ]);
+  });
+
+  it("test_308_ac6_roll_back_of_a_prompt_row_uses_the_prompt_path", async () => {
+    const calls: unknown[] = [];
+    const handlers = {
+      app_text: async () => ({ ok: true }) as const,
+      story_card: async () => ({ ok: true }) as const,
+      prompt: async (key: string, n: number) => {
+        calls.push([key, n]);
+        return { ok: true } as const;
+      },
+    };
+    expect(
+      await rollBackHistoryItem({ kind: "prompt", key: "rest_reply", version: 1 }, handlers),
+    ).toEqual({ ok: true });
+    expect(calls).toEqual([["rest_reply", 1]]);
+    expect(read("src/app/admin/publish-history/actions.ts")).toContain("rollBackPromptAction");
+  });
+});

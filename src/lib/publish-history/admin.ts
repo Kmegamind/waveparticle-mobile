@@ -1,7 +1,7 @@
 import type { ContentRole } from "@/lib/admin/roles";
 
 /** What a roll back answers: ok, or an error key the page puts in words. */
-export type RollBackResult = { ok: true } | { ok: false; error: string };
+export type RollBackResult = { ok: true } | { ok: false; error: string; problems?: string[] };
 
 // ADM-12 Publish history (#289, docs/decisions/0018): what the page lists and how its Roll back
 // button reaches the roll back path of each kind of content. Server code only. The rows come from
@@ -27,6 +27,7 @@ export const PUBLISH_HISTORY_KINDS = {
   story_card: "Story card",
   companion_field: "Companion field",
   story_field: "Story field",
+  prompt: "Prompt",
 } as const;
 export type PublishHistoryKind = keyof typeof PUBLISH_HISTORY_KINDS;
 
@@ -47,11 +48,12 @@ export type PublishHistoryEntry = {
   canRollBack: boolean;
 };
 
-/** The kinds only the admin role publishes and rolls back (#304, #309). */
+/** The kinds only the admin role publishes and rolls back (#304, #309, #308). */
 const ADMIN_ONLY_KINDS: ReadonlySet<string> = new Set([
   "story_card",
   "companion_field",
   "story_field",
+  "prompt",
 ]);
 
 const isKnownKind = (kind: string): kind is PublishHistoryKind =>
@@ -83,8 +85,8 @@ function personOf(row: PublishHistoryRow): string {
 
 /**
  * The page's rows, newest first. Roll back only where the version is not published now, and on
- * story cards and Companion and story fields only for the admin role (#304, #309: only an admin
- * publishes or rolls back them).
+ * story cards, Companion and story fields and prompts only for the admin role (#304, #309,
+ * #308: only an admin publishes or rolls them back).
  */
 export function publishHistoryEntries(
   rows: PublishHistoryRow[],
@@ -131,9 +133,9 @@ export async function readPublishHistory(
   }
 }
 
-export type HistoryRollBackHandlers = Record<
-  PublishHistoryKind,
-  (key: string, version: number) => Promise<RollBackResult>
+/** The roll back path of each kind; a kind without one is refused. */
+export type HistoryRollBackHandlers = Partial<
+  Record<PublishHistoryKind, (key: string, version: number) => Promise<RollBackResult>>
 >;
 
 /** Runs the roll back path of the row's kind. An unknown kind is refused before any call. */
@@ -141,6 +143,7 @@ export async function rollBackHistoryItem(
   item: { kind: string; key: string; version: number },
   handlers: HistoryRollBackHandlers,
 ): Promise<RollBackResult> {
-  if (!isKnownKind(item.kind)) return { ok: false, error: "invalid" };
-  return handlers[item.kind](item.key, item.version);
+  const handler = isKnownKind(item.kind) ? handlers[item.kind] : undefined;
+  if (!handler) return { ok: false, error: "invalid" };
+  return handler(item.key, item.version);
 }

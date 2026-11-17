@@ -1,5 +1,5 @@
 import type { PromptKey, PromptRow, PromptSource } from "@/lib/prompts/repository";
-import { renderPrompt, type PromptValue } from "@/lib/prompts/template";
+import { placeholderNames, renderPrompt, type PromptValue } from "@/lib/prompts/template";
 import {
   checkCompanionLine,
   checkPlan,
@@ -39,41 +39,61 @@ type Attempt<T> = { ok: true; value: T } | { ok: false; rejectedRules: string[] 
  * Thrown while a prompt is built from a row that cannot be used: an unknown placeholder, or a
  * parameter that is missing or of the wrong kind. The call then fails like a missing prompt.
  */
-class PromptRowError extends Error {}
+class PromptRowError extends Error {
+  /** What is wrong with the row, in words the admin shows (#308). */
+  readonly problems: string[];
+  constructor(problems: string[]) {
+    super(problems.join(" "));
+    this.problems = problems;
+  }
+}
+
+const missing = (path: string) => new PromptRowError([`Missing or unusable setting: ${path}.`]);
 
 function text(row: PromptRow, name: string): string {
   const texts = row.params.text;
   const value =
     typeof texts === "object" && texts !== null ? (texts as Record<string, unknown>)[name] : null;
-  if (typeof value !== "string") throw new PromptRowError(`${row.key}: text.${name}`);
+  if (typeof value !== "string") throw missing(`text.${name}`);
   return value;
 }
 
-function count(row: PromptRow, value: unknown, name: string): number {
-  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
-    throw new PromptRowError(`${row.key}: ${name}`);
-  }
+function count(value: unknown, path: string): number {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) throw missing(path);
   return value;
 }
 
 function checks(row: PromptRow): Record<string, unknown> {
   const value = row.params.checks;
-  if (typeof value !== "object" || value === null) throw new PromptRowError(`${row.key}: checks`);
+  if (typeof value !== "object" || value === null) throw missing("checks");
   return value as Record<string, unknown>;
 }
 
-function lineLimits(row: PromptRow, value: unknown): LineLimits {
+function lineLimits(value: unknown, path: string): LineLimits {
   const limits = readLineLimits(value);
-  if (!limits) throw new PromptRowError(`${row.key}: line limits`);
+  if (!limits) throw missing(path);
   return limits;
 }
 
-function render(row: PromptRow, values: Record<string, PromptValue>): string {
+/**
+ * Fills a template. An unknown placeholder fails the row, naming every unknown name once;
+ * `where` says which template it was ("the prompt" or a text setting).
+ */
+function fill(template: string, values: Record<string, PromptValue>, where = "the prompt"): string {
   try {
-    return renderPrompt(row.body, values);
+    return renderPrompt(template, values);
   } catch {
-    throw new PromptRowError(`${row.key}: template`);
+    const unknown = placeholderNames(template).filter((name) => !Object.hasOwn(values, name));
+    throw new PromptRowError(
+      unknown.length > 0
+        ? unknown.map((name) => `Unknown {{${name}}} in ${where}.`)
+        : ["The prompt cannot be built."],
+    );
   }
+}
+
+function render(row: PromptRow, values: Record<string, PromptValue>): string {
+  return fill(row.body, values);
 }
 
 /** Plain reasons added to the prompt on a retry, from the retry_hints row. Rule ids only. */
@@ -153,7 +173,7 @@ export function createModelGateway(options: {
         Promise.all([options.prompts(key), options.prompts("retry_hints")]),
         deadline - Date.now(),
       );
-      if (!row || !hintsRow) throw new PromptRowError(key);
+      if (!row || !hintsRow) throw new PromptRowError([key]);
       ({ prompt, accept } = build(row));
       hints = hintsRow;
       retryPrompt("", ["parse"], hints);
@@ -222,78 +242,149 @@ export function createModelGateway(options: {
   }
 
   return {
-    splitPlan(input): Promise<PlanSplitResult> {
-      return run("plan_split", "plan_split", (row) => {
-        const limits = readPlanLimits(checks(row));
-        if (!limits) throw new PromptRowError("plan_split: checks");
-        return {
-          prompt: planPrompt(input, row),
-          accept: (raw) => {
-            const parsed = parseModelJson(raw);
-            if (parsed === null) return { ok: false, rejectedRules: ["parse"] };
-            const checked = checkPlan(parsed, input.totalMinutes, limits);
-            if (!checked.ok) return checked;
-            return { ok: true, value: checked.plan };
-          },
-        };
-      });
-    },
-    writeStepCards(input): Promise<StepCardsResult> {
-      return run("step_cards", "step_cards", (row) => {
-        const rules = cardRules(row);
-        return {
-          prompt: stepCardPrompt(input, row, rules),
-          accept: (raw) => acceptCards(raw, input, rules),
-        };
-      });
-    },
-    writeStuckStory(input): Promise<LineResult> {
-      return run("stuck_story", "stuck_story", (row) => {
-        const limits = lineLimits(row, checks(row));
-        return {
-          prompt: stuckPrompt(input, row),
-          accept: (raw) =>
-            acceptLine(raw, "story", "stuck_story", input.forbidTerms ?? [], limits, {
-              earlierLines: input.earlierLines ?? [],
-              lastCard: input.lastCard,
-              companionName: input.companionName,
-            }),
-        };
-      });
-    },
-    writeRestReply(input): Promise<LineResult> {
-      return run("rest_reply", "rest_reply", (row) => {
-        const limits = lineLimits(row, checks(row));
-        return {
-          prompt: restPrompt(input, row),
-          accept: (raw) =>
-            acceptLine(raw, "reply", "rest_reply", [], limits, null, input.companionName),
-        };
-      });
-    },
-    writeReturnPopup(input): Promise<LineResult> {
-      return run("return_popup", "return_popup", (row) => {
-        const limits = lineLimits(row, checks(row));
-        return {
-          prompt: returnPrompt(input, row),
-          accept: (raw) =>
-            acceptLine(raw, "returnLine", "return_popup", input.forbidTerms ?? [], limits, {
-              earlierLines: input.earlierLines ?? [],
-              companionName: input.companionName,
-            }),
-        };
-      });
-    },
-    writeClosingLine(input): Promise<ClosingLineResult> {
-      return run("closing_line", "closing_line", (row) => {
-        const limits = lineLimits(row, checks(row));
-        return {
-          prompt: closingPrompt(input, row),
-          accept: (raw) => acceptClosing(raw, input, limits),
-        };
-      });
-    },
+    splitPlan: (input): Promise<PlanSplitResult> =>
+      run("plan_split", "plan_split", (row) => BUILDERS.plan_split(row, input)),
+    writeStepCards: (input): Promise<StepCardsResult> =>
+      run("step_cards", "step_cards", (row) => BUILDERS.step_cards(row, input)),
+    writeStuckStory: (input): Promise<LineResult> =>
+      run("stuck_story", "stuck_story", (row) => BUILDERS.stuck_story(row, input)),
+    writeRestReply: (input): Promise<LineResult> =>
+      run("rest_reply", "rest_reply", (row) => BUILDERS.rest_reply(row, input)),
+    writeReturnPopup: (input): Promise<LineResult> =>
+      run("return_popup", "return_popup", (row) => BUILDERS.return_popup(row, input)),
+    writeClosingLine: (input): Promise<ClosingLineResult> =>
+      run("closing_line", "closing_line", (row) => BUILDERS.closing_line(row, input)),
   };
+}
+
+type Built<T> = { prompt: string; accept: (raw: string) => Attempt<T> };
+type Generated<R> = Extract<R, { source: "generated" }>;
+
+/**
+ * How each key's prompt is built from its row and checked (#282). The live calls and the admin's
+ * publish check (`promptRowProblems`, #308) use these same builders, so they refuse the same rows.
+ */
+const BUILDERS = {
+  plan_split(row: PromptRow, input: PlanSplitInput): Built<Generated<PlanSplitResult>> {
+    const limits = readPlanLimits(checks(row));
+    if (!limits) throw missing("checks");
+    return {
+      prompt: planPrompt(input, row),
+      accept: (raw) => {
+        const parsed = parseModelJson(raw);
+        if (parsed === null) return { ok: false, rejectedRules: ["parse"] };
+        const checked = checkPlan(parsed, input.totalMinutes, limits);
+        if (!checked.ok) return checked;
+        return { ok: true, value: checked.plan };
+      },
+    };
+  },
+  step_cards(row: PromptRow, input: StepCardsInput): Built<Generated<StepCardsResult>> {
+    const rules = cardRules(row);
+    return {
+      prompt: stepCardPrompt(input, row, rules),
+      accept: (raw) => acceptCards(raw, input, rules),
+    };
+  },
+  stuck_story(row: PromptRow, input: StuckStoryInput): Built<Generated<LineResult>> {
+    const limits = lineLimits(checks(row), "checks");
+    return {
+      prompt: stuckPrompt(input, row),
+      accept: (raw) =>
+        acceptLine(raw, "story", "stuck_story", input.forbidTerms ?? [], limits, {
+          earlierLines: input.earlierLines ?? [],
+          lastCard: input.lastCard,
+          companionName: input.companionName,
+        }),
+    };
+  },
+  rest_reply(row: PromptRow, input: RestReplyInput): Built<Generated<LineResult>> {
+    const limits = lineLimits(checks(row), "checks");
+    return {
+      prompt: restPrompt(input, row),
+      accept: (raw) =>
+        acceptLine(raw, "reply", "rest_reply", [], limits, null, input.companionName),
+    };
+  },
+  return_popup(row: PromptRow, input: ReturnPopupInput): Built<Generated<LineResult>> {
+    const limits = lineLimits(checks(row), "checks");
+    return {
+      prompt: returnPrompt(input, row),
+      accept: (raw) =>
+        acceptLine(raw, "returnLine", "return_popup", input.forbidTerms ?? [], limits, {
+          earlierLines: input.earlierLines ?? [],
+          companionName: input.companionName,
+        }),
+    };
+  },
+  closing_line(row: PromptRow, input: ClosingLineInput): Built<Generated<ClosingLineResult>> {
+    const limits = lineLimits(checks(row), "checks");
+    return {
+      prompt: closingPrompt(input, row),
+      accept: (raw) => acceptClosing(raw, input, limits),
+    };
+  },
+};
+
+/** Inputs that reach every branch of each builder: each optional line and each chosen text. */
+const CHECK_CASES: {
+  [K in Exclude<PromptKey, "retry_hints">]: Parameters<(typeof BUILDERS)[K]>[1][];
+} = {
+  plan_split: [
+    { goal: "g", totalMinutes: 30, splitFiner: true },
+    { goal: "g", totalMinutes: 30, splitFiner: false },
+  ],
+  step_cards: [
+    {
+      minutes: 10,
+      facts: "f",
+      storyCards: 2,
+      background: true,
+      stepFacts: "s",
+      stepNumber: 1,
+      stepCount: 2,
+      mustUse: ["m"],
+    },
+    { minutes: 10, facts: "f", background: false },
+    { minutes: 10, facts: "f", stepFacts: "" },
+  ],
+  stuck_story: [
+    { pauseNumber: 1, facts: "f" },
+    { pauseNumber: 1000, facts: "f" },
+  ],
+  rest_reply: [{ facts: "f", userMessage: "u" }],
+  return_popup: [
+    { trigger: "rest", facts: "f", awayMinutes: 5 },
+    { trigger: "absence", facts: "f", awayMinutes: 60 },
+  ],
+  closing_line: [{ facts: "f", lastMoment: "l" }],
+};
+
+/**
+ * Why the gateway would refuse this prompt row, in words; empty when every call that uses it can
+ * build its prompt (#308 AC7). An unknown `{{name}}` and a missing or unusable setting are
+ * reported. Publish and roll back in the admin refuse a row with any problem.
+ */
+export function promptRowProblems(row: PromptRow): string[] {
+  const problems: string[] = [];
+  const attempt = (build: () => unknown) => {
+    try {
+      build();
+    } catch (error) {
+      const found =
+        error instanceof PromptRowError ? error.problems : ["The prompt cannot be built."];
+      for (const problem of found) if (!problems.includes(problem)) problems.push(problem);
+    }
+  };
+  if (row.key === "retry_hints") {
+    attempt(() => render(row, { fixes: "x" }));
+    return problems;
+  }
+  const key = row.key;
+  for (const input of CHECK_CASES[key]) {
+    attempt(() => (BUILDERS[key] as (row: PromptRow, input: unknown) => unknown)(row, input));
+  }
+  return problems;
 }
 
 /** The step_cards row's card counts and limits (T7, CARD-LENGTH). */
@@ -307,10 +398,10 @@ type CardRules = {
 function cardRules(row: PromptRow): CardRules {
   const values = checks(row);
   return {
-    maxStoryCards: count(row, values.max_story_cards, "max_story_cards"),
-    defaultCards: count(row, values.default_cards, "default_cards"),
-    stepCard: lineLimits(row, values.step_card),
-    backgroundCard: lineLimits(row, values.background_card),
+    maxStoryCards: count(values.max_story_cards, "checks.max_story_cards"),
+    defaultCards: count(values.default_cards, "checks.default_cards"),
+    stepCard: lineLimits(values.step_card, "checks.step_card"),
+    backgroundCard: lineLimits(values.background_card, "checks.background_card"),
   };
 }
 
@@ -467,7 +558,7 @@ function stepCardPrompt(input: StepCardsInput, row: PromptRow, rules: CardRules)
     cardsLine:
       storyCards === null
         ? text(row, "cards_open")
-        : renderPrompt(text(row, "cards_counted"), { storyCards }),
+        : fill(text(row, "cards_counted"), { storyCards }, "text.cards_counted"),
     backgroundLine: input.background ? text(row, "background") : null,
     stepNumber: numbered ? input.stepNumber : null,
     stepCount: numbered ? input.stepCount : null,
@@ -487,7 +578,7 @@ function normalPauseNumber(value: number): number {
 
 function stuckPrompt(input: StuckStoryInput, row: PromptRow): string {
   const pauseNumber = normalPauseNumber(input.pauseNumber);
-  const harderFrom = count(row, row.params.harder_from_pause, "harder_from_pause");
+  const harderFrom = count(row.params.harder_from_pause, "harder_from_pause");
   return render(row, {
     situation: text(row, pauseNumber >= harderFrom ? "situation_harder" : "situation_first"),
     pauseNumber,

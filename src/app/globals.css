@@ -3663,3 +3663,67 @@ a {
     align-self: flex-start;
   }
 }
+
+/* ADM-08 Prompts (issue 308): settings lines, the prompt text and the line diff. */
+.admin-prompt-settings {
+  font-family: var(--type-mono);
+  font-size: var(--text-caption-size);
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding-left: var(--space-control-gap);
+}
+
+.admin-prompt-text,
+.admin-diff {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-field);
+  font-family: var(--type-mono);
+  font-size: var(--text-caption-size);
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding: var(--space-small-gap);
+  white-space: pre-wrap;
+}
+
+.admin-prompt-field {
+  font-family: var(--type-mono);
+}
+
+.admin-prompt-subhead {
+  font-size: var(--text-body-size);
+  margin: 0;
+}
+
+.admin-diff {
+  list-style: none;
+}
+
+.admin-diff-line {
+  display: flex;
+  gap: var(--space-small-gap);
+}
+
+.admin-diff-mark {
+  flex: none;
+  font-weight: 700;
+  width: var(--space-control-gap);
+}
+
+.admin-diff-added,
+.admin-diff-removed {
+  font-weight: 700;
+}
+
+.admin-diff-removed {
+  text-decoration: line-through;
+}
+
+.admin-diff-spoken {
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}

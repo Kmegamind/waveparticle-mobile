@@ -9,6 +9,7 @@ const PROBLEMS: Record<string, string> = {
   invalid: "This version cannot be rolled back to.",
   blank: "This version cannot be rolled back to.",
   "too-long": "This version cannot be rolled back to.",
+  "checks-failed": "The gateway cannot use this version, so it was not rolled back.",
   failed: "Could not roll back. Please try again.",
 };
 
@@ -29,6 +30,7 @@ export function HistoryRowAction({
   isCurrent: boolean;
 }) {
   const [status, setStatus] = useState("");
+  const [problems, setProblems] = useState<string[]>([]);
   const [pending, startTransition] = useTransition();
   // False in the server HTML and until React has hydrated, so a click never goes unanswered.
   const ready = useSyncExternalStore(
@@ -45,10 +47,13 @@ export function HistoryRowAction({
           disabled={pending || !ready}
           onClick={() => {
             setStatus("");
+            setProblems([]);
             startTransition(async () => {
               const result = await rollBackFromHistoryAction(kind, itemKey, version).catch(
                 () => ({ ok: false, error: "failed" }) as const,
               );
+              // A prompt the gateway cannot use lists its reasons (#308).
+              setProblems(!result.ok && "problems" in result ? (result.problems ?? []) : []);
               setStatus(
                 result.ok
                   ? `Rolled back to v${version}.`
@@ -63,9 +68,16 @@ export function HistoryRowAction({
       ) : isCurrent ? (
         <p className="admin-history-note">Published now</p>
       ) : null}
-      <p aria-live="polite" className="admin-text-status" role="status">
+      <div aria-live="polite" className="admin-text-status" role="status">
         {status}
-      </p>
+        {problems.length > 0 ? (
+          <ul className="admin-card-problems">
+            {problems.map((problem) => (
+              <li key={problem}>{problem}</li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
     </div>
   );
 }

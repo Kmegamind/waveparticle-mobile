@@ -85,6 +85,8 @@ for (const path of [
   "/admin/companions",
   "/admin/companions/oppenheimer",
   "/admin/companions/oppenheimer/stories/site-search",
+  "/admin/prompts",
+  "/admin/prompts/step_cards",
   "/admin/publish-history",
   "/admin/stories",
   "/admin/stories/site-search",

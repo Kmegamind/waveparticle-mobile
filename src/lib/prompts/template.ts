@@ -29,3 +29,8 @@ export function renderPrompt(template: string, values: Record<string, PromptValu
   }
   return lines.join("\n");
 }
+
+/** Every placeholder name in a template, each once, in order (#308). */
+export function placeholderNames(template: string): string[] {
+  return [...new Set([...template.matchAll(PLACEHOLDER)].map((match) => match[1]))];
+}

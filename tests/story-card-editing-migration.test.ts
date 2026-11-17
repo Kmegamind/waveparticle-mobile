@@ -25,6 +25,9 @@ describe("story card editing migration (#304)", () => {
       .sort();
     expect(names).toContain(MIGRATION);
     expect(names.indexOf(MIGRATION)).toBeGreaterThan(
+      names.indexOf("20261122000000_companion_mode.sql"),
+    );
+    expect(names.indexOf(MIGRATION)).toBeGreaterThan(
       names.indexOf("20261121000000_premade_cards.sql"),
     );
   });
