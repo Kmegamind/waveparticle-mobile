@@ -109,6 +109,18 @@ Roll back (Publish and Roll back for the `admin` role only) and lets the publish
 story cards. It changes no card and no phone read. Until it runs, the Stories page still shows
 the cards, but saving says the change could not be saved. No new setting is needed.
 
+## Companion and story fields
+Editing a Companion's and a story's fields in the admin (#309, `docs/decisions/0024`): run
+`supabase/migrations/20261124000000_content_fields.sql` after the story card editing migration. It
+adds `companions.who` and `stories.path`, the versions table and the functions behind Save draft,
+Publish and Roll back (Publish and Roll back for the `admin` role only), and lets the publish
+history list these fields. It changes no text the app shows and no phone read. Until it runs, the
+Companions pages say the Companion could not be read. No new setting is needed.
+
+After this change the content import (`scripts/content/import.mjs`) no longer overwrites a
+Companion's name and tags or a story's title, period, goal sentence, "Who I am" and opening on rows
+that exist: the text published in the admin stays.
+
 ## After each deploy
 - Smoke test: open the deployed home page and confirm the product name is
   visible. To run the end-to-end test against a deployed address instead of a local
