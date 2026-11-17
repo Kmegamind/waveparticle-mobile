@@ -15,6 +15,8 @@
 //        docs/demo) when the key is STUB_CONTENT_READ_KEY, otherwise null, as the real function (#284)
 //   GET  /rest/v1/stories | story_parts | story_cards   the seed rows (#293): stories for any
 //                                     signed-in account, parts and cards for content editors only
+//   POST /rest/v1/rpc/get_story_cards  { reader_key, story, versions } → the seed deck's cards as
+//        version 1, published (#300); POST /__story_cards { failReads } makes it fail
 //   POST /rest/v1/rpc/content_role        the seeded contentRole ("admin", "writer") or null, as
 //                                          public.content_role() for the caller (#287)
 //   POST /rest/v1/rpc/delete_my_account   mirrors the migration (#103): the caller's rows, then
@@ -48,6 +50,8 @@ const storyContent = appDocument(readContentRows());
 /** The story display rows and the story cards and part titles once both imports have run (#293). */
 const storyRows = readContentRows().stories;
 const storyCards = storyCardRows(readStoryDecks());
+/** While on, get_story_cards fails as when the database cannot answer (#300, FAIL-PREMADE). */
+let storyCardsFailReads = false;
 
 const port = Number(process.env.STUB_SUPABASE_PORT ?? "3198");
 /** token → { user, tables } */
@@ -266,6 +270,35 @@ createServer(async (request, response) => {
     const body = (await readBody(request)) ?? {};
     const allowed = contentReadKey.length > 0 && body.reader_key === contentReadKey;
     return json(response, 200, allowed ? storyContent : null);
+  }
+
+  // #300: one story's pre-made cards for the server's reader key: the seed deck as version 1,
+  // published; with versions, exactly the listed key and version pairs.
+  if (path === "/rest/v1/rpc/get_story_cards" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    if (storyCardsFailReads) return json(response, 503, { message: "database unavailable" });
+    if (!(contentReadKey.length > 0 && body.reader_key === contentReadKey)) {
+      return json(response, 200, null);
+    }
+    const versions = body.versions ?? null;
+    const cards = storyCards.cards
+      .filter((card) => card.story_id === body.story)
+      .filter((card) => versions === null || versions[card.key] === 1)
+      .map((card) => ({
+        key: card.key,
+        version: 1,
+        kind: card.kind,
+        part: card.part,
+        position: card.position,
+        body: card.body,
+      }));
+    return json(response, 200, { cards });
+  }
+
+  if (path === "/__story_cards" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    storyCardsFailReads = body.failReads === true;
+    return json(response, 204);
   }
 
   if (path === "/rest/v1/rpc/content_role" && request.method === "POST") {
