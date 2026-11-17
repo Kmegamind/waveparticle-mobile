@@ -164,11 +164,11 @@ Source of this register: the "Decisions needed" parts of the three audit reports
 - **Dates.** No dates or ages are shown to users and no approximate-date flags are stored for display. The Life Path is grouped into named periods.
 - **Background knowledge in the planning database.** Cross-check it; import it if it can be used directly; otherwise Yue and the team decide the content together.
 - **Which comes first, Moriarty setting document or pack specification.** No objection to the pack specification first; no longer blocking.
-- **Every card must contain something new.** Yes (this was open item C3, which blocks issue #106).
+- **Every card must contain something new.** Yes (CARD-NEW). The user story US-CON-5 is settled by CARD-NEW; it is not blocked by C3 (decision US-CON-5, 2026-11-17).
 
 ### 5.2 Still open
 
-Settled since this register was written, and removed from the table: the conflict between the answers and the log (NO-BACKUP), the failure screen (FAIL-SCREEN), the mood of the closing line (END-TONE), who reads content (READ-STATUS), the time read from the goal text (GOAL-TIME), editing a plan (STEP-EDIT), the step count in his lines (NO-STEP-COUNT), reading aloud (NO-READ-ALOUD), which user test comes first (TEST-LATER), the account screens (ACCOUNT-SCREENS), what the summary record shows (SUMMARY-RECORD) and the other six companions (OTHER-COMPANIONS). The issues that planned authored fallbacks (#43, #62, #63, #134) may still need rewording.
+Settled since this register was written, and removed from the table: the conflict between the answers and the log (NO-BACKUP), the failure screen (FAIL-SCREEN), the mood of the closing line (END-TONE), who reads content (READ-STATUS), the time read from the goal text (GOAL-TIME), editing a plan (STEP-EDIT), the step count in his lines (NO-STEP-COUNT), reading aloud (NO-READ-ALOUD), which user test comes first (TEST-LATER), the account screens (ACCOUNT-SCREENS), what the summary record shows (SUMMARY-RECORD) and the other six companions (OTHER-COMPANIONS). The 19 questions left open by the clean-up of #295 were answered on 2026-11-17 (`docs/DECISIONS.md`, section "Decisions of 2026-11-17", issue #298). The issues that planned authored fallbacks (#43, #62, #63, #134) may still need rewording.
 
 | Topic | What is being decided | Blocks |
 |---|---|---|

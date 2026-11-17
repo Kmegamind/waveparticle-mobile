@@ -5,7 +5,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 > - **Length (section A4, "Wrong shape"):** the pause message is 1 or 2 sentences and at most 30 words, not 20 (LEN-PAUSE).
 > - **Escalation (section A4):** blocking severity words fits Pauses 1 and 2 only; from the third Pause the harder situation is intended (PAUSE-3).
 > - **Fallback (change list row 5, section A4 pool sizes):** there are no authored snag, quiet or return pools. A failing message is generated again within the time limit; then the app shows its failure message with Retry and no stored text (NO-BACKUP, FAIL-SCREEN). Authored snag lines are reference examples and evaluation material only (C1).
-> - **Return line (section C, change list row 7):** the return is the return pop-up, generated live after Back to step and after 5 minutes or more away (R1, A6, T6). In it he may describe how the time felt in his own words (TIME-WORDS); exact clock numbers stay out until decided (CLOCK-NUMBERS). There is no rule about whether he waits (H8). The HOME-2 line and the picked return card are gone.
+> - **Return line (section C, change list row 7):** the return is the return pop-up, generated live after Back to step and after 5 minutes or more away (R1, A6, T6). In it he may describe how the time felt in his own words (TIME-WORDS); exact clock numbers stay out until decided (CLOCK-NUMBERS). There is no rule about whether he waits (H8). The HOME-2 line and the picked return card are gone. The pop-up is 1 or 2 sentences and at most 30 words, replacing the 14-word limit (LEN-RETURN). Going back to a Step offline shows the failure screen with Retry (OFFLINE-RESUME).
 > - Chinese, a second language: out (L1).
 
 # AI-3 · Stuck story layer — v2 (after the user test)

@@ -4,7 +4,7 @@ This document describes the data an engineer needs in order to build the story s
 
 Every field name, type and example below is taken from the real content files unless it is marked "proposed". Where a file and a decision disagree, `docs/DECISIONS.md` wins and the disagreement is stated.
 
-> **Changed 2026-11-14 and 2026-11-15 (`docs/DECISIONS.md`, decisions SHARED-STORY to CLOSING-AHEAD).** The background card, the step story cards and the closing line are made ahead once per story part, read by a person and shared by all users; only the pause message, the rest conversation, the return pop-up and the goal split are live. There are no authored or generic fallback lines (NO-BACKUP, NO-FALLBACK-TABLES). The authored cards of two stories are reference examples and evaluation material only. This document was brought in line with these decisions in issue #295.
+> **Changed 2026-11-14 and 2026-11-15 (`docs/DECISIONS.md`, decisions SHARED-STORY to CLOSING-AHEAD).** The background card, the step story cards and the closing line are made ahead once per story part, read by a person and shared by all users; only the pause message, the rest conversation, the return pop-up and the goal split are live. There are no authored or generic fallback lines (NO-BACKUP, NO-FALLBACK-TABLES). The authored cards of two stories are reference examples and evaluation material only. This document was brought in line with these decisions in issue #295, and with the decisions of 2026-11-17 in issue #298.
 
 ## 0. How to read this document
 
@@ -74,7 +74,7 @@ The character who "lives" the story. The data is split over `personas.json` and 
 |---|---|---|
 | id | text | `oppenheimer`, `heisenberg` |
 | voice | text | "He talks short and direct: plain spoken sentences, contractions, a dry one-line joke, sometimes a sharp edge of arrogance. He is never loud." (`personas.json`, Oppenheimer) |
-| periods | list of {until, text} | `{"until": "1927-12-31", "text": "A young physicist, {age}, brilliant, lonely and badly unhappy, ..."}`. Six periods; the last `until` is `2100-01-01`. `{age}` is filled in at runtime. The user never sees dates or ages (PERIODS); dates are never passed to a card prompt and no card may state an age (DATES-ADMIN-ONLY). |
+| periods | list of {until, text} | `{"until": "1927-12-31", "text": "A young physicist, {age}, brilliant, lonely and badly unhappy, ..."}`. Six periods; the last `until` is `2100-01-01`. `{age}` is visible only in the admin and never reaches a prompt (AGE-TEXT). The user never sees dates or ages (PERIODS); dates are never passed to a card prompt and no card may state an age (DATES-ADMIN-ONLY). |
 | world record (fictional Companions only) | text | Missing. Stored with the Companion; a fictional Companion's notebook must stay consistent with it (FICTION-RULES). |
 | dialogue lines | map from slot to list of text | `GD0: ["You found me on a mesa held together by cigarettes and arithmetic. What are you working on?", ...]` |
 | default opener | list of text | The character-level `GD0` list; used when a story has no opener of its own. |
@@ -121,7 +121,7 @@ One episode. The story database holds 26 Oppenheimer stories (`entries/<id>.plan
 | detail.goal | {why, stakes, obstacle, if_then} | Backend only. |
 | detail.tasks | list | The story's parts: the character's tasks in that story, 2 to 5 per story (STORY-PARTS; here 4; an internal field name), each with `id`, `done_when`, `added_later`, `steps`, `obstacle`, `if_then`, `knowledge` (background facts, about 20 per story), `happened` (facts from the book, 11 for this story), `anchors`, `tone`. Each part's cards are made ahead from its `happened` facts (CARDS-PER-PART), and the app spreads the parts across the user's steps (section 3). The parts do not decide the number of steps. |
 | story goal (short, full) | text, text | `short`: "I want the laboratory built where my people can live and work." `full`: "I want to choose well, and I do not yet have the power to choose, so I have to see it clearly and say it simply." Shown as "My goal" on the companion's card. Not the same thing as the user's Goal. |
-| who_i_am | text | "I'm a physicist from Berkeley, asked to run a laboratory the Army has not yet found a home for." (key `where_now.who`) |
+| who_i_am | text | "I'm a physicist from Berkeley, asked to run a laboratory the Army has not yet found a home for." (key `where_now.who`). Shown in the "Who I am" sheet, which opens when the user taps his portrait on the focus page, as in prototype v4 F1-C (PORTRAIT-SHEET; code follow-up). |
 | slice count (runtime) | integer | `8` for `site-search`, `7` for `trinity`; none for the other stories. Equals the number of authored slices. It is not a limit on the number of steps (Decided, T2). Earlier called capacity. Reference data only. |
 | allowed_cut_points (runtime) | list of text | `["after s1", ..., "after s7"]`. Reference data only (NO-FALLBACK-TABLES). |
 | key moments | list of {fact ids, key_line} | 2 to 4 per story (Decided, C2). Stored as unconfirmed until the content owner reviews them (KEY-MOMENTS-DRAFT, KEY-UNCONFIRMED). Imported as `keySlices`. Must-use facts when the story's cards are made ahead. `keyLine`: one first-person past-tense sentence of at most 18 words. |
@@ -184,7 +184,7 @@ Shape B, `trinity` chains (current rule set, 135 cards: 105 chain cards and 30 r
 | origin | `authored` | |
 | pause_item, depth | text, text | on return cards only: `s1.p1`, `T0-T1` or `T2-T3` |
 
-Card types of shape B, in the order they appear in a chain. The 105 chain cards also include 21 cards of an older role that announced the end of the time; the current design has no such role (T8):
+Card types of shape B, in the order they appear in a chain. The 105 chain cards also include 21 cards of an older role that announced the end of the time; the current design has no such role (CARDS-SPREAD):
 
 | Code | Role | Counts today |
 |---|---|---|
@@ -231,13 +231,13 @@ User step (user content, stored on the server and tied to the account; Decided, 
 |---|---|
 | title | Short, non-empty, at most 80 characters. |
 | description | One or two sentences that expand the title: what to do and what to watch for (Decided, D1c). Generated with the plan, shown on the focus page, read only there. Proposed limit: at most about 40 words. |
-| minutes | A whole number from 1 to 1440. At creation the minutes add up to the time the user gave (D1d), so there is no "plan is longer than your time" message. |
+| minutes | A whole number from 1 to 1440 (STEP-RANGE). A new step defaults to 15 minutes (NO-ROUNDING). At creation the minutes add up to the time the user gave (D1d), so there is no "plan is longer than your time" message. |
 
-The user may edit everything: rename a step, change its minutes, add, delete, and move a step up or down with buttons (STEP-EDIT). Minutes change with −5 and +5 or a typed whole number, from 1 to 1440; at either end the reason is shown in words (#249). If the edits change the total, the goal's time follows the edits (Decided, D1d). There is no maximum number of steps (Decided, T2). How a plan is split for different kinds of goals is the planning prompt's job, not a rule of this document (Decided, D1b).
+The user may edit everything: rename a step, change its minutes, add, delete, and move a step up or down with buttons of at least 44 by 44 px (STEP-EDIT, TAP-SIZE; code follow-up). Minutes change with −5 and +5 or a typed whole number, from 1 to 1440; at either end the reason is shown in words (#249). If the edits change the total, the goal's time follows the edits (Decided, D1d). There is no maximum number of steps (Decided, T2). How a plan is split for different kinds of goals is the planning prompt's job, not a rule of this document (Decided, D1b).
 
 Rules checked in code: the JSON parses; at least one step; titles non-empty; minutes are whole numbers from 1 to 1440; at creation the minutes add up to the total. There is no step size of 15 minutes and no cap on the step count (STEP-EDIT, T2).
 
-Story step: the story parts the app gives to one user step (CARDS-PER-PART). When the user presses Start, `startStory` (`src/lib/story/start.ts`) spreads the story's parts across the user's steps, in order, with plain code and no model call. Example: 4 parts and 2 steps gives parts 1 and 2 in step 1, parts 3 and 4 in step 2. The character's goal mirrors the user's: if the user has x steps of y minutes each, the character also has x steps of y minutes each (T1). Proposed record (not an existing file):
+Story step: the story parts the app gives to one user step (CARDS-PER-PART). When the user presses Start, `startStory` (`src/lib/story/start.ts`) spreads the story's parts across the user's steps, in order, with plain code and no model call. Example: 4 parts and 2 steps gives parts 1 and 2 in step 1, parts 3 and 4 in step 2. With more steps than parts, a part's cards are split across neighbouring steps (CARDS-SPREAD). The character's goal mirrors the user's: if the user has x steps of y minutes each, the character also has x steps of y minutes each (T1). Proposed record (not an existing file):
 
 ```json
 {"step": 2, "minutes": 30, "n": 3, "interval_min": 10,
@@ -255,7 +255,7 @@ The pacing fields are defined in 2.14. For the two stories with authored cards, 
 | text | text | What the user typed in a free text box, at most about 200 characters (limit pending). There is no restriction on what a goal can be and no list of unsupported kinds (Decided, D1a). Stored on our server (Decided, S3). Goes to the model only in the planning prompt and in the shape classification; the story cards are made ahead and shared, so they never receive it (SHARED-STORY). |
 | title | text | At most 40 characters, produced by the planning prompt. |
 | shape | `specific`, `vague`, `big`, `unknown` | One-word classification that selects his reaction line (slots GD1S, GD1V, GD1B). It never refuses or redirects a goal. |
-| total minutes | integer | The time the user gave; follows the user's edits to the steps (Decided, D1d). |
+| total minutes | integer | The time the user gave, on a time slider from 1 minute to 3 hours with no 0 (SLIDER-RANGE); not rounded to 15 minutes (NO-ROUNDING). Follows the user's edits to the steps (Decided, D1d). |
 | split finer | boolean | Proposed: the user's answer to the question asked after the time, whether to split the goal into finer steps. Passed to the planning prompt. |
 | status | text | planned, in progress, on hold, done. A one-time goal moves to done automatically when its last step is finished (Decided, G4). One goal has at most one session in progress (goal management rule). |
 
@@ -311,7 +311,7 @@ When it appears (Decided, R1):
 
 A shorter glance at another app resumes the clock with no pop-up. The return line on Home, the return card in the stack (type RET) and the separate "away card" are not needed (Decided, R1). Home shows no "welcome back" (Decided, H7). Not decided: what the pop-up does when the keep-running setting is on and the clock never stopped.
 
-The text is generated live (Decided, T6, A6, H2) and checked. There is no authored fallback (NO-BACKUP); a failure shows the failure message with Retry (FAIL-SCREEN).
+The text is generated live (Decided, T6, A6, H2) and checked. There is no authored fallback (NO-BACKUP); a failure shows the failure message with Retry (FAIL-SCREEN). Going back to a step offline also shows the failure screen with Retry (OFFLINE-RESUME).
 
 | Field | Meaning |
 |---|---|
@@ -323,7 +323,7 @@ The text is generated live (Decided, T6, A6, H2) and checked. There is no author
 
 The authored return texts (`ret_line`, `ret_short` and `ret_long` in `snag_sample_trinity_s4_2026-11-04.json`, and the 30 Trinity RET cards) are reference examples and evaluation material only and are never shown (NO-BACKUP).
 
-Length: the earlier return card rule (25 to 40 words, at most three sentences, Yue 2026-10-29) is the proposed limit for the pop-up text until a decision says otherwise. Proposed checks, kept from the older list: no blame aimed at the user, no clock time, no hook, no news that moves the story beyond the step's parts. The old rule against "I waited" no longer applies: there is no rule about whether he waits (Decided, H8). He may describe how the time felt in any words he would use, such as "a while" (TIME-WORDS); whether exact clock numbers are allowed is open (CLOCK-NUMBERS), and until decided they stay out.
+Length: 1 or 2 sentences, at most 30 words (LEN-RETURN). Proposed checks, kept from the older list: no blame aimed at the user, no clock time, no hook, no news that moves the story beyond the step's parts. The old rule against "I waited" no longer applies: there is no rule about whether he waits (Decided, H8). He may describe how the time felt in any words he would use, such as "a while" (TIME-WORDS); whether exact clock numbers are allowed is open (CLOCK-NUMBERS), and until decided they stay out.
 
 ### 2.10 Snag
 
@@ -364,30 +364,28 @@ A scene covers several entry states that share place and props. Trinity needs ab
 
 ### 2.13 Background card
 
-The card that opens the first step of a goal (Decided, T4, T9). It is not progress, so it is not counted among the n story cards and is not subject to their limits (Decided, T7).
+The card that opens the first step of a goal (Decided, T4, T9). It is not progress, so it is not counted among the story cards of a step.
 
 | Field | Notes |
 |---|---|
 | text | Told in the character's own voice, as storytelling: who is here, where this is, and what each person knows (Decided, D3). It introduces the people who are present; no later card introduces anyone (Decided, M2). Never from a third-party point of view, so that the experience stays immersive. Replaces the earlier proposal of a three-line summary. |
 | source | Made ahead once per story, read by a person and published, then shared by all users (SHARED-STORY, READ-STATUS). |
-| when | Once, as the one card with which the first step opens; later steps open with the card about what he just finished (2.14, section 3). It is the oldest card in the first step's stack and needs no button to dismiss it (Decided, T9). |
+| when | Once, as the one card with which the first step opens; later steps have no special opening card (CARDS-SPREAD). It is the oldest card in the first step's stack and needs no button to dismiss it (Decided, T9). |
 | input | Story facts true at the start: the story's `who_i_am`, the opening `where_now`, the people and the `knowledge` field. Nothing that happens later, and no dates (DATES-ADMIN-ONLY). |
 | checks | The per-line checks of section 7.1 (first person, no clock times, dates, years or ages, no future facts, leak map). At most 70 words; a background card over the limit cannot be published (LEN-CARD). |
 
 ### 2.14 Card pacing
 
-Decided (T1, T7): each step has between 1 and 5 story cards. The number n is chosen by the AI for each step and is not fixed. The n story cards arrive at y/n, 2y/n, and so on up to y minutes after the step starts, where y is the step's minutes: interval = step minutes / n. The n-th card is due at the step's end time, when the clock reaches 00:00 (Decided, T8). The gap between cards is at least 5 minutes. The AI is told these limits, and the app ignores any extra cards it returns.
-
-Not settled: with cards made ahead per part (CARDS-PER-PART), the log does not yet say how a step's n follows from the cards of the parts it receives, or how these limits apply when one step receives several parts.
+Decided (CARDS-SPREAD, T1): the cards of all parts are spread across the user's steps in story order. No card is ever dropped, so there is no upper limit on a step's cards. A step's n is the number of cards it receives; every step gets at least one new card. More cards in a step means closer together, fewer means further apart. The n story cards arrive at y/n, 2y/n, and so on up to y minutes after the step starts, where y is the step's minutes: interval = step minutes / n. There is no special "just finished" card at the start of a later step and no special "still at it" card at 00:00.
 
 | Field | Rule |
 |---|---|
-| n | Integer from 1 to 5, and at most floor(step minutes / 5). |
-| interval | step minutes / n, in minutes; never below 5. |
-| due time of card k | k x interval, in foreground minutes, so the n-th card is due at the step's end time. The card with which the step opens (the background card, or the card about what he just finished) is not one of the n (Decided, T9). |
+| n | The number of cards the step receives; at least 1, no upper limit (CARDS-SPREAD). |
+| interval | step minutes / n, in minutes. |
+| due time of card k | k x interval, in foreground minutes, so the n-th card is due at the step's end time. The background card with which the first step opens is not one of the n (Decided, T9). |
 | foreground only | Nothing is added while the app is away or the step is paused (unless the keep-running setting is on; how pacing then works is not specified). |
 
-Examples: a 10-minute step has at most 2 cards, 5 minutes apart; a 25-minute step can have 5 cards, 5 minutes apart; a 60-minute step has at most 5 cards, 12 minutes apart if n is 5. A step of under 10 minutes has one card.
+Examples: a 30-minute step that receives 3 cards shows one every 10 minutes; a 30-minute step that receives 6 cards shows one every 5 minutes.
 
 The pause count is not part of pacing. It is passed only to the pause prompt (2.8).
 
@@ -404,27 +402,27 @@ Decided (G1, G2): History shows the date, the duration and the steps the user ma
 
 The session record is a read model over sessions and session steps; it needs no table of its own.
 
+The Home card line is the last line he said in the user's most recent session, stored in that session's record. There are no separate status lines (HOME-LINE).
+
 ## 3. How the user's steps share out the story
 
 Let N be the number of steps the user confirmed. There is no maximum (Decided, T2), and few steps are allowed (Decided, C2).
 
 1. **The story in parts.** A story has 2 to 5 parts (STORY-PARTS), and its cards are made ahead once per part (CARDS-PER-PART). When the user presses Start, the app spreads the parts across the user's N steps in story order with plain code, with no model call (`src/lib/story/start.ts`). Example: 4 parts and 2 steps gives parts 1 and 2 in step 1, parts 3 and 4 in step 2. The parts do not decide how many steps there are (Decided, T2, T3). The character has the same number of steps with the same minutes as the user (Decided, T1).
-2. **Facts a card may use.** A card of a part may use the facts of that part, in order. It never uses the facts of later parts, the story's ending words (the forbid list) or the per-fact leak words. The leak and forbid checks of section 7 are run on every card before it can be published.
-3. **Key moments.** They are inputs the AI must use, and a key moment ends a step when possible (section 4).
-4. **Opening card of step k.** Step 1 opens with the background card (2.13) as its one card. Step k (k from 2) opens with exactly one card about what he just finished in the previous step (Decided, T9). There is no screen between steps.
-5. **Cards while a step runs.** The step's n story cards arrive at y/n, 2y/n ... y minutes (2.14); the n-th arrives at 00:00.
+2. **Facts a card may use.** A card of a part may use the facts of that part, in order. It never uses the facts of later parts, the story's ending words (the forbid list) or the per-fact leak words. The spoiler check runs when cards are made and again before publishing, against the parts after the card's own part (LEAK-BY-PART).
+3. **Key moments.** They are inputs the AI must use (section 4). A key moment no longer ends a step (LEAK-BY-PART).
+4. **Opening card of step k.** Step 1 opens with the background card (2.13) as its one card. A later step has no special opening card; it continues with its share of the story's cards (CARDS-SPREAD). There is no screen between steps.
+5. **Cards while a step runs.** The step's n story cards arrive at y/n, 2y/n ... y minutes (2.14). No special card arrives at 00:00 (CARDS-SPREAD).
 6. **Last step.** Done on the last step goes straight to the summary. There is no landing screen and no "next" card.
-7. **N equals 1.** One step covers the whole story. It has between 1 and 5 cards; the summary and the closing line carry the rest, and the summary lists the key moments.
+7. **N equals 1.** One step covers the whole story and receives all its cards (CARDS-SPREAD); the summary and the closing line carry the rest, and the summary lists the key moments.
 
 ## 4. Key slices
 
-Decided (C2): each story has two to four key slices (key moments), confirmed by the content owner. Today the 54 machine-derived key moments are stored as unconfirmed and wait for review (KEY-UNCONFIRMED, KEY-REVIEW). A key slice ends a step whenever possible. When there are fewer steps than key slices, the summary lists the merged key moments, one first-person line each. The stronger rule (never offer fewer steps than key slices) was not chosen, and the goal dialogue does not forbid few steps. Key moments are inputs the AI must use when the story's cards are made ahead (T3, SHARED-STORY); the summary lists any that were merged.
+Decided (C2): each story has two to four key slices (key moments), confirmed by the content owner. Today the 54 machine-derived key moments are stored as unconfirmed and wait for review (KEY-UNCONFIRMED, KEY-REVIEW). "A key slice ends a step" is withdrawn (LEAK-BY-PART). When there are fewer steps than key slices, the summary lists the merged key moments, one first-person line each. The stronger rule (never offer fewer steps than key slices) was not chosen, and the goal dialogue does not forbid few steps. Key moments are inputs the AI must use when the story's cards are made ahead (T3, SHARED-STORY); the summary lists any that were merged.
 
 Draft rules from the story database workstream that follow from this:
 
 - A slice is key when, after it, the nature of what he has to do changes, not merely when things go further.
-- A key slice is always the last slice of its step, so the final card of the step carries the key scene.
-- If N is at least the number of key slices, each key slice ends a step and any extra cut points go into the stretch with the most facts. If N is smaller, the latest key slices are merged and the end screen lists every key slice the session covered, each with its `key_line`.
 - There are no markers for turning points or scenes on the map rows or on the current card (Decided, M3); key moments appear only in the summary.
 
 The import marks key slices on all 26 stories. The slice ids below are an earlier proposal for the two authored stories, and the table is the worked example the tests use. They are not the task ids stored for `site-search` (`offer_the_mesa`, `show_groves_the_mesa`) or `trinity` (`weigh_the_storm`, `answer_the_reporter`):
@@ -434,7 +432,7 @@ The import marks key slices on all 26 stories. The slice ids below are an earlie
 | `site-search` | s4 (Groves says the canyon will never do), s6 (he names the mesa and the boys' school), s8 (Groves says "this is the place") |
 | `trinity` | s4 (the time of the shot is fixed), s6 (the light and the roar) |
 
-How the cut falls for `site-search` with the key slices s4, s6, s8:
+How the cut fell for `site-search` with the key slices s4, s6, s8 under the withdrawn rule that a key slice ends a step (kept as a record; LEAK-BY-PART withdraws it):
 
 | N | Steps | Landing shown at the end of each step | End screen lists |
 |---|---|---|---|
@@ -444,9 +442,9 @@ How the cut falls for `site-search` with the key slices s4, s6, s8:
 | 4 | s1 to s2, s3 to s4, s5 to s6, s7 to s8 | s2, s4, s6 | key line of s8 |
 | 5 | s1 to s2, s3, s4, s5 to s6, s7 to s8 | s2, s3, s4, s6 | key line of s8 |
 
-For N above 5 there is no limit (Decided, T2): each key slice still ends a step and the extra cut points go where the story has the most facts. The "landing shown" column describes the authored reference cards; with made-ahead cards the final card of the step carries the key scene.
+For N above 5 there is no limit (Decided, T2). The "landing shown" column describes the authored reference cards.
 
-`startStory` follows that cut. Extra steps are split inside the stretch with the most facts, larger parts first, and a tie goes to the earlier stretch. Facts after the last key slice stay in that step until the plan has a spare step, which then takes those facts so the key slice can end the step before them. When there are fewer steps than key slices, the later key slices merge into the last step and the summary lists each merged key line. When nothing was merged, that list is empty: for N of 3 or more in the table, the summary does not list s8, because that key slice ended its own step (US-MAP-9). One step has no next-step card and goes straight to the summary. The step count is the plan's count and does not depend on the number of slices.
+Today `startStory` still follows that cut (code follow-up of LEAK-BY-PART). Extra steps are split inside the stretch with the most facts, larger parts first, and a tie goes to the earlier stretch. Facts after the last key slice stay in that step until the plan has a spare step, which then takes those facts so the key slice can end the step before them. When there are fewer steps than key slices, the later key slices merge into the last step and the summary lists each merged key line. When nothing was merged, that list is empty: for N of 3 or more in the table, the summary does not list s8, because that key slice ended its own step (US-MAP-9). One step has no next-step card and goes straight to the summary. The step count is the plan's count and does not depend on the number of slices.
 
 ## 5. Which card appears when
 
@@ -455,30 +453,30 @@ Decided (X2, X6): a step opens with exactly one card. More cards appear one at a
 | Event | What appears | Source |
 |---|---|---|
 | The goal starts (first step opens) | The background card, told in his voice (2.13), as the one card of the first step. No button is needed to dismiss it. | Decided (T4, T9) |
-| A step opens (Start, or Done on the previous step) | Exactly one card: the background card for the first step, the card about what he just finished for later steps. Neither is one of the n story cards. | Decided (X2, T1, T9) |
+| A step opens (Start, or Done on the previous step) | Exactly one card: the background card for the first step (not one of the n story cards); for a later step, the first of its share of the story's cards. There is no special "just finished" card. | Decided (X2, T1, T9, CARDS-SPREAD) |
 | Done on a step that is not the last | The next step opens on the same page with its one card. The clock shows the new target, holds for 1.2 seconds, then starts without a tap. Done is greyed out during the hold. No landing screen, no button to begin. | Decided (X3) |
 | Done on the last step | No card. The summary opens. | Current rule |
-| Foreground time passes | The next story card, at y/n, 2y/n ... y minutes (2.14; at least 5 minutes apart). Nothing is added while paused or away. | Decided (T1, T7, T8) |
-| The clock reaches 00:00 | The n-th story card arrives, written to say he is still at it. The only other thing is the light vibration. The clock stays at 00:00 until Done. | Decided (T8) |
+| Foreground time passes | The next story card, at y/n, 2y/n ... y minutes (2.14). Nothing is added while paused or away. | Decided (T1, CARDS-SPREAD) |
+| The clock reaches 00:00 | No special card. The light vibration. The clock stays at 00:00 until Done. | Decided (CARDS-SPREAD) |
 | Pause | No card. The rest page shows his message; the pause number goes to the prompt. | Decided (F1) |
 | Back to step on the rest page | No card. The return pop-up (2.9) opens; the start button restarts the clock. | Decided (R1, T6) |
 | The user returns after 5 minutes or more away, or taps Continue on Home or in Goals after that time | The return pop-up (2.9). Under 5 minutes: nothing, the clock resumes. | Decided (R1, T9) |
 | The user leaves the app | The clock freezes and no card is added, unless the keep-running setting is on. What happens to card timing while the clock keeps running is not specified. | Decided (F2) |
 | Done is undone (every Done can be undone) | The step is open again; no new card. How cards already shown in the next step are treated is not specified. | Decided (F3) |
 
-Card count of a step: n, from 1 to 5, with at least 5 minutes between cards; the background card is extra (2.14, including what is not settled there).
+Card count of a step: n, the cards it receives, at least 1 and no upper limit; no card is dropped; the background card is extra (2.14, CARDS-SPREAD).
 
 ## 6. Where each content type comes from
 
-"Made ahead" means generated once per story part, checked, read by a person and published (decision SHARED-STORY); every user sees the published version. "Live" means generated for this user at runtime and checked before it is shown. Nothing stored ever stands in for a failed live line (NO-BACKUP): after the retries within the time limit, the screen shows the failure message with Retry (FAIL-SCREEN).
+"Made ahead" means generated once per story part, checked, read by a person and published (decision SHARED-STORY); every user sees the published version. "Live" means generated for this user at runtime and checked before it is shown. His goal-dialogue lines picked from written lists are authored fixed lines (FIXED-LINES, APP-TEXT), not stored text under NO-BACKUP. Nothing stored ever stands in for a failed live line (NO-BACKUP): after the retries within the time limit, the screen shows the failure message with Retry (FAIL-SCREEN).
 
 | Content type | Source | If generation fails |
 |---|---|---|
 | Goal conversation lines (GD0 to GD4C) | Authored pools; the model only classifies the goal's shape and splits the plan (Decided, T2) | Failure message with Retry |
 | Plan: step titles, descriptions and minutes | Live, from the planning prompt (P1) | Failure message with Retry; the typed text is kept |
-| Background card | Made ahead, once per story (SHARED-STORY) | Not possible on the user's screen: only published cards are shown |
-| Story cards | Made ahead, once per story part, from the story's facts and key moments (SHARED-STORY, CARDS-PER-PART) | Not possible on the user's screen |
-| Closing line | Made ahead with the story's cards (CLOSING-AHEAD); END-TONE applies | Not possible on the user's screen |
+| Background card | Made ahead, once per story (SHARED-STORY) | If it fails to load: failure screen with Retry; the clock does not start (FAIL-PREMADE) |
+| Story cards | Made ahead, once per story part, from the story's facts and key moments (SHARED-STORY, CARDS-PER-PART) | If they fail to load: failure screen with Retry; the clock does not start (FAIL-PREMADE) |
+| Closing line | Made ahead with the story's cards (CLOSING-AHEAD); END-TONE applies | If it fails to load: failure screen with Retry (FAIL-PREMADE) |
 | His message on the rest page (snag) | Live (C1, F1, PAUSE-3), from allowed props, names and rules; receives the pause number | Failure message with Retry |
 | Return pop-up text | Live (T6, R1) | Failure message with Retry |
 | Rest chat reply | Live, no message limit (R2, A3); passes the spoiler check (CHAT-SPOILER-CHECK) | Failure message with Retry |
@@ -490,7 +488,7 @@ Disclosure that the companion is an AI appears only in the terms and the setting
 
 ## 7. Checks every line must pass
 
-These apply to every line the companion shows, made ahead or live, unless a row says otherwise. A made-ahead card, background card or closing line that fails cannot be published (LEN-CARD, SHARED-STORY). A live line that fails is generated again within the time limit; after that the failure message with Retry is shown and nothing stored stands in (NO-BACKUP, FAIL-SCREEN). Rule ids are the ones used in the check script of the card stack rules.
+These apply to every line the companion shows, made ahead or live, unless a row says otherwise. A made-ahead card, background card or closing line that fails cannot be published (LEN-CARD, SHARED-STORY); the output safety check also runs on made-ahead content before publishing (SAFETY-PREMADE). A live line that fails is generated again within the time limit; after that the failure message with Retry is shown and nothing stored stands in (NO-BACKUP, FAIL-SCREEN). Rule ids are the ones used in the check script of the card stack rules.
 
 ### 7.1 Per line (failure means the line is not published or not shown)
 
@@ -515,10 +513,9 @@ These apply to every line the companion shows, made ahead or live, unless a row 
 | Line | Limit |
 |---|---|
 | Step story card; SIT, EVM, WRY, DOI, NTC | 1 to 3 sentences, at most 45 words; over the limit cannot be published (LEN-CARD, 2026-11-15) |
-| Return pop-up text | Proposed from the earlier return card rule: at most 3 sentences, 25 to 40 words (fewer than 25 gives a warning) |
+| Return pop-up text | 1 or 2 sentences, at most 30 words (LEN-RETURN) |
 | Background card | At most 70 words, no sentence limit; over the limit cannot be published (LEN-CARD) |
 | His message on the rest page (obstacle) | 1 or 2 sentences, at most 30 words (LEN-PAUSE, 2026-11-15) |
-| Single status line (older design, still in the Trinity pool) | 1 sentence, 14 words |
 | Opening of the goal conversation | 2 sentences, 30 words, one question and it comes last |
 | Step lines `current`, `done`, `plan` | At most 10 words, first person |
 | `key_line` | At most 18 words |
@@ -526,7 +523,7 @@ These apply to every line the companion shows, made ahead or live, unless a row 
 | End-of-story feeling line (closing line) | 1 to 3 sentences, at most 45 words, first person, no "you", no numbers or durations; over the limit cannot be published (LEN-CARD, CLOSING-AHEAD) |
 | Rest chat reply | 1 to 3 sentences (deflections: 1 to 2) |
 
-Decision LEN-PAUSE (2026-11-15) replaces the AI specification's stricter limit for model-written snags (at most 20 words and 2 sentences). The AI specification also gives a limit of 14 words for the resolved line, which conflicts with the return text above; see `docs/ai/DIFFERENCES.md`. When two limits apply, use the stricter one, except where a decision settles it.
+Decision LEN-PAUSE (2026-11-15) replaces the AI specification's stricter limit for model-written snags (at most 20 words and 2 sentences). Decision LEN-RETURN (2026-11-17) sets the return pop-up limit and replaces the AI specification's 14 words. When two limits apply, use the stricter one, except where a decision settles it.
 
 ### 7.3 Per row and per run (cards of one step, and neighbouring steps)
 
@@ -534,7 +531,7 @@ These apply to one-way lines. Rest chat replies answer the user and are not chec
 
 | Check | Rule |
 |---|---|
-| Start and size (RW1) | A step opens with exactly one card and has between 1 and 5 story cards; the app drops any extra cards (Decided, T7). The opening card is not counted, and the n-th card is due at 00:00 (T8). |
+| Start and size (RW1) | A step opens with exactly one card and gets at least one new card; no card is ever dropped (CARDS-SPREAD). The background card is not counted. |
 | Order (RW2) | Cards follow the story's order within their part. In the authored reference chains: WRY, then DOI, then NTC. |
 | Connected (RW3) | Each card connects to the one before: shares a content word or uses so, because, but, which. |
 | No forward reference (RW4) | A card never depends on a later card, so any prefix of the row is complete. |
@@ -728,7 +725,6 @@ Other missing pieces:
 - The review of the key moments and their first-person key lines for every story (KEY-REVIEW).
 - The parts (2 to 5) and the made-ahead cards, background card and closing line of every story, with their read status (STORY-PARTS, READ-STATUS). Stored cards are issue #293.
 - Generator inputs for all 26 stories: scene tables, allowed props, allowed names and rules, and the leak words per fact.
-- The length limit of the return pop-up text.
 - The named periods of each Life Path (PERIOD-NAMES).
 - Moriarty's data and his world record (FICTION-RULES); Yue's reading of the 31 cards of his story 1 (MORIARTY-READ). The other six characters of the older product are out of scope for Release 1 (OTHER-COMPANIONS).
 
