@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fieldProblems, parseFieldKey, type FieldKey } from "@/lib/content-fields/fields";
+import { fieldProblems, type FieldKey } from "@/lib/content-fields/fields";
 import { fieldView, type ContentFieldRow } from "@/lib/content-fields/view";
 import { writeContentField } from "@/lib/content-fields/write";
 

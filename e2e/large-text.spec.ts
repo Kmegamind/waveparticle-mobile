@@ -82,6 +82,9 @@ for (const path of signedInPages) {
 for (const path of [
   "/admin",
   "/admin/app-text",
+  "/admin/companions",
+  "/admin/companions/oppenheimer",
+  "/admin/companions/oppenheimer/stories/site-search",
   "/admin/publish-history",
   "/admin/stories",
   "/admin/stories/site-search",

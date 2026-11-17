@@ -1,4 +1,4 @@
-import { datesProblems } from "@/lib/story-cards/checks";
+import { datesProblems } from "@/lib/content/dates";
 
 // The Companion and story fields the admin edits (#309, ADM-03 to ADM-05, docs/decisions/0024):
 // their keys (NAMING), their limits and the checks every save and every publish runs. These
