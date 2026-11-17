@@ -13,4 +13,4 @@ Domain terms, so agents don't guess their meaning. The full glossary is in `docs
 | Background card | The first card of a Goal, told in the Companion's own voice: who is here, where, what each knows. |
 | Fate link | The story advances only when the user finishes a Step. |
 | Return pop-up | The pop-up in which the Companion says what he did meanwhile, shown before the clock restarts. |
-| Key slice | A turning point in a story; a key slice ends a Step when possible. |
+| Key slice | A turning point in a story; its key moments are must-use facts when the cards are made. It does not have to end a Step (LEAK-BY-PART). |

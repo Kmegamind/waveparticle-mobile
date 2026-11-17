@@ -216,6 +216,30 @@ Yue answered the questions raised by the three audits (AI specifications, produc
 | CHAT-SPOILER-CHECK | 2026-11-15 | Every rest conversation reply passes the same spoiler check as the story cards, against the parts the user has not reached. A failing reply is generated again within the time limit. | New check on the rest reply. |
 | CLOSING-AHEAD | 2026-11-15 | The closing line is made ahead with the story's cards and read and published with them. | Follows SHARED-STORY. END-TONE still applies. |
 
+### Decisions of 2026-11-17
+
+Yue answered the 19 questions that the specs clean-up (issue #295, pull request #296) left open. Recorded in issue #298.
+
+| Id | Date | Decision | Consequences |
+|---|---|---|---|
+| CARDS-SPREAD | 2026-11-17 | The cards of all parts are spread across the user's Steps in story order. No card is ever dropped, so T7's 1-to-5 limit no longer cuts cards. More cards in a Step means closer together, fewer means further apart. Every Step gets at least one new card. With more Steps than parts, a part's cards are split across neighbouring Steps. There is no special "just finished" card at the start of a Step and no special "still at it" card at 00:00. | Replaces T8's last card and T9's opening card for later Steps, and T7's card limit. |
+| LEAK-BY-PART | 2026-11-17 | The spoiler check runs when cards are made and before publishing, against the parts after the card's own part. | "A key slice ends a Step" (C2) is withdrawn. |
+| FAIL-PREMADE | 2026-11-17 | If pre-made cards or the closing line fail to load, the app shows the failure screen with Retry (FAIL-SCREEN). The clock does not start. | Extends FAIL-SCREEN to made-ahead content. |
+| FIXED-LINES | 2026-11-17 | His goal-dialogue lines picked from written lists are authored fixed lines (APP-TEXT), not "stored text" under NO-BACKUP. | |
+| HOME-LINE | 2026-11-17 | The Home card line is the last line he said in the user's most recent session, stored in that session's record. There are no separate status lines. | |
+| STEP-RANGE | 2026-11-17 | A Step is 1 to 1440 minutes. | Sets the maximum that STEP-EDIT left open. |
+| NO-ROUNDING | 2026-11-17 | The goal time is not rounded to 15 minutes. A new Step defaults to 15 minutes. | |
+| SLIDER-RANGE | 2026-11-17 | The time slider runs from 1 minute to 3 hours. There is no 0. | Refines TIME-SLIDER. |
+| TAP-SIZE | 2026-11-17 | The Move up and Move down buttons are at least 44 by 44 px. | Code follow-up, not part of the documentation change. Replaces the 44 by 35 px area of pull request #273. |
+| OFFLINE-RESUME | 2026-11-17 | Going back to a Step offline shows the failure screen with Retry. | Removes the R-OFF promise "You can still go back to your Step". |
+| PORTRAIT-SHEET | 2026-11-17 | Tapping his portrait on the focus page opens the "Who I am" sheet, as in prototype v4 F1-C. | Code follow-up. |
+| AGE-TEXT | 2026-11-17 | `{age}` in a Companion's period text is visible only in the admin and never reaches a prompt. | Applies DATES-ADMIN-ONLY. |
+| LEN-RETURN | 2026-11-17 | The return pop-up is 1 or 2 sentences and at most 30 words. | Replaces 25 to 40 words (content model) and 14 words (AI spec). |
+| SAFETY-PREMADE | 2026-11-17 | The output safety check also runs on pre-made content before publishing. | |
+| CHAT-QUESTION-END (confirmed) | 2026-11-17 | A rest reply may end with a question. This replaces "never a question before Back". | Confirms CHAT-QUESTION-END of 2026-11-12. |
+| US-CON-5 | 2026-11-17 | The user story US-CON-5 is settled by CARD-NEW. | The unrecorded "blocked by C3" is removed. |
+| US-FMT-7 | 2026-11-17 | The user story US-FMT-7 stays parked and unchanged. | |
+
 ## 2. Superseded rules (do not implement)
 
 | Rule | Replaced by |
@@ -245,6 +269,10 @@ Yue answered the questions raised by the three audits (AI specifications, produc
 | Story cards written live for each user (the "decided" part of T3) | SHARED-STORY |
 | An AI distributes the story across the user's steps (T3) | CARDS-PER-PART |
 | The first card of the next step is generated during the previous step (NO-BACKUP) | SHARED-STORY |
+| A later Step opens with a card about what he just finished (T9); the last card of a Step says he is still at it at 00:00 (T8); 1 to 5 cards per Step, extra cards ignored (T7) | CARDS-SPREAD |
+| A key slice ends a Step (C2) | LEAK-BY-PART |
+| "No connection. You can still go back to your Step." (R-OFF) | OFFLINE-RESUME |
+| His last message before Back is never a question | CHAT-QUESTION-END |
 
 ## 3. Open
 

@@ -53,7 +53,7 @@ Screens use the identifiers of the prototype and the screen registry.
 | GD1, GD2, GD3, GD4 | Goal dialogue: opening, reaction and time question, the question whether to split finer, the Plan |
 | GD-F, GD-N1 | Goal dialogue: split failed; one-Step Plan |
 | F1, F1S | Focus page with several Steps; focus page with a single Step |
-| F1-E, F1-C, F1-N, F1-R, F1-YOU | Focus page states: looking at an earlier card; "Where I am now"; first frame of the next Step; return pop-up after Back from rest; Your Steps open |
+| F1-E, F1-C, F1-N, F1-R, F1-YOU | Focus page states: looking at an earlier card; "Who I am" sheet; first frame of the next Step; return pop-up after Back from rest; Your Steps open |
 | F2, F3, F4 | Timer at 00:00; his card failed to load; focus page with the return pop-up after leaving the app for 5 minutes or more |
 | R1, R1-C, R-OFF | Rest page; rest conversation; rest page without network |
 | S1 | Safety page |
@@ -430,13 +430,13 @@ These rules come from the product principles and from decisions. They are repeat
 **Acceptance criteria**
 - Given a Story, then it has two to four key slices confirmed by the content owner (the machine-derived ones are stored as unconfirmed until reviewed, KEY-UNCONFIRMED), and each key slice has a one-sentence first-person, past-tense key line of at most 18 words.
 - Given a Story, then it has 2 to 5 parts (STORY-PARTS), and its cards are made for each part, with the key slices as must-use facts (US-AI-2).
-- Given I press Start on a Plan of x Steps (any number), then the app spreads the Story's parts across the x Steps with plain code and no model call (CARDS-PER-PART; for example 4 parts and 2 Steps gives parts 1 and 2 in Step 1 and parts 3 and 4 in Step 2).
-- Given a key slice, then it ends a Step whenever the number of Steps allows.
+- Given I press Start on a Plan of x Steps (any number), then the app spreads the Story's parts across the x Steps with plain code and no model call (CARDS-PER-PART; for example 4 parts and 2 Steps gives parts 1 and 2 in Step 1 and parts 3 and 4 in Step 2); the cards of all parts are spread in story order, no card is ever dropped, every Step gets at least one new card, and with more Steps than parts a part's cards are split across neighbouring Steps (CARDS-SPREAD).
+- Given a card, then the spoiler check runs when it is made and before publishing, against the parts after the card's own part (LEAK-BY-PART).
 - Given there are fewer Steps than key slices, then the later key slices are merged into the last Step, and the summary lists every merged key moment, one first-person line each (US-MAP-9).
 - Given there is only one Step, then there are no next-Step cards and the Story goes straight to the summary.
 - Given the number of Steps, then it never depends on the number of Slices.
 
-**Priority:** Must · **Area:** Story content and data (NF3) · **Screens:** F1, END · **Depends on:** US-CON-1 · **Size:** L · **Source:** DEC C2, T1, T3 (decided 2026-11-05), STORY-PARTS, CARDS-PER-PART, KEY-UNCONFIRMED; NF3v1 section 3
+**Priority:** Must · **Area:** Story content and data (NF3) · **Screens:** F1, END · **Depends on:** US-CON-1 · **Size:** L · **Source:** DEC T1, T3 (decided 2026-11-05), STORY-PARTS, CARDS-PER-PART, CARDS-SPREAD, LEAK-BY-PART, KEY-UNCONFIRMED (C2's "a key slice ends a Step" is withdrawn); NF3v1 section 3
 
 ### US-CON-4 · Scene table and state tag on every card
 
@@ -458,7 +458,7 @@ These rules come from the product principles and from decisions. They are repeat
 - Given a card, then it never adds a new named person, a new conversation or a new outcome.
 - Given a build of the content, then a check warns when a card shares too many content words with the earlier cards of the same Step.
 
-**Priority:** Should · **Area:** Story content and data (NF3) · **Screens:** F1 · **Depends on:** US-CON-1, US-CON-12 · **Size:** L · **Status:** Decision CARD-NEW (2026-11-12): every card must contain something new; a card that repeats earlier information is not acceptable. · **Source:** DEC C3, CARD-NEW; NF3v1 section 5
+**Priority:** Should · **Area:** Story content and data (NF3) · **Screens:** F1 · **Depends on:** US-CON-1, US-CON-12 · **Size:** L · **Status:** Decision CARD-NEW (2026-11-12): every card must contain something new; a card that repeats earlier information is not acceptable. · **Source:** CARD-NEW (settles this story, 2026-11-17); NF3v1 section 5
 
 ### US-CON-7 · Inputs for the live rest scenes
 
@@ -528,7 +528,7 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** returning user, **I want** Home to show the Goal I am on and one way back in, **so that** I can continue with a single tap.
 
 **Acceptance criteria**
-- Given a Goal is in progress and I left it less than three days ago, then Home shows one Goal card with the title, the Companion, a short line from him about where he is now (US-AI-2) and a Continue button.
+- Given a Goal is in progress and I left it less than three days ago, then Home shows one Goal card with the title, the Companion, the last line he said in my most recent session, stored in that session's record (HOME-LINE), and a Continue button; there are no separate status lines.
 - Given the card, then it shows no percentage, no "started N days ago", no count and no "away for" text.
 - Given I tap Continue, then the focus page opens on the same Step, and the return pop-up rule of US-FOC-19 applies: the pop-up appears if I was away 5 minutes or more, and the clock starts when I tap its start button.
 - Given the page, then a text link "Start something else" is lower in importance than Continue and opens the new Goal input.
@@ -625,7 +625,7 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user, **I want** to see one card when a Step begins and a new one now and then while I work, **so that** the Story grows slowly and I can look back by swiping.
 
 **Acceptance criteria**
-- Given a Step starts, then exactly one card of that Step is visible and no other cards of that Step are stacked: the background card for the first Step of a Goal (US-FMT-11), and the card about what he just finished for every later Step (US-FMT-9).
+- Given a Step starts, then exactly one card of that Step is visible and no other cards of that Step are stacked: the background card for the first Step of a Goal (US-FMT-11), and for every later Step the first of its story cards (US-FMT-9, CARDS-SPREAD).
 - Given each Step, then it has its own stack that starts again with one card.
 - Given I keep working, then further cards appear one at a time on foreground time while the timer runs, at the pace set in US-FMT-3; no card appears while the app is in the background or the clock is frozen.
 - Given a card has been shown, then its text is stored with an id and never changes, is never re-picked and is never regenerated when I look at it again.
@@ -653,12 +653,11 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user, **I want** the cards to arrive at an even pace through the Step, **so that** I notice that something is happening in his day without being flooded.
 
 **Acceptance criteria**
-- Given a Step of y minutes, then its n story cards are the cards of the Story parts that the app spreads to that Step (CARDS-PER-PART), with n between 1 and 5 (T7).
-- Given n cards, then they arrive at y/n, 2y/n, and so on up to y minutes of foreground time after the Step starts, so the n-th card arrives exactly at 00:00 (US-FOC-4); the gap between cards is never less than 5 minutes, and a Step of 10 minutes has at most 2 cards.
-- Given a Step would get more than 5 cards or cards closer together than 5 minutes, then the app ignores the extra cards (T7).
-- Given a Step opens, then its opening card (the background card for the first Step, US-FMT-11; the card about what he just finished for later Steps, US-FMT-9) is not one of the n story cards.
+- Given a Step of y minutes, then its n story cards are the cards that the app spreads to that Step in story order (CARDS-PER-PART, CARDS-SPREAD); n is at least 1 and has no upper limit, and no card is ever dropped (CARDS-SPREAD).
+- Given n cards, then they are spread evenly through the y minutes of foreground time: more cards in a Step come closer together, fewer come further apart (CARDS-SPREAD).
+- Given the first Step opens, then its opening card is the background card (US-FMT-11), which is not one of the n story cards. There is no special "just finished" card at the start of a later Step and no special "still at it" card at 00:00 (CARDS-SPREAD).
 
-**Priority:** Must · **Area:** Story format and cards (NF5) · **Screens:** F1 · **Depends on:** US-FMT-1, US-AI-2 · **Size:** M · **Source:** DEC T1, T7, T8, T9 (decided 2026-11-05), CARDS-PER-PART
+**Priority:** Must · **Area:** Story format and cards (NF5) · **Screens:** F1 · **Depends on:** US-FMT-1, US-AI-2 · **Size:** M · **Source:** DEC T1 (decided 2026-11-05), CARDS-PER-PART, CARDS-SPREAD (replaces T7's card limit, T8's last card and T9's opening card for later Steps)
 
 ### US-FMT-4 · Every card can be read on its own
 
@@ -694,17 +693,16 @@ These rules come from the product principles and from decisions. They are repeat
 
 **Priority:** Should · **Area:** Story format and cards (NF5) · **Screens:** LPH · **Depends on:** US-FMT-1, US-MAP-10 · **Size:** M · **Source:** DEC G2; NF5v3 section 6.2
 
-### US-FMT-9 · The first card of the next Step shows what he finished and what he now faces
+### US-FMT-9 · The next Step opens with its first story card
 
-**As a** user who has just finished a Step, **I want** the next Step to open with what happened to him as a result, **so that** my work visibly moves his Story.
+**As a** user who has just finished a Step, **I want** the next Step to open with the next card of his Story, **so that** my work visibly moves his Story.
 
 **Acceptance criteria**
-- Given I finish a Step that is not the last, then the next Step opens with one card that says what he finished and what he now faces, and no landing page appears.
-- Given the Step I finished covered a key moment, then the card draws on it.
-- Given the first Step of a Plan, then it opens with the background card (US-FMT-11) as its one card, and the n story cards arrive after it on the schedule of US-FMT-3.
+- Given I finish a Step that is not the last, then the next Step opens with the first of its story cards, in story order, and no landing page appears; there is no special card about what he just finished (CARDS-SPREAD).
+- Given the first Step of a Plan, then it opens with the background card (US-FMT-11) as its one card, and its story cards arrive after it on the schedule of US-FMT-3.
 - Given the card, then there is no banner such as "Step 3 begins" and no celebration.
 
-**Priority:** Must · **Area:** Story format and cards (NF5) · **Screens:** F1-N · **Depends on:** US-FOC-5, US-CON-2, US-FMT-11 · **Size:** M · **Source:** DEC T9; PROTO F1-N; AI10 section 1; FLOW (landing screens cancelled)
+**Priority:** Must · **Area:** Story format and cards (NF5) · **Screens:** F1-N · **Depends on:** US-FOC-5, US-CON-2, US-FMT-11 · **Size:** M · **Source:** DEC T9 (first Step), CARDS-SPREAD; PROTO F1-N; AI10 section 1; FLOW (landing screens cancelled)
 
 ### US-FMT-10 · Length of the background card
 
@@ -723,7 +721,7 @@ These rules come from the product principles and from decisions. They are repeat
 **Acceptance criteria**
 - Given I start a Goal, then the first Step opens with the background card as its one card, in his own voice, as storytelling: who is here, where this is and what each person knows; it introduces the people who are present, and no later card carries an introduction phrase (decision M2).
 - Given the card, then it is never written from a third-party point of view, and it is not progress: it is not counted among the cards of the Step (US-FMT-3).
-- Given the Goal has several Steps, then the card appears once at the start of the Goal and not at the start of the later Steps, which open with the card about what he just finished (US-FMT-9).
+- Given the Goal has several Steps, then the card appears once at the start of the Goal and not at the start of the later Steps, which open with their first story card (US-FMT-9, CARDS-SPREAD).
 - Given the stack (US-FMT-2), then the background card is the oldest card and needs no button to dismiss it; the first story card arrives on the schedule of US-FMT-3 and sits on top of it.
 - Given the card, then it is made ahead once per Story and shared by all users, passes the same checks as every card (first person, no future facts, no clock times) and has at most 70 words (LEN-CARD); it is shown only once a person has read and published it, and content that is not published is never shown (SHARED-STORY, READ-STATUS, US-AI-2).
 - Given a name in the card, then it is not tappable, and there is no separate "what you need to know" screen.
@@ -775,13 +773,13 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user, **I want** the arrival of 00:00 to be gentle, **so that** it informs me without interrupting.
 
 **Acceptance criteria**
-- Given a Step has n story cards, then the n-th card arrives exactly when the timer reaches 00:00 and is written to say he is still at it; there is no separate card for the end of the time (US-FMT-3).
+- Given the timer reaches 00:00, then no special card arrives; there is no "still at it" card and no separate card for the end of the time (CARDS-SPREAD, US-FMT-3).
 - Given I am looking at an older card, then the view does not jump to the new card.
 - Given the timer reaches 00:00, then the only other thing that happens is one light haptic where the device supports it (the default of the time-up signal setting); no sound, pop-up or colour change occurs, and the clock stays at 00:00 until I tap Done.
 - Given a new card arrives at any other time, then there is no sound or vibration unless I turned the new-card signal on.
 - Given a screen reader, then "Step time reached" is announced once, politely.
 
-**Priority:** Must · **Area:** Focus and rest (NF6) · **Screens:** F1, F2 · **Depends on:** US-FOC-3, US-FMT-2, US-FMT-3, US-PLAT-3 · **Size:** S · **Source:** DEC F5, T8 (decided 2026-11-05); NF6v7 section 4; US-NF6 NF6-27
+**Priority:** Must · **Area:** Focus and rest (NF6) · **Screens:** F1, F2 · **Depends on:** US-FOC-3, US-FMT-2, US-FMT-3, US-PLAT-3 · **Size:** S · **Source:** DEC F5, CARDS-SPREAD (replaces T8's last card); NF6v7 section 4; US-NF6 NF6-27
 ### US-FOC-5 · Done opens the next Step, and the clock starts by itself
 
 **As a** user, **I want** finishing a Step to move me straight into the next one, **so that** I do not need a second tap to keep going.
@@ -915,21 +913,23 @@ These rules come from the product principles and from decisions. They are repeat
 **Acceptance criteria**
 - Given his card fails to load on the focus page, then one calm message in the app's own voice with a Retry button is shown (for example "He is not here right now. Please try again."), the Step clock does not start, and no stored or authored line stands in (FAIL-SCREEN, NO-BACKUP).
 - Given the rest page has no network, then the same failure message with Retry is shown in place of his message, no stored message stands in, and the input field is disabled (FAIL-SCREEN, NO-BACKUP).
+- Given I go back to a Step while offline, then the failure screen with Retry is shown (OFFLINE-RESUME).
+- Given the pre-made cards or the closing line fail to load, then the failure screen with Retry is shown and the clock does not start (FAIL-PREMADE).
 - Given either failure, then Back and the Done and Pause buttons still work.
 - Given the failure message, then it is the app's own text (APP-TEXT), not story text; its wording and the time limit are set by testing (TIME-LIMIT).
 
-**Priority:** Must · **Area:** Focus and rest (NF6) · **Screens:** F3, R-OFF · **Depends on:** US-FOC-1, US-FOC-13 · **Size:** S · **Source:** PROTO F3, R-OFF; US-NF6 NF6-23; DEC NO-BACKUP, FAIL-SCREEN, APP-TEXT
+**Priority:** Must · **Area:** Focus and rest (NF6) · **Screens:** F3, R-OFF · **Depends on:** US-FOC-1, US-FOC-13 · **Size:** S · **Source:** PROTO F3, R-OFF; US-NF6 NF6-23; DEC NO-BACKUP, FAIL-SCREEN, FAIL-PREMADE, OFFLINE-RESUME, APP-TEXT
 
-### US-FOC-17 · "Where I am now" card from his portrait
+### US-FOC-17 · "Who I am" sheet from his portrait
 
 **As a** user curious about the Companion, **I want** to tap his portrait and read where he is now, **so that** I can orient myself without leaving the focus page.
 
 **Acceptance criteria**
-- Given I tap his portrait, then a card in his own voice opens with where he is now, who he is and one line for each Step I have finished; it never shows a row for a Step ahead.
-- Given the card is open, then the timer keeps running behind it and a Close control returns me to the focus page.
+- Given I tap his portrait on the focus page, then the "Who I am" sheet opens, as in prototype v4 F1-C (PORTRAIT-SHEET), in his own voice, with where he is now, who he is and one line for each Step I have finished; it never shows a row for a Step ahead.
+- Given the sheet is open, then the timer keeps running behind it and a Close control returns me to the focus page.
 - Given the card, then it carries no adjectives about him, no quote, no name label and no "What I plan".
 
-**Priority:** Should · **Area:** Focus and rest (NF6) · **Screens:** F1-C · **Depends on:** US-FOC-1 · **Size:** S · **Source:** PROTO F1-C
+**Priority:** Should · **Area:** Focus and rest (NF6) · **Screens:** F1-C · **Depends on:** US-FOC-1 · **Size:** S · **Source:** PROTO F1-C; DEC PORTRAIT-SHEET (code follow-up)
 
 ### US-FOC-18 · Your Steps panel and the Step description
 
@@ -951,7 +951,7 @@ These rules come from the product principles and from decisions. They are repeat
 - Given I tap Back from the rest conversation, then the pop-up appears before the clock restarts.
 - Given I return to the app after being away for 5 minutes or more, then the pop-up appears before the clock restarts; given a shorter glance at another app, then the clock resumes with no pop-up.
 - Given I tap Continue on Home or on a Goal in Goals, then the same rule applies: the pop-up appears if I was away 5 minutes or more, and also after Back to step from rest.
-- Given the pop-up, then he says in his own voice what he did during that time and how he felt; the text is generated live (US-AI-4, US-AI-9); he may say how the time felt in his own words, but no exact clock numbers (TIME-WORDS); if it cannot be generated within the time limit, the failure message with Retry is shown and no stored text stands in (FAIL-SCREEN, NO-BACKUP).
+- Given the pop-up, then he says in his own voice what he did during that time and how he felt; the text is generated live (US-AI-4, US-AI-9) and is 1 or 2 sentences and at most 30 words (LEN-RETURN); he may say how the time felt in his own words, but no exact clock numbers (TIME-WORDS); if it cannot be generated within the time limit, the failure message with Retry is shown and no stored text stands in (FAIL-SCREEN, NO-BACKUP).
 - Given I tap the start button in the pop-up, then the pop-up closes, the original Step resumes and the clock starts; the clock does not run while the pop-up is open.
 - Given any length of absence, then the pop-up works the same: there is no time limit on resuming, and nothing is lost or marked as not completed.
 - Given the pop-up, then it shows no time away, no count and no blame.
@@ -968,7 +968,7 @@ These rules come from the product principles and from decisions. They are repeat
 
 **Acceptance criteria**
 - Given I open the goal dialogue for the first time with a Companion, then he speaks first in at most three sentences and 45 words, from inside his situation, and ends with one question.
-- Given I have already created a Plan with this Companion, then his opening is one sentence that is only the question, picked from a pool of at least five lines that does not repeat the previous one, and it does not say "welcome back" or mention any time.
+- Given I have already created a Plan with this Companion, then his opening is one sentence that is only the question, picked from a pool of at least five authored fixed lines (FIXED-LINES, APP-TEXT) that does not repeat the previous one, and it does not say "welcome back" or mention any time.
 - Given the page, then the input looks like a chat composer, not a form with a label and a Continue button.
 - Given the input, then it offers "Just split it" for users who do not want to talk (US-GD-3).
 - Given I step back, then my text is kept.
@@ -992,7 +992,7 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user, **I want** to answer the time question in one tap, **so that** I am not asked to compute anything.
 
 **Acceptance criteria**
-- ~~Given he asks for the time, then four quick replies show (30 min, 1 hour, 2 hours, Not sure) and I can also type a time; the field accepts only a time.~~ Superseded by TIME-SLIDER: given he asks for the time, then a slider from 0 to 3 hours and Not sure show, with no fixed example times; the time cannot be sent at 0.
+- ~~Given he asks for the time, then four quick replies show (30 min, 1 hour, 2 hours, Not sure) and I can also type a time; the field accepts only a time.~~ Superseded by TIME-SLIDER: given he asks for the time, then a slider from 1 minute to 3 hours and Not sure show, with no fixed example times; there is no 0 (SLIDER-RANGE).
 - Given I tap Not sure, then he chooses 30 minutes and gives one short reason without comforting me.
 - Given I tap Just split it at any point, then he does not ask more and the Plan is made for 30 minutes.
 - Given the time is set, then he acknowledges it in at most two sentences.
@@ -1017,7 +1017,7 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user, **I want** to change the titles, descriptions, minutes and number of Steps, **so that** the Plan fits what I actually mean to do.
 
 **Acceptance criteria**
-- Given a Step in the Plan card, then I can tap it to change its title and its description and to change its minutes with −5 and +5 buttons or by typing a whole number, from 1 to 1440 minutes, with controls at least 44 by 44 pixels; at either end the reason is shown in words (STEP-EDIT, #249).
+- Given a Step in the Plan card, then I can tap it to change its title and its description and to change its minutes with −5 and +5 buttons or by typing a whole number, from 1 to 1440 minutes (STEP-RANGE), with controls at least 44 by 44 pixels; at either end the reason is shown in words (STEP-EDIT, #249).
 - Given I add a Step, then it appears with a title field focused and 15 minutes; given I leave its title empty, then it is removed.
 - Given I remove a Step, then it disappears; the control is hidden when one Step remains.
 - Given I empty an existing Step's title, then the previous title returns.
@@ -1030,11 +1030,11 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user, **I want** editing rules that stop the Plan from becoming a project of its own, **so that** I spend my time starting and not planning.
 
 **Acceptance criteria**
-- Given I add a Step, then it is inserted after the Step I am editing, or at the end if none is open.
-- Given an open Step, then Move up and Move down buttons are available inside it (no dragging) and are not visible in the collapsed list.
+- Given I add a Step, then it is inserted after the Step I am editing, or at the end if none is open, and it defaults to 15 minutes (NO-ROUNDING).
+- Given an open Step, then Move up and Move down buttons are available inside it (no dragging), are at least 44 by 44 pixels (TAP-SIZE, code follow-up) and are not visible in the collapsed list.
 - Given the Plan, then the Start button stays pinned and visible while I edit.
 
-**Priority:** Should · **Area:** Goal start dialogue (NF7) · **Screens:** GD4 · **Depends on:** US-GD-6 · **Size:** S · **Status:** Decision STEP-EDIT (2026-11-12) adds the Move up and Move down buttons; the old caps on the number and length of Steps are gone (decisions T2 and D1d). · **Source:** NF7v7 sections 4.1, 4.2 and 6 (P5); DEC T2, D1d, STEP-EDIT
+**Priority:** Should · **Area:** Goal start dialogue (NF7) · **Screens:** GD4 · **Depends on:** US-GD-6 · **Size:** S · **Status:** Decision STEP-EDIT (2026-11-12) adds the Move up and Move down buttons; the old caps on the number and length of Steps are gone (decisions T2 and D1d). · **Source:** NF7v7 sections 4.1, 4.2 and 6 (P5); DEC T2, D1d, STEP-EDIT, NO-ROUNDING, TAP-SIZE
 
 ### US-GD-8 · When the split fails, say so honestly
 
@@ -1064,7 +1064,7 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user who wrote "study chemistry for an hour", **I want** the app to understand the time, **so that** it does not ask me again.
 
 **Acceptance criteria**
-- Given the Goal states a session length ("for an hour", "90 minutes", "half an hour"), then the time question is skipped (GOAL-TIME), the length is rounded to 15 minutes, and the phrase is removed from the title.
+- Given the Goal states a session length ("for an hour", "90 minutes", "half an hour"), then the time question is skipped (GOAL-TIME), the length is kept as written and not rounded (NO-ROUNDING), and the phrase is removed from the title.
 - Given a duration describes the thing and not the session (for example "a 2-hour lecture"), then the length is not read and the time question is asked.
 - Given the time was taken from the Goal, then he acknowledges it in a short sentence and the Plan card shows the total, which I can change.
 
@@ -1101,7 +1101,7 @@ These rules come from the product principles and from decisions. They are repeat
 - Given this is the first Start for this Goal, then the Goal and the Plan are created now and the Goal appears on Goals. Start again for the same Plan creates no second Goal.
 - Given any Step has an empty name, then the server removes it when the Plan is saved.
 - Given the Plan is saved, then the Step names, descriptions and minutes are stored on our server tied to my account (US-ACC-3); minutes are kept as given, at least 1 (STEP-EDIT).
-- Given the time question, then it is a slider from 0 to 3 hours with no fixed example times (TIME-SLIDER).
+- Given the time question, then it is a slider from 1 minute to 3 hours with no fixed example times (TIME-SLIDER, SLIDER-RANGE).
 - Given the sign-in-free test path, then Start writes nothing to the account.
 
 **Priority:** Must · **Area:** Goal start dialogue (NF7) · **Screens:** GD4, F1 · **Depends on:** US-GD-5, US-ACC-3 · **Size:** M · **Source:** FLOW jump rules (Start creates the Goal and the Plan); G02 G-25; NF7v7 sections 4.1 and 8; DEC S3
@@ -1145,7 +1145,6 @@ These rules come from the product principles and from decisions. They are repeat
 - Given a card, then it passes the checks (first person, no future facts, no clock times, no year, date or age; US-AI-8, DATES-ADMIN-ONLY) before it is published; a story card is 1 to 3 sentences and at most 45 words and the background card at most 70 words, and a card over the limit cannot be published (LEN-CARD); every card says something new (CARD-NEW).
 - Given a card, then it is shown only after a person has read and published it (READ-STATUS); content that is not published is never shown, and no fallback cards or generic lines exist (NO-BACKUP, NO-FALLBACK-TABLES).
 - Given the card prompt, then it never receives exact dates (DATES-ADMIN-ONLY).
-- Given the short line on the Home card, then the same checks apply.
 - Given a card is shown, then it is stored and never regenerated (US-FMT-1).
 
 **Priority:** Must · **Area:** AI pipeline · **Screens:** H1, F1 · **Depends on:** US-CON-2, US-CON-12, US-AI-8 · **Size:** L · **Source:** DEC T1, T3, T4, D3 (decided 2026-11-05), SHARED-STORY, CARDS-PER-PART, LEN-CARD, NO-FALLBACK-TABLES, DATES-ADMIN-ONLY; AI10
@@ -1232,7 +1231,7 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user back after an absence, **I want** him to tell me what he did, **so that** the text is fresh and never repeated.
 
 **Acceptance criteria**
-- Given I return after being away for 5 minutes or more, then the AI generates the pop-up text (US-FOC-19) in his voice: what he did during that time and how he felt, from the entry state only and with no text from me.
+- Given I return after being away for 5 minutes or more, then the AI generates the pop-up text (US-FOC-19) in his voice: what he did during that time and how he felt, from the entry state only and with no text from me; it is 1 or 2 sentences and at most 30 words (LEN-RETURN).
 - Given the text, then it passes the checks of US-AI-8, and a text that fails is generated again within the time limit.
 - Given the AI is slow, then I wait up to the time limit set by testing (TIME-LIMIT); if it still fails, the failure message with Retry is shown, no stored text stands in and the clock does not start (FAIL-SCREEN, NO-BACKUP).
 
@@ -1364,7 +1363,7 @@ These rules come from the product principles and from decisions. They are repeat
 **Acceptance criteria**
 - Given any AI reply, then it passes the shared check (US-AI-8) and a denylist of method and instruction words owned by compliance.
 - Given a reply fails, then it is not shown; the failure message with Retry appears and no stored text stands in (FAIL-SCREEN, NO-BACKUP).
-- Given made-ahead story content (SHARED-STORY), then whether the guard applies to it before publishing is confirmed (the earlier decision was that authored content is reviewed offline instead).
+- Given made-ahead story content (SHARED-STORY), then the output safety check also runs on it before publishing (SAFETY-PREMADE).
 
 **Priority:** Must · **Area:** Safety · **Screens:** R1-C, R1 · **Depends on:** US-AI-8 · **Size:** S · **Source:** AI05v2 sections 3 and 7 (item 9)
 
@@ -1589,7 +1588,7 @@ These stories appeared in older documents and are not in the backlog, either bec
 | Supported and unsupported kinds of Goal, and splitting rules by kind | US-GD-10 of the earlier backlog; NF7v7 sections 1 and 2 | Decisions D1a and D1b: free text with no restriction; splitting is the job of the AI planning prompt. |
 | A maximum of five Steps and limits on the minutes of a Step | US-GD-7 of the earlier backlog; NF7v7 section 4 | Decisions T2 and D1d: no maximum; the user can edit fully. Rewritten as US-GD-6 and US-GD-7. |
 | A limit of 30 messages in the rest conversation | AI04v2 section A4; AI09v2 | Decision R2: no message limit. Rewritten as US-AI-7. |
-| A card every 10 foreground minutes, three to seven timed cards, "small turns" as a content requirement, and authored pools as the only source of cards | NF5v3 sections 3.1 to 3.4; AI02; US-FMT-3 and US-AI-2 of the earlier backlog | Decisions T1, T3, T7 and D2: n cards per Step (1 to 5, at least 5 minutes apart). Cards are made ahead for each Story part and shared, and the app spreads the parts across the Steps (SHARED-STORY, CARDS-PER-PART); there are no fallback cards (NO-BACKUP). Rewritten as US-FMT-3 and US-AI-2. |
+| A card every 10 foreground minutes, three to seven timed cards, "small turns" as a content requirement, and authored pools as the only source of cards | NF5v3 sections 3.1 to 3.4; AI02; US-FMT-3 and US-AI-2 of the earlier backlog | Decisions T1, T3 and D2, and CARDS-SPREAD (which replaces T7's limit of 1 to 5 cards at least 5 minutes apart): every card of every part is spread across the Steps and none is dropped. Cards are made ahead for each Story part and shared, and the app spreads the parts across the Steps (SHARED-STORY, CARDS-PER-PART); there are no fallback cards (NO-BACKUP). Rewritten as US-FMT-3 and US-AI-2. |
 | The success measures, the start-rate north star and the silent measures list | US-PLAT-5 of the earlier backlog; US-NF7 NF7-1, NF7-15 | Decision N1: removed; measurement will be designed later. |
 | A prompt to keep progress by signing in after the first finished Step | G02 G-29; FLOW screen SAVE | Decision ACC: an account is required at first open. Rewritten as US-ACC-1. |
 | A step-out line for low mood and the low-mood tier of the classifier | US-SAF-3 of the earlier backlog; AI05v2 | Decision A5b: the low-mood tier is not in the first demo. |
