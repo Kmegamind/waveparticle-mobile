@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { readContentRole } from "@/lib/admin/roles";
 import { publishHistoryEntries, readPublishHistory } from "@/lib/publish-history/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { HistoryRowAction } from "./roll-back-button";
@@ -25,11 +26,14 @@ export default function AdminPublishHistory() {
 async function PublishHistoryList() {
   await connection();
   const client = await createSupabaseServerClient();
-  const read = await readPublishHistory(async (name, args) => {
-    const { data, error } = await client.rpc(name, args);
-    return { data, error };
-  });
-  const entries = publishHistoryEntries(read.rows);
+  const [read, role] = await Promise.all([
+    readPublishHistory(async (name, args) => {
+      const { data, error } = await client.rpc(name, args);
+      return { data, error };
+    }),
+    readContentRole(client),
+  ]);
+  const entries = publishHistoryEntries(read.rows, role);
 
   if (!read.ok) {
     return (

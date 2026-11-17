@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useSyncExternalStore, useTransition } from "react";
-import type { AppTextWriteResult } from "@/lib/app-text/admin";
+
 import { rollBackFromHistoryAction } from "./actions";
 
-const PROBLEMS: Record<Exclude<AppTextWriteResult, { ok: true }>["error"], string> = {
+const PROBLEMS: Record<string, string> = {
   "not-allowed": "Your account cannot roll back.",
   invalid: "This version cannot be rolled back to.",
   blank: "This version cannot be rolled back to.",
@@ -49,7 +49,11 @@ export function HistoryRowAction({
               const result = await rollBackFromHistoryAction(kind, itemKey, version).catch(
                 () => ({ ok: false, error: "failed" }) as const,
               );
-              setStatus(result.ok ? `Rolled back to v${version}.` : PROBLEMS[result.error]);
+              setStatus(
+                result.ok
+                  ? `Rolled back to v${version}.`
+                  : (PROBLEMS[result.error] ?? PROBLEMS.failed),
+              );
             });
           }}
           type="button"

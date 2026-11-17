@@ -62,14 +62,14 @@ describe("ADM-12 rows (#289)", () => {
     const entries = publishHistoryEntries([
       history({ id: 1, is_current: true }),
       history({ id: 2, is_current: false }),
-      history({ id: 3, kind: "story_card", is_current: false }),
+      history({ id: 3, kind: "character", is_current: false }),
     ]);
     expect(entries.map((entry) => [entry.id, entry.canRollBack])).toEqual([
       [3, false],
       [2, true],
       [1, false],
     ]);
-    expect(entries[0].kindLabel).toBe("story_card");
+    expect(entries[0].kindLabel).toBe("character");
   });
 
   it("test_289_ac2_person_falls_back_to_a_short_account_id_or_deleted_account", () => {
@@ -114,13 +114,14 @@ describe("ADM-12 rows (#289)", () => {
         calls.push([key, version]);
         return { ok: true } as const;
       },
+      story_card: async () => ({ ok: false, error: "failed" }) as const,
     };
     expect(
       await rollBackHistoryItem({ kind: "app_text", key: "ui.S1.back", version: 2 }, handlers),
     ).toEqual({ ok: true });
     expect(calls).toEqual([["ui.S1.back", 2]]);
     expect(
-      await rollBackHistoryItem({ kind: "story_card", key: "x", version: 2 }, handlers),
+      await rollBackHistoryItem({ kind: "character", key: "x", version: 2 }, handlers),
     ).toEqual({ ok: false, error: "invalid" });
     expect(calls).toHaveLength(1);
   });
@@ -135,6 +136,50 @@ describe("ADM-12 rows (#289)", () => {
     expect(page).toContain("readPublishHistory(");
     // The placeholder text is gone.
     expect(page).not.toContain("once issue #289");
+  });
+});
+
+describe("ADM-12 story card rows (#304)", () => {
+  const card = (overrides: Partial<PublishHistoryRow>) =>
+    history({ kind: "story_card", item_key: "crd.opp.site-search.p1.c1", ...overrides });
+
+  it("test_304_ac7_story_card_rows_are_labelled_and_offer_roll_back_to_an_admin", () => {
+    const entries = publishHistoryEntries(
+      [card({ id: 2 }), card({ id: 1, is_current: true })],
+      "admin",
+    );
+    expect(entries.map((entry) => [entry.kindLabel, entry.canRollBack])).toEqual([
+      ["Story card", true],
+      ["Story card", false],
+    ]);
+  });
+
+  it("test_304_ac5_a_writer_sees_no_roll_back_on_story_card_rows", () => {
+    const entries = publishHistoryEntries([card({ id: 2 }), history({ id: 1 })], "writer");
+    expect(entries.map((entry) => [entry.kind, entry.canRollBack])).toEqual([
+      ["story_card", false],
+      ["app_text", true],
+    ]);
+  });
+
+  it("test_304_ac7_roll_back_of_a_story_card_row_uses_the_story_card_path", async () => {
+    const calls: unknown[] = [];
+    const handlers = {
+      app_text: async () => ({ ok: true }) as const,
+      story_card: async (key: string, n: number) => {
+        calls.push([key, n]);
+        return { ok: true } as const;
+      },
+    };
+    expect(
+      await rollBackHistoryItem(
+        { kind: "story_card", key: "crd.opp.a.p1.c1", version: 1 },
+        handlers,
+      ),
+    ).toEqual({ ok: true });
+    expect(calls).toEqual([["crd.opp.a.p1.c1", 1]]);
+    const actions = read("src/app/admin/publish-history/actions.ts");
+    expect(actions).toContain("rollBackStoryCardAction");
   });
 });
 

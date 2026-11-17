@@ -74,7 +74,8 @@ export function cardProblems(
   if (laterLeaks === null) problems.push(LEAKS_UNREADABLE);
   else {
     for (const word of laterLeaks) {
-      if (mentions(card.body, word)) problems.push(`Mentions "${word}", which comes in a later part.`);
+      if (mentions(card.body, word))
+        problems.push(`Mentions "${word}", which comes in a later part.`);
     }
   }
   const banned = card.body.match(BANNED);

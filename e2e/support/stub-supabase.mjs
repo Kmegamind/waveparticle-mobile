@@ -16,7 +16,10 @@
 //   GET  /rest/v1/stories | story_parts | story_cards   the seed rows (#293): stories for any
 //                                     signed-in account, parts and cards for content editors only
 //   POST /rest/v1/rpc/get_story_cards  { reader_key, story, versions } → the seed deck's cards as
-//        version 1, published (#300); POST /__story_cards { failReads } makes it fail
+//        version 1, published (#300), then as edited (#304); POST /__story_cards { failReads }
+//        makes it fail, { reset: true } puts the cards, part titles and their history back
+//   POST /rest/v1/rpc/save_story_card_draft | save_story_part_title (editors),
+//        publish_story_card | roll_back_story_card (admin only), as 20261123000000 (#304)
 //   POST /rest/v1/rpc/content_role        the seeded contentRole ("admin", "writer") or null, as
 //                                          public.content_role() for the caller (#287)
 //   POST /rest/v1/rpc/delete_my_account   mirrors the migration (#103): the caller's rows, then
@@ -50,6 +53,42 @@ const storyContent = appDocument(readContentRows());
 /** The story display rows and the story cards and part titles once both imports have run (#293). */
 const storyRows = readContentRows().stories;
 const storyCards = storyCardRows(readStoryDecks());
+/** Every card version and part title, as after the import; editable through the #304 functions. */
+const seededCardVersions = () =>
+  storyCards.cards.map((card) => ({
+    ...card,
+    version: 1,
+    published: true,
+    published_at: "2026-11-16T00:00:00Z",
+  }));
+let cardVersions = seededCardVersions();
+let partTitles = storyCards.parts.map((part) => ({ ...part }));
+
+/** The same checks and history insert as private.set_published_story_card (20261123000000). */
+function setPublishedCard(key, version, action, user) {
+  const rows = cardVersions.filter((row) => row.key === key);
+  const target = rows.find((row) => row.version === version);
+  if (!target) return `no story card ${key} version ${version}`;
+  if (target.published) return "already published";
+  const current = rows.find((row) => row.published);
+  if (action === "roll_back" && (!current || target.published_at === null)) {
+    return "roll back needs a version that was published before";
+  }
+  if (current) current.published = false;
+  target.published = true;
+  target.published_at = new Date().toISOString();
+  publishHistory.push({
+    id: nextHistoryId++,
+    kind: "story_card",
+    item_key: key,
+    version,
+    action,
+    acted_by: user.id,
+    acted_by_email: user.email ?? null,
+    acted_at: target.published_at,
+  });
+  return null;
+}
 /** While on, get_story_cards fails as when the database cannot answer (#300, FAIL-PREMADE). */
 let storyCardsFailReads = false;
 
@@ -281,12 +320,17 @@ createServer(async (request, response) => {
       return json(response, 200, null);
     }
     const versions = body.versions ?? null;
-    const cards = storyCards.cards
+    // As the migration: published cards, or exactly the pinned versions that were ever published.
+    const cards = cardVersions
       .filter((card) => card.story_id === body.story)
-      .filter((card) => versions === null || versions[card.key] === 1)
+      .filter((card) =>
+        versions === null
+          ? card.published
+          : card.published_at !== null && versions[card.key] === card.version,
+      )
       .map((card) => ({
         key: card.key,
-        version: 1,
+        version: card.version,
         kind: card.kind,
         part: card.part,
         position: card.position,
@@ -298,7 +342,50 @@ createServer(async (request, response) => {
   if (path === "/__story_cards" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
     storyCardsFailReads = body.failReads === true;
+    if (body.reset === true) {
+      cardVersions = seededCardVersions();
+      partTitles = storyCards.parts.map((part) => ({ ...part }));
+      publishHistory = publishHistory.filter((row) => row.kind !== "story_card");
+    }
     return json(response, 204);
+  }
+
+  // #304: card drafts and part titles (editors), publish and roll back (admin only).
+  const cardRpc = path.match(
+    /^\/rest\/v1\/rpc\/(save_story_card_draft|save_story_part_title|publish_story_card|roll_back_story_card)$/,
+  );
+  if (cardRpc && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    const role = dataset && !dataset.deleted ? dataset.contentRole : null;
+    const needsAdmin = cardRpc[1] === "publish_story_card" || cardRpc[1] === "roll_back_story_card";
+    if (needsAdmin ? role !== "admin" : !["admin", "writer"].includes(role)) {
+      return json(response, 403, { code: "42501", message: "not allowed" });
+    }
+    if (cardRpc[1] === "save_story_part_title") {
+      const part = partTitles.find(
+        (row) => row.story_id === body.story && row.part === body.part_number,
+      );
+      if (!part) return json(response, 404, { code: "P0002", message: "no such part" });
+      part.title = body.part_title;
+      return json(response, 204);
+    }
+    if (cardRpc[1] === "save_story_card_draft") {
+      const rows = cardVersions.filter((row) => row.key === body.card_key);
+      if (rows.length === 0) return json(response, 404, { code: "P0002", message: "no card" });
+      const newest = rows.reduce((left, right) => (right.version > left.version ? right : left));
+      const version = newest.version + 1;
+      cardVersions.push({
+        ...newest,
+        version,
+        body: body.card_body,
+        published: false,
+        published_at: null,
+      });
+      return json(response, 200, version);
+    }
+    const action = cardRpc[1] === "publish_story_card" ? "publish" : "roll_back";
+    const problem = setPublishedCard(body.card_key, body.card_version, action, dataset.user);
+    return problem ? json(response, 400, { code: "P0001", message: problem }) : json(response, 204);
   }
 
   if (path === "/rest/v1/rpc/content_role" && request.method === "POST") {
@@ -315,8 +402,8 @@ createServer(async (request, response) => {
     const editor = ["admin", "writer"].includes(user.contentRole);
     const all = {
       stories: storyRows,
-      story_parts: storyCards.parts,
-      story_cards: storyCards.cards.map((card) => ({ ...card, version: 1, published: true })),
+      story_parts: partTitles,
+      story_cards: cardVersions,
     }[storyTable[1]];
     const visible = storyTable[1] === "stories" || editor ? all : [];
     const params = [...url.searchParams.entries()];
@@ -379,7 +466,7 @@ createServer(async (request, response) => {
       .slice(0, limit)
       .map((row) => ({
         ...row,
-        is_current: appText.some(
+        is_current: (row.kind === "story_card" ? cardVersions : appText).some(
           (text) => text.key === row.item_key && text.version === row.version && text.published,
         ),
       }));

@@ -12,16 +12,10 @@ export type StoryCardWrite =
   | { kind: "title"; storyId: string; part: number; title: string };
 
 export type StoryCardWriteError =
-  | "not-allowed"
-  | "invalid"
-  | "blank"
-  | "too-long"
-  | "checks-failed"
-  | "failed";
+  "not-allowed" | "invalid" | "blank" | "too-long" | "checks-failed" | "failed";
 
 export type StoryCardWriteResult =
-  | { ok: true; version?: number }
-  | { ok: false; error: StoryCardWriteError; problems?: string[] };
+  { ok: true; version?: number } | { ok: false; error: StoryCardWriteError; problems?: string[] };
 
 /** The longest card text the database takes (20261120000000_story_cards.sql). */
 export const STORY_CARD_MAX_LENGTH = 2000;

@@ -1,4 +1,7 @@
-import type { AppTextWriteResult } from "@/lib/app-text/admin";
+import type { ContentRole } from "@/lib/admin/roles";
+
+/** What a roll back answers: ok, or an error key the page puts in words. */
+export type RollBackResult = { ok: true } | { ok: false; error: string };
 
 // ADM-12 Publish history (#289, docs/decisions/0018): what the page lists and how its Roll back
 // button reaches the roll back path of each kind of content. Server code only. The rows come from
@@ -19,7 +22,7 @@ export type PublishHistoryRow = {
 };
 
 /** The kinds of content whose roll back this page knows. Later phases add theirs. */
-export const PUBLISH_HISTORY_KINDS = { app_text: "App text" } as const;
+export const PUBLISH_HISTORY_KINDS = { app_text: "App text", story_card: "Story card" } as const;
 export type PublishHistoryKind = keyof typeof PUBLISH_HISTORY_KINDS;
 
 /** How many rows the page shows, newest first. */
@@ -66,8 +69,14 @@ function personOf(row: PublishHistoryRow): string {
   return "Deleted account";
 }
 
-/** The page's rows, newest first. Roll back only where the version is not published now. */
-export function publishHistoryEntries(rows: PublishHistoryRow[]): PublishHistoryEntry[] {
+/**
+ * The page's rows, newest first. Roll back only where the version is not published now, and on
+ * story cards only for the admin role (#304: only an admin publishes or rolls back a card).
+ */
+export function publishHistoryEntries(
+  rows: PublishHistoryRow[],
+  role: ContentRole | null = null,
+): PublishHistoryEntry[] {
   return [...rows]
     .sort((left, right) => {
       const byTime = Date.parse(right.acted_at) - Date.parse(left.acted_at);
@@ -84,7 +93,8 @@ export function publishHistoryEntries(rows: PublishHistoryRow[]): PublishHistory
       time: formatHistoryTime(row.acted_at),
       dateTime: row.acted_at,
       isCurrent: row.is_current,
-      canRollBack: !row.is_current && isKnownKind(row.kind),
+      canRollBack:
+        !row.is_current && isKnownKind(row.kind) && (row.kind !== "story_card" || role === "admin"),
     }));
 }
 
@@ -108,14 +118,14 @@ export async function readPublishHistory(
 
 export type HistoryRollBackHandlers = Record<
   PublishHistoryKind,
-  (key: string, version: number) => Promise<AppTextWriteResult>
+  (key: string, version: number) => Promise<RollBackResult>
 >;
 
 /** Runs the roll back path of the row's kind. An unknown kind is refused before any call. */
 export async function rollBackHistoryItem(
   item: { kind: string; key: string; version: number },
   handlers: HistoryRollBackHandlers,
-): Promise<AppTextWriteResult> {
+): Promise<RollBackResult> {
   if (!isKnownKind(item.kind)) return { ok: false, error: "invalid" };
   return handlers[item.kind](item.key, item.version);
 }
