@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { readSupabaseEnv } from "@/lib/supabase/env";
 import { parseStoryContent } from "./parse";
+import { parseStoryDeck, type CardVersions, type StoryDeck } from "./story-deck";
 import type { StoryContent } from "./types";
 
 /**
@@ -95,6 +96,37 @@ export async function readStoryContentFromSupabase(
   if (data === null || data === undefined)
     throw new Error("no story content: check CONTENT_READ_KEY");
   return data;
+}
+
+/**
+ * Reads one story's pre-made cards through `get_story_cards` (#300), with the same reader key as
+ * the story content: the published cards when `versions` is null, otherwise exactly the versions a
+ * session recorded. The card tables stay closed to the browser. Not cached: a session reads its
+ * cards once per Step. Null when the story has no published background and part cards; throws when
+ * the read fails.
+ */
+export async function readStoryCardsFromSupabase(options: {
+  storyId: string;
+  versions: CardVersions | null;
+  env?: Record<string, string | undefined>;
+  fetchImpl?: typeof fetch;
+  timeoutMs?: number;
+}): Promise<StoryDeck | null> {
+  const env = options.env ?? process.env;
+  const key = env.CONTENT_READ_KEY?.trim();
+  if (!key) throw new Error("CONTENT_READ_KEY is not set");
+  const { url, anonKey } = readSupabaseEnv(env);
+  const client = createClient(url, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: options.fetchImpl ? { fetch: options.fetchImpl } : undefined,
+  });
+  const { data, error } = await client
+    .rpc("get_story_cards", { reader_key: key, story: options.storyId, versions: options.versions })
+    .abortSignal(AbortSignal.timeout(options.timeoutMs ?? CONTENT_READ_TIMEOUT_MS));
+  if (error) throw new Error("get_story_cards failed");
+  if (data === null || data === undefined)
+    throw new Error("no story cards: check CONTENT_READ_KEY");
+  return parseStoryDeck(data);
 }
 
 function logToServer(event: ContentLog) {
