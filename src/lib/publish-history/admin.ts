@@ -22,7 +22,11 @@ export type PublishHistoryRow = {
 };
 
 /** The kinds of content whose roll back this page knows. Later phases add theirs. */
-export const PUBLISH_HISTORY_KINDS = { app_text: "App text", story_card: "Story card" } as const;
+export const PUBLISH_HISTORY_KINDS = {
+  app_text: "App text",
+  story_card: "Story card",
+  prompt: "Prompt",
+} as const;
 export type PublishHistoryKind = keyof typeof PUBLISH_HISTORY_KINDS;
 
 /** How many rows the page shows, newest first. */
@@ -71,7 +75,8 @@ function personOf(row: PublishHistoryRow): string {
 
 /**
  * The page's rows, newest first. Roll back only where the version is not published now, and on
- * story cards only for the admin role (#304: only an admin publishes or rolls back a card).
+ * story cards and prompts only for the admin role (#304, #308: only an admin publishes or rolls
+ * back a card or a prompt).
  */
 export function publishHistoryEntries(
   rows: PublishHistoryRow[],
@@ -94,7 +99,7 @@ export function publishHistoryEntries(
       dateTime: row.acted_at,
       isCurrent: row.is_current,
       canRollBack:
-        !row.is_current && isKnownKind(row.kind) && (row.kind !== "story_card" || role === "admin"),
+        !row.is_current && isKnownKind(row.kind) && (row.kind === "app_text" || role === "admin"),
     }));
 }
 
@@ -116,9 +121,9 @@ export async function readPublishHistory(
   }
 }
 
-export type HistoryRollBackHandlers = Record<
-  PublishHistoryKind,
-  (key: string, version: number) => Promise<RollBackResult>
+/** The roll back path of each kind; a kind without one is refused. */
+export type HistoryRollBackHandlers = Partial<
+  Record<PublishHistoryKind, (key: string, version: number) => Promise<RollBackResult>>
 >;
 
 /** Runs the roll back path of the row's kind. An unknown kind is refused before any call. */
@@ -126,6 +131,7 @@ export async function rollBackHistoryItem(
   item: { kind: string; key: string; version: number },
   handlers: HistoryRollBackHandlers,
 ): Promise<RollBackResult> {
-  if (!isKnownKind(item.kind)) return { ok: false, error: "invalid" };
-  return handlers[item.kind](item.key, item.version);
+  const handler = isKnownKind(item.kind) ? handlers[item.kind] : undefined;
+  if (!handler) return { ok: false, error: "invalid" };
+  return handler(item.key, item.version);
 }
