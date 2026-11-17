@@ -1,9 +1,13 @@
-// Turns the pre-written story cards (src/content/oppenheimer/story-decks.json, the prototype of
-// 2026-11-12) into SQL for `public.story_parts` and `public.story_cards` (#293). It prints SQL and
-// connects to nothing: paste it into the Supabase SQL editor, or pipe it to psql.
+// Turns a Companion's pre-written story cards (src/content/<companion>/story-decks.json; for
+// Oppenheimer the prototype of 2026-11-12) into SQL for `public.story_parts` and
+// `public.story_cards` (#293). It prints SQL and connects to nothing: paste it into the Supabase
+// SQL editor, or pipe it to psql.
 //
-//   node scripts/story-cards/import.mjs > story-cards-import.sql
+//   node scripts/story-cards/import.mjs > story-cards-import.sql            (Oppenheimer)
+//   node scripts/story-cards/import.mjs moriarty > story-cards-import.sql   (any Companion, #302)
 //   node scripts/story-cards/import.mjs | psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1
+//
+// Card keys use the Companion's key code from src/content/companions.json (NAMING, #302).
 //
 // Each card is loaded as version 1, published, only when its key has no rows yet; each part title
 // only when that part has none. Running it twice, or after a later version exists, changes
@@ -14,32 +18,41 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-const seedFile = fileURLToPath(
-  new URL("../../src/content/oppenheimer/story-decks.json", import.meta.url),
-);
-const storiesFile = fileURLToPath(
-  new URL("../../src/content/oppenheimer/stories.json", import.meta.url),
-);
+const contentDirectory = fileURLToPath(new URL("../../src/content/", import.meta.url));
+const companionsFile = path.join(contentDirectory, "companions.json");
+const deckFile = (companionId) => path.join(contentDirectory, companionId, "story-decks.json");
+const storiesFileOf = (companionId) => path.join(contentDirectory, companionId, "stories.json");
 
-/** The Companion's short name in keys (NAMING: stories are <short>.<slug>). */
-const COMPANION_SHORT = "opp";
+/** The Companion whose cards are imported when no id is given (the cards that exist today). */
+const DEFAULT_COMPANION = "oppenheimer";
+
+/** The Companion's key code in card keys (NAMING: `opp`, `mor`), from companions.json. */
+export function readCompanionKeyCode(companionId = DEFAULT_COMPANION, file = companionsFile) {
+  const companion = JSON.parse(readFileSync(file, "utf8")).find((row) => row.id === companionId);
+  if (!companion) throw new Error(`no Companion ${companionId} in companions.json`);
+  if (typeof companion.keyCode !== "string" || !/^[a-z]{2,8}$/.test(companion.keyCode)) {
+    throw new Error(`${companionId}: keyCode must be 2 to 8 lower-case letters (NAMING)`);
+  }
+  return companion.keyCode;
+}
+
 const SAFE_ID = /^[a-z0-9][a-z0-9-]*$/;
 
 /** @returns {Record<string, { id: string, background: string, parts: object[] }>} */
-export function readStoryDecks(file = seedFile) {
+export function readStoryDecks(file = deckFile(DEFAULT_COMPANION)) {
   return JSON.parse(readFileSync(file, "utf8"));
 }
 
 /** The real story ids, in story order (stories.json, the seed of `public.stories`). */
-export function readStoryIds(file = storiesFile) {
+export function readStoryIds(file = storiesFileOf(DEFAULT_COMPANION)) {
   return JSON.parse(readFileSync(file, "utf8"))
     .sort((left, right) => left.sequence - right.sequence)
     .map((story) => story.id);
 }
 
-/** crd.opp.<story>.bg, or crd.opp.<story>.p<part>.c<slot> for a part card. */
-export function cardKey(storyId, part, slot) {
-  const story = `crd.${COMPANION_SHORT}.${storyId}`;
+/** crd.<code>.<story>.bg, or crd.<code>.<story>.p<part>.c<slot> for a part card. */
+export function cardKey(storyId, part, slot, keyCode = readCompanionKeyCode()) {
+  const story = `crd.${keyCode}.${storyId}`;
   return part === undefined ? `${story}.bg` : `${story}.p${part}.c${slot}`;
 }
 
@@ -48,8 +61,9 @@ export function cardKey(storyId, part, slot) {
  * they are the prototype's `story1`, and refused otherwise; a real story without a deck is refused.
  * @param {Record<string, any>} decks
  * @param {string[]} [storyIds]
+ * @param {string} [keyCode] the Companion's key code (default Oppenheimer's)
  */
-export function storyCardRows(decks, storyIds = readStoryIds()) {
+export function storyCardRows(decks, storyIds = readStoryIds(), keyCode = readCompanionKeyCode()) {
   for (const id of Object.keys(decks)) {
     if (id !== "story1" && !storyIds.includes(id)) throw new Error(`deck ${id} is not a story`);
   }
@@ -60,7 +74,7 @@ export function storyCardRows(decks, storyIds = readStoryIds()) {
     if (!deck) throw new Error(`story ${storyId} has no deck`);
     if (!SAFE_ID.test(storyId)) throw new Error(`unsafe story id: ${storyId}`);
     cards.push({
-      key: cardKey(storyId),
+      key: cardKey(storyId, undefined, undefined, keyCode),
       story_id: storyId,
       kind: "background",
       part: null,
@@ -85,7 +99,7 @@ export function storyCardRows(decks, storyIds = readStoryIds()) {
           throw new Error(`story ${storyId}: card slice ${card.at} is not s1, s2 ...`);
         }
         cards.push({
-          key: cardKey(storyId, part.n, index + 1),
+          key: cardKey(storyId, part.n, index + 1, keyCode),
           story_id: storyId,
           kind: "part",
           part: part.n,
@@ -113,10 +127,13 @@ function quote(text) {
 const literal = (value) =>
   value === null ? "null" : typeof value === "number" ? String(value) : quote(value);
 
-/** @param {{ parts: object[], cards: object[] }} rows */
-export function storyCardsImportSql(rows) {
+/**
+ * @param {{ parts: object[], cards: object[] }} rows
+ * @param {string} [companionId]
+ */
+export function storyCardsImportSql(rows, companionId = DEFAULT_COMPANION) {
   const lines = [
-    "-- Story cards from src/content/oppenheimer/story-decks.json (scripts/story-cards/import.mjs, #293).",
+    `-- Story cards from src/content/${companionId}/story-decks.json (scripts/story-cards/import.mjs, #293).`,
     "begin;",
     "set local standard_conforming_strings = on;",
   ];
@@ -141,5 +158,15 @@ export function storyCardsImportSql(rows) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
-  process.stdout.write(storyCardsImportSql(storyCardRows(readStoryDecks())));
+  const companionId = process.argv[2] ?? DEFAULT_COMPANION;
+  if (!/^[a-z][a-z0-9-]*$/.test(companionId)) {
+    console.error("Usage: node scripts/story-cards/import.mjs [companion-id]");
+    process.exit(1);
+  }
+  const rows = storyCardRows(
+    readStoryDecks(deckFile(companionId)),
+    readStoryIds(storiesFileOf(companionId)),
+    readCompanionKeyCode(companionId),
+  );
+  process.stdout.write(storyCardsImportSql(rows, companionId));
 }

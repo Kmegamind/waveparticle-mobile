@@ -33,7 +33,12 @@ function seedFiles(): string[] {
   const stageZero = readdirSync(path.join(root, CONTENT_FILES.stageZeroDirectory))
     .filter((name) => name.endsWith(".stage0.json"))
     .map((name) => path.join(CONTENT_FILES.stageZeroDirectory, name));
-  return [CONTENT_FILES.companions, CONTENT_FILES.stories, CONTENT_FILES.periods, ...stageZero];
+  return [
+    CONTENT_FILES.companions,
+    CONTENT_FILES.stories("oppenheimer"),
+    CONTENT_FILES.periods("oppenheimer"),
+    ...stageZero,
+  ];
 }
 
 /** True when some object in `value` has `key` with a value other than null. */
@@ -147,10 +152,13 @@ describe("story content export guards (#284 review)", () => {
     );
   });
 
-  it("test_284_export_refuses_a_story_of_another_companion_until_it_has_its_own_files", () => {
+  // Changed by #302 (AC2): another Companion's story is no longer refused; it goes to its own folder.
+  it("test_302_export_writes_another_companions_story_to_that_companions_folder", () => {
     const document = exportDocument(readContentRows(root));
     document.stories[0].companion_id = "moriarty";
-    expect(() => writeContentFiles(document, copyOfSeed())).toThrow(/bohr-difficulties.*moriarty/);
+    const written = writeContentFiles(document, copyOfSeed());
+    expect(written).toContain(CONTENT_FILES.stories("moriarty"));
+    expect(written).toContain(CONTENT_FILES.periods("moriarty"));
   });
 
   it("test_284_export_names_the_story_when_its_stage_zero_lost_a_part", () => {

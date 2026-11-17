@@ -141,6 +141,7 @@ export async function cardsForStep(
       background: request.index === 0,
       mustUse,
       forbidTerms: generationInputs(content, story.id).forbidTerms,
+      companionName: generationInputs(content, story.id).companionName,
       // CARD-NEW: his cards already shown in this run.
       earlierLines: request.earlierCards,
     });
