@@ -1,11 +1,6 @@
 import type { StoryContent } from "@/lib/content/types";
 import type { ModelGateway } from "@/lib/model-gateway";
 import {
-  cardsForStep,
-  normaliseStepCardsRequest,
-  type StepCardsResponse,
-} from "@/lib/prototype/focus-cards";
-import {
   normalisePauseRequest,
   normaliseRestRequest,
   normaliseReturnRequest,
@@ -27,16 +22,6 @@ import { gateFreeText } from "@/lib/safety/crisis";
  * `content` is the story content (#284), or null when it could not be read: the line then fails,
  * after the safety gate.
  */
-
-export async function accountStepCards(
-  content: StoryContent | null,
-  raw: unknown,
-  gateway: ModelGateway | null,
-): Promise<StepCardsResponse> {
-  const request = normaliseStepCardsRequest(content, raw);
-  if (!content || !request || !gateway) return { status: "failed" };
-  return cardsForStep(content, request, gateway);
-}
 
 export async function accountReturnLine(
   content: StoryContent | null,

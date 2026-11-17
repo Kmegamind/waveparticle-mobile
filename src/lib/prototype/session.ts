@@ -32,6 +32,11 @@ export type StepCards = {
   opening: string;
   /** The n story cards, already limited to the Step's maximum. */
   story: string[];
+  /**
+   * Pre-made cards of the signed-in focus page (#300, CARDS-SPREAD): the story's own cards,
+   * never cut by the 1 to 5 limit, which applies to live cards only.
+   */
+  premade?: true;
 };
 
 export type StepRun = {
@@ -160,7 +165,9 @@ export function setStepCards(
   const step = session.steps[index];
   if (!step || step.cards) return session;
   const minutes = (step.targetSeconds * session.speed) / 60;
-  const limited = { opening: cards.opening, story: cards.story.slice(0, maxStoryCards(minutes)) };
+  const limited = cards.premade
+    ? { opening: cards.opening, story: [...cards.story], premade: true as const }
+    : { opening: cards.opening, story: cards.story.slice(0, maxStoryCards(minutes)) };
   let next: StepRun = { ...step, cards: limited };
   if (index === session.current && !next.clock) {
     const startAt = Math.max(nowMs, session.holdUntilMs ?? 0);

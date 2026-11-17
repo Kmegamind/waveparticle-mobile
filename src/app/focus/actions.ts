@@ -1,9 +1,11 @@
 "use server";
 
-import { getStoryContent } from "@/lib/content/repository";
+import { getStoryContent, readStoryCardsFromSupabase } from "@/lib/content/repository";
+import type { CardVersions } from "@/lib/content/story-deck";
 import { createServerModelGateway } from "@/lib/model-gateway/server";
-import { accountReturnLine, accountStepCards } from "@/lib/progress/account-lines";
+import { accountReturnLine } from "@/lib/progress/account-lines";
 import { applyFocusSnapshot, type FocusSnapshot } from "@/lib/progress/focus-session";
+import { premadeStepCards } from "@/lib/progress/premade-cards";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
 import { modelIsConfigured, type StepCardsResponse } from "@/lib/prototype/focus-cards";
 import type { LineResponse } from "@/lib/prototype/rest-lines";
@@ -29,9 +31,40 @@ function gateway() {
 /** The story content, or null when it cannot be read (the line then fails, #284). */
 const storyContent = () => getStoryContent().catch(() => null);
 
+/**
+ * A Step's pre-made cards (#300): the story's published cards, spread across the session's Steps
+ * and pinned to the versions the session first read. No model call. The session is read and
+ * pinned through the user's own client; the cards with the server's reader key.
+ */
 export async function loadAccountStepCards(request: unknown): Promise<StepCardsResponse> {
-  if (!(await signedInUser())) return { status: "failed" };
-  return accountStepCards(await storyContent(), request, gateway());
+  const signedIn = await signedInUser();
+  if (!signedIn) return { status: "failed" };
+  const { user, client } = signedIn;
+  return premadeStepCards(request, {
+    readSession: async (sessionId) => {
+      const { data, error } = await client
+        .from("sessions")
+        .select("story_id, step_count, card_versions")
+        .eq("id", sessionId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (error || !data) return null;
+      return {
+        storyId: String(data.story_id),
+        stepCount: Number(data.step_count),
+        cardVersions: (data.card_versions as CardVersions | null) ?? null,
+      };
+    },
+    pinVersions: async (sessionId, versions) => {
+      await client
+        .from("sessions")
+        .update({ card_versions: versions })
+        .eq("id", sessionId)
+        .eq("user_id", user.id)
+        .is("card_versions", null);
+    },
+    readDeck: (storyId, versions) => readStoryCardsFromSupabase({ storyId, versions }),
+  });
 }
 
 export async function loadAccountReturnLine(request: unknown): Promise<LineResponse> {

@@ -259,7 +259,9 @@ export function applyFocusSnapshot(
       seq,
       kind: line.kind,
       cardId: null,
-      source: "generated",
+      // #300: his cards are the story's pre-made cards; the pause message and return pop-up are
+      // still written live.
+      source: CARD_KINDS.includes(line.kind) ? "authored" : "generated",
       text: line.text,
       pauseNumber,
       shownAt: deps.now,
