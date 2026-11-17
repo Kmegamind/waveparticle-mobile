@@ -24,6 +24,12 @@
 //        makes it fail, { reset: true } puts the cards, part titles and their history back
 //   POST /rest/v1/rpc/save_story_card_draft | save_story_part_title (editors),
 //        publish_story_card | roll_back_story_card (admin only), as 20261123000000 (#304)
+//   GET  /rest/v1/companions | content_fields   the Companions (signed in) and the field versions
+//        (content editors) (#309); companions and stories carry the edited fields as published
+//   POST /rest/v1/rpc/save_content_field_draft (editors), publish_content_field |
+//        roll_back_content_field (admin only), as 20261124000000 (#309): a publish writes the
+//        Companion or story row, which get_story_content then returns; POST /__content_fields
+//        { reset: true } puts the rows, the versions and their history back
 //   POST /rest/v1/rpc/content_role        the seeded contentRole ("admin", "writer") or null, as
 //                                          public.content_role() for the caller (#287)
 //   POST /rest/v1/rpc/delete_my_account   mirrors the migration (#103): the caller's rows, then
@@ -52,10 +58,28 @@ import { readStoryDecks, storyCardRows } from "../../scripts/story-cards/import.
 const promptDirectory = fileURLToPath(new URL("../../docs/ai/prompts", import.meta.url));
 const promptReaderToken = process.env.STUB_PROMPTS_READ_TOKEN ?? "";
 const contentReadKey = process.env.STUB_CONTENT_READ_KEY ?? "";
-/** The story content, as get_story_content returns it once the import has run (#284). */
-const storyContent = appDocument(readContentRows());
-/** The story display rows and the story cards and part titles once both imports have run (#293). */
-const storyRows = readContentRows().stories;
+/** The Companion and story rows once the import has run (#284), with the #309 columns. */
+const seededContentRows = () => {
+  const rows = readContentRows();
+  return {
+    ...rows,
+    companions: rows.companions.map((row) => ({ ...row, who: "" })),
+    stories: rows.stories.map((row) => ({ ...row, path: "" })),
+  };
+};
+let contentRows = seededContentRows();
+/** Every version of every edited field (#309), as public.content_fields. */
+let contentFields = [];
+/** What get_story_content returns: without the two #309 columns, as the real function. */
+const without = (row, column) =>
+  Object.fromEntries(Object.entries(row).filter(([name]) => name !== column));
+const storyContentDocument = () =>
+  appDocument({
+    ...contentRows,
+    companions: contentRows.companions.map((row) => without(row, "who")),
+    stories: contentRows.stories.map((row) => without(row, "path")),
+  });
+
 const storyCards = storyCardRows(readStoryDecks());
 /** Every card version and part title, as after the import; editable through the #304 functions. */
 const seededCardVersions = () =>
@@ -133,6 +157,99 @@ function setPublishedCard(key, version, action, user) {
   });
   return null;
 }
+/** A Companion's stories in order with their Life Path period number (private.story_periods). */
+function storyPeriods(companionId) {
+  const stories = contentRows.stories
+    .filter((row) => row.companion_id === companionId)
+    .sort((left, right) => left.sequence - right.sequence);
+  let number = 0;
+  return stories.map((story, index) => {
+    if (index === 0 || stories[index - 1].period !== story.period) number += 1;
+    return { story, number };
+  });
+}
+
+const STORY_COLUMN = {
+  title: "title",
+  period: "period",
+  goal: "goal_short",
+  who: "who",
+  opening: "opening",
+  path: "path",
+};
+
+/** What a field key names and the text shown now (private.resolve_content_field), or null. */
+function resolveField(key) {
+  const own = String(key).match(
+    /^chr\.([a-z]{2,8})\.(name|tags|who|period)(\.([1-9][0-9]{0,2}))?$/,
+  );
+  if (own) {
+    const companion = contentRows.companions.find((row) => row.key_code === own[1]);
+    if (!companion || (own[2] === "period") !== (own[4] !== undefined)) return null;
+    if (own[2] !== "period")
+      return { companion, story: null, field: own[2], current: companion[own[2]] };
+    const period = Number(own[4]);
+    const first = storyPeriods(companion.id).find((row) => row.number === period);
+    return first
+      ? { companion, story: null, field: "period", period, current: first.story.period }
+      : null;
+  }
+  const storyKey = String(key).match(
+    /^([a-z]{2,8})\.([a-z0-9][a-z0-9-]*)\.(title|period|goal|who|opening|path)$/,
+  );
+  if (!storyKey) return null;
+  const companion = contentRows.companions.find((row) => row.key_code === storyKey[1]);
+  const story = contentRows.stories.find(
+    (row) => row.id === storyKey[2] && row.companion_id === companion?.id,
+  );
+  if (!companion || !story) return null;
+  return { companion, story, field: storyKey[3], current: story[STORY_COLUMN[storyKey[3]]] };
+}
+
+/** The same checks, column write and history insert as private.set_published_content_field. */
+function setPublishedField(target, key, version, action, user) {
+  const rows = contentFields.filter((row) => row.key === key);
+  const chosen = rows.find((row) => row.version === version);
+  if (!chosen) return `no field ${key} version ${version}`;
+  if (chosen.published) return "already published";
+  const current = rows.find((row) => row.published);
+  if (action === "roll_back" && (!current || chosen.published_at === null)) {
+    return "roll back needs a version that was published before";
+  }
+  const periods = storyPeriods(target.companion.id);
+  if (target.field === "period" && target.story) {
+    const index = periods.findIndex((row) => row.story.id === target.story.id);
+    const size = periods.filter((row) => row.number === periods[index].number).length;
+    const neighbours = [periods[index - 1]?.story.period, periods[index + 1]?.story.period];
+    if (chosen.body !== target.story.period && !(size > 1 && neighbours.includes(chosen.body))) {
+      return "a story stays in its own period or moves to a neighbouring one";
+    }
+  }
+  if (target.field === "period" && !target.story) {
+    if (periods.some((row) => row.number !== target.period && row.story.period === chosen.body)) {
+      return "another period already has this name";
+    }
+  }
+  if (current) current.published = false;
+  chosen.published = true;
+  chosen.published_at = new Date().toISOString();
+  if (!target.story && target.field === "period") {
+    for (const row of periods) if (row.number === target.period) row.story.period = chosen.body;
+  } else if (!target.story) target.companion[target.field] = chosen.body;
+  else target.story[STORY_COLUMN[target.field]] = chosen.body;
+  publishHistory.push({
+    id: nextHistoryId++,
+    kind: target.story ? "story_field" : "companion_field",
+    item_key: key,
+    version,
+    action,
+    acted_by: user.id,
+    acted_by_email: user.email ?? null,
+    acted_at: chosen.published_at,
+  });
+  return null;
+}
+
 /** While on, get_story_cards fails as when the database cannot answer (#300, FAIL-PREMADE). */
 let storyCardsFailReads = false;
 
@@ -406,7 +523,7 @@ createServer(async (request, response) => {
   if (path === "/rest/v1/rpc/get_story_content" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
     const allowed = contentReadKey.length > 0 && body.reader_key === contentReadKey;
-    return json(response, 200, allowed ? storyContent : null);
+    return json(response, 200, allowed ? storyContentDocument() : null);
   }
 
   // #300: one story's pre-made cards for the server's reader key: the seed deck as version 1,
@@ -486,6 +603,70 @@ createServer(async (request, response) => {
     return problem ? json(response, 400, { code: "P0001", message: problem }) : json(response, 204);
   }
 
+  if (path === "/__content_fields" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    if (body.reset === true) {
+      contentRows = seededContentRows();
+      contentFields = [];
+      publishHistory = publishHistory.filter(
+        (row) => row.kind !== "companion_field" && row.kind !== "story_field",
+      );
+    }
+    return json(response, 204);
+  }
+
+  // #309: field drafts (editors), publish and roll back (admin only).
+  const fieldRpc = path.match(
+    /^\/rest\/v1\/rpc\/(save_content_field_draft|publish_content_field|roll_back_content_field)$/,
+  );
+  if (fieldRpc && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    const role = dataset && !dataset.deleted ? dataset.contentRole : null;
+    const needsAdmin = fieldRpc[1] !== "save_content_field_draft";
+    if (needsAdmin ? role !== "admin" : !["admin", "writer"].includes(role)) {
+      return json(response, 403, { code: "42501", message: "not allowed" });
+    }
+    const target = resolveField(body.field_key);
+    if (!target) return json(response, 404, { code: "P0002", message: "no content field" });
+    if (fieldRpc[1] === "save_content_field_draft") {
+      const rows = contentFields.filter((row) => row.key === body.field_key);
+      const base = { companion_id: target.companion.id, story_id: target.story?.id ?? null };
+      if (rows.length === 0 && /\S/.test(target.current)) {
+        contentFields.push({
+          ...base,
+          key: body.field_key,
+          version: 1,
+          body: target.current,
+          published: true,
+          published_at: new Date().toISOString(),
+        });
+      }
+      const version =
+        Math.max(
+          0,
+          ...contentFields.filter((row) => row.key === body.field_key).map((row) => row.version),
+        ) + 1;
+      contentFields.push({
+        ...base,
+        key: body.field_key,
+        version,
+        body: body.field_body,
+        published: false,
+        published_at: null,
+      });
+      return json(response, 200, version);
+    }
+    const action = fieldRpc[1] === "publish_content_field" ? "publish" : "roll_back";
+    const problem = setPublishedField(
+      target,
+      body.field_key,
+      body.field_version,
+      action,
+      dataset.user,
+    );
+    return problem ? json(response, 400, { code: "P0001", message: problem }) : json(response, 204);
+  }
+
   if (path === "/rest/v1/rpc/content_role" && request.method === "POST") {
     if (!dataset || dataset.deleted) return json(response, 401, { message: "JWT required" });
     return json(response, 200, dataset.contentRole);
@@ -493,17 +674,22 @@ createServer(async (request, response) => {
 
   // #293: stories are readable by signed-in accounts; story_parts and story_cards by content
   // editors only (other accounts get no rows, as the policies; anonymous requests are refused).
-  const storyTable = path.match(/^\/rest\/v1\/(stories|story_parts|story_cards)$/);
+  const storyTable = path.match(
+    /^\/rest\/v1\/(stories|story_parts|story_cards|companions|content_fields)$/,
+  );
   if (storyTable && request.method === "GET") {
     const user = dataset && !dataset.deleted ? dataset : null;
     if (!user) return json(response, 401, { code: "42501", message: "permission denied" });
     const editor = ["admin", "writer"].includes(user.contentRole);
     const all = {
-      stories: storyRows,
+      stories: contentRows.stories,
       story_parts: partTitles,
       story_cards: cardVersions,
+      companions: contentRows.companions,
+      content_fields: contentFields,
     }[storyTable[1]];
-    const visible = storyTable[1] === "stories" || editor ? all : [];
+    const open = storyTable[1] === "stories" || storyTable[1] === "companions";
+    const visible = open || editor ? all : [];
     const params = [...url.searchParams.entries()];
     const found = visible.filter((row) => matches(row, params));
     return json(response, 200, ordered(found, url.searchParams.get("order")));
@@ -570,7 +756,12 @@ createServer(async (request, response) => {
                 (prompt) =>
                   prompt.key === row.item_key && prompt.version === row.version && prompt.active,
               )
-            : (row.kind === "story_card" ? cardVersions : appText).some(
+            : (row.kind === "story_card"
+                ? cardVersions
+                : row.kind === "companion_field" || row.kind === "story_field"
+                  ? contentFields
+                  : appText
+              ).some(
                 (text) =>
                   text.key === row.item_key && text.version === row.version && text.published,
               ),

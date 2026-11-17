@@ -1,6 +1,7 @@
--- Editing prompts in the admin (#308, ADM-08, decision ADMIN; docs/decisions/0024). Run after
--- 20261123000000_story_card_editing.sql: this file widens the same history kind check and replaces
--- the same list_publish_history.
+-- Editing prompts in the admin (#308, ADM-08, decision ADMIN; docs/decisions/0025). Run after
+-- 20261124000000_content_fields.sql (#310), which ran after 20261123000000_story_card_editing.sql:
+-- this file widens the same history kind check again and replaces the same list_publish_history,
+-- keeping every kind those files added.
 --
 -- 1. An admin or writer saves a prompt's text, settings and note as a DRAFT: a new version of the
 --    key (max + 1, never reused) that is not active. The active version is untouched, and
@@ -186,12 +187,15 @@ $$;
 revoke all on function public.roll_back_prompt(text, integer) from public, anon, authenticated;
 grant execute on function public.roll_back_prompt(text, integer) to authenticated;
 
--- The history takes prompt rows.
+-- The history takes prompt rows, and keeps every kind before it (#289, #304, #310).
 alter table public.publish_history
   drop constraint publish_history_kind_check,
-  add constraint publish_history_kind_check check (kind in ('app_text', 'story_card', 'prompt'));
+  add constraint publish_history_kind_check check (
+    kind in ('app_text', 'story_card', 'companion_field', 'story_field', 'prompt')
+  );
 
--- ADM-12: as in 20261123000000, plus whether a prompt row's version is the active one now.
+-- ADM-12: as in 20261124000000_content_fields.sql, plus whether a prompt row's version is the
+-- active one now.
 create or replace function public.list_publish_history(row_limit integer default 100)
 returns table (
   id bigint,
@@ -232,6 +236,14 @@ begin
         select 1 from public.story_cards c
         where c.key = h.item_key and c.version = h.version and c.published
       )
+      when 'companion_field' then exists (
+        select 1 from public.content_fields f
+        where f.key = h.item_key and f.version = h.version and f.published
+      )
+      when 'story_field' then exists (
+        select 1 from public.content_fields f
+        where f.key = h.item_key and f.version = h.version and f.published
+      )
       when 'prompt' then exists (
         select 1 from public.prompts p
         where p.key = h.item_key and p.version = h.version and p.active
@@ -244,3 +256,6 @@ begin
   limit least(greatest(coalesce(row_limit, 100), 1), 500);
 end;
 $$;
+
+revoke all on function public.list_publish_history(integer) from public, anon, authenticated;
+grant execute on function public.list_publish_history(integer) to authenticated;

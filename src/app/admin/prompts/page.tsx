@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { promptList, readPromptVersions } from "@/lib/prompts/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-// ADM-08 Prompts (#308, docs/decisions/0024): the gateway's 7 prompts with their active version and
+// ADM-08 Prompts (#308, docs/decisions/0025): the gateway's 7 prompts with their active version and
 // its settings, and any newer draft. The layout already checked the role; the rows come through the
 // signed-in user's own client from public.list_prompt_versions(), which answers editors only.
 export default function AdminPrompts() {

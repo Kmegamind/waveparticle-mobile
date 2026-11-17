@@ -8,7 +8,7 @@ import type {
 import { lineDiff, settingsText, type DiffLine } from "./diff";
 import { PROMPT_KEYS, type PromptKey, type PromptRow } from "./repository";
 
-// ADM-08 Prompts (#308, docs/decisions/0024): what the page lists and shows, and the writes behind
+// ADM-08 Prompts (#308, docs/decisions/0025): what the page lists and shows, and the writes behind
 // its buttons. Server code only. The rows come from public.list_prompt_versions(), which answers
 // content editors only. Every save is a new draft version; only the admin role publishes or rolls
 // back, and only a version the gateway can use (its own row check, promptRowProblems).

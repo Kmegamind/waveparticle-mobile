@@ -25,6 +25,8 @@ export type PublishHistoryRow = {
 export const PUBLISH_HISTORY_KINDS = {
   app_text: "App text",
   story_card: "Story card",
+  companion_field: "Companion field",
+  story_field: "Story field",
   prompt: "Prompt",
 } as const;
 export type PublishHistoryKind = keyof typeof PUBLISH_HISTORY_KINDS;
@@ -45,6 +47,14 @@ export type PublishHistoryEntry = {
   isCurrent: boolean;
   canRollBack: boolean;
 };
+
+/** The kinds only the admin role publishes and rolls back (#304, #309, #308). */
+const ADMIN_ONLY_KINDS: ReadonlySet<string> = new Set([
+  "story_card",
+  "companion_field",
+  "story_field",
+  "prompt",
+]);
 
 const isKnownKind = (kind: string): kind is PublishHistoryKind =>
   Object.hasOwn(PUBLISH_HISTORY_KINDS, kind);
@@ -75,8 +85,8 @@ function personOf(row: PublishHistoryRow): string {
 
 /**
  * The page's rows, newest first. Roll back only where the version is not published now, and on
- * story cards and prompts only for the admin role (#304, #308: only an admin publishes or rolls
- * back a card or a prompt).
+ * story cards, Companion and story fields and prompts only for the admin role (#304, #309,
+ * #308: only an admin publishes or rolls them back).
  */
 export function publishHistoryEntries(
   rows: PublishHistoryRow[],
@@ -99,7 +109,9 @@ export function publishHistoryEntries(
       dateTime: row.acted_at,
       isCurrent: row.is_current,
       canRollBack:
-        !row.is_current && isKnownKind(row.kind) && (row.kind === "app_text" || role === "admin"),
+        !row.is_current &&
+        isKnownKind(row.kind) &&
+        (!ADMIN_ONLY_KINDS.has(row.kind) || role === "admin"),
     }));
 }
 

@@ -1,4 +1,4 @@
-# 0024: Prompts are edited as drafts in the admin, and only a version the gateway can use is published
+# 0025: Prompts are edited as drafts in the admin, and only a version the gateway can use is published
 - Status: accepted (Yue approved the design on 2026-11-17)
 - Date: 2026-11-17
 - Issue: #308

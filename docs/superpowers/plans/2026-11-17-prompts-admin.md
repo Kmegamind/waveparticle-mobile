@@ -85,7 +85,7 @@
 ### Task 2: Migration
 
 **Files:**
-- Create: `supabase/migrations/20261124000000_prompt_editing.sql`
+- Create: `supabase/migrations/20261125000000_prompt_editing.sql`
 - Modify: `tests/story-card-editing-migration.test.ts`.
   - Its `names.at(-1)` assertion becomes "after 20261121000000_premade_cards.sql and 20261122000000_companion_mode.sql". That is what the test's name says.
   - This is the only edit to a #304 file, and it needs your OK (see the handoff).
@@ -252,7 +252,7 @@
 ### Task 5: Docs and production steps
 
 **Files:**
-- Create: `docs/decisions/0024-prompt-editing.md` (context, options A and B, the decision, consequences, and "Left for later": PROMPT-PARTS and Test).
+- Create: `docs/decisions/0025-prompt-editing.md` (context, options A and B, the decision, consequences, and "Left for later": PROMPT-PARTS and Test).
 - Modify:
   - `docs/architecture.md`: a Prompts row for ADM-08, the Admin area menu, and a data model paragraph.
   - `docs/deploy.md`: a "Prompt editing" section.
@@ -264,7 +264,7 @@
   - `README_production-setup.md`, in the style of the #304 README: run it after the story-card-editing setup, then try it on the live site.
 
 - [ ] **Step 1:** Write the docs. Run `npm run format:check`. Expected: clean.
-- [ ] **Step 2: Commit** `docs: prompt editing in architecture, deploy, the prompts README and decision 0024 (#308)`.
+- [ ] **Step 2: Commit** `docs: prompt editing in architecture, deploy, the prompts README and decision 0025 (#308)`.
 
 ### Final
 - [ ] Merge origin/main, then run `npm test`, `CI=1 npm run test:e2e`, `npm run lint` and `npm run format:check`.

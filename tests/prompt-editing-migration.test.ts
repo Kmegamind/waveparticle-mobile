@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 
 const root = path.join(import.meta.dirname, "..");
 const migrations = path.join(root, "supabase", "migrations");
-const MIGRATION = "20261124000000_prompt_editing.sql";
+const MIGRATION = "20261125000000_prompt_editing.sql";
 /** The SQL without comments, so a comment cannot satisfy a check. */
 const code = () => readFileSync(path.join(migrations, MIGRATION), "utf8").replace(/--.*$/gm, "");
 const fn = (name: string) => {
@@ -21,13 +21,18 @@ const fn = (name: string) => {
 };
 
 describe("prompt editing migration (#308)", () => {
-  it("test_308_runs_last_after_story_card_editing", () => {
+  it("test_308_runs_last_after_story_card_editing_and_content_fields", () => {
     const names = readdirSync(migrations)
       .filter((file) => file.endsWith(".sql"))
       .sort();
     expect(names.at(-1)).toBe(MIGRATION);
     expect(names.indexOf(MIGRATION)).toBeGreaterThan(
       names.indexOf("20261123000000_story_card_editing.sql"),
+    );
+    // #310 widened the same kind check and list first, so this file must run after it.
+    expect(names).toContain("20261124000000_content_fields.sql");
+    expect(names.indexOf(MIGRATION)).toBeGreaterThan(
+      names.indexOf("20261124000000_content_fields.sql"),
     );
   });
 
@@ -104,10 +109,22 @@ describe("prompt editing migration (#308)", () => {
     expect(set).toMatch(
       /insert into public\.publish_history \(kind, item_key, version, action, acted_by\)\s+values \('prompt', prompt_key, prompt_version, publish_action, auth\.uid\(\)\);/,
     );
-    expect(code()).toMatch(/check \(kind in \('app_text', 'story_card', 'prompt'\)\)/);
+    // Every kind before it stays (#289, #304, #310), and prompt is added.
+    expect(code()).toMatch(
+      /add constraint publish_history_kind_check check \(\s*kind in \('app_text', 'story_card', 'companion_field', 'story_field', 'prompt'\)\s*\)/,
+    );
     const list = fn("public.list_publish_history");
-    expect(list).toMatch(/when 'app_text' then exists/);
-    expect(list).toMatch(/when 'story_card' then exists/);
+    for (const kind of ["app_text", "story_card", "companion_field", "story_field"]) {
+      expect(list, kind).toMatch(new RegExp(`when '${kind}' then exists`));
+    }
+    for (const kind of ["companion_field", "story_field"]) {
+      expect(list, kind).toMatch(
+        new RegExp(`when '${kind}' then exists \\(\\s+select 1 from public\\.content_fields f`),
+      );
+    }
+    expect(code()).toMatch(
+      /grant execute on function public\.list_publish_history\(integer\) to authenticated;/,
+    );
     expect(list).toMatch(
       /when 'prompt' then exists \(\s*select 1 from public\.prompts p\s+where p\.key = h\.item_key and p\.version = h\.version and p\.active\s*\)/,
     );

@@ -119,6 +119,8 @@ test("test_308_ac5_ac6_admin_publishes_and_rolls_back_from_history", async ({ pa
   // Publish v1 back through a roll back from the history: v1 was active before.
   await page.goto(`/admin/prompts/${KEY}`);
   await saveBody(page, (body) => `${body}\nAnd one more.`);
+  // Wait for the save, or the reload can cut it off before v3 exists.
+  await expect(editor(page).getByRole("status")).toContainText("Draft v3 saved.");
   await page.reload();
   await editor(page).getByRole("button", { name: "Publish v3" }).click();
   await expect(editor(page).getByRole("status")).toHaveText("Published v3.");

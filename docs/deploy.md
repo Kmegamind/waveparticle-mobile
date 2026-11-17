@@ -109,10 +109,24 @@ Roll back (Publish and Roll back for the `admin` role only) and lets the publish
 story cards. It changes no card and no phone read. Until it runs, the Stories page still shows
 the cards, but saving says the change could not be saved. No new setting is needed.
 
+## Companion and story fields
+Editing a Companion's and a story's fields in the admin (#309, `docs/decisions/0024`): run
+`supabase/migrations/20261124000000_content_fields.sql` after the story card editing migration. It
+adds `companions.who` and `stories.path`, the versions table and the functions behind Save draft,
+Publish and Roll back (Publish and Roll back for the `admin` role only), and lets the publish
+history list these fields. It changes no text the app shows and no phone read. Until it runs, the
+Companions pages say the Companion could not be read. No new setting is needed.
+
+After this change the content import (`scripts/content/import.mjs`) no longer overwrites a
+Companion's name and tags or a story's title, period, goal sentence, "Who I am" and opening on rows
+that exist: the text published in the admin stays.
+
 ## Prompt editing
-Editing the prompts in the admin (#308, `docs/decisions/0024`): run
-`supabase/migrations/20261124000000_prompt_editing.sql` after the prompts migration and its import
-(#282) and the story card editing migration (#304). It adds who and when columns to
+Editing the prompts in the admin (#308, `docs/decisions/0025`): run
+`supabase/migrations/20261125000000_prompt_editing.sql` after the prompts migration and its import
+(#282), the story card editing migration (#304) and the Companion and story fields migration
+`20261124000000_content_fields.sql` (#310). It widens the same Publish history kind check and list,
+keeping every earlier kind and adding `prompt`. It adds who and when columns to
 `public.prompts` and the functions behind ADM-08 (list, Save draft, and admin-only Publish and Roll
 back with a `prompt` row in Publish history). It changes no prompt and not the server's read.
 Until it runs, the Prompts page says the prompts could not be read; the app keeps using the

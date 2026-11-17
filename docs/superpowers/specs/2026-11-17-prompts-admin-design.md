@@ -65,7 +65,7 @@ An empty list means the row can be used. The live path keeps its behaviour: any 
 call with the reason `prompt`.
 
 ### Database
-Migration `supabase/migrations/20261124000000_prompt_editing.sql` runs after
+Migration `supabase/migrations/20261125000000_prompt_editing.sql` runs after
 `20261123000000_story_card_editing.sql`. It must come later, because it widens the same kind
 constraint and replaces the same `list_publish_history`.
 - **New columns on `public.prompts`:**
