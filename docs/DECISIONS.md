@@ -247,7 +247,7 @@ Yue approved these five recommendations on 2026-11-17 and 2026-11-18. They answe
 | Id | Date | Decision | Consequences |
 |---|---|---|---|
 | CARD-TIMING | 2026-11-18 | Cards arrive evenly through the Step's time, as before. The last card of a Step arrives at the end of the Step; it is not a special card. The first card of the next Step is simply the story's next card, at the start of that Step. | Settles the timing that CARDS-SPREAD left open. |
-| NO-MERGED-MOMENTS | 2026-11-18 | The summary no longer lists "merged key moments". | Withdraws US-MAP-9 AC4 and C2's summary list. |
+| NO-MERGED-MOMENTS | 2026-11-18 | The summary no longer lists "merged key moments". This covers the summary (END) and the record of a finished Story (`/me/history/<session>/chapter`, US-MAP-10); neither lists key moments. | Withdraws US-MAP-9 AC4, C2's summary list and the key moments on the record (US-MAP-10). |
 | LEAK-BY-PART-ONLY | 2026-11-18 | FR-STORY-9 ("a card is limited to what he knew where the Step starts") is replaced by the spoiler check against the parts after the card's own part (LEAK-BY-PART), because parts can be split across Steps. | |
 | REST-OFFLINE | 2026-11-18 | The rest page offline also shows the failure screen with Retry. | Removes the "no retry" line of R-OFF. |
 | CLOSING-FAIL | 2026-11-18 | If the closing line cannot be loaded, the summary shows the failure screen with Retry. | The summary has no clock, so FAIL-PREMADE's "the clock does not start" does not apply there. |

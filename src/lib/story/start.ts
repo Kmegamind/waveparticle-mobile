@@ -88,7 +88,7 @@ export function startStory(story: StoryFacts, plan: PlanStep[]): StoryStart {
   return {
     storyId: story.id,
     stepCount,
-    instruction: instructionFor(story, keys, steps, mergedKeyMoments),
+    instruction: instructionFor(story, keys, steps),
     facts: story.facts,
     mustUseKeySlices: keys.map((key) => key.slice),
     steps,
@@ -234,12 +234,7 @@ function evenSizes(length: number, partCount: number): number[] {
   return sizes;
 }
 
-function instructionFor(
-  story: StoryFacts,
-  keys: LocatedKey[],
-  steps: StoryStepShare[],
-  mergedKeyMoments: MergedKeyMoment[],
-): string {
+function instructionFor(story: StoryFacts, keys: LocatedKey[], steps: StoryStepShare[]): string {
   const lines = [
     `The story is divided into ${steps.length} steps.`,
     "According to the story's progress, split each step into n story cards.",
@@ -250,11 +245,6 @@ function instructionFor(
     "Key slices:",
     ...keys.map((key) => `${key.slice.id}: ${key.slice.keyLine}`),
   ];
-
-  if (mergedKeyMoments.length > 0) {
-    lines.push("Summary lists every merged key moment, one line each:");
-    lines.push(...mergedKeyMoments.map((moment) => `${moment.id}: ${moment.keyLine}`));
-  }
 
   return lines.join("\n");
 }

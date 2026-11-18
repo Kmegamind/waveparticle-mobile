@@ -41,7 +41,10 @@ export function SessionRecordScreen({ record }: { record: SessionRecordView }) {
   );
 }
 
-/** The record of a finished Story (#94): his cards as shown, the closing line, the key moments. */
+/**
+ * The record of a finished Story (#94): his cards as shown and the closing line. No list of key
+ * moments (NO-MERGED-MOMENTS).
+ */
 export function StoryRecordScreen({
   record,
   backHref,
@@ -75,18 +78,6 @@ export function StoryRecordScreen({
             <span aria-hidden="true" className="focus-tape" />
             <p>{record.closingLine}</p>
           </figure>
-        </section>
-      ) : null}
-      {record.keyMoments.length > 0 ? (
-        <section aria-labelledby="rec-moments" className="rec-section">
-          <h2 className="focus-label" id="rec-moments">
-            Key moments
-          </h2>
-          <ul className="rec-moments">
-            {record.keyMoments.map((moment) => (
-              <li key={moment}>{moment}</li>
-            ))}
-          </ul>
         </section>
       ) : null}
     </>

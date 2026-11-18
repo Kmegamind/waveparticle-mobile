@@ -221,6 +221,13 @@ describe("US-CON-2 key slices", () => {
     expect(started.instruction).toContain("I reached the last ridge.");
   });
 
+  it("test_no_merged_moments_the_instruction_does_not_ask_for_a_summary_list", () => {
+    // NO-MERGED-MOMENTS (2026-11-18): the summary no longer lists merged key moments.
+    const started = startStory(eightSliceStory(), [{ minutes: 20 }, { minutes: 20 }]);
+    expect(started.mergedKeyMoments).toHaveLength(2);
+    expect(started.instruction).not.toMatch(/summary lists|merged key moment/i);
+  });
+
   it("test_us_con_2_ac5_one_step_goes_straight_to_the_summary", () => {
     const started = startStory(eightSliceStory(), [{ minutes: 45 }]);
 
