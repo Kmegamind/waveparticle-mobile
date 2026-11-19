@@ -3299,8 +3299,13 @@ a {
   outline-offset: 2px;
 }
 
-.admin-shell a {
+/* Links read as the prototype's: the surrounding text size and weight, inline. Class rules below
+   (menu rows, brand) still set their own layout. */
+.admin-shell :where(a) {
   color: inherit;
+  display: inline;
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 .admin-rail {
