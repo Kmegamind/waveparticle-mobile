@@ -45,113 +45,115 @@ export function AppTextEditor({ row }: { row: AppTextAdminRow }) {
     <tr aria-labelledby={`${id}-key`}>
       <td>
         <KeyChip>{row.screen}</KeyChip>
-        <span className="admin-diff-spoken">Screen {row.screen}</span>
       </td>
       <td>
         <span className="admin-chip" id={`${id}-key`}>
           {row.key}
         </span>
       </td>
-      <td className="admin-text">
-        <dl className="admin-text-facts">
-          <dt>Published</dt>
-          <dd data-testid="published-text">
-            {row.published ? (
-              <>
-                <span className="admin-page-id">v{row.published.version}</span> {row.published.body}
-              </>
-            ) : (
-              <>Not in the database. The app shows the default: {row.defaultText}</>
-            )}
-          </dd>
-          {row.draft ? (
-            <>
-              <dt>Newer draft</dt>
-              <dd data-testid="draft-text">
-                <span className="admin-page-id">v{row.draft.version}</span> {row.draft.body}
-              </dd>
-            </>
-          ) : null}
-        </dl>
-
-        <form
-          className="admin-text-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            // The field is uncontrolled: its own value is read, typed before hydration or after.
-            const text = String(new FormData(event.currentTarget).get("text") ?? "");
-            run(() => saveAppTextDraftAction(row.key, text), "Draft saved.");
-          }}
-        >
-          <label className="admin-text-label" htmlFor={`${id}-text`}>
-            Text for {row.key}
-          </label>
-          <textarea
-            className="admin-text-field"
-            defaultValue={latest?.body ?? row.defaultText}
-            disabled={!ready}
-            id={`${id}-text`}
-            maxLength={1000}
-            name="text"
-            rows={2}
-          />
-          <div className="admin-text-actions">
-            <button className="button-gray button-small" disabled={busy} type="submit">
-              Save draft
-            </button>
+      <td>
+        <div className="admin-cell-stack">
+          <dl className="admin-text-facts">
+            <dt>Published</dt>
+            <dd data-testid="published-text">
+              {row.published ? (
+                <>
+                  <span className="admin-page-id">v{row.published.version}</span>{" "}
+                  {row.published.body}
+                </>
+              ) : (
+                <>Not in the database. The app shows the default: {row.defaultText}</>
+              )}
+            </dd>
             {row.draft ? (
-              <button
-                className="button-filled button-small"
-                disabled={busy}
-                onClick={() =>
-                  run(
-                    () => publishAppTextAction(row.key, row.draft!.version),
-                    `Published v${row.draft!.version}.`,
-                  )
-                }
-                type="button"
-              >
-                Publish v{row.draft.version}
-              </button>
+              <>
+                <dt>Newer draft</dt>
+                <dd data-testid="draft-text">
+                  <span className="admin-page-id">v{row.draft.version}</span> {row.draft.body}
+                </dd>
+              </>
             ) : null}
-          </div>
-        </form>
+          </dl>
 
-        {row.versions.length > 0 ? (
-          <details className="admin-text-versions">
-            <summary>Versions ({row.versions.length})</summary>
-            <ol>
-              {row.versions.map((version) => (
-                <li key={version.version}>
-                  <p>
-                    <span className="admin-page-id">v{version.version}</span>{" "}
-                    <StatePill state={version.state}>{STATE_LABEL[version.state]}</StatePill>
-                  </p>
-                  <p className="admin-text-body">{version.body}</p>
-                  {version.canRollBack ? (
-                    <button
-                      className="button-gray button-small"
-                      disabled={busy}
-                      onClick={() =>
-                        run(
-                          () => rollBackAppTextAction(row.key, version.version),
-                          `Rolled back to v${version.version}.`,
-                        )
-                      }
-                      type="button"
-                    >
-                      Roll back to v{version.version}
-                    </button>
-                  ) : null}
-                </li>
-              ))}
-            </ol>
-          </details>
-        ) : null}
+          <form
+            className="admin-text-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              // The field is uncontrolled: its own value is read, typed before hydration or after.
+              const text = String(new FormData(event.currentTarget).get("text") ?? "");
+              run(() => saveAppTextDraftAction(row.key, text), "Draft saved.");
+            }}
+          >
+            <label className="admin-text-label" htmlFor={`${id}-text`}>
+              Text for {row.key}
+            </label>
+            <textarea
+              className="admin-text-field"
+              defaultValue={latest?.body ?? row.defaultText}
+              disabled={!ready}
+              id={`${id}-text`}
+              maxLength={1000}
+              name="text"
+              rows={2}
+            />
+            <div className="admin-text-actions">
+              <button className="button-gray button-small" disabled={busy} type="submit">
+                Save draft
+              </button>
+              {row.draft ? (
+                <button
+                  className="button-filled button-small"
+                  disabled={busy}
+                  onClick={() =>
+                    run(
+                      () => publishAppTextAction(row.key, row.draft!.version),
+                      `Published v${row.draft!.version}.`,
+                    )
+                  }
+                  type="button"
+                >
+                  Publish v{row.draft.version}
+                </button>
+              ) : null}
+            </div>
+          </form>
 
-        <p aria-live="polite" className="admin-text-status" role="status">
-          {status}
-        </p>
+          {row.versions.length > 0 ? (
+            <details className="admin-text-versions">
+              <summary>Versions ({row.versions.length})</summary>
+              <ol>
+                {row.versions.map((version) => (
+                  <li key={version.version}>
+                    <p>
+                      <span className="admin-page-id">v{version.version}</span>{" "}
+                      <StatePill state={version.state}>{STATE_LABEL[version.state]}</StatePill>
+                    </p>
+                    <p className="admin-text-body">{version.body}</p>
+                    {version.canRollBack ? (
+                      <button
+                        className="button-gray button-small"
+                        disabled={busy}
+                        onClick={() =>
+                          run(
+                            () => rollBackAppTextAction(row.key, version.version),
+                            `Rolled back to v${version.version}.`,
+                          )
+                        }
+                        type="button"
+                      >
+                        Roll back to v{version.version}
+                      </button>
+                    ) : null}
+                  </li>
+                ))}
+              </ol>
+            </details>
+          ) : null}
+
+          <p aria-live="polite" className="admin-text-status" role="status">
+            {status}
+          </p>
+        </div>
       </td>
       <td>
         {row.draft ? (

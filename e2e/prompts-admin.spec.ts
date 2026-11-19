@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { STUB_SUPABASE, baseUrlOf, signIn } from "./support/account";
 
+// #313: the admin is a desktop tool (minimum width 1024 px), so its journeys run at 1280 px.
+test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
 // #308: ADM-08 Prompts. The Supabase stub keeps one set of prompt versions for every test (and the
 // server reads the active ones for live calls), so these tests run one after the other, change
 // only rest_reply with a harmless extra line, and put the prompts back before and after each test.
@@ -112,8 +115,9 @@ test("test_308_ac5_ac6_admin_publishes_and_rolls_back_from_history", async ({ pa
   await expect(page.getByRole("heading", { name: "Active v2" })).toBeVisible();
 
   await page.goto("/admin/publish-history");
-  const published = page.getByRole("article", { name: `${KEY} v2, Published` }).first();
-  await expect(published).toContainText("Prompt");
+  const published = page.getByRole("row", { name: `${KEY} v2, Published` }).first();
+  // #313: a readable name before the key.
+  await expect(published).toContainText("His reply in the rest chat");
   await expect(published).toContainText(`${account.userId}@example.invalid`);
 
   // Publish v1 back through a roll back from the history: v1 was active before.
@@ -125,7 +129,7 @@ test("test_308_ac5_ac6_admin_publishes_and_rolls_back_from_history", async ({ pa
   await editor(page).getByRole("button", { name: "Publish v3" }).click();
   await expect(editor(page).getByRole("status")).toHaveText("Published v3.");
   await page.goto("/admin/publish-history");
-  const earlier = page.getByRole("article", { name: `${KEY} v2, Published` }).first();
+  const earlier = page.getByRole("row", { name: `${KEY} v2, Published` }).first();
   await earlier.getByRole("button", { name: "Roll back to v2" }).click();
   await expect(earlier.getByRole("status")).toHaveText("Rolled back to v2.");
   await page.goto(`/admin/prompts/${KEY}`);

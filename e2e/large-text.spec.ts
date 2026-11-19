@@ -78,30 +78,8 @@ for (const path of signedInPages) {
   });
 }
 
-// #287: the content admin, for an account with the writer role.
-for (const path of [
-  "/admin",
-  "/admin/app-text",
-  "/admin/companions",
-  "/admin/companions/oppenheimer",
-  "/admin/companions/oppenheimer/stories/site-search",
-  "/admin/prompts",
-  "/admin/prompts/step_cards",
-  "/admin/publish-history",
-  "/admin/stories",
-  "/admin/stories/site-search",
-]) {
-  test(`#100 AC1 and AC2 ${path} at 200% text on 320 px cuts nothing off`, async ({
-    page,
-    context,
-  }) => {
-    await page.setViewportSize(NARROW);
-    await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
-    await page.goto(path);
-    await expect(page.locator("main").first()).toBeVisible();
-    await expectNothingCutOff(page, NARROW.width);
-  });
-}
+// #313: the content admin is desktop-only (docs/DECISIONS.md ADMIN-DESKTOP, minimum width
+// 1024 px), so its pages are not checked at 320 px here; e2e/admin-look.spec.ts checks 1024 px.
 
 test("#100 AC1 at 200% text on 320 px the tab bar labels stay inside their own tab", async ({
   page,

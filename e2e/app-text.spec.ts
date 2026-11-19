@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { STUB_SUPABASE, baseUrlOf, signIn } from "./support/account";
 
+// #313: the admin is a desktop tool (minimum width 1024 px), so its journeys run at 1280 px.
+test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
 // #288: app text in the database. The Supabase stub keeps one app_text table for every test, so
 // these tests run one after the other and change only ui.HOME-0.greeting, which no other test
 // reads; each test starts and ends with that key's seed (every code default as version 1, published). A
@@ -25,7 +28,8 @@ test.beforeEach(() => appTextStub({ reset: KEY, failReads: false }));
 test.afterEach(() => appTextStub({ reset: KEY, failReads: false }));
 
 /** The App text card of one key. */
-const card = (page: Page, key: string) => page.getByRole("region", { name: key });
+// #313: each key is one row of the App text table.
+const card = (page: Page, key: string) => page.getByRole("row", { name: key, exact: true });
 
 /** HOME-0 of a fresh account: the greeting on the Goal card. */
 async function homeGreeting(page: Page) {
@@ -64,9 +68,10 @@ test("test_288_ac2_lists_every_key_with_its_screen_and_published_text", async ({
   await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
   await page.goto("/admin/app-text");
   await expect(page.getByRole("heading", { level: 1, name: "App text" })).toBeVisible();
-  await expect(page.locator(".admin-text")).toHaveCount(13);
+  // #313: one table row per key.
+  await expect(page.getByRole("table", { name: "App text" }).locator("tbody tr")).toHaveCount(13);
   const failure = card(page, "ui.F3.fail.body");
-  await expect(failure.getByText("Screen F3")).toBeVisible();
+  await expect(failure.getByRole("cell", { name: "F3", exact: true })).toBeVisible();
   await expect(failure.getByTestId("published-text")).toHaveText(
     "v1 He is not here right now. Please try again.",
   );
@@ -147,14 +152,4 @@ test("test_288_admin_is_not_kept_in_the_browser_cache", async ({ page, context }
   expect(notFound?.status()).toBe(404);
   // Next's not-found answer sets its own value, which is private and no-store as well.
   expect(notFound?.headers()["cache-control"]).toMatch(/^private,.*\bno-store\b/);
-});
-
-test("test_288_ac2_no_sideways_scroll_at_360_px", async ({ page, context }) => {
-  await page.setViewportSize({ width: 360, height: 800 });
-  await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
-  await page.goto("/admin/app-text");
-  await card(page, KEY).getByText("Versions (1)").click();
-  await expect(card(page, KEY).getByText("Published", { exact: true }).last()).toBeVisible();
-  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-  expect(scrollWidth).toBeLessThanOrEqual(360);
 });

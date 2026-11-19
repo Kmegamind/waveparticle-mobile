@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { baseUrlOf, signIn } from "./support/account";
 
+// #313: the admin is a desktop tool (minimum width 1024 px), so its journeys run at 1280 px.
+test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
 // #293: ADM-06 Stories, read-only, for an account with the admin or writer role. The Supabase stub
 // serves the seed (story-decks.json) as version 1, published.
 

@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { baseUrlOf, signIn } from "./support/account";
 
+// #313: the admin is a desktop tool (minimum width 1024 px), so its journeys run at 1280 px.
+test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
 // #287: the content admin at /admin. The role comes from the Supabase stub's content_role().
 
 const ADMIN_PATHS = [
@@ -68,7 +71,7 @@ test("test_287_ac3_a_writer_sees_the_admin_shell", async ({ page, context }) => 
   await expect(page).toHaveURL(/\/admin\/app-text$/);
   await expect(page.getByRole("heading", { level: 1, name: "App text" })).toBeVisible();
   // #288 replaced the placeholder with the App text editor.
-  await expect(page.getByRole("region", { name: "ui.F3.fail.body" })).toBeVisible();
+  await expect(page.getByRole("row", { name: "ui.F3.fail.body", exact: true })).toBeVisible();
   await expect(menu.getByRole("link", { name: /App text/ })).toHaveAttribute(
     "aria-current",
     "page",
@@ -94,7 +97,8 @@ test("test_287_ac3_sign_out_leaves_the_admin", async ({ page, context }) => {
   await expect(page).toHaveURL(/\/auth\/sign-in$/);
 });
 
-for (const width of [360, 1280]) {
+// #313: the admin is desktop-only (minimum width 1024 px); 360 px is no longer a target.
+for (const width of [1024, 1280]) {
   test(`test_287_ac5_no_sideways_scroll_at_${width}_px`, async ({ page, context }) => {
     await page.setViewportSize({ width, height: 800 });
     await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });

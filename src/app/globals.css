@@ -3321,6 +3321,7 @@ a {
 }
 
 .admin-brand {
+  align-items: flex-start;
   color: var(--adm-ink);
   display: flex;
   flex-direction: column;
@@ -3545,6 +3546,12 @@ a {
 
 .admin-cell-name {
   font-weight: 600;
+}
+
+/* The App text Text cell: the field and its actions stacked, inside a plain table cell. */
+.admin-cell-stack {
+  display: grid;
+  gap: var(--adm-gap-small);
 }
 
 /* Id chips and state pills (issue 313, row 9). */
