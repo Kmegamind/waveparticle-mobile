@@ -60,21 +60,20 @@ const isKnownKind = (kind: string): kind is PublishHistoryKind =>
   Object.hasOwn(PUBLISH_HISTORY_KINDS, kind);
 
 const TIME = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
+  day: "2-digit",
+  month: "2-digit",
   hour: "2-digit",
   minute: "2-digit",
   hour12: false,
   timeZone: "UTC",
 });
 
-/** "15 Nov 2026, 10:04 UTC": the same on the server and in every browser. */
+/** "11-18 23:42" in UTC, as in the admin prototype (#313): the same on the server and in every browser. */
 export function formatHistoryTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   const parts = Object.fromEntries(TIME.formatToParts(date).map((part) => [part.type, part.value]));
-  return `${parts.day} ${parts.month} ${parts.year}, ${parts.hour}:${parts.minute} UTC`;
+  return `${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
 }
 
 function personOf(row: PublishHistoryRow): string {

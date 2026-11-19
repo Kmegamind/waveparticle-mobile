@@ -1,0 +1,153 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { companionRow } from "@/lib/admin/companion-rows";
+import { historyItemName, type NameLookup } from "@/lib/admin/history-names";
+import { formatHistoryTime } from "@/lib/publish-history/admin";
+
+// #313: the admin looks like the admin prototype at desktop widths.
+
+const root = path.join(import.meta.dirname, "..");
+const read = (file: string) => readFileSync(path.join(root, file), "utf8");
+
+const lookup: NameLookup = {
+  companions: [
+    { id: "oppenheimer", key_code: "opp", name: "J. Robert Oppenheimer" },
+    { id: "moriarty", key_code: "mor", name: "Professor Moriarty" },
+  ],
+  stories: [{ id: "site-search", companion_id: "oppenheimer", title: "The Canyon and the Mesa" }],
+  promptPurpose: { rest_reply: "His reply in the rest chat" },
+};
+
+describe("Publish history names every row (#313 row 48)", () => {
+  it("test_313_app_text_rows_name_their_screen", () => {
+    expect(historyItemName("app_text", "ui.F3.fail.body", lookup)).toBe("App text · screen F3");
+    expect(historyItemName("app_text", "ui.HOME-0.greeting", lookup)).toBe(
+      "App text · screen HOME-0",
+    );
+  });
+
+  it("test_313_card_rows_name_the_story_part_and_card", () => {
+    expect(historyItemName("story_card", "crd.opp.site-search.bg", lookup)).toBe(
+      "The Canyon and the Mesa · background card",
+    );
+    expect(historyItemName("story_card", "crd.opp.site-search.p2.c3", lookup)).toBe(
+      "The Canyon and the Mesa · part 2, card 3",
+    );
+  });
+
+  it("test_313_companion_field_rows_name_the_companion_and_field", () => {
+    expect(historyItemName("companion_field", "chr.opp.who", lookup)).toBe(
+      "J. Robert Oppenheimer · Who I am",
+    );
+    expect(historyItemName("companion_field", "chr.opp.name", lookup)).toBe(
+      "J. Robert Oppenheimer · Name",
+    );
+    expect(historyItemName("companion_field", "chr.mor.tags", lookup)).toBe(
+      "Professor Moriarty · Tags",
+    );
+    expect(historyItemName("companion_field", "chr.opp.period.2", lookup)).toBe(
+      "J. Robert Oppenheimer · period 2 name",
+    );
+  });
+
+  it("test_313_story_field_rows_name_the_story_and_field", () => {
+    const name = (field: string) =>
+      historyItemName("story_field", `opp.site-search.${field}`, lookup);
+    expect(name("title")).toBe("The Canyon and the Mesa · Title");
+    expect(name("period")).toBe("The Canyon and the Mesa · Period");
+    expect(name("goal")).toBe("The Canyon and the Mesa · Goal sentence");
+    expect(name("who")).toBe("The Canyon and the Mesa · Who I am");
+    expect(name("opening")).toBe("The Canyon and the Mesa · Opening");
+    expect(name("path")).toBe("The Canyon and the Mesa · Life Path description");
+  });
+
+  it("test_313_prompt_rows_name_the_prompt_purpose", () => {
+    expect(historyItemName("prompt", "rest_reply", lookup)).toBe("His reply in the rest chat");
+  });
+
+  it("test_313_an_unknown_key_falls_back_to_the_kind_label", () => {
+    expect(historyItemName("story_card", "crd.opp.gone-story.bg", lookup)).toBe("Story card");
+    expect(historyItemName("companion_field", "chr.zzz.who", lookup)).toBe("Companion field");
+    expect(historyItemName("story_field", "opp.site-search.unknown", lookup)).toBe("Story field");
+    expect(historyItemName("prompt", "no_such_prompt", lookup)).toBe("Prompt");
+    expect(historyItemName("app_text", "not-a-ui-key", lookup)).toBe("App text");
+    expect(historyItemName("other_kind", "x", lookup)).toBe("other_kind");
+  });
+});
+
+describe("Publish history short date (#313 row 47)", () => {
+  it("test_313_short_date_is_month_day_hour_minute_in_utc", () => {
+    expect(formatHistoryTime("2026-11-18T23:42:00Z")).toBe("11-18 23:42");
+    expect(formatHistoryTime("2026-01-03T00:05:00Z")).toBe("01-03 00:05");
+    expect(formatHistoryTime("2026-11-18T23:42:00-05:00")).toBe("11-19 04:42");
+    expect(formatHistoryTime("not a time")).toBe("not a time");
+  });
+});
+
+describe("Companions table facts (#313 row 13)", () => {
+  const stories = [{ id: "site-search", companion_id: "oppenheimer" }];
+  const history = [
+    {
+      kind: "story_card",
+      item_key: "crd.opp.site-search.p1.c1",
+      person: "yue@example.com",
+      acted_at: "2026-11-17T10:00:00Z",
+    },
+    {
+      kind: "companion_field",
+      item_key: "chr.opp.who",
+      person: "writer@example.com",
+      acted_at: "2026-11-18T09:30:00Z",
+    },
+    {
+      kind: "companion_field",
+      item_key: "chr.mor.name",
+      person: "other@example.com",
+      acted_at: "2026-11-19T09:30:00Z",
+    },
+    {
+      kind: "app_text",
+      item_key: "ui.F3.fail.body",
+      person: "a@b.c",
+      acted_at: "2026-11-20T09:30:00Z",
+    },
+  ];
+
+  it("test_313_a_companion_with_stories_is_published_with_his_newest_change", () => {
+    expect(companionRow({ id: "oppenheimer", key_code: "opp" }, stories, history)).toEqual({
+      shown: "Published",
+      lastChange: "writer@example.com · 11-18",
+    });
+  });
+
+  it("test_313_a_companion_without_stories_is_not_ready", () => {
+    expect(companionRow({ id: "moriarty", key_code: "mor" }, stories, history)).toEqual({
+      shown: "Not ready",
+      lastChange: "other@example.com · 11-19",
+    });
+  });
+
+  it("test_313_no_history_shows_a_dash", () => {
+    expect(companionRow({ id: "dracula", key_code: "dra" }, stories, history)).toEqual({
+      shown: "Not ready",
+      lastChange: "—",
+    });
+  });
+
+  it("test_313_a_story_field_counts_for_its_companion", () => {
+    const fieldOnly = [
+      {
+        kind: "story_field",
+        item_key: "opp.site-search.title",
+        person: "yue@example.com",
+        acted_at: "2026-11-16T08:00:00Z",
+      },
+    ];
+    expect(
+      companionRow({ id: "oppenheimer", key_code: "opp" }, stories, fieldOnly).lastChange,
+    ).toBe("yue@example.com · 11-16");
+  });
+});
+
+export { read };
