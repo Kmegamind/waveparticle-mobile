@@ -150,4 +150,92 @@ describe("Companions table facts (#313 row 13)", () => {
   });
 });
 
-export { read };
+describe("admin tokens and shell (#313 rows 1, 2, 3, 4, 7, 9, 11)", () => {
+  const tokens = () => read("src/app/tokens.css");
+  const adminCss = () => {
+    const css = read("src/app/globals.css");
+    return css.slice(css.indexOf("/* The content admin (issue 287)"));
+  };
+  const block = (css: string, selector: string) => {
+    const start = css.indexOf(`${selector} {`);
+    expect(start, selector).toBeGreaterThan(-1);
+    return css.slice(start, css.indexOf("}", start));
+  };
+
+  it("test_313_tokens_hold_the_prototype_light_values", () => {
+    const light = block(tokens(), ".admin-shell");
+    for (const [name, value] of [
+      ["--adm-bg", "#f5f6f4"],
+      ["--adm-panel", "#ffffff"],
+      ["--adm-ink", "#1d2421"],
+      ["--adm-muted", "#5f6b66"],
+      ["--adm-line", "#dde2df"],
+      ["--adm-soft", "#eef1ef"],
+      ["--adm-accent", "#1f6f5c"],
+      ["--adm-accent-soft", "#e2f0eb"],
+      ["--adm-ok", "#2f7d4f"],
+      ["--adm-bad", "#b23b3b"],
+      ["--adm-warn", "#9a6a10"],
+      ["--adm-info", "#3a5ea8"],
+      ["--adm-font-display", '"Fraunces", Georgia, serif'],
+      ["--adm-font-body", '"IBM Plex Sans", system-ui, sans-serif'],
+      ["--adm-font-mono", '"IBM Plex Mono", ui-monospace, monospace'],
+      ["--adm-min-width", "1024px"],
+      ["--adm-rail-width", "232px"],
+    ]) {
+      expect(light, name).toContain(`${name}: ${value};`);
+    }
+  });
+
+  it("test_313_tokens_hold_the_prototype_dark_values", () => {
+    const css = tokens();
+    const dark = css.slice(
+      css.indexOf("@media (prefers-color-scheme: dark)", css.indexOf("--adm-bg")),
+    );
+    for (const [name, value] of [
+      ["--adm-bg", "#121615"],
+      ["--adm-panel", "#1a1f1e"],
+      ["--adm-ink", "#e4e9e6"],
+      ["--adm-accent", "#5fc0a3"],
+    ]) {
+      expect(dark, name).toContain(`${name}: ${value};`);
+    }
+  });
+
+  it("test_313_the_admin_is_desktop_only_with_no_phone_rules", () => {
+    const css = adminCss();
+    expect(css).toMatch(/\.admin-shell \{[^}]*min-width: var\(--adm-min-width\)/);
+    expect(css).not.toMatch(/@media \(min-width/);
+    expect(css).not.toMatch(/@media \(max-width/);
+    expect(css).not.toContain("var(--target)");
+    // The app's 44 px tap size is switched off inside the admin only.
+    expect(css).toMatch(
+      /\.admin-shell :where\([^)]*button[^)]*\)\s*\{[^}]*min-height: 0;[^}]*min-width: 0;/,
+    );
+  });
+
+  it("test_313_shell_parts_use_the_admin_tokens", () => {
+    const css = adminCss();
+    expect(block(css, ".admin-rail")).toContain("background: var(--adm-panel)");
+    expect(block(css, ".admin-menu-link")).toContain("padding: var(--adm-menu-pad)");
+    expect(block(css, '.admin-menu-link[aria-current="page"]')).toContain(
+      "background: var(--adm-accent-soft)",
+    );
+    expect(block(css, ".admin-main h1")).toContain("font-size: var(--adm-title-size)");
+    expect(css).toContain(".admin-pill-published");
+    expect(css).toContain(".admin-chip");
+    expect(css).toContain(".admin-crumb");
+    expect(css).toContain(".admin-table");
+  });
+
+  it("test_313_admin_ui_exports_breadcrumb_pill_and_chip", () => {
+    const ui = read("src/app/admin/admin-ui.tsx");
+    for (const name of [
+      "export function Breadcrumb",
+      "export function StatePill",
+      "export function KeyChip",
+    ]) {
+      expect(ui).toContain(name);
+    }
+  });
+});

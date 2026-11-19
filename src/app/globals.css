@@ -3264,8 +3264,10 @@ a {
   }
 }
 
-/* The content admin (issue 287). Phone first: the brand and Sign out on top, the menu as a wrapping row,
-   then the page. From 900 px the menu is a rail on the left, as in the content-admin prototype. */
+/* The content admin (issue 287), with the look of issue 313. A desktop tool for staff that follows the
+   content-admin prototype at desktop widths (docs/DECISIONS.md ADMIN-DESKTOP): the prototype's
+   colours, type, spacing and buttons through the --adm-* tokens, a minimum width of 1024 px, no
+   phone layout and no 44 px tap size. The phone app keeps DESIGN.md. */
 .app-shell:has(.admin-shell) {
   max-width: none;
 }
@@ -3275,73 +3277,86 @@ a {
 }
 
 .admin-shell {
+  background: var(--adm-bg);
+  color: var(--adm-ink);
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto 1fr;
+  font-family: var(--adm-font-body);
+  font-size: var(--adm-text-size);
+  grid-template-columns: var(--adm-rail-width) minmax(0, 1fr);
+  line-height: var(--adm-leading);
   min-height: 100svh;
+  min-width: var(--adm-min-width);
+}
+
+/* The app's 44 px tap size (DESIGN.md 6) does not apply to this desktop tool. */
+.admin-shell :where(button, a, input, select, textarea) {
+  min-height: 0;
+  min-width: 0;
+}
+
+.admin-shell :where(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--adm-accent);
+  outline-offset: 2px;
+}
+
+.admin-shell a {
+  color: inherit;
 }
 
 .admin-rail {
-  align-items: center;
-  background: var(--raised);
-  border-bottom: 1px solid var(--hairline);
+  background: var(--adm-panel);
+  border-right: 1px solid var(--adm-line);
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-small-gap) var(--space-control-gap);
-  padding: calc(var(--space-small-gap) + env(safe-area-inset-top))
-    calc(var(--space-screen-inline) + env(safe-area-inset-right)) var(--space-small-gap)
-    calc(var(--space-screen-inline) + env(safe-area-inset-left));
+  flex-direction: column;
+  height: 100svh;
+  overflow-y: auto;
+  padding: var(--adm-rail-pad);
+  position: sticky;
+  top: 0;
 }
 
 .admin-brand {
-  align-items: flex-start;
-  color: var(--ink);
+  color: var(--adm-ink);
   display: flex;
   flex-direction: column;
-  margin-right: auto;
-  min-height: var(--target);
-  justify-content: center;
+  padding: var(--adm-brand-pad);
   text-decoration: none;
 }
 
 .admin-brand-name {
-  font-family: var(--type-display);
-  font-size: var(--text-button-size);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  font-family: var(--adm-font-display);
+  font-size: var(--adm-brand-size);
+  font-weight: 600;
+  line-height: var(--adm-leading);
 }
 
-.admin-brand-sub,
-.admin-group-heading {
-  color: var(--ink-2);
-  font-size: var(--text-overline-size);
-  font-weight: 700;
-  letter-spacing: var(--overline-tracking);
-  line-height: 1.3;
+.admin-brand-sub {
+  color: var(--adm-muted);
+  font-size: var(--adm-brand-sub-size);
+  font-weight: 400;
+  letter-spacing: var(--adm-track-brand);
+  margin-top: var(--adm-gap-hair);
   text-transform: uppercase;
 }
 
 .admin-menu {
   display: flex;
-  flex-basis: 100%;
-  flex-wrap: wrap;
-  gap: var(--space-small-gap) var(--space-control-gap);
-  order: 1;
-}
-
-.admin-group {
-  min-width: 0;
+  flex: 1;
+  flex-direction: column;
 }
 
 .admin-group-heading {
-  margin: 0 0 var(--space-row-after);
+  color: var(--adm-muted);
+  font-size: var(--adm-group-size);
+  font-weight: 400;
+  letter-spacing: var(--adm-track-group);
+  line-height: var(--adm-leading);
+  margin: 0;
+  padding: var(--adm-group-pad);
+  text-transform: uppercase;
 }
 
 .admin-group ul {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-row-after);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -3349,115 +3364,289 @@ a {
 
 .admin-menu-link {
   align-items: center;
-  border-radius: var(--r-mini);
-  color: var(--ink);
+  border-radius: var(--adm-r-menu);
+  color: var(--adm-ink);
   display: flex;
-  flex-wrap: wrap;
-  font-size: var(--text-link-size);
-  font-weight: 600;
-  gap: 0 var(--space-small-gap);
+  gap: var(--adm-gap-small);
   justify-content: space-between;
-  min-height: var(--target);
-  padding: 0 var(--space-small-gap);
+  padding: var(--adm-menu-pad);
   text-decoration: none;
 }
 
-/* The current page: weight and an outline, not colour alone (DESIGN.md 4.3). */
-.admin-menu-link[aria-current="page"] {
-  background: var(--tint);
-  box-shadow: inset 0 0 0 1px var(--control);
-  font-weight: 800;
+.admin-menu-link:hover {
+  background: var(--adm-soft);
 }
 
-.admin-menu-link:focus-visible,
-.admin-brand:focus-visible {
-  outline: 2px solid var(--control);
-  outline-offset: 2px;
+.admin-menu-link[aria-current="page"] {
+  background: var(--adm-accent-soft);
+  color: var(--adm-accent);
+  font-weight: 600;
 }
 
 .admin-page-id {
-  color: var(--ink-2);
-  font-family: var(--type-mono);
-  font-size: var(--text-caption-size);
+  color: var(--adm-muted);
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-id-size);
   font-weight: 400;
+}
+
+.admin-sign-out {
+  align-self: flex-start;
+  margin: var(--adm-gap) 0 0 var(--adm-gap-small);
 }
 
 .admin-main {
   min-width: 0;
-  padding: var(--space-screen-top) calc(var(--space-screen-inline) + env(safe-area-inset-right))
-    calc(var(--space-screen-bottom) + env(safe-area-inset-bottom))
-    calc(var(--space-screen-inline) + env(safe-area-inset-left));
+  padding: var(--adm-main-pad);
+}
+
+.admin-crumb {
+  align-items: center;
+  color: var(--adm-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--adm-crumb-size);
+  gap: var(--adm-gap-tiny);
+}
+
+.admin-crumb ol {
+  display: contents;
+  list-style: none;
+}
+
+.admin-crumb li {
+  display: flex;
+  gap: var(--adm-gap-tiny);
+}
+
+.admin-crumb a {
+  color: var(--adm-muted);
 }
 
 .admin-main h1 {
-  font-family: var(--type-display);
-  font-size: var(--text-display-size);
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  line-height: var(--text-display-leading);
-  margin: 0;
+  font-family: var(--adm-font-display);
+  font-size: var(--adm-title-size);
+  font-weight: 600;
+  line-height: var(--adm-leading);
+  margin: var(--adm-gap-title) 0;
+  text-wrap: balance;
+}
+
+.admin-main h2 {
+  font-size: var(--adm-h2-size);
+  font-weight: 600;
 }
 
 .admin-lede {
-  color: var(--ink-2);
-  margin: var(--space-title-after) 0 0;
-  max-width: var(--admin-measure);
+  color: var(--adm-muted);
+  margin: 0 0 var(--adm-lede-after);
+  max-width: var(--adm-lede-measure);
 }
 
-/* ADM-07 App text (issue 288): one card per key, in the spirit of the content-admin prototype. */
 .admin-notice {
-  border: 1px solid var(--edge);
-  border-radius: var(--r-field);
-  margin: var(--space-title-after) 0 0;
-  max-width: var(--admin-measure);
-  padding: var(--space-small-gap);
+  background: var(--adm-warn-soft);
+  border-radius: var(--adm-r-button);
+  color: var(--adm-warn);
+  margin: 0 0 var(--adm-head-after);
+  max-width: var(--adm-lede-measure);
+  padding: var(--adm-cell-pad);
 }
 
+/* Buttons: the prototype's plain button, its primary button and its small size. */
+.admin-shell .button-gray,
+.admin-shell .button-plain,
+.admin-shell .button-filled {
+  align-items: center;
+  background: var(--adm-panel);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-r-button);
+  box-shadow: none;
+  color: var(--adm-ink);
+  display: inline-flex;
+  font-family: var(--adm-font-body);
+  font-size: var(--adm-button-size);
+  font-weight: 400;
+  gap: var(--adm-gap-tiny);
+  line-height: var(--adm-leading);
+  min-height: 0;
+  padding: var(--adm-button-pad);
+  transition: none;
+}
+
+.admin-shell .button-gray:hover,
+.admin-shell .button-plain:hover {
+  border-color: var(--adm-accent);
+}
+
+.admin-shell .button-filled {
+  background: var(--adm-accent);
+  border-color: var(--adm-accent);
+  color: var(--adm-panel);
+  font-weight: 600;
+}
+
+.admin-shell .button-small {
+  font-size: var(--adm-button-small-size);
+  padding: var(--adm-button-small-pad);
+}
+
+.admin-shell .button-gray:active,
+.admin-shell .button-plain:active,
+.admin-shell .button-filled:active {
+  opacity: 1;
+  transform: none;
+}
+
+/* Panels and tables (issue 313, row 8). */
+.admin-panel,
+.admin-text {
+  background: var(--adm-panel);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-r-panel);
+  min-width: 0;
+  padding: var(--adm-panel-pad);
+}
+
+.admin-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.admin-table th,
+.admin-table td {
+  border-bottom: 1px solid var(--adm-line);
+  padding: var(--adm-cell-pad);
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-table th {
+  color: var(--adm-muted);
+  font-size: var(--adm-th-size);
+  font-weight: 500;
+  letter-spacing: var(--adm-track-th);
+  text-transform: uppercase;
+}
+
+.admin-table .admin-num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.admin-cell-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+}
+
+.admin-cell-name {
+  font-weight: 600;
+}
+
+/* Id chips and state pills (issue 313, row 9). */
+.admin-chip {
+  background: var(--adm-soft);
+  border-radius: var(--adm-r-chip);
+  color: var(--adm-muted);
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-chip-size);
+  font-weight: 400;
+  padding: var(--adm-chip-pad);
+  white-space: nowrap;
+}
+
+.admin-pill {
+  align-items: center;
+  border-radius: var(--adm-r-pill);
+  display: inline-flex;
+  font-size: var(--adm-chip-size);
+  font-weight: 500;
+  gap: var(--adm-gap-dot);
+  padding: var(--adm-pill-pad);
+  white-space: nowrap;
+}
+
+.admin-pill::before {
+  background: currentcolor;
+  border-radius: 50%;
+  content: "";
+  height: var(--adm-pill-dot);
+  width: var(--adm-pill-dot);
+}
+
+.admin-pill-draft,
+.admin-pill-earlier {
+  background: var(--adm-soft);
+  color: var(--adm-muted);
+}
+
+.admin-pill-published {
+  background: var(--adm-ok-soft);
+  color: var(--adm-ok);
+}
+
+.admin-pill-failed {
+  background: var(--adm-bad-soft);
+  color: var(--adm-bad);
+}
+
+.admin-pill-passed {
+  background: var(--adm-warn-soft);
+  color: var(--adm-warn);
+}
+
+.admin-pill-default {
+  background: var(--adm-info-soft);
+  color: var(--adm-info);
+}
+
+/* Item panels (App text cells, cards, fields, prompts). */
 .admin-text-list {
   display: grid;
-  gap: var(--space-row-gap);
+  gap: var(--adm-gap);
   list-style: none;
-  margin: var(--space-title-after) 0 0;
-  max-width: var(--admin-measure);
+  margin: 0;
   padding: 0;
 }
 
 .admin-text {
-  background: var(--raised);
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-card);
-  box-shadow: var(--shadow-paper);
   display: grid;
-  gap: var(--space-small-gap);
-  min-width: 0;
-  padding: var(--space-card-pad);
+  gap: var(--adm-gap-small);
 }
 
 .admin-text-head {
   align-items: baseline;
   display: flex;
   flex-wrap: wrap;
-  gap: 0 var(--space-control-gap);
+  gap: 0 var(--adm-gap-small);
   justify-content: space-between;
 }
 
 .admin-text-key {
-  font-family: var(--type-mono);
-  font-size: var(--text-caption-size);
-  font-weight: 700;
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-chip-size);
+  font-weight: 400;
   margin: 0;
   overflow-wrap: anywhere;
 }
 
+.admin-main h1.admin-text-key {
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-title-size);
+}
+
 .admin-text-screen,
-.admin-text-state,
 .admin-text-facts dt,
+.admin-history-facts dt,
 .admin-text-label {
-  color: var(--ink-2);
-  font-size: var(--text-overline-size);
-  font-weight: 700;
-  letter-spacing: var(--overline-tracking);
-  text-transform: uppercase;
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  font-weight: 600;
+}
+
+.admin-text-state {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: 0;
 }
 
 .admin-text-screen {
@@ -3466,7 +3655,7 @@ a {
 
 .admin-text-facts {
   display: grid;
-  gap: var(--space-row-after);
+  gap: var(--adm-gap-hair);
   margin: 0;
 }
 
@@ -3477,55 +3666,52 @@ a {
 
 .admin-text-form {
   display: grid;
-  gap: var(--space-row-after);
+  gap: var(--adm-gap-tiny);
 }
 
 .admin-text-field {
-  background: var(--raised);
-  border: 1px solid var(--edge);
-  border-radius: var(--r-field);
-  color: var(--ink);
-  font-family: var(--type-sans);
-  font-size: var(--text-body-size);
-  padding: var(--space-small-gap);
+  background: var(--adm-panel);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-r-button);
+  color: var(--adm-ink);
+  font-family: var(--adm-font-body);
+  font-size: var(--adm-field-size);
+  min-height: var(--adm-field-min);
+  padding: var(--adm-field-pad);
   resize: vertical;
   width: 100%;
 }
 
-.admin-text-field:focus-visible,
-.admin-text-versions summary:focus-visible {
-  outline: 2px solid var(--control);
-  outline-offset: 2px;
+select.admin-text-field,
+input.admin-text-field {
+  min-height: 0;
 }
 
 .admin-text-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-control-gap);
+  gap: var(--adm-gap-small);
 }
 
 .admin-text-versions summary {
-  align-items: center;
   cursor: pointer;
-  display: flex;
-  font-size: var(--text-link-size);
-  font-weight: 700;
-  min-height: var(--target);
+  font-size: var(--adm-note-size);
+  font-weight: 600;
 }
 
 .admin-text-versions ol {
   display: grid;
-  gap: var(--space-small-gap);
+  gap: var(--adm-gap-small);
   list-style: none;
-  margin: 0;
+  margin: var(--adm-gap-tiny) 0 0;
   padding: 0;
 }
 
 .admin-text-versions li {
-  border-top: 1px solid var(--hairline);
+  border-top: 1px solid var(--adm-line);
   display: grid;
-  gap: var(--space-row-after);
-  padding-top: var(--space-small-gap);
+  gap: var(--adm-gap-hair);
+  padding-top: var(--adm-gap-small);
 }
 
 .admin-text-versions p {
@@ -3541,26 +3727,17 @@ a {
 }
 
 .admin-text-status {
-  color: var(--ink-2);
-  font-size: var(--text-caption-size);
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
   margin: 0;
   min-height: 1lh;
 }
 
-/* ADM-12 Publish history (issue 289): one card per publish or roll back, like the App text cards. */
 .admin-history-facts {
   display: grid;
-  gap: var(--space-row-after) var(--space-control-gap);
+  gap: var(--adm-gap-hair) var(--adm-gap-small);
   grid-template-columns: auto minmax(0, 1fr);
   margin: 0;
-}
-
-.admin-history-facts dt {
-  color: var(--ink-2);
-  font-size: var(--text-overline-size);
-  font-weight: 700;
-  letter-spacing: var(--overline-tracking);
-  text-transform: uppercase;
 }
 
 .admin-history-facts dd {
@@ -3571,44 +3748,39 @@ a {
 
 .admin-history-action {
   display: grid;
-  gap: var(--space-row-after);
+  gap: var(--adm-gap-hair);
   justify-items: start;
 }
 
 .admin-history-note {
-  color: var(--ink-2);
-  font-size: var(--text-caption-size);
-  font-weight: 700;
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
   margin: 0;
 }
 
-/* ADM-06 Stories (issue 293): the story list and one story's cards, read-only. */
-.admin-back {
-  margin: 0 0 var(--space-row-after);
-}
-
+/* ADM-06 Stories (issue 293). */
 .admin-story-title,
 .admin-story-part {
-  font-size: var(--text-body-size);
-  font-weight: 700;
+  font-size: var(--adm-h2-size);
+  font-weight: 600;
   margin: 0;
   overflow-wrap: anywhere;
 }
 
 .admin-card-list {
   display: grid;
-  gap: var(--space-small-gap);
+  gap: var(--adm-gap-small);
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .admin-card {
-  border-top: 1px solid var(--hairline);
+  border-top: 1px solid var(--adm-line);
   display: grid;
-  gap: var(--space-row-after);
+  gap: var(--adm-gap-tiny);
   min-width: 0;
-  padding-top: var(--space-small-gap);
+  padding-top: var(--adm-gap-small);
 }
 
 .admin-card-body {
@@ -3617,81 +3789,40 @@ a {
 }
 
 .admin-card-problems {
-  font-size: var(--text-caption-size);
-  font-weight: 700;
+  color: var(--adm-bad);
+  font-size: var(--adm-chip-size);
   margin: 0;
-  padding-left: var(--space-control-gap);
-}
-
-@media (min-width: 56.25rem) {
-  .admin-shell {
-    grid-template-columns: var(--admin-rail-width) minmax(0, 1fr);
-    grid-template-rows: auto;
-  }
-
-  .admin-rail {
-    align-items: stretch;
-    border-bottom: 0;
-    border-right: 1px solid var(--hairline);
-    flex-direction: column;
-    flex-wrap: nowrap;
-    height: 100svh;
-    overflow-y: auto;
-    padding: var(--space-screen-top) var(--space-control-gap) var(--space-screen-bottom);
-    position: sticky;
-    top: 0;
-  }
-
-  .admin-brand,
-  .admin-group-heading {
-    margin-right: 0;
-    padding: 0 var(--space-small-gap);
-  }
-
-  .admin-menu {
-    flex: 1;
-    flex-direction: column;
-    flex-wrap: nowrap;
-    order: 0;
-  }
-
-  .admin-group ul {
-    flex-direction: column;
-  }
-
-  .admin-sign-out {
-    align-self: flex-start;
-  }
+  padding-left: var(--adm-gap);
 }
 
 /* ADM-08 Prompts (issue 308): settings lines, the prompt text and the line diff. */
 .admin-prompt-settings {
-  font-family: var(--type-mono);
-  font-size: var(--text-caption-size);
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-code-size);
   margin: 0;
   overflow-wrap: anywhere;
-  padding-left: var(--space-control-gap);
+  padding-left: var(--adm-gap);
 }
 
 .admin-prompt-text,
 .admin-diff {
-  background: var(--surface);
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-field);
-  font-family: var(--type-mono);
-  font-size: var(--text-caption-size);
+  background: var(--adm-soft);
+  border-radius: var(--adm-r-code);
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-code-size);
+  line-height: var(--adm-leading);
   margin: 0;
   overflow-wrap: anywhere;
-  padding: var(--space-small-gap);
+  padding: var(--adm-code-pad);
   white-space: pre-wrap;
 }
 
 .admin-prompt-field {
-  font-family: var(--type-mono);
+  font-family: var(--adm-font-mono);
 }
 
 .admin-prompt-subhead {
-  font-size: var(--text-body-size);
+  font-size: var(--adm-h2-size);
   margin: 0;
 }
 
@@ -3701,18 +3832,18 @@ a {
 
 .admin-diff-line {
   display: flex;
-  gap: var(--space-small-gap);
+  gap: var(--adm-gap-small);
 }
 
 .admin-diff-mark {
   flex: none;
-  font-weight: 700;
-  width: var(--space-control-gap);
+  font-weight: 600;
+  width: var(--adm-gap);
 }
 
 .admin-diff-added,
 .admin-diff-removed {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .admin-diff-removed {
