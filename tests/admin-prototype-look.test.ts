@@ -247,7 +247,13 @@ describe("admin pages follow the prototype (#313 rows 8, 9, 11, 13, 36, 45, 48)"
   it("test_313_companions_is_a_table_with_the_prototype_columns", () => {
     const page = "src/app/admin/companions/page.tsx";
     expect(read(page)).toContain('className="admin-table"');
-    expect(headers(page)).toEqual(["Character", "Mode", "Stories", "Shown to users", "Last change"]);
+    expect(headers(page)).toEqual([
+      "Character",
+      "Mode",
+      "Stories",
+      "Shown to users",
+      "Last change",
+    ]);
     expect(read(page)).toContain("companionRow(");
   });
 
