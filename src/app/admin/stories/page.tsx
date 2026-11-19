@@ -6,6 +6,7 @@ import { leaksForStory } from "@/lib/story-cards/checks";
 import { readStageZeros, readStoryCardsData } from "@/lib/story-cards/reader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { UnreviewedNotice } from "./unreviewed-notice";
+import { Breadcrumb } from "@/app/admin/admin-ui";
 
 // ADM-06 Stories (#293, #304): Oppenheimer's stories in story order with their number of parts and
 // cards, and how many cards fail a check. The layout already checked the role; the rows come
@@ -13,6 +14,7 @@ import { UnreviewedNotice } from "./unreviewed-notice";
 export default function AdminStories() {
   return (
     <>
+      <Breadcrumb items={[{ label: "Content" }]} />
       <h1>Stories</h1>
       <p className="admin-lede">
         Oppenheimer&apos;s stories in story order. Open a story to read and edit its background

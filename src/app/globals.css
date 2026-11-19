@@ -3622,16 +3622,25 @@ a {
 }
 
 .admin-text-key {
+  background: var(--adm-soft);
+  border-radius: var(--adm-r-chip);
+  color: var(--adm-muted);
   font-family: var(--adm-font-mono);
   font-size: var(--adm-chip-size);
   font-weight: 400;
+  justify-self: start;
   margin: 0;
   overflow-wrap: anywhere;
+  padding: var(--adm-chip-pad);
+  width: fit-content;
 }
 
 .admin-main h1.admin-text-key {
+  background: none;
+  color: var(--adm-ink);
   font-family: var(--adm-font-mono);
   font-size: var(--adm-title-size);
+  padding: 0;
 }
 
 .admin-text-screen,

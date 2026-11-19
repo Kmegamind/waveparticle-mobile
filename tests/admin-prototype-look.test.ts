@@ -239,3 +239,64 @@ describe("admin tokens and shell (#313 rows 1, 2, 3, 4, 7, 9, 11)", () => {
     }
   });
 });
+
+describe("admin pages follow the prototype (#313 rows 8, 9, 11, 13, 36, 45, 48)", () => {
+  const headers = (file: string) =>
+    [...read(file).matchAll(/<th[^>]*>([^<{]+)<\/th>/g)].map((match) => match[1].trim());
+
+  it("test_313_companions_is_a_table_with_the_prototype_columns", () => {
+    const page = "src/app/admin/companions/page.tsx";
+    expect(read(page)).toContain('className="admin-table"');
+    expect(headers(page)).toEqual(["Character", "Mode", "Stories", "Shown to users", "Last change"]);
+    expect(read(page)).toContain("companionRow(");
+  });
+
+  it("test_313_app_text_is_a_table_with_the_prototype_columns", () => {
+    const page = "src/app/admin/app-text/page.tsx";
+    expect(read(page)).toContain('className="admin-table"');
+    expect(headers(page)).toEqual(["Screen", "Key", "Text", "State"]);
+    // Every function stays: draft, publish, versions and roll back.
+    const editor = read("src/app/admin/app-text/app-text-editor.tsx");
+    for (const text of ["Save draft", "Publish v", "Versions (", "Roll back to v", "<tr"]) {
+      expect(editor).toContain(text);
+    }
+  });
+
+  it("test_313_publish_history_is_a_table_with_names_and_keys", () => {
+    const page = "src/app/admin/publish-history/page.tsx";
+    expect(read(page)).toContain('className="admin-table"');
+    expect(headers(page)).toEqual(["When", "Who", "What", "Version"]);
+    expect(read(page)).toContain("historyItemName(");
+    expect(read(page)).toContain("HistoryRowAction");
+  });
+
+  it("test_313_every_page_has_a_breadcrumb_and_no_back_link", () => {
+    for (const page of [
+      "src/app/admin/page.tsx",
+      "src/app/admin/companions/page.tsx",
+      "src/app/admin/companions/[id]/page.tsx",
+      "src/app/admin/companions/[id]/stories/[story]/page.tsx",
+      "src/app/admin/stories/page.tsx",
+      "src/app/admin/stories/[id]/page.tsx",
+      "src/app/admin/app-text/page.tsx",
+      "src/app/admin/prompts/page.tsx",
+      "src/app/admin/prompts/[key]/page.tsx",
+      "src/app/admin/publish-history/page.tsx",
+    ]) {
+      expect(read(page), page).toContain("<Breadcrumb");
+      expect(read(page), page).not.toContain("admin-back");
+    }
+  });
+
+  it("test_313_version_states_are_coloured_pills", () => {
+    for (const editor of [
+      "src/app/admin/app-text/app-text-editor.tsx",
+      "src/app/admin/stories/[id]/card-editor.tsx",
+      "src/app/admin/companions/field-editor.tsx",
+      "src/app/admin/prompts/[key]/prompt-editor.tsx",
+    ]) {
+      expect(read(editor), editor).toContain("<StatePill");
+      expect(read(editor), editor).not.toMatch(/admin-text-state">\{STATE_LABEL/);
+    }
+  });
+});
