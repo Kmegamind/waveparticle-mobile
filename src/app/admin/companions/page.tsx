@@ -4,7 +4,11 @@ import { Suspense } from "react";
 import { companionRow } from "@/lib/admin/companion-rows";
 import { readContentRole } from "@/lib/admin/roles";
 import { readCompanionsData } from "@/lib/content-fields/reader";
-import { publishHistoryEntries, readPublishHistory } from "@/lib/publish-history/admin";
+import {
+  PUBLISH_HISTORY_WIDE_LIMIT,
+  publishHistoryEntries,
+  readPublishHistory,
+} from "@/lib/publish-history/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Breadcrumb, KeyChip, StatePill } from "../admin-ui";
 
@@ -37,7 +41,7 @@ async function CompanionTable() {
     readPublishHistory(async (name, args) => {
       const { data: rows, error } = await client.rpc(name, args);
       return { data: rows, error };
-    }),
+    }, PUBLISH_HISTORY_WIDE_LIMIT),
     readContentRole(client),
   ]);
   const changes = publishHistoryEntries(history.rows, role).map((entry) => ({
@@ -51,6 +55,11 @@ async function CompanionTable() {
       {data.ok ? null : (
         <p className="admin-notice" role="alert">
           The Companions could not be read. Try again later.
+        </p>
+      )}
+      {history.ok ? null : (
+        <p className="admin-notice" role="alert">
+          Last change could not be read, so it shows &quot;—&quot; for now. Try again later.
         </p>
       )}
       <div className="admin-panel">

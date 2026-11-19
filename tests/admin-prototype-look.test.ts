@@ -306,3 +306,25 @@ describe("admin pages follow the prototype (#313 rows 8, 9, 11, 13, 36, 45, 48)"
     }
   });
 });
+
+describe("Companions Last change reads enough history (#313 final review)", () => {
+  it("test_313_last_change_asks_for_the_widest_history_window", async () => {
+    const { readPublishHistory, PUBLISH_HISTORY_WIDE_LIMIT } =
+      await import("@/lib/publish-history/admin");
+    expect(PUBLISH_HISTORY_WIDE_LIMIT).toBe(500);
+    const calls: unknown[] = [];
+    await readPublishHistory(async (name, args) => {
+      calls.push([name, args]);
+      return { data: [], error: null };
+    }, PUBLISH_HISTORY_WIDE_LIMIT);
+    expect(calls).toEqual([["list_publish_history", { row_limit: 500 }]]);
+    const page = read("src/app/admin/companions/page.tsx");
+    expect(page).toContain("PUBLISH_HISTORY_WIDE_LIMIT");
+  });
+
+  it("test_313_a_failed_history_read_is_said_on_the_companions_page", () => {
+    const page = read("src/app/admin/companions/page.tsx");
+    expect(page).toMatch(/history\.ok \? null :/);
+    expect(page).toContain("Last change could not be read");
+  });
+});

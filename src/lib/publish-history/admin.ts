@@ -34,6 +34,10 @@ export type PublishHistoryKind = keyof typeof PUBLISH_HISTORY_KINDS;
 /** How many rows the page shows, newest first. */
 export const PUBLISH_HISTORY_LIMIT = 100;
 
+/** The most rows list_publish_history returns (#313): the Companions table's Last change reads
+ * this many, so a Companion's change is not pushed out by other kinds' publishes. */
+export const PUBLISH_HISTORY_WIDE_LIMIT = 500;
+
 export type PublishHistoryEntry = {
   id: number;
   kind: string;
@@ -122,9 +126,10 @@ type Rpc = (
 /** Reads the newest rows. Any failure, a refused role included, answers no rows. */
 export async function readPublishHistory(
   rpc: Rpc,
+  limit: number = PUBLISH_HISTORY_LIMIT,
 ): Promise<{ ok: boolean; rows: PublishHistoryRow[] }> {
   try {
-    const { data, error } = await rpc("list_publish_history", { row_limit: PUBLISH_HISTORY_LIMIT });
+    const { data, error } = await rpc("list_publish_history", { row_limit: limit });
     if (error || !Array.isArray(data)) return { ok: false, rows: [] };
     return { ok: true, rows: data as PublishHistoryRow[] };
   } catch {
