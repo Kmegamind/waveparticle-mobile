@@ -50,7 +50,7 @@ describe("ADM-12 rows (#289)", () => {
       version: 1,
       actionLabel: "Rolled back",
       person: "writer@example.com",
-      time: "15 Nov 2026, 11:30 UTC",
+      time: "11-15 11:30",
       dateTime: "2026-11-15T11:30:00Z",
       isCurrent: true,
       canRollBack: false,
@@ -82,7 +82,7 @@ describe("ADM-12 rows (#289)", () => {
   });
 
   it("test_289_ac2_time_is_shown_in_utc", () => {
-    expect(formatHistoryTime("2026-01-03T23:59:00Z")).toBe("3 Jan 2026, 23:59 UTC");
+    expect(formatHistoryTime("2026-01-03T23:59:00Z")).toBe("01-03 23:59"); // #313: the prototype's short date, still UTC
     expect(formatHistoryTime("not a time")).toBe("not a time");
   });
 

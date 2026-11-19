@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { STUB_SUPABASE, baseUrlOf, signIn } from "./support/account";
 
+// #313: the admin is a desktop tool (minimum width 1024 px), so its journeys run at 1280 px.
+test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
 // #304: editing, checking and publishing story cards in ADM-06. The Supabase stub keeps one set of
 // card versions for every test, so these tests run one after the other, change only the story
 // "eagle-hill-garden" (no other test reads it) and put the cards back before and after each test.
@@ -116,8 +119,9 @@ test("test_304_ac6_ac7_ac8_an_admin_publishes_rolls_back_and_pinned_sessions_kee
   expect(await phoneCard({ [KEY]: 3 })).toBeUndefined();
 
   await page.goto("/admin/publish-history");
-  const published = page.getByRole("article", { name: `${KEY} v2, Published` }).first();
-  await expect(published).toContainText("Story card");
+  const published = page.getByRole("row", { name: `${KEY} v2, Published` }).first();
+  // #313: a readable name before the key.
+  await expect(published).toContainText("The Garden at Eagle Hill · part 1, card 1");
   await expect(published).toContainText(`${account.userId}@example.invalid`);
   await expect(published).toContainText("Published now");
 
@@ -131,10 +135,10 @@ test("test_304_ac6_ac7_ac8_an_admin_publishes_rolls_back_and_pinned_sessions_kee
   expect(await phoneCard(null)).toBe(ORIGINAL);
 
   await page.goto("/admin/publish-history");
-  await expect(page.getByRole("article", { name: `${KEY} v1, Rolled back` }).first()).toContainText(
+  await expect(page.getByRole("row", { name: `${KEY} v1, Rolled back` }).first()).toContainText(
     "Published now",
   );
-  const again = page.getByRole("article", { name: `${KEY} v2, Published` }).first();
+  const again = page.getByRole("row", { name: `${KEY} v2, Published` }).first();
   await again.getByRole("button", { name: "Roll back to v2" }).click();
   await expect(again.getByRole("status")).toHaveText("Rolled back to v2.");
   expect(await phoneCard(null)).toBe(text);

@@ -6,6 +6,7 @@ import { companionPage } from "@/lib/content-fields/pages";
 import { readCompanionsData } from "@/lib/content-fields/reader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { FieldEditor } from "../field-editor";
+import { Breadcrumb } from "@/app/admin/admin-ui";
 
 export const instant = false;
 
@@ -25,9 +26,12 @@ export default async function AdminCompanion({ params }: PageProps<"/admin/compa
 
   return (
     <>
-      <p className="admin-back">
-        <Link href="/admin/companions">‹ Companions</Link>
-      </p>
+      <Breadcrumb
+        items={[
+          { label: "Companions", href: "/admin/companions" },
+          { label: page?.name ?? "Companion" },
+        ]}
+      />
       <h1>{page?.name ?? "Companion"}</h1>
       {page ? (
         <p className="admin-text-key">

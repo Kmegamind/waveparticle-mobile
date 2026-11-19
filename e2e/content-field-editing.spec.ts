@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { STUB_SUPABASE, baseUrlOf, signIn } from "./support/account";
 
+// #313: the admin is a desktop tool (minimum width 1024 px), so its journeys run at 1280 px.
+test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
 // #309: editing Companion and story fields in the admin (ADM-03 to ADM-05). The Supabase stub
 // keeps one set of fields for every test, so these tests run one after the other and put the
 // fields back before and after each test.
@@ -91,8 +94,9 @@ test("test_309_ac4_ac5_an_admin_renames_a_period_and_rolls_back", async ({ page,
   expect((await appStory("letter-to-uncle-jim")).period).toBe("The years after the war");
 
   await page.goto("/admin/publish-history");
-  const published = page.getByRole("article", { name: `${key} v2, Published` }).first();
-  await expect(published).toContainText("Companion field");
+  const published = page.getByRole("row", { name: `${key} v2, Published` }).first();
+  // #313: a readable name before the key.
+  await expect(published).toContainText("J. Robert Oppenheimer · period 4 name");
   await expect(published).toContainText("Published now");
 
   await page.goto("/admin/companions/oppenheimer");
@@ -104,7 +108,7 @@ test("test_309_ac4_ac5_an_admin_renames_a_period_and_rolls_back", async ({ page,
 
   // Publish history rolls back to v2 again (AC5).
   await page.goto("/admin/publish-history");
-  const v2 = page.getByRole("article", { name: `${key} v2, Published` }).first();
+  const v2 = page.getByRole("row", { name: `${key} v2, Published` }).first();
   await v2.getByRole("button", { name: "Roll back to v2" }).click();
   await expect(v2.getByRole("status")).toHaveText("Rolled back to v2.");
   expect((await appStory("letter-to-uncle-jim")).period).toBe("The years after the war");

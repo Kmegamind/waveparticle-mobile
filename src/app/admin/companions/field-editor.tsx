@@ -9,6 +9,7 @@ import {
   rollBackContentFieldAction,
   saveContentFieldAction,
 } from "./actions";
+import { StatePill } from "@/app/admin/admin-ui";
 
 const PROBLEMS: Record<Exclude<ContentFieldWriteError, "checks-failed">, string> = {
   "not-allowed": "Your account cannot do this. Only an admin publishes or rolls back.",
@@ -184,7 +185,7 @@ export function FieldEditor({
               <li key={version.version}>
                 <p>
                   <span className="admin-page-id">v{version.version}</span>{" "}
-                  <span className="admin-text-state">{STATE_LABEL[version.state]}</span>
+                  <StatePill state={version.state}>{STATE_LABEL[version.state]}</StatePill>
                 </p>
                 <p className="admin-text-body">{version.body}</p>
                 {version.canRollBack && isAdmin ? (

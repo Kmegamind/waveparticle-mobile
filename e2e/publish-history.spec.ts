@@ -1,6 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
 import { STUB_SUPABASE, baseUrlOf, signIn } from "./support/account";
 
+// #313: the admin is a desktop tool (minimum width 1024 px), so its journeys run at 1280 px.
+test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
 // #289: ADM-12 Publish history. The Supabase stub keeps one app_text table and one history for
 // every test, so these tests run one after the other and change only ui.R-OFF.body, which no
 // screen shows yet (#21) and no other test changes. Each test starts and ends with that key reset.
@@ -23,11 +26,11 @@ test.afterEach(resetKey);
 
 /** The newest history row of one version and action. */
 const historyRow = (page: Page, version: number, action: "Published" | "Rolled back") =>
-  page.getByRole("article", { name: `${KEY} v${version}, ${action}` }).first();
+  page.getByRole("row", { name: `${KEY} v${version}, ${action}` }).first();
 
 async function publishNewVersion(page: Page, text: string) {
   await page.goto("/admin/app-text");
-  const card = page.getByRole("region", { name: KEY });
+  const card = page.getByRole("row", { name: KEY, exact: true });
   await card.getByLabel(`Text for ${KEY}`).fill(text);
   await card.getByRole("button", { name: "Save draft" }).click();
   await expect(card.getByRole("status")).toHaveText("Draft saved.");
@@ -47,14 +50,15 @@ test("test_289_ac1_ac2_publish_and_roll_back_each_write_a_row_newest_first", asy
   const published = historyRow(page, 2, "Published");
   await expect(published).toContainText(`${account.userId}@example.invalid`);
   await expect(published).toContainText("App text");
-  await expect(published).toContainText(/\d{1,2} [A-Z][a-z]{2} \d{4}, \d{2}:\d{2} UTC/);
+  // #313: the prototype's short date, in UTC.
+  await expect(published).toContainText(/\d{2}-\d{2} \d{2}:\d{2}/);
   // v2 is the version published now: nothing to roll back to.
   await expect(published.getByRole("button", { name: /Roll back/ })).toHaveCount(0);
   await expect(published).toContainText("Published now");
 
   // A roll back on the App text page writes its own row, above the publish.
   await page.goto("/admin/app-text");
-  const card = page.getByRole("region", { name: KEY });
+  const card = page.getByRole("row", { name: KEY, exact: true });
   await card.getByText(/^Versions \(/).click();
   await card.getByRole("button", { name: "Roll back to v1" }).click();
   await expect(card.getByRole("status")).toHaveText("Rolled back to v1.");
@@ -63,7 +67,7 @@ test("test_289_ac1_ac2_publish_and_roll_back_each_write_a_row_newest_first", asy
   await expect(card.getByText("Earlier version")).toBeVisible();
 
   await page.goto("/admin/publish-history");
-  const rows = page.getByRole("article").filter({ hasText: KEY });
+  const rows = page.getByRole("row").filter({ hasText: KEY });
   await expect(rows.first()).toHaveAccessibleName(`${KEY} v1, Rolled back`);
   await expect(rows.nth(1)).toHaveAccessibleName(`${KEY} v2, Published`);
 });
@@ -79,7 +83,7 @@ test("test_289_ac2_roll_back_from_the_history_publishes_that_version_again", asy
   // v1 was published by the seed, before the history existed: only the publish of v2 is listed.
   await historyRow(page, 2, "Published").waitFor();
   await page.goto("/admin/app-text");
-  const card = page.getByRole("region", { name: KEY });
+  const card = page.getByRole("row", { name: KEY, exact: true });
   await card.getByText(/^Versions \(/).click();
   await card.getByRole("button", { name: "Roll back to v1" }).click();
   await expect(card.getByRole("status")).toHaveText("Rolled back to v1.");
@@ -93,9 +97,9 @@ test("test_289_ac2_roll_back_from_the_history_publishes_that_version_again", asy
   await expect(historyRow(page, 2, "Rolled back")).toContainText("Published now");
 
   await page.goto("/admin/app-text");
-  await expect(page.getByRole("region", { name: KEY }).getByTestId("published-text")).toHaveText(
-    "v2 You are offline. Your Step is kept.",
-  );
+  await expect(
+    page.getByRole("row", { name: KEY, exact: true }).getByTestId("published-text"),
+  ).toHaveText("v2 You are offline. Your Step is kept.");
 });
 
 test("test_289_ac3_an_account_without_a_role_cannot_read_the_history", async ({
@@ -105,7 +109,7 @@ test("test_289_ac3_an_account_without_a_role_cannot_read_the_history", async ({
   const account = await signIn(context, baseUrlOf(page));
   const response = await page.goto("/admin/publish-history");
   expect(response?.status()).toBe(404);
-  await expect(page.getByRole("article")).toHaveCount(0);
+  await expect(page.getByRole("row")).toHaveCount(0);
 
   // The database itself refuses the list to a no-role account and to anon.
   const callers: Record<string, string>[] = [{ authorization: `Bearer ${account.token}` }, {}];
@@ -117,14 +121,4 @@ test("test_289_ac3_an_account_without_a_role_cannot_read_the_history", async ({
     });
     expect(answer.status).toBe(403);
   }
-});
-
-test("test_289_ac2_no_sideways_scroll_at_360_px", async ({ page, context }) => {
-  await page.setViewportSize({ width: 360, height: 800 });
-  await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
-  await publishNewVersion(page, "You are offline. Your Step is kept.");
-  await page.goto("/admin/publish-history");
-  await expect(historyRow(page, 2, "Published")).toBeVisible();
-  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-  expect(scrollWidth).toBeLessThanOrEqual(360);
 });
