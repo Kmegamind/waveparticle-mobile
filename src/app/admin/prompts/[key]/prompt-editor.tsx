@@ -4,6 +4,7 @@ import { useId, useState, useSyncExternalStore, useTransition } from "react";
 import type { ContentRole } from "@/lib/admin/roles";
 import type { DiffLine, PromptDetail, PromptWriteError } from "@/lib/admin/prompt-editor-types";
 import { publishPromptAction, savePromptDraftAction, type SavePromptResult } from "../actions";
+import { StatePill } from "@/app/admin/admin-ui";
 
 const PROBLEMS: Record<PromptWriteError, string> = {
   "not-allowed": "Your account cannot do this. Only an admin publishes or rolls back.",
@@ -227,7 +228,9 @@ export function PromptEditor({
             <li key={version.version}>
               <p>
                 <span className="admin-page-id">v{version.version}</span>{" "}
-                <span className="admin-text-state">{STATE_LABEL[version.state]}</span>
+                <StatePill state={version.state === "active" ? "published" : version.state}>
+                  {STATE_LABEL[version.state]}
+                </StatePill>
                 {version.note ? ` · ${version.note}` : null}
               </p>
             </li>

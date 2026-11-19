@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { readContentRole } from "@/lib/admin/roles";
@@ -9,6 +8,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { UnreviewedNotice } from "../unreviewed-notice";
 import { CardEditor } from "./card-editor";
 import { PartTitleEditor } from "./part-title-editor";
+import { Breadcrumb } from "@/app/admin/admin-ui";
 
 export const instant = false;
 
@@ -36,9 +36,9 @@ export default async function AdminStory({ params }: PageProps<"/admin/stories/[
 
   return (
     <>
-      <p className="admin-back">
-        <Link href="/admin/stories">‹ Stories</Link>
-      </p>
+      <Breadcrumb
+        items={[{ label: "Stories", href: "/admin/stories" }, { label: detail?.title ?? "Story" }]}
+      />
       <h1>{detail?.title ?? "Story"}</h1>
       {detail ? <p className="admin-text-key">{detail.key}</p> : null}
       <UnreviewedNotice />

@@ -34,6 +34,10 @@ export type PublishHistoryKind = keyof typeof PUBLISH_HISTORY_KINDS;
 /** How many rows the page shows, newest first. */
 export const PUBLISH_HISTORY_LIMIT = 100;
 
+/** The most rows list_publish_history returns (#313): the Companions table's Last change reads
+ * this many, so a Companion's change is not pushed out by other kinds' publishes. */
+export const PUBLISH_HISTORY_WIDE_LIMIT = 500;
+
 export type PublishHistoryEntry = {
   id: number;
   kind: string;
@@ -60,21 +64,20 @@ const isKnownKind = (kind: string): kind is PublishHistoryKind =>
   Object.hasOwn(PUBLISH_HISTORY_KINDS, kind);
 
 const TIME = new Intl.DateTimeFormat("en-GB", {
-  day: "numeric",
-  month: "short",
-  year: "numeric",
+  day: "2-digit",
+  month: "2-digit",
   hour: "2-digit",
   minute: "2-digit",
   hour12: false,
   timeZone: "UTC",
 });
 
-/** "15 Nov 2026, 10:04 UTC": the same on the server and in every browser. */
+/** "11-18 23:42" in UTC, as in the admin prototype (#313): the same on the server and in every browser. */
 export function formatHistoryTime(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   const parts = Object.fromEntries(TIME.formatToParts(date).map((part) => [part.type, part.value]));
-  return `${parts.day} ${parts.month} ${parts.year}, ${parts.hour}:${parts.minute} UTC`;
+  return `${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
 }
 
 function personOf(row: PublishHistoryRow): string {
@@ -123,9 +126,10 @@ type Rpc = (
 /** Reads the newest rows. Any failure, a refused role included, answers no rows. */
 export async function readPublishHistory(
   rpc: Rpc,
+  limit: number = PUBLISH_HISTORY_LIMIT,
 ): Promise<{ ok: boolean; rows: PublishHistoryRow[] }> {
   try {
-    const { data, error } = await rpc("list_publish_history", { row_limit: PUBLISH_HISTORY_LIMIT });
+    const { data, error } = await rpc("list_publish_history", { row_limit: limit });
     if (error || !Array.isArray(data)) return { ok: false, rows: [] };
     return { ok: true, rows: data as PublishHistoryRow[] };
   } catch {

@@ -99,8 +99,6 @@
   --logo-height: 1.25rem;
   --layout-phone-max: 26.875rem;
   /* The content admin (issue 287): the menu rail on wide screens and the longest text line. */
-  --admin-rail-width: 14.5rem;
-  --admin-measure: 60ch;
 
   --r-field: 0.875rem;
   --r-capsule: 999px;
@@ -254,6 +252,128 @@
     --tape-ring: color-mix(in srgb, var(--tag-edge) 35%, transparent);
     --shadow-paper: 0 0.625rem 1.25rem -0.875rem color-mix(in srgb, var(--ink) 45%, transparent);
   }
+}
+
+/*
+ * The content admin (#313, docs/DECISIONS.md ADMIN-DESKTOP): a desktop tool that follows the admin
+ * prototype (content-admin/admin-prototype_2026-11-14_v1.html), not DESIGN.md. Its values are the
+ * prototype's CSS, light and dark (the dark set follows the system unless Appearance is Day, and
+ * Night). The fonts are the prototype's lists as written; none is loaded, so they render as the
+ * prototype does.
+ */
+.admin-shell {
+  --adm-bg: #f5f6f4;
+  --adm-panel: #ffffff;
+  --adm-ink: #1d2421;
+  --adm-muted: #5f6b66;
+  --adm-line: #dde2df;
+  --adm-soft: #eef1ef;
+  --adm-accent: #1f6f5c;
+  --adm-accent-soft: #e2f0eb;
+  --adm-ok: #2f7d4f;
+  --adm-ok-soft: #e3f2e8;
+  --adm-warn: #9a6a10;
+  --adm-warn-soft: #fbf0d9;
+  --adm-bad: #b23b3b;
+  --adm-bad-soft: #f8e3e3;
+  --adm-info: #3a5ea8;
+  --adm-info-soft: #e4ebf8;
+  --adm-font-display: "Fraunces", Georgia, serif;
+  --adm-font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --adm-font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --adm-min-width: 1024px;
+  --adm-rail-width: 232px;
+  --adm-text-size: 14px;
+  --adm-leading: 1.5;
+  --adm-title-size: 26px;
+  --adm-h2-size: 15px;
+  --adm-brand-size: 19px;
+  --adm-brand-sub-size: 11px;
+  --adm-group-size: 10.5px;
+  --adm-id-size: 10.5px;
+  --adm-chip-size: 11.5px;
+  --adm-crumb-size: 12px;
+  --adm-button-size: 13px;
+  --adm-button-small-size: 12px;
+  --adm-field-size: 13.5px;
+  --adm-note-size: 12.5px;
+  --adm-th-size: 11px;
+  --adm-code-size: 12px;
+  --adm-rail-pad: 18px 12px;
+  --adm-brand-pad: 0 8px 2px;
+  --adm-group-pad: 12px 8px 4px;
+  --adm-menu-pad: 6px 8px;
+  --adm-main-pad: 22px 24px 60px;
+  --adm-panel-pad: 16px;
+  --adm-cell-pad: 8px 10px;
+  --adm-button-pad: 6px 12px;
+  --adm-button-small-pad: 3px 9px;
+  --adm-field-pad: 7px 9px;
+  --adm-chip-pad: 1px 6px;
+  --adm-pill-pad: 2px 8px;
+  --adm-code-pad: 12px;
+  --adm-gap: 14px;
+  --adm-gap-small: 8px;
+  --adm-gap-tiny: 6px;
+  --adm-gap-dot: 5px;
+  --adm-gap-hair: 2px;
+  --adm-gap-title: 4px;
+  --adm-head-after: 16px;
+  --adm-lede-after: 18px;
+  --adm-pill-dot: 6px;
+  --adm-r-panel: 10px;
+  --adm-r-button: 7px;
+  --adm-r-menu: 6px;
+  --adm-r-chip: 4px;
+  --adm-r-pill: 99px;
+  --adm-r-code: 8px;
+  --adm-track-brand: 0.04em;
+  --adm-track-group: 0.08em;
+  --adm-track-th: 0.06em;
+  --adm-lede-measure: 68ch;
+  --adm-field-min: 64px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.theme-light) .admin-shell {
+    --adm-bg: #121615;
+    --adm-panel: #1a1f1e;
+    --adm-ink: #e4e9e6;
+    --adm-muted: #9aa6a1;
+    --adm-line: #2c3432;
+    --adm-soft: #212826;
+    --adm-accent: #5fc0a3;
+    --adm-accent-soft: #1d3530;
+    --adm-ok: #6cc58f;
+    --adm-ok-soft: #1c3226;
+    --adm-warn: #e0b55a;
+    --adm-warn-soft: #3a2f17;
+    --adm-bad: #ec8585;
+    --adm-bad-soft: #3d2121;
+    --adm-info: #8fb0f0;
+    --adm-info-soft: #1f2a40;
+    color-scheme: dark;
+  }
+}
+
+.theme-dark .admin-shell {
+  --adm-bg: #121615;
+  --adm-panel: #1a1f1e;
+  --adm-ink: #e4e9e6;
+  --adm-muted: #9aa6a1;
+  --adm-line: #2c3432;
+  --adm-soft: #212826;
+  --adm-accent: #5fc0a3;
+  --adm-accent-soft: #1d3530;
+  --adm-ok: #6cc58f;
+  --adm-ok-soft: #1c3226;
+  --adm-warn: #e0b55a;
+  --adm-warn-soft: #3a2f17;
+  --adm-bad: #ec8585;
+  --adm-bad-soft: #3d2121;
+  --adm-info: #8fb0f0;
+  --adm-info-soft: #1f2a40;
+  color-scheme: dark;
 }
 
 @theme inline {

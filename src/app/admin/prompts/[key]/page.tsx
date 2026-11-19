@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { readContentRole } from "@/lib/admin/roles";
@@ -6,6 +5,7 @@ import { settingsText } from "@/lib/prompts/diff";
 import { isPromptKey, promptDetail, readPromptVersions, settingsLines } from "@/lib/prompts/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PromptEditor } from "./prompt-editor";
+import { Breadcrumb } from "@/app/admin/admin-ui";
 
 export const instant = false;
 
@@ -28,9 +28,7 @@ export default async function AdminPrompt({ params }: PageProps<"/admin/prompts/
 
   return (
     <>
-      <p className="admin-back">
-        <Link href="/admin/prompts">‹ Prompts</Link>
-      </p>
+      <Breadcrumb items={[{ label: "Prompts", href: "/admin/prompts" }, { label: key }]} />
       <h1 className="admin-text-key">{key}</h1>
       <p className="admin-lede">
         {detail?.purpose}. Saving makes a new draft version; phones keep the active one until an

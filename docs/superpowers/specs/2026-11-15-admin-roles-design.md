@@ -1,5 +1,7 @@
 # Admin area with admin and writer roles: design
 
+> **2026-11-18 (#313, ADMIN-DESKTOP):** the "Look" and phone "Layout" rows below are replaced for the admin: it follows the admin prototype at desktop widths, minimum width 1024 px. The phone app keeps `DESIGN.md`.
+
 Issue #287. Product choices approved by Yue on 2026-11-15 (phase 2 sheet); she waived waiting for
 plan approval for this phase. Decisions ADMIN and NAMING in `docs/DECISIONS.md`.
 

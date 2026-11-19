@@ -8,6 +8,7 @@ import { storyFields } from "@/lib/content-fields/pages";
 import { readCompanionsData } from "@/lib/content-fields/reader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { FieldEditor } from "../../../field-editor";
+import { Breadcrumb } from "@/app/admin/admin-ui";
 
 export const instant = false;
 
@@ -53,9 +54,13 @@ export default async function AdminStoryFields({
 
   return (
     <>
-      <p className="admin-back">
-        <Link href={`/admin/companions/${id}`}>‹ {companion?.name ?? "Companion"}</Link>
-      </p>
+      <Breadcrumb
+        items={[
+          { label: "Companions", href: "/admin/companions" },
+          { label: companion?.name ?? "Companion", href: `/admin/companions/${id}` },
+          { label: story?.title ?? "Story" },
+        ]}
+      />
       <h1>{story?.title ?? "Story"}</h1>
       {companion && story ? (
         <p className="admin-text-key">

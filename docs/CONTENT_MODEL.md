@@ -62,7 +62,7 @@ User ──< Goal ──< Step                   (the user's plan; user text; st
 
 A Session binds one Goal to one Story of one Companion. The story's cards are made ahead once per part and shared by all users (SHARED-STORY, CARDS-PER-PART); when the user presses Start, the app spreads the parts across the Goal's N steps with plain code (section 3). The step opens with one card and the rest appear at the pacing of section 5. When the user taps Done, the next step opens on the same page with its one card. The authored cards (slices, snags) are reference examples and evaluation material only and are never shown (NO-FALLBACK-TABLES).
 
-Card ids are stable and never reused. Made-ahead cards follow the naming scheme `crd.<story>.<part>.<kind>` (NAMING); the authored reference cards keep ids such as `site-search.s3.c2` or `trinity.s4.ch2.wry`. A card gets a `session_lines` row when it is shown. A card that has been shown is never edited or regenerated (it may be reread).
+Card ids are stable and never reused. Made-ahead cards follow the naming scheme `crd.<short>.<story>.p<n>.c<n>`, and `crd.<short>.<story>.bg` for the background card (NAMING-CODE); the authored reference cards keep ids such as `site-search.s3.c2` or `trinity.s4.ch2.wry`. A card gets a `session_lines` row when it is shown. A card that has been shown is never edited or regenerated (it may be reread).
 
 ## 2. Entities
 
@@ -204,7 +204,7 @@ Shape C, made-ahead card (proposed; stored cards are issue #293 and not built ye
 
 | Field | Type | Notes |
 |---|---|---|
-| id | text | `crd.<story>.<part>.<kind>` (NAMING). |
+| id | text | `crd.<short>.<story>.p<n>.c<n>`, or `crd.<short>.<story>.bg` (NAMING-CODE). |
 | part | integer | The story part the card belongs to (CARDS-PER-PART). |
 | position | integer | Order inside its part. |
 | text | text | First person. Passes the checks of section 7; a card over the length limit cannot be published (LEN-CARD). Never edited after it is shown. |

@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { promptList, readPromptVersions } from "@/lib/prompts/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { Breadcrumb } from "@/app/admin/admin-ui";
 
 // ADM-08 Prompts (#308, docs/decisions/0025): the gateway's 7 prompts with their active version and
 // its settings, and any newer draft. The layout already checked the role; the rows come through the
@@ -10,6 +11,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export default function AdminPrompts() {
   return (
     <>
+      <Breadcrumb items={[{ label: "AI rules" }]} />
       <h1>Prompts</h1>
       <p className="admin-lede">
         The prompts the app sends to the AI model, one per feature. Open a prompt to read it and
