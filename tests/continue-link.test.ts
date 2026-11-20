@@ -43,6 +43,7 @@ describe("#69 AC3 the Continue link", () => {
         companions: seedContent().companions,
         view: {
           kind: "goal",
+          welcomeBack: false,
           card: {
             goalId: GOAL,
             title: "Write the report",
