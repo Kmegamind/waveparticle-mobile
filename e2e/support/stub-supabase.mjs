@@ -9,6 +9,8 @@
 //   GET  /health
 //   GET  /auth/v1/user                (Authorization: Bearer <token>)
 //   GET|PATCH /rest/v1/<table>?…      eq., in.(…), order, limit, select (all columns returned)
+//   POST /rest/v1/<table>             insert, or upsert with Prefer: resolution=merge-duplicates
+//                                     or ignore-duplicates on `on_conflict` (default id) (#27)
 //   POST /rest/v1/rpc/get_active_prompts  { reader_token } → the active prompts (the seed in
 //        docs/ai/prompts as version 1, then as published in ADM-08) when the token is
 //        STUB_PROMPTS_READ_TOKEN, otherwise no rows, as the real function (#282)
@@ -811,6 +813,37 @@ createServer(async (request, response) => {
       }
       const minimal = (request.headers.prefer ?? "").includes("return=minimal");
       return minimal ? json(response, 204) : json(response, 200, changed);
+    }
+
+    // Insert and upsert, as PostgREST takes them from supabase-js (#27: the signed-in focus page
+    // and the summary write the account's progress). An upsert merges into the row with the same
+    // `on_conflict` columns (default `id`); a plain insert of an existing row is a 409.
+    if (request.method === "POST") {
+      const body = (await readBody(request)) ?? [];
+      const incoming = Array.isArray(body) ? body : [body];
+      const prefer = request.headers.prefer ?? "";
+      const merge = prefer.includes("resolution=merge-duplicates");
+      const ignore = prefer.includes("resolution=ignore-duplicates");
+      const keys = (url.searchParams.get("on_conflict") ?? "id").split(",");
+      const same = (left, right) => keys.every((key) => String(left[key]) === String(right[key]));
+      const written = [];
+      for (const row of incoming) {
+        const existing = rows.find((item) => same(item, row));
+        if (existing && merge) {
+          Object.assign(existing, row);
+          written.push(existing);
+        } else if (existing && ignore) {
+          continue;
+        } else if (existing) {
+          return json(response, 409, { code: "23505", message: "duplicate key value" });
+        } else {
+          const added = { ...row };
+          rows.push(added);
+          written.push(added);
+        }
+      }
+      const minimal = !prefer.includes("return=representation");
+      return minimal ? json(response, 201) : json(response, 201, written);
     }
 
     return json(response, 405, { message: "method not supported by stub" });
