@@ -1812,6 +1812,11 @@ a {
   padding-bottom: var(--space-screen-bottom);
 }
 
+/* #27 AC4: while the Undo toast is up, the page scrolls far enough that it never covers Home. */
+.end-page[data-toast="open"] {
+  padding-bottom: calc(3.125rem + var(--space-screen-bottom) * 3 + env(safe-area-inset-bottom));
+}
+
 .end-slip p {
   margin: 0;
 }
@@ -2804,6 +2809,42 @@ a {
 }
 
 .goals-search:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 3px;
+}
+
+.goals-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-control-gap);
+}
+
+.goals-filter {
+  color: var(--ink-2);
+  display: flex;
+  flex: 1 1 10rem;
+  flex-direction: column;
+  font-size: var(--text-caption-size);
+  font-weight: 700;
+  gap: var(--space-row-after);
+  min-width: 0;
+}
+
+.goals-filter select {
+  background: var(--raised);
+  border: 1px solid var(--edge);
+  border-radius: var(--r-field);
+  color: var(--ink);
+  font-family: var(--type-sans);
+  font-size: var(--text-body-size);
+  font-weight: 400;
+  max-width: 100%;
+  min-height: var(--target);
+  padding: 0 var(--button-small-padding);
+  width: 100%;
+}
+
+.goals-filter select:focus-visible {
   outline: 3px solid var(--control);
   outline-offset: 3px;
 }

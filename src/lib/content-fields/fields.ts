@@ -105,6 +105,8 @@ export function fieldProblems(
   if (typeof text !== "string" || text.trim() === "") {
     return ["Write a text first. An empty field is not saved."];
   }
+  // Spaces around the text are not part of it (#317): "After the war " is "After the war".
+  text = text.trim();
   const limit = FIELD_LIMITS[key.field];
   if (text.length > limit) return [`Keep it to ${limit} characters or fewer.`];
   const problems = datesProblems(text);

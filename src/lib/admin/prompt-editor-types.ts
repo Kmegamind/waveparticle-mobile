@@ -35,4 +35,5 @@ export type PromptWriteError =
   | "settings-json"
   | "unchanged"
   | "checks-failed"
+  | "never-published"
   | "failed";

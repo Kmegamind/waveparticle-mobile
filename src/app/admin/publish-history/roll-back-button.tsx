@@ -2,16 +2,9 @@
 
 import { useState, useSyncExternalStore, useTransition } from "react";
 
-import { rollBackFromHistoryAction } from "./actions";
+import { rollBackMessage } from "@/lib/admin/roll-back-message";
 
-const PROBLEMS: Record<string, string> = {
-  "not-allowed": "Your account cannot roll back.",
-  invalid: "This version cannot be rolled back to.",
-  blank: "This version cannot be rolled back to.",
-  "too-long": "This version cannot be rolled back to.",
-  "checks-failed": "The gateway cannot use this version, so it was not rolled back.",
-  failed: "Could not roll back. Please try again.",
-};
+import { rollBackFromHistoryAction } from "./actions";
 
 const noSubscription = () => () => {};
 
@@ -52,13 +45,9 @@ export function HistoryRowAction({
               const result = await rollBackFromHistoryAction(kind, itemKey, version).catch(
                 () => ({ ok: false, error: "failed" }) as const,
               );
-              // A prompt the gateway cannot use lists its reasons (#308).
+              // A refused version lists its reasons (#308, #317).
               setProblems(!result.ok && "problems" in result ? (result.problems ?? []) : []);
-              setStatus(
-                result.ok
-                  ? `Rolled back to v${version}.`
-                  : (PROBLEMS[result.error] ?? PROBLEMS.failed),
-              );
+              setStatus(result.ok ? `Rolled back to v${version}.` : rollBackMessage(kind, result));
             });
           }}
           type="button"

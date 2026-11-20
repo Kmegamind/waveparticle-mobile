@@ -3,14 +3,18 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { accountSessionKey, snapshotOf } from "@/lib/progress/focus-session";
-import { isFinished, loadSession } from "@/lib/prototype/session";
+import { isFinished, loadSession, saveSession } from "@/lib/prototype/session";
+import { reopenFromSummary, summaryUndoOpen } from "@/lib/summary/end-undo";
 import type { FinishOutcome, SummaryView } from "@/lib/summary/finish-run";
 import { focusLabel, focusSecondsOf, type FinishShown } from "@/lib/summary/run";
 import { useAppText } from "@/lib/app-text/provider";
+import { fullPageLoad } from "../try/full-page-load";
 import { recordFocusProgress } from "../focus/actions";
 import { finishRunAction } from "./actions";
 
 const NO_SUMMARY_TEXT = "There is no finished Step to sum up.";
+const UNDO_FAILED_TEXT = "The Step could not be undone. Try again.";
+const currentTime = () => Date.now();
 
 type View =
   | { kind: "waiting" }
@@ -48,27 +52,81 @@ function EndBody({ summary }: { summary: SummaryView }) {
     focusSecondsOf(loadSession(window.localStorage, accountSessionKey(summary.sessionId))),
   );
   const requested = useRef(false);
+  // The writes the summary starts on arrival (the last Done's progress, then the closing line).
+  // Undo waits for them, so it is the last write and nothing finishes the run again after it.
+  const arrival = useRef<Promise<unknown>>(Promise.resolve());
+  const storageKey = accountSessionKey(summary.sessionId);
+  // #27 AC4: the same "Step done" Undo toast as on the focus page, with the time it had left.
+  const [now, setNow] = useState(currentTime);
+  const [heldMs, setHeldMs] = useState<number | null>(null);
+  const [undoing, setUndoing] = useState(false);
+  const [undoFailed, setUndoFailed] = useState(false);
+  const [device, setDevice] = useState(() => loadSession(window.localStorage, storageKey));
+  const undoOpen = !undoFailed && (heldMs !== null || undoing || summaryUndoOpen(device, now));
+
+  useEffect(() => {
+    if (!undoOpen || heldMs !== null) return;
+    const timer = window.setInterval(() => setNow(currentTime()), 250);
+    return () => window.clearInterval(timer);
+  }, [undoOpen, heldMs]);
+
+  function holdToast() {
+    if (heldMs === null && device?.undo)
+      setHeldMs(Math.max(0, device.undo.untilMs - currentTime()));
+  }
+
+  function releaseToast() {
+    if (heldMs === null || !device?.undo) return;
+    const untilMs = currentTime() + heldMs;
+    setDevice((current) =>
+      current?.undo ? { ...current, undo: { ...current.undo, untilMs } } : current,
+    );
+    setHeldMs(null);
+    setNow(currentTime());
+  }
+
+  async function onUndo() {
+    if (undoing) return;
+    setUndoing(true);
+    const outcome = await reopenFromSummary({
+      device,
+      nowMs: currentTime(),
+      heldMs,
+      pending: arrival.current,
+      record: (back) => recordFocusProgress(snapshotOf(summary.sessionId, back)),
+      save: (back) => saveSession(window.localStorage, back, storageKey),
+    });
+    setHeldMs(null);
+    if (outcome === "reopened") {
+      fullPageLoad(`/focus?goal=${encodeURIComponent(summary.goalId)}`);
+      return;
+    }
+    setUndoing(false);
+    // The account still holds the finished run; this device keeps it too.
+    if (outcome === "failed") setUndoFailed(true);
+  }
 
   useEffect(() => {
     if (view.kind !== "waiting" || requested.current) return;
     requested.current = true;
-    const device = loadSession(window.localStorage, accountSessionKey(summary.sessionId));
+    const stored = loadSession(window.localStorage, storageKey);
     // The last Done's progress may still be on its way: send this device's state first, so the
     // account knows the session is complete (#257 records it the same way).
     const recorded =
-      device && isFinished(device)
-        ? recordFocusProgress(snapshotOf(summary.sessionId, device)).catch(() => false)
+      stored && isFinished(stored)
+        ? recordFocusProgress(snapshotOf(summary.sessionId, stored)).catch(() => false)
         : Promise.resolve(false);
-    recorded
+    const finished = recorded
       .then(() => finishRunAction({ sessionId: summary.sessionId }))
-      .catch((): FinishOutcome => ({ status: "failed" }))
-      .then((outcome) => {
-        requested.current = false;
-        if (outcome.status === "ok") setView({ kind: "shown", shown: outcome.shown });
-        else if (outcome.status === "failed") setView({ kind: "failed" });
-        else setView({ kind: "none" });
-      });
-  }, [summary.sessionId, view.kind]);
+      .catch((): FinishOutcome => ({ status: "failed" }));
+    arrival.current = finished;
+    finished.then((outcome) => {
+      requested.current = false;
+      if (outcome.status === "ok") setView({ kind: "shown", shown: outcome.shown });
+      else if (outcome.status === "failed") setView({ kind: "failed" });
+      else setView({ kind: "none" });
+    });
+  }, [storageKey, summary.sessionId, view.kind]);
 
   if (view.kind === "none") return <NoSummary />;
 
@@ -78,6 +136,7 @@ function EndBody({ summary }: { summary: SummaryView }) {
       className="app-screen end-page"
       data-ready="true"
       data-state={view.kind}
+      data-toast={undoOpen ? "open" : undefined}
     >
       <p className="focus-label">{summary.storyTitle}</p>
 
@@ -164,6 +223,28 @@ function EndBody({ summary }: { summary: SummaryView }) {
           Home
         </Link>
       </div>
+
+      {undoFailed ? <p role="alert">{UNDO_FAILED_TEXT}</p> : null}
+      {undoOpen ? (
+        <div
+          className="focus-toast"
+          onBlur={releaseToast}
+          onFocus={holdToast}
+          onMouseEnter={holdToast}
+          onMouseLeave={releaseToast}
+          role="status"
+        >
+          <span>Step done</span>
+          <button
+            aria-disabled={undoing}
+            className="focus-toast-action"
+            onClick={onUndo}
+            type="button"
+          >
+            Undo
+          </button>
+        </div>
+      ) : null}
     </main>
   );
 }

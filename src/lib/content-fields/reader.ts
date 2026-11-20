@@ -74,14 +74,18 @@ export async function readCompanionsData(
   }
 }
 
-/** The stories of the Companion a key belongs to, for the period checks; null when unreadable. */
+/**
+ * The stories of the Companion a key belongs to, for the period checks; "unknown-item" when the
+ * key names no Companion or none of his stories (#317), null when unreadable.
+ */
 async function periodRowsFor(
   client: SupabaseClient,
   key: FieldKey,
-): Promise<StoryPeriodRow[] | null> {
+): Promise<StoryPeriodRow[] | "unknown-item" | null> {
   const companion = await client.from("companions").select("id").eq("key_code", key.code);
+  if (companion.error) return null;
   const id = rows<{ id: string }>(companion)[0]?.id;
-  if (companion.error || !id) return null;
+  if (!id) return "unknown-item";
   const stories = await client
     .from("stories")
     .select("id, sequence, period")
@@ -90,19 +94,25 @@ async function periodRowsFor(
   if (stories.error) return null;
   const found = rows<StoryPeriodRow>(stories);
   // A story key must name one of this Companion's stories.
-  if (key.item === "story" && !found.some((story) => story.id === key.storyId)) return null;
+  if (key.item === "story" && !found.some((story) => story.id === key.storyId)) {
+    return "unknown-item";
+  }
   return found;
 }
 
-/** The problems of a text for one field (#309), or null when the checks cannot run. */
+/**
+ * The problems of a text for one field (#309); "unknown-item" when the key's Companion or story
+ * does not exist (#317), null when the checks cannot run.
+ */
 export async function contentFieldProblems(
   client: SupabaseClient,
   key: FieldKey,
   body: string,
-): Promise<string[] | null> {
+): Promise<string[] | "unknown-item" | null> {
   try {
     const stories = await periodRowsFor(client, key);
-    return stories ? fieldProblems(key, body, { stories }) : null;
+    if (stories === null || stories === "unknown-item") return stories;
+    return fieldProblems(key, body, { stories });
   } catch {
     return null;
   }

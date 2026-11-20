@@ -96,7 +96,7 @@ describe("#268 AC5 AC6 HOME-NONE", () => {
     expect(html).toContain("I still carry the doubt about the canyon.");
     expect(html).toMatch(/href="\/goal"[^>]*>New session</);
     expect(html).toContain("Quick Replay");
-    expect(html).toMatch(/href="\/goal"[^>]*>Read chapter four</);
+    expect(html).toMatch(/href="\/goal\?line=Read%20chapter%20four"[^>]*>Read chapter four</);
     expect(html).not.toMatch(/welcome back/i);
   });
 
@@ -120,7 +120,22 @@ describe("#278 HOME-NONE links always show", () => {
   it("New session and every Quick Replay chip open the goal dialogue", () => {
     const html = render(noneView, null);
     expect(html).toMatch(/href="\/goal"[^>]*>New session</);
-    expect(html).toMatch(/href="\/goal"[^>]*>Read chapter four</);
-    expect(html).toMatch(/href="\/goal"[^>]*>Methods section</);
+    expect(html).toMatch(/href="\/goal\?line=Read%20chapter%20four"[^>]*>Read chapter four</);
+    expect(html).toMatch(/href="\/goal\?line=Methods%20section"[^>]*>Methods section</);
+  });
+});
+
+describe("#271 #92 AC2 Home opens the goal dialogue with the text prefilled", () => {
+  it("test_271_ac1_quick_replay_chip_links_with_its_goal_text", () => {
+    const html = render(
+      { ...noneView, replay: [{ goalId: "c", title: "Notes & sources, part 2?" }] },
+      null,
+    );
+    expect(html).toContain(`href="/goal?line=${encodeURIComponent("Notes & sources, part 2?")}"`);
+  });
+
+  it("test_271_ac2_start_something_else_and_new_session_open_an_empty_dialogue", () => {
+    expect(render(goalView)).toMatch(/href="\/goal"[^>]*>Start something else</);
+    expect(render(noneView, null)).toMatch(/href="\/goal"[^>]*>New session</);
   });
 });

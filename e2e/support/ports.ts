@@ -1,5 +1,5 @@
-// The e2e ports (#269). Each can be set with an environment variable, so two sessions (two
-// worktrees) can run `npm run test:e2e` at the same time. With no variables: 3100, 3101, 3199.
+// The e2e ports (#269, #319). Each can be set with an environment variable, so two sessions (two
+// worktrees) can run `npm run test:e2e` at the same time. With no variables: 3100, 3101, 3199, 3198.
 
 function envPort(name: string, fallback: number): number {
   const value = process.env[name];
@@ -18,4 +18,6 @@ export const e2ePorts = {
   live: envPort("E2E_LIVE_PORT", 3101),
   /** The test-only stub model (e2e/support/stub-model.mjs). */
   stub: envPort("E2E_STUB_PORT", 3199),
+  /** The test-only Supabase stub (e2e/support/stub-supabase.mjs) and its seeded data. */
+  supabase: envPort("E2E_SUPABASE_PORT", 3198),
 };
