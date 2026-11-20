@@ -17,6 +17,11 @@ export type ProgressGoal = {
   title: string;
   text: string;
   status: "planned" | "in_progress" | "on_hold" | "done";
+  /**
+   * One-time or Ongoing (`goals.kind`, #73). Missing reads as One-time. Only a One-time Goal moves
+   * to Done at its last Step (#75 AC5, DEC G4).
+   */
+  kind?: "one_time" | "ongoing";
   /** When the Goal was created, when the database gives it (#258: the newest matching Goal). */
   createdAt?: string;
   steps: ProgressStep[];
