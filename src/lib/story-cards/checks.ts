@@ -47,6 +47,28 @@ const mentions = (text: string, word: string) => {
   return new RegExp(`(?<![\\p{L}\\p{N}])${phrase}(?![\\p{L}\\p{N}])`, "iu").test(plainQuotes(text));
 };
 
+// US-FMT-4 (#16, D2): a card is reread alone, so it may not lean on the card before it.
+const POINTER_OPENER = /^[\s"'“‘(]*(he|she|it|this)(?![\p{L}\p{N}'’])/iu;
+const POINTER_WORDS =
+  /(?<![\p{L}\p{N}])(again|another|as\s+I\s+said|the\s+same|that\s+one)(?![\p{L}\p{N}])/iu;
+
+/** A card that opens with He, She, It or This, or points at another card (#16). */
+function selfContainedProblems(body: string): string[] {
+  const problems: string[] = [];
+  const opener = body.match(POINTER_OPENER);
+  if (opener) {
+    problems.push(
+      `Opens with "${opener[1]}". Name who or what you mean, so the card reads on its own.`,
+    );
+  }
+  const pointer = body.match(POINTER_WORDS);
+  if (pointer) {
+    const phrase = pointer[1].replace(/\s+/g, " ");
+    problems.push(`Uses "${phrase}", which points at another card. The card must read on its own.`);
+  }
+  return problems;
+}
+
 export const LEAKS_UNREADABLE =
   "The spoiler check could not run: the story inputs could not be read.";
 
@@ -58,7 +80,11 @@ export function cardProblems(
   card: { kind: "background" | "part"; part: number | null; body: string },
   laterLeaks: string[] | null,
 ): string[] {
-  const problems = [...cardLengthProblems(card.kind, card.body), ...datesProblems(card.body)];
+  const problems = [
+    ...cardLengthProblems(card.kind, card.body),
+    ...datesProblems(card.body),
+    ...selfContainedProblems(card.body),
+  ];
   if (laterLeaks === null) problems.push(LEAKS_UNREADABLE);
   else {
     for (const word of laterLeaks) {

@@ -28,6 +28,8 @@ export type HomeView =
   | {
       kind: "goal";
       card: HomeGoalCard;
+      /** HOME-3 (#87): more than three days since the card Goal's last activity. */
+      welcomeBack: boolean;
       companions: CompanionId[];
       inProgress: { goalId: string; title: string; companion: string }[];
     }
@@ -39,6 +41,8 @@ export type HomeView =
     };
 
 const REPLAY_MAX = 3;
+/** FLOW 3.3: Home after more than 3 days since last activity is HOME-3. */
+const WELCOME_BACK_MS = 3 * 24 * 60 * 60 * 1000;
 const CARD_KINDS = new Set(["background", "story_card"]);
 
 const byPosition = <T extends { position: number }>(items: T[]) =>
@@ -114,8 +118,15 @@ function companionOfGoal(
   return companionById(companions, own?.companionId ?? "").shortName;
 }
 
-/** `companions` comes from the story content (#284). */
-export function homeView(progress: AccountProgress, allCompanions: Companion[]): HomeView {
+/**
+ * `companions` comes from the story content (#284). `now` decides HOME-1 or HOME-3 (#87); last
+ * activity is the newest Step opened or done or line shown on the account for that Goal.
+ */
+export function homeView(
+  progress: AccountProgress,
+  allCompanions: Companion[],
+  now: Date = new Date(),
+): HomeView {
   const { goals, sessions } = progress;
   // The first-visit card only for an account that never started a Goal (#90 AC3).
   if (goals.length === 0) return { kind: "first" };
@@ -125,9 +136,11 @@ export function homeView(progress: AccountProgress, allCompanions: Companion[]):
     .filter((goal) => goal.status === "in_progress")
     .sort(newestFirst(sessions));
   if (inProgress.length > 0) {
+    const last = Date.parse(activity(inProgress[0], sessions));
     return {
       kind: "goal",
       card: card(allCompanions, inProgress[0], sessions),
+      welcomeBack: Number.isFinite(last) && now.getTime() - last > WELCOME_BACK_MS,
       companions,
       inProgress: inProgress.map((goal) => ({
         goalId: goal.id,

@@ -46,6 +46,7 @@ function goalFromRow(row: Row): ProgressGoal {
     title: text(row.title),
     text: text(row.text),
     status: text(row.status) as ProgressGoal["status"],
+    kind: row.kind === "ongoing" ? "ongoing" : "one_time",
     ...(typeof row.created_at === "string" ? { createdAt: row.created_at } : {}),
     steps: [],
   };

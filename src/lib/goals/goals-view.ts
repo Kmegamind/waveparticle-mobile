@@ -66,6 +66,8 @@ export type HistoryRow = {
   goalTitle: string;
   /** "Nov 3": the day of the session's newest done Step, on the device's calendar. */
   date: string;
+  /** The same day as "2026-11-03", for the time range filter (#112). */
+  day: string;
   /** The planned minutes of the Steps marked done in this session (no measured time is stored). */
   minutes: number;
   doneSteps: string[];
@@ -127,6 +129,16 @@ function weekKey(at: Date, timeZone: string): string {
   return local.toISOString().slice(0, 10);
 }
 
+/** "2026-11-03": the calendar day of `at` in the time zone. */
+function isoDay(at: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(at);
+}
+
 function shortDate(at: Date, timeZone: string): string {
   return new Intl.DateTimeFormat("en-US", { timeZone, month: "short", day: "numeric" }).format(at);
 }
@@ -156,6 +168,43 @@ export function undoStatusFor(previous: GoalStatus): Exclude<GoalStatus, "planne
 export function matchesSearch(query: string, title: string): boolean {
   const needle = query.trim().toLowerCase();
   return needle.length === 0 || title.toLowerCase().includes(needle);
+}
+
+/** The History time ranges of G6 (#112): this week (from Monday), this month, or all time. */
+export type HistoryRange = "week" | "month" | "all";
+export type HistoryFilter = { goalId: string | null; range: HistoryRange };
+
+/** The first day of the range on the device's calendar ("2026-11-09"), or null for all time. */
+function rangeStart(range: HistoryRange, options: ViewOptions): string | null {
+  if (range === "all") return null;
+  const today = isoDay(options.now, options.timeZone);
+  if (range === "month") return `${today.slice(0, 8)}01`;
+  const [year, month, day] = today.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  const sinceMonday = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - sinceMonday);
+  return date.toISOString().slice(0, 10);
+}
+
+/** The History rows of one Goal (or all) inside the time range, in their order (#112). */
+export function filterHistory(
+  rows: HistoryRow[],
+  filter: HistoryFilter,
+  options: ViewOptions,
+): HistoryRow[] {
+  const start = rangeStart(filter.range, options);
+  return rows.filter(
+    (row) =>
+      (filter.goalId === null || row.goalId === filter.goalId) &&
+      (start === null || row.day >= start),
+  );
+}
+
+/** The Goals that have History rows, once each, in the rows' order: the Goal filter's choices. */
+export function historyGoals(rows: HistoryRow[]): { id: string; title: string }[] {
+  const goals = new Map<string, string>();
+  for (const row of rows) if (!goals.has(row.goalId)) goals.set(row.goalId, row.goalTitle);
+  return [...goals].map(([id, title]) => ({ id, title }));
 }
 
 function indexData(data: GoalsData) {
@@ -227,6 +276,14 @@ function openAction(goal: Goal, index: Index) {
     return { action: "start" as const, actionHref: startHref(goal.title) };
   }
   const href = continueHref({ id: goal.id, status: "in_progress" });
+  // #75 AC5: an Ongoing Goal whose last run finished has no open Plan. Start opens a new run of
+  // the same Steps on the focus page.
+  const sessions = index.sessionsOf.get(goal.id) ?? [];
+  const runFinished =
+    goal.kind === "ongoing" &&
+    sessions.some((session) => session.state === "completed") &&
+    !sessions.some((session) => session.state === "open" || session.state === "on_hold");
+  if (runFinished && href) return { action: "start" as const, actionHref: href };
   return { action: href ? ("continue" as const) : null, actionHref: href };
 }
 
@@ -267,6 +324,7 @@ function historyRows(data: GoalsData, index: Index, options: ViewOptions): Histo
       goalId: goal.id,
       goalTitle: goal.title,
       date: shortDate(new Date(at), options.timeZone),
+      day: isoDay(new Date(at), options.timeZone),
       minutes: steps.reduce((sum, step) => sum + step.minutes, 0),
       doneSteps: steps.map((step) => step.title),
       at,

@@ -11,6 +11,7 @@ import { modelIsConfigured, type StepCardsResponse } from "@/lib/prototype/focus
 import type { LineResponse } from "@/lib/prototype/rest-lines";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
+import { logEvent } from "@/lib/logging/server-log";
 
 /**
  * Server actions of the signed-in focus and rest pages (#257). Every one needs a signed-in user;
@@ -65,7 +66,7 @@ export async function loadAccountStepCards(request: unknown): Promise<StepCardsR
         .is("card_versions", null);
     },
     readDeck: (storyId, versions) => readStoryCardsFromSupabase({ storyId, versions }),
-    log: (event) => console.warn(JSON.stringify({ source: "story-cards", ...event })),
+    log: (event) => logEvent("story-cards", event),
   });
 }
 

@@ -18,10 +18,13 @@ const noSubscription = () => () => {};
 export function AccountFocus({
   plan,
   goalLine,
+  keepClockRunning,
   who,
 }: {
   plan: AccountFocusPlan | null;
   goalLine: string;
+  /** The account's "Keep the clock running when I leave" (#71), read on each page load. */
+  keepClockRunning: boolean;
   /** "Who I am" of the session's story, for the sheet from his portrait (#72). */
   who: string;
 }) {
@@ -52,6 +55,7 @@ export function AccountFocus({
         loadReturnLine: loadAccountReturnLine,
         seed,
         onProgress: record,
+        keepClockRunning,
       }}
     />
   );

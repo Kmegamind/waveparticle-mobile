@@ -12,10 +12,10 @@ import {
   doneLines,
   isFinished,
   isHolding,
+  leaveSession,
   needsCards,
   loadSession,
   parseSpeed,
-  pauseSession,
   remainingFor,
   returnOnOpen,
   saveSession,
@@ -68,6 +68,11 @@ export type FocusHost = {
   seed?: (speed: number, nowMs: number) => FocusSession;
   /** Called after every change of the session (the account records it). */
   onProgress?: (session: FocusSession) => void;
+  /**
+   * "Keep the clock running when I leave" (#71, F2): the account's saved setting, read when the
+   * page loads. Off when absent (the /try path has no account).
+   */
+  keepClockRunning?: boolean;
   /** Called after Done and Undo with the new current Step (the /try store keeps it). */
   onStepChange?: (current: number) => void;
 };
@@ -150,22 +155,25 @@ export function FocusBody({ host }: { host: FocusHost }) {
     return () => window.clearInterval(id);
   }, []);
 
-  // Leaving the page freezes the clock; coming back restarts it (foreground time only).
+  // Leaving the page freezes the clock, unless "Keep the clock running when I leave" is on (#71);
+  // coming back restarts it. The cards count foreground time only either way.
+  const keepClockRunning = host.keepClockRunning === true;
   useEffect(() => {
     const onVisibility = () => {
       const at = currentTime();
       setSession((current) =>
         document.visibilityState === "hidden"
-          ? pauseSession(current, at)
+          ? leaveSession(current, at, keepClockRunning)
           : returnOnOpen(current, at),
       );
     };
     const onHide = () => {
-      const paused = pauseSession(
+      const left = leaveSession(
         loadSession(window.localStorage, storageKey) ?? session,
         currentTime(),
+        keepClockRunning,
       );
-      saveSession(window.localStorage, paused, storageKey);
+      saveSession(window.localStorage, left, storageKey);
     };
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pagehide", onHide);
@@ -173,7 +181,7 @@ export function FocusBody({ host }: { host: FocusHost }) {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", onHide);
     };
-  }, [session, storageKey]);
+  }, [keepClockRunning, session, storageKey]);
 
   const fetchCards = useCallback(
     (target: number) => {

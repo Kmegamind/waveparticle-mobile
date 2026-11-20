@@ -6,13 +6,16 @@ import { useCallback, useState } from "react";
 import { companionById } from "@/lib/content/companions";
 import type { Companion } from "@/lib/content/types";
 import { useAppText } from "@/lib/app-text/provider";
+import { startHref } from "@/lib/goals/goals-view";
 import type { HomeView } from "@/lib/home/home-view";
 import { ContinueLink } from "./continue-link";
 import { HomeGoalOptions, HomeToast, type HomeToastState } from "./home-goal-options";
+import { WelcomeBack } from "./home-start-over";
 
 /**
  * Home of the signed-in account (#268), prototype v4: HOME-0 (first visit), HOME-1 (a Goal in
- * progress, with the Goal options sheet) and HOME-NONE (history, nothing in progress). Every value
+ * progress, with the Goal options sheet), HOME-3 (#87: the same Goal after more than three days
+ * away) and HOME-NONE (history, nothing in progress). Every value
  * comes from the account through `homeView`; nothing here is sample data.
  */
 export function ProtectedHome({
@@ -35,27 +38,36 @@ export function ProtectedHome({
       {view.kind === "first" ? <FirstVisit /> : <DeskHeader companions={companions} />}
       {view.kind === "goal" ? (
         <>
-          <section aria-label="Goal" className="home-card">
-            <div className="home-card-top">
-              <p className="focus-label">{`Goal · with ${view.card.companion}`}</p>
-              <HomeGoalOptions goalId={view.card.goalId} onChanged={setToast} />
-            </div>
-            <h2 className="home-card-title">{view.card.title}</h2>
-            <div>
-              <p className="focus-label">Where you left it</p>
-              <p className="home-step">{view.card.stepLabel}</p>
-            </div>
-            {view.card.line ? (
-              <figure className="focus-slip home-slip">
-                <span aria-hidden="true" className="focus-tape" />
-                <p>{view.card.line}</p>
-              </figure>
-            ) : null}
-            {continueHref ? <ContinueLink href={continueHref} /> : null}
-            <Link className="home-link" href="/goal">
-              Start something else
-            </Link>
-          </section>
+          {view.welcomeBack ? (
+            <WelcomeBack
+              continueHref={continueHref}
+              goalId={view.card.goalId}
+              onChanged={setToast}
+              title={view.card.title}
+            />
+          ) : (
+            <section aria-label="Goal" className="home-card">
+              <div className="home-card-top">
+                <p className="focus-label">{`Goal · with ${view.card.companion}`}</p>
+                <HomeGoalOptions goalId={view.card.goalId} onChanged={setToast} />
+              </div>
+              <h2 className="home-card-title">{view.card.title}</h2>
+              <div>
+                <p className="focus-label">Where you left it</p>
+                <p className="home-step">{view.card.stepLabel}</p>
+              </div>
+              {view.card.line ? (
+                <figure className="focus-slip home-slip">
+                  <span aria-hidden="true" className="focus-tape" />
+                  <p>{view.card.line}</p>
+                </figure>
+              ) : null}
+              {continueHref ? <ContinueLink href={continueHref} /> : null}
+              <Link className="home-link" href="/goal">
+                Start something else
+              </Link>
+            </section>
+          )}
           <MyCompanions companions={companions} ids={view.companions} />
           <section aria-labelledby="home-in-progress" className="home-section">
             <h2 className="focus-label" id="home-in-progress">
@@ -103,7 +115,7 @@ export function ProtectedHome({
               <ul className="home-chips">
                 {view.replay.map((goal) => (
                   <li key={goal.goalId}>
-                    <Link className="home-chip" href="/goal">
+                    <Link className="home-chip" href={startHref(goal.title)}>
                       {goal.title}
                     </Link>
                   </li>

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { GoalStatusWriter } from "./goal-status";
+import type { StartOverWriter } from "./start-over";
 
 type Result = { data?: unknown; error: unknown };
 
@@ -9,10 +10,10 @@ function check(result: Result): Result {
   return result;
 }
 
-/** Through the signed-in user's own client, so row-level security applies (#268). */
+/** Through the signed-in user's own client, so row-level security applies (#268, #87). */
 export function createSupabaseGoalStatusWriter(
   client: Pick<SupabaseClient, "from">,
-): GoalStatusWriter {
+): GoalStatusWriter & StartOverWriter {
   return {
     async goalStatus(goalId) {
       const result = check(
@@ -49,7 +50,7 @@ export function createSupabaseGoalStatusWriter(
         ? { goalId: row.goal_id, state: row.state }
         : null;
     },
-    async setSession(sessionId, state) {
+    async setSession(sessionId: string, state: "open" | "on_hold" | "restarted") {
       check((await client.from("sessions").update({ state }).eq("id", sessionId)) as Result);
     },
   };

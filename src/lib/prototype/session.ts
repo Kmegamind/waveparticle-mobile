@@ -1,8 +1,11 @@
 import {
   createClock,
+  elapsedSeconds,
+  leaveClock,
   pauseClock,
   remainingSeconds,
   resumeClock,
+  returnFromLeave,
   type ClockState,
 } from "@/lib/clock";
 import { DEFAULT_STORY_ID } from "./story-ids";
@@ -51,6 +54,11 @@ export type StepRun = {
   /** Story cards already shown; they stay shown even after Undo (#12 AC4, #27 AC3). */
   shownStory: number;
   targetSeconds: number;
+  /**
+   * Time away while "Keep the clock running when I leave" was on (#71): counted on the clock but
+   * not by the cards, which use foreground time only (FLOW 3.1, F2).
+   */
+  awayMs?: number;
 };
 
 export type FocusSession = {
@@ -196,13 +204,21 @@ export function remainingFor(session: FocusSession, index: number, nowMs: number
   return remainingSeconds(step.clock, nowMs);
 }
 
+/** Foreground seconds of a Step: the clock's time without time away with the clock running. */
+function foregroundSeconds(step: StepRun, nowMs: number): number {
+  if (!step.clock) return 0;
+  const leftAt = step.clock.leftAtMs;
+  const awayNow = leftAt !== null && step.clock.keepRunningWhenAway ? nowMs - leftAt : 0;
+  return elapsedSeconds(step.clock, nowMs) - ((step.awayMs ?? 0) + Math.max(0, awayNow)) / 1_000;
+}
+
 function dueStoryCount(session: FocusSession, index: number, nowMs: number): number {
   const step = session.steps[index];
   if (!step?.cards || !step.clock) return 0;
   const n = step.cards.story.length;
   if (n === 0) return 0;
   const target = step.targetSeconds;
-  const elapsed = target - remainingFor(session, index, nowMs);
+  const elapsed = foregroundSeconds(step, nowMs);
   let due = 0;
   for (let k = 1; k <= n; k += 1) {
     // Card k arrives at k*y/n of foreground time; the last one exactly at 00:00 (T8).
@@ -298,6 +314,38 @@ export function pauseSession(session: FocusSession, nowMs: number): FocusSession
   });
 }
 
+/**
+ * The page was left (hidden or closed). With "Keep the clock running when I leave" off (the
+ * default) the clock freezes as on Pause (F2). With it on, the clock keeps running from
+ * timestamps; only the moment of leaving is kept so the cards can skip the time away (#71).
+ * The setting is read at each leave, so a change applies the next time the user leaves.
+ */
+export function leaveSession(
+  session: FocusSession,
+  nowMs: number,
+  keepClockRunning: boolean,
+): FocusSession {
+  if (!keepClockRunning) return pauseSession(session, nowMs);
+  const step = session.steps[session.current];
+  if (session.paused || !step?.clock || step.clock.leftAtMs !== null) return session;
+  return replaceStep(session, session.current, {
+    ...tick(session, nowMs).steps[session.current],
+    clock: leaveClock({ ...step.clock, keepRunningWhenAway: true }, nowMs),
+  });
+}
+
+/** Back after leaving with the clock running: no pop-up (T10); the time away is set aside. */
+function returnWithClockRunning(session: FocusSession, nowMs: number): FocusSession {
+  const step = session.steps[session.current];
+  const leftAt = step?.clock?.leftAtMs ?? null;
+  if (!step?.clock || leftAt === null) return session;
+  return replaceStep(session, session.current, {
+    ...step,
+    awayMs: (step.awayMs ?? 0) + Math.max(0, nowMs - leftAt),
+    clock: returnFromLeave(step.clock, nowMs),
+  });
+}
+
 /** Restarts the clock from the frozen value; a hold that has not finished is kept. */
 export function resumeSession(session: FocusSession, nowMs: number): FocusSession {
   if (!session.paused) return session;
@@ -366,8 +414,10 @@ export function leaveRest(session: FocusSession): FocusSession {
  * Opening the focus page with a frozen clock. Coming from a rest that is still open counts as
  * Back to step. Away 5 minutes or more (60/s seconds at test speed s) asks for the absence pop-up;
  * a shorter absence resumes the clock with no pop-up. The pop-up keeps the clock frozen.
+ * Back from leaving with the clock kept running (#71) never opens the pop-up (T10).
  */
 export function returnOnOpen(session: FocusSession, nowMs: number): FocusSession {
+  session = returnWithClockRunning(session, nowMs);
   if (!session.paused || isFinished(session) || session.returnPending) return session;
   if (session.rest) return backFromRest(session);
   const awayMs = session.pausedAtMs === null ? 0 : nowMs - session.pausedAtMs;

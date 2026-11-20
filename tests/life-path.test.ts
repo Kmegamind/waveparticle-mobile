@@ -69,6 +69,7 @@ describe("#258 AC8 AC9 one current story (#50, #51)", () => {
       title: "The Trade of a Theorist",
       state: "current",
       line: storyProfile(seed, "bohr-difficulties").goalShort,
+      recordHref: null,
     });
     expect(all.slice(1).every((row) => row.state === "later" && row.line === null)).toBe(true);
     expect(all.filter((row) => row.state === "current")).toHaveLength(1);
@@ -139,6 +140,7 @@ describe("#272 AC4 (#97 AC2) memory rows before the account's starting point", (
       title: "The Trade of a Theorist",
       state: "memory",
       line: storyProfile(seed, "bohr-difficulties").goalShort,
+      recordHref: null,
     });
     expect(view.currentId).toBe("site-search");
     expect(all[index].state).toBe("current");
@@ -158,5 +160,32 @@ describe("#272 AC4 (#97 AC2) memory rows before the account's starting point", (
 
   it("has no memory rows for the default start, chapter 1 (M1)", () => {
     expect(rows(lifePath(seed, account([]))).some((row) => row.state === "memory")).toBe(false);
+  });
+});
+
+describe("#94 AC1 AC4 a finished row opens the record of that Story as played", () => {
+  it("test_94_ac1_a_finished_row_links_the_record_of_the_run_whose_line_it_shows", () => {
+    const first = session("bohr-difficulties", "completed", "First.");
+    const view = lifePath(
+      seed,
+      account([
+        session("bohr-difficulties", "restarted", "I gave up."),
+        first,
+        session("bohr-difficulties", "completed", "Second one."),
+      ]),
+    );
+    expect(rows(view)[0]).toMatchObject({
+      state: "finished",
+      line: "First.",
+      recordHref: `/me/history/${encodeURIComponent(first.id)}/chapter?from=life-path`,
+    });
+  });
+
+  it("test_94_ac4_memory_current_and_later_rows_have_no_record", () => {
+    const view = lifePath(seed, account([]), STORY_IDS[2]);
+    for (const row of rows(view)) {
+      expect(row.state).not.toBe("finished");
+      expect(row.recordHref).toBeNull();
+    }
   });
 });

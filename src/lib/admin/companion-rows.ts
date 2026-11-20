@@ -16,6 +16,10 @@ function belongsTo(row: HistoryFact, code: string, storyIds: ReadonlySet<string>
   return false;
 }
 
+// "11-18" from "11-18 23:42"; a date that cannot be read is shown whole, never cut (#317).
+const dayOf = (actedAt: string) =>
+  Number.isNaN(Date.parse(actedAt)) ? actedAt : formatHistoryTime(actedAt).slice(0, 5);
+
 export function companionRow(
   companion: { id: string; key_code: string },
   stories: { id: string; companion_id: string }[],
@@ -27,8 +31,6 @@ export function companionRow(
     .sort((a, b) => Date.parse(b.acted_at) - Date.parse(a.acted_at))[0];
   return {
     shown: storyIds.size > 0 ? "Published" : "Not ready",
-    lastChange: newest
-      ? `${newest.person} · ${formatHistoryTime(newest.acted_at).slice(0, 5)}`
-      : "—",
+    lastChange: newest ? `${newest.person} · ${dayOf(newest.acted_at)}` : "—",
   };
 }

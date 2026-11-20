@@ -9,14 +9,19 @@ import { StoryRecordScreen } from "../../record-screens";
 
 export const instant = false;
 
-// The record of a finished Story (#94), from the session record's "His chapter ›".
-export default function StoryRecordPage({ params }: PageProps<"/me/history/[session]/chapter">) {
-  return <StoryRecordContent params={params} />;
+// The record of a finished Story (#94), from the session record's "His chapter ›" or from a
+// finished row on the Life Path (`?from=life-path`, whose back link returns there).
+export default function StoryRecordPage({
+  params,
+  searchParams,
+}: PageProps<"/me/history/[session]/chapter">) {
+  return <StoryRecordContent params={params} searchParams={searchParams} />;
 }
 
 async function StoryRecordContent({
   params,
-}: Pick<PageProps<"/me/history/[session]/chapter">, "params">) {
+  searchParams,
+}: Pick<PageProps<"/me/history/[session]/chapter">, "params" | "searchParams">) {
   await connection();
   const client = await createSupabaseServerClient();
   const user = await getCurrentUser(client);
@@ -26,9 +31,18 @@ async function StoryRecordContent({
   const progress = await createSupabaseProgressStore(client).read(user.id, user.id);
   const record = storyRecord(await getStoryContent(), progress, id);
   if (!record) notFound();
+  const { from } = await searchParams;
+  const fromLifePath = from === "life-path";
+  const backHref = fromLifePath
+    ? "/companions/oppenheimer"
+    : `/me/history/${encodeURIComponent(id)}`;
   return (
     <main className="app-screen me-page">
-      <StoryRecordScreen backHref={`/me/history/${encodeURIComponent(id)}`} record={record} />
+      <StoryRecordScreen
+        backHref={backHref}
+        backLabel={fromLifePath ? "Life Path" : "Session record"}
+        record={record}
+      />
     </main>
   );
 }
