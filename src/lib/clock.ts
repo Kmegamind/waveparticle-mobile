@@ -61,6 +61,11 @@ function withElapsedAt(state: ClockState, atMs: number): ClockState {
   };
 }
 
+/** Time counted on the clock so far, in seconds, not capped at the target (cards use it, #71). */
+export function elapsedSeconds(state: ClockState, nowMs: number): number {
+  return elapsedMilliseconds(state, nowMs) / 1_000;
+}
+
 export function remainingSeconds(state: ClockState, nowMs: number): number {
   const remaining = state.targetSeconds - elapsedMilliseconds(state, nowMs) / 1_000;
   return Math.max(0, Math.ceil(remaining));
