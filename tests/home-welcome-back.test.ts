@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { HomeView } from "@/lib/home/home-view";
 import { homeView } from "@/lib/home/home-view";
 import { startOver, type StartOverWriter } from "@/lib/home/start-over";
+import { openFocusSession } from "@/lib/progress/focus-session";
 import type {
   AccountProgress,
   ProgressGoal,
@@ -193,5 +194,23 @@ describe("#87 AC4 confirming restarts the Plan and his night", () => {
       status: "failed",
     });
     expect(writes).toEqual([]);
+  });
+
+  it("test_87_ac4_the_focus_page_then_opens_a_new_session_at_step_1", () => {
+    // After Start over the Goal has no open session, only the restarted one.
+    const restarted = { ...progress, sessions: [{ ...open, state: "restarted" as const }] };
+    let next = 0;
+    const opened = openFocusSession(restarted, GOAL, {
+      storyId: "chapter-1",
+      newId: () => `new-${next++}`,
+    });
+    if (!opened) throw new Error("no plan");
+    expect(opened.writes).toHaveLength(1);
+    expect(opened.writes[0]).toMatchObject({ goalId: GOAL, state: "open", lines: [] });
+    expect(opened.plan.sessionId).not.toBe(open.id);
+    // Step 1 again: nothing done, no card shown; his night starts from its first card.
+    expect(opened.plan.done).toEqual([false, false, false]);
+    expect(opened.plan.cards).toEqual([[], [], []]);
+    expect(opened.plan.storyId).toBe("chapter-1");
   });
 });
