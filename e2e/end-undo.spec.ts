@@ -149,4 +149,7 @@ test("test_27_ac4_after_the_toast_has_gone_the_summary_has_no_undo", async ({ pa
   const summary = page.locator('main.end-page[data-ready="true"]');
   await expect(summary.getByRole("status").filter({ hasText: "Step done" })).toBeVisible();
   await expect(summary.getByRole("button", { name: "Undo" })).toHaveCount(0, { timeout: 12_000 });
+  // The summary itself stays: only the toast is gone.
+  await expect(summary.getByRole("heading", { name: "Your goal" })).toBeVisible();
+  await expect(page.getByText("There is no finished Step to sum up.")).toHaveCount(0);
 });
