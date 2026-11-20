@@ -60,7 +60,7 @@ async function PublishHistoryTable() {
   }
   return (
     <div className="admin-panel">
-      <table className="admin-table">
+      <table aria-label="Publish history" className="admin-table">
         <thead>
           <tr>
             <th scope="col">When</th>

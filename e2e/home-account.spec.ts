@@ -145,3 +145,33 @@ test("#87 AC3 AC4 Start over asks calmly; Not now returns; confirming restarts a
     })
     .toEqual(["old:restarted"]);
 });
+
+test("#271 AC1 #92 AC2 a Quick Replay chip opens the goal dialogue with its text, not started", async ({
+  page,
+}) => {
+  // Nothing in progress: Home shows HOME-NONE with the finished Goals as chips.
+  await signIn(page.context(), baseUrlOf(page), (userId) => {
+    const tables = sampleGoals(userId);
+    return {
+      ...tables,
+      goals: tables.goals?.map((goal) =>
+        goal.status === "in_progress" ? { ...goal, status: "done" } : goal,
+      ),
+    };
+  });
+  await page.goto("/");
+  const replay = page.getByRole("region", { name: "Quick Replay" });
+  await replay.getByRole("link", { name: "Lab report" }).click();
+  await expect(page).toHaveURL(/\/goal\?line=Lab(%20|\+)report$/);
+  await expect(page.getByLabel("Your goal")).toHaveValue("Lab report");
+  // It waits for Send: no Plan and no reply yet.
+  await expect(page.getByRole("button", { name: "Send" })).toBeVisible();
+  await expect(page.getByText("This is outside the story.")).toHaveCount(0);
+});
+
+test("#271 AC2 Start something else opens the goal dialogue as today", async ({ page }) => {
+  await openHome(page);
+  await page.getByRole("link", { name: "Start something else" }).click();
+  await expect(page).toHaveURL(/\/goal$/);
+  await expect(page.getByLabel("Your goal")).toHaveValue("");
+});

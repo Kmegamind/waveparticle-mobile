@@ -25,7 +25,8 @@ describe("prompt editing migration (#308)", () => {
     const names = readdirSync(migrations)
       .filter((file) => file.endsWith(".sql"))
       .sort();
-    expect(names.at(-1)).toBe(MIGRATION);
+    // #317 added a later migration (20261126000000_prompt_activated_at.sql), so this file is no
+    // longer the last one; what matters is that it runs after the two files below.
     expect(names.indexOf(MIGRATION)).toBeGreaterThan(
       names.indexOf("20261123000000_story_card_editing.sql"),
     );

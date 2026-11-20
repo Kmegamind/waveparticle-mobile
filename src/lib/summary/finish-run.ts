@@ -44,6 +44,8 @@ const byPosition = <T extends { position: number }>(items: T[]) =>
 /** What END shows of one account session: no counts, no verdict (SUMMARY-RECORD). */
 export type SummaryView = {
   sessionId: string;
+  /** The Goal of the session: Undo on the summary opens its focus page again (#27 AC4). */
+  goalId: string;
   storyTitle: string;
   goalTitle: string;
   steps: string[];
@@ -62,6 +64,7 @@ export function summaryOf(
   const steps = byPosition(goal.steps);
   return {
     sessionId,
+    goalId: goal.id,
     storyTitle: storyProfile(content, session.storyId).title,
     goalTitle: goal.title,
     steps: steps.map((step) => step.title),

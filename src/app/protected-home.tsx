@@ -6,6 +6,7 @@ import { useCallback, useState } from "react";
 import { companionById } from "@/lib/content/companions";
 import type { Companion } from "@/lib/content/types";
 import { useAppText } from "@/lib/app-text/provider";
+import { startHref } from "@/lib/goals/goals-view";
 import type { HomeView } from "@/lib/home/home-view";
 import { ContinueLink } from "./continue-link";
 import { HomeGoalOptions, HomeToast, type HomeToastState } from "./home-goal-options";
@@ -114,7 +115,7 @@ export function ProtectedHome({
               <ul className="home-chips">
                 {view.replay.map((goal) => (
                   <li key={goal.goalId}>
-                    <Link className="home-chip" href="/goal">
+                    <Link className="home-chip" href={startHref(goal.title)}>
                       {goal.title}
                     </Link>
                   </li>

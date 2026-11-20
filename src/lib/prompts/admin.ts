@@ -225,6 +225,11 @@ export async function writePrompt(
   if (!target) return { ok: false, error: "invalid" };
   const problems = promptRowProblems(asRow(target));
   if (problems.length > 0) return { ok: false, error: "checks-failed", problems };
+  // roll_back_prompt accepts only a version that was active before; say so instead of a bare
+  // failure (#317).
+  if (write.kind === "roll_back" && !target.active && target.activated_at === null) {
+    return { ok: false, error: "never-published" };
+  }
   const { error } = await deps.rpc(
     write.kind === "publish" ? "publish_prompt" : "roll_back_prompt",
     { prompt_key: write.key, prompt_version: write.version },
