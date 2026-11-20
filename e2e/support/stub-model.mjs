@@ -3,7 +3,7 @@
 import { createServer } from "node:http";
 import { stubAnswer } from "./stub-cards.mjs";
 
-const port = Number(process.env.STUB_MODEL_PORT ?? "3199");
+const port = Number(process.env.STUB_MODEL_PORT ?? process.env.E2E_STUB_PORT ?? "3199");
 const prompts = [];
 
 createServer((request, response) => {
