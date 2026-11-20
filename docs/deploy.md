@@ -132,6 +132,11 @@ back with a `prompt` row in Publish history). It changes no prompt and not the s
 Until it runs, the Prompts page says the prompts could not be read; the app keeps using the
 active prompts. No new setting is needed.
 
+Then run `supabase/migrations/20261126000000_prompt_activated_at.sql` (#317). It adds a trigger
+that fills `prompts.activated_at` when the import or the table editor makes a version active
+(never changing a value already set), and fills it for the version active now. Without it, such a
+version shows as "Draft" once replaced and cannot be rolled back to. It only reads Publish history.
+
 ## After each deploy
 - Smoke test: open the deployed home page and confirm the product name is
   visible. To run the end-to-end test against a deployed address instead of a local

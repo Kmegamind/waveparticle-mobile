@@ -16,6 +16,7 @@ const PROBLEMS: Record<PromptWriteError, string> = {
     "The settings are not a JSON object, so nothing was saved. Check the brackets, quotes and commas.",
   unchanged: "Nothing changed, so no new version was saved.",
   "checks-failed": "The gateway cannot use this version, so it was not published.",
+  "never-published": "This version was never active, so it cannot be rolled back to.",
   failed: "Could not save the change. Please try again.",
 };
 
