@@ -14,6 +14,8 @@ import { StatePill } from "@/app/admin/admin-ui";
 const PROBLEMS: Record<Exclude<ContentFieldWriteError, "checks-failed">, string> = {
   "not-allowed": "Your account cannot do this. Only an admin publishes or rolls back.",
   invalid: "This field or version is not known.",
+  "unknown-item": "This Companion or story is not known, so nothing was saved. Reload the page.",
+  "never-published": "This version was never published, so it cannot be rolled back to.",
   failed: "Could not save the change. Please try again.",
 };
 

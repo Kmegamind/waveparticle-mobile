@@ -98,7 +98,6 @@
   --logo-width: 3.375rem;
   --logo-height: 1.25rem;
   --layout-phone-max: 26.875rem;
-  /* The content admin (issue 287): the menu rail on wide screens and the longest text line. */
 
   --r-field: 0.875rem;
   --r-capsule: 999px;

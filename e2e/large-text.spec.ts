@@ -79,7 +79,8 @@ for (const path of signedInPages) {
 }
 
 // #313: the content admin is desktop-only (docs/DECISIONS.md ADMIN-DESKTOP, minimum width
-// 1024 px), so its pages are not checked at 320 px here; e2e/admin-look.spec.ts checks 1024 px.
+// 1024 px), so its pages are not checked at 320 px here; e2e/admin-look.spec.ts checks three of
+// them (Companions, App text, Publish history) for sideways scroll at 1024 px.
 
 test("#100 AC1 at 200% text on 320 px the tab bar labels stay inside their own tab", async ({
   page,
