@@ -18,9 +18,12 @@ const noSubscription = () => () => {};
 export function AccountFocus({
   plan,
   goalLine,
+  keepClockRunning,
 }: {
   plan: AccountFocusPlan | null;
   goalLine: string;
+  /** The account's "Keep the clock running when I leave" (#71), read on each page load. */
+  keepClockRunning: boolean;
 }) {
   const ready = useSyncExternalStore(
     noSubscription,
@@ -48,6 +51,7 @@ export function AccountFocus({
         loadReturnLine: loadAccountReturnLine,
         seed,
         onProgress: record,
+        keepClockRunning,
       }}
     />
   );
