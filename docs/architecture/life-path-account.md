@@ -1,0 +1,5 @@
+# Life Path (account)
+
+`/companions/oppenheimer` (CPAGE, #258): the 26 stories under six named periods (each story's `period`, #284) (drafts, PERIOD-NAMES) with no dates or ages. Finished stories show the closing line of that run, and their title opens that run's Story record (`/me/history/<session>/chapter?from=life-path`, whose back link returns to the Life Path, #94); the current story (the first one not finished; chapter 1 for a new account) is a card with its goal sentence and Begin; later stories show the title only. Rows carry their state by node shape and a screen-reader name (#272): finished (filled dot), his memory (open ring, italic; before the account\'s starting story, none under M1), current (heavy ring and card; the page opens on it), later (dotted circle, title only, smaller and lighter, read as "Later, not available", not focusable). The header stays at the top. Begin opens `/goal`; a new signed-in session plays the current story (`storyForNewSession`)
+
+Path: `src/app/companions/oppenheimer/` (`page.tsx` loads, `life-path-list.tsx` draws the rows, `open-on-current.tsx`), `src/lib/summary/life-path.ts`

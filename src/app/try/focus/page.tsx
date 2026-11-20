@@ -6,7 +6,7 @@ import { FocusScreen } from "./focus-screen";
 export const instant = false;
 
 // /try/focus: the focus page of the sign-in-free test path. `?speed=60` is a test-only speed-up
-// in which one minute of a Step lasts one second; it is read in the browser (docs/api/README.md).
+// in which one minute of a Step lasts one second; it is read in the browser (docs/api/prototype-session.md).
 export default function TryFocusPage() {
   return <TryFocusPageContent />;
 }

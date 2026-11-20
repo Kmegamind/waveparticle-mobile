@@ -1,0 +1,5 @@
+# Companion and story fields
+
+#309 (`docs/decisions/0024`): ADM-03 `/admin/companions` lists the Companions. ADM-04 and ADM-05 `/admin/companions/<id>` edit his name, tags, "Who I am" and the name of each Life Path period, and list his stories by period. `/admin/companions/<id>/stories/<story>` edits a story's title, period, goal sentence, "Who I am", opening and Life Path description, and shows the model-only inputs read-only. Each field has its own versions in `public.content_fields` (keys `chr.<code>.<field>`, `chr.<code>.period.<n>`, `<code>.<story>.<field>`). An admin or writer saves a draft; text with a year, date or age is refused (PERIODS, DATES-ADMIN-ONLY); a story moves only to a neighbouring period. Only the admin role publishes or rolls back, each with a `companion_field` or `story_field` row in Publish history. Publish writes the column `get_story_content` reads, so the app shows it within a minute; the content import keeps these fields
+
+Path: `src/lib/content-fields/`, `src/lib/content/dates.ts`, `src/app/admin/companions/`, `supabase/migrations/20261124000000_content_fields.sql`

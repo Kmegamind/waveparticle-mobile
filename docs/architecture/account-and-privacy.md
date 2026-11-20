@@ -1,0 +1,5 @@
+# Account and privacy
+
+#102, #103, #104, #8 AC3. Me shows "About the stories" (`/me/about`: his first-person lines are imagined, he is an AI, not a medical or crisis service, link to the Terms) and "Data" (`/me/data`). `/privacy`: the dated privacy notice, public, linked from Sign in, Create an account and Data (`?from=me` sets the back link). `/terms`: the Terms draft, public. `/me/export`: "Download my data" (`/me/export/download`) returns one JSON file of the account's own rows from the six tables, read through the user's own client. `/me/delete-account` (ACCOUNT-DELETE, no tab bar): confirming calls `delete_my_account()`, which deletes the caller's rows from `session_lines`, `session_steps`, `sessions`, `steps`, `goals` and `profiles`, then the `auth.users` row, in one transaction; then sign out and Sign in shows "Your account and your data are deleted."
+
+Path: `src/app/privacy/`, `src/app/terms/`, `src/app/me/{about,data,export,delete-account}/`, `src/lib/account/`, `supabase/migrations/20261114120000_delete_my_account.sql`

@@ -1,0 +1,3 @@
+# Database functions for app text
+
+Database functions for app text (`supabase/migrations/20261117000000_app_text.sql`): `public.save_app_text_draft(text_key text, text_body text) returns integer` (the new draft version), `public.publish_app_text(text_key text, text_version integer)` and `public.roll_back_app_text(text_key text, text_version integer)`, for `authenticated` callers with a content role (`42501` otherwise). Both call `private.set_published_app_text(text_key, text_version, publish_action)` with `'publish'` or `'roll_back'`, the one place a version becomes published (#289 adds its history row there). `public.import_app_text(text_key, text_body)` is for the seed in the SQL editor only.

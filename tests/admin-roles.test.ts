@@ -188,8 +188,9 @@ describe("admin docs (#287)", () => {
   });
 
   it("test_287_ac6_architecture_lists_the_admin_area", () => {
-    const architecture = read("docs/architecture.md");
-    expect(architecture).toMatch(/\| Admin area \| `src\/app\/admin\/`/);
+    const architecture = read("docs/architecture/admin-area.md");
+    expect(architecture).toMatch(/^# Admin area\n/);
+    expect(architecture).toContain("Path: `src/app/admin/`");
     expect(architecture).toContain("content_roles");
     expect(architecture).toContain("content_role()");
   });

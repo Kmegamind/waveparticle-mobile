@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { appTextImportSql, readAppTextSeed } from "../scripts/app-text/import.mjs";
@@ -15,6 +15,12 @@ import {
 
 const root = path.join(import.meta.dirname, "..");
 const read = (file: string) => readFileSync(path.join(root, file), "utf8");
+// The docs/api and docs/architecture folders hold one file per item (#242).
+const readFolder = (folder: string) =>
+  readdirSync(path.join(root, folder))
+    .filter((name) => name.endsWith(".md"))
+    .map((name) => read(`${folder}/${name}`))
+    .join("\n");
 
 /** The strings the screens showed before #288. A screen must look the same with the defaults. */
 const BEFORE: Record<string, string> = {
@@ -107,12 +113,12 @@ describe("app text docs (#288)", () => {
     const deploy = read("docs/deploy.md");
     expect(deploy).toContain("20261117000000_app_text.sql");
     expect(deploy).toContain("node scripts/app-text/import.mjs");
-    const api = read("docs/api/README.md");
+    const api = readFolder("docs/api");
     expect(api).toContain("getAppTexts");
     expect(api).toContain("useAppText");
     expect(api).toContain("publish_app_text");
     expect(api).toContain("private.set_published_app_text");
-    const architecture = read("docs/architecture.md");
+    const architecture = readFolder("docs/architecture");
     expect(architecture).toContain("public.app_text");
     expect(architecture).toContain("src/lib/app-text/");
     const decision = read("docs/decisions/0017-app-text-in-the-database.md");

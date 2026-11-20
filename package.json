@@ -12,6 +12,7 @@
     "lint": "eslint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "docs:index": "node scripts/docs-index.mjs",
     "test": "vitest run && python3 -I tests/test_guardrails.py",
     "test:e2e": "playwright test",
     "check:supabase": "node --env-file=.env scripts/check-supabase.mjs",

@@ -24,7 +24,7 @@ Stack: Next.js (App Router) · React · TypeScript · Tailwind CSS · Supabase (
 | See the user stories and milestones | [docs/USER_STORIES.md](docs/USER_STORIES.md) |
 | Know the data and the story content format | [docs/CONTENT_MODEL.md](docs/CONTENT_MODEL.md) |
 | Know how the AI parts work | [docs/ai/](docs/ai/AI_00_index.md) |
-| Understand the system | [docs/architecture.md](docs/architecture.md), [docs/api/](docs/api/README.md) |
+| Understand the system | [docs/architecture/](docs/architecture/README.md), [docs/api/](docs/api/README.md) |
 | Know why a technical choice was made | [docs/decisions/](docs/decisions/) |
 | Know whether we are ready to build | [docs/READINESS.md](docs/READINESS.md) |
 | Know the pitfalls | [docs/memory/known-issues.md](docs/memory/known-issues.md) |
