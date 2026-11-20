@@ -12,7 +12,7 @@ jobs:
     # The image already holds the browsers and their system libraries. Keep its tag equal to
     # the Playwright version in package.json (a test checks this).
     container:
-      image: mcr.microsoft.com/playwright:v1.65.0-noble
+      image: mcr.microsoft.com/playwright:v1.65.1-noble
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
