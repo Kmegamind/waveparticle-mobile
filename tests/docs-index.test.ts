@@ -3,7 +3,6 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-// @ts-expect-error plain script without types
 import * as docsIndex from "../scripts/docs-index.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
