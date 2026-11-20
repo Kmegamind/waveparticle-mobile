@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   SHOW_FIRST,
+  filterHistory,
   goalDetail,
+  historyGoals,
   goalsLists,
   matchesSearch,
   parseLine,
@@ -294,6 +296,67 @@ describe("#80 the History tab (G6)", () => {
       minutes: 0,
       doneSteps: [],
     });
+  });
+});
+
+describe("#112 filter History by Goal and time range (G6)", () => {
+  const history = () => goalsLists(data(), on).history;
+  const ids = (rows: { sessionId: string }[]) => rows.map((row) => row.sessionId);
+
+  it("test_112_ac2_all_goals_and_all_time_keep_every_row", () => {
+    expect(ids(filterHistory(history(), { goalId: null, range: "all" }, on))).toEqual([
+      "x-m",
+      "x-i1",
+      "x-l",
+      "x-p",
+    ]);
+  });
+
+  it("test_112_ac2_this_week_starts_on_monday_on_the_device_calendar", () => {
+    // Wednesday 11 November in Berlin: the week began on Monday 9 November.
+    expect(ids(filterHistory(history(), { goalId: null, range: "week" }, on))).toEqual([
+      "x-m",
+      "x-i1",
+    ]);
+  });
+
+  it("test_112_ac2_this_month_is_the_calendar_month", () => {
+    expect(ids(filterHistory(history(), { goalId: null, range: "month" }, on))).toEqual([
+      "x-m",
+      "x-i1",
+      "x-l",
+    ]);
+  });
+
+  it("test_112_ac2_a_goal_keeps_only_its_sessions_and_combines_with_the_range", () => {
+    expect(ids(filterHistory(history(), { goalId: G.portfolio, range: "all" }, on))).toEqual([
+      "x-p",
+    ]);
+    expect(filterHistory(history(), { goalId: G.portfolio, range: "month" }, on)).toEqual([]);
+  });
+
+  it("test_112_ac2_the_week_follows_the_time_zone", () => {
+    // A day before Monday is outside the week; the days are read on the device's calendar.
+    const rows = [{ ...history()[0], day: "2026-11-08" }];
+    expect(filterHistory(rows, { goalId: null, range: "week" }, on)).toEqual([]);
+    expect(
+      ids(
+        filterHistory(
+          goalsLists(data(), { now: NOW, timeZone: "Asia/Tokyo" }).history,
+          { goalId: null, range: "week" },
+          { now: NOW, timeZone: "Asia/Tokyo" },
+        ),
+      ),
+    ).toEqual(["x-m", "x-i1"]);
+  });
+
+  it("test_112_ac2_the_goal_choices_are_the_goals_in_history_once_each", () => {
+    expect(historyGoals(history())).toEqual([
+      { id: G.methods, title: "Methods section for Friday" },
+      { id: G.ielts, title: "IELTS listening, section 3" },
+      { id: G.lab, title: "Lab report" },
+      { id: G.portfolio, title: "Portfolio case study" },
+    ]);
   });
 });
 

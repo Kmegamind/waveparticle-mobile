@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type { BrowserContext, Page } from "@playwright/test";
+import { e2ePorts } from "./ports";
 
 // Signs a test into the test-only Supabase stub (e2e/support/stub-supabase.mjs) with its own
 // account and data (#73). Each call makes a new token and user, so parallel tests never meet.
 
-export const STUB_SUPABASE = "http://127.0.0.1:3198";
+export const STUB_SUPABASE = `http://127.0.0.1:${e2ePorts.supabase}`;
 /** `@supabase/ssr` names the cookie after the first label of the project host (127.0.0.1). */
 const COOKIE = "sb-127-auth-token";
 
@@ -81,5 +82,6 @@ export async function stubTables(
 }
 
 export function baseUrlOf(page: Page): string {
-  return new URL(page.url() === "about:blank" ? "http://127.0.0.1:3100" : page.url()).origin;
+  return new URL(page.url() === "about:blank" ? `http://127.0.0.1:${e2ePorts.app}` : page.url())
+    .origin;
 }

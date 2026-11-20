@@ -253,7 +253,7 @@ function setPublishedField(target, key, version, action, user) {
 /** While on, get_story_cards fails as when the database cannot answer (#300, FAIL-PREMADE). */
 let storyCardsFailReads = false;
 
-const port = Number(process.env.STUB_SUPABASE_PORT ?? "3198");
+const port = Number(process.env.STUB_SUPABASE_PORT ?? process.env.E2E_SUPABASE_PORT ?? "3198");
 /** token → { user, tables } */
 const datasets = new Map();
 
