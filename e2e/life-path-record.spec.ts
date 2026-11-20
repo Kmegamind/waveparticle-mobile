@@ -89,8 +89,12 @@ test("test_94_ac1_a_finished_life_path_row_opens_the_record_of_that_story", asyn
 
   await link.click();
   await expect(page).toHaveURL(new RegExp(`/me/history/${SESSION}/chapter\\?from=life-path$`));
+  // The record's own sections: the Life Path page left by the client navigation stays in the DOM
+  // (cacheComponents keeps it in a hidden Activity), so look only inside the record.
   await expect(page.getByText(CARD)).toBeVisible();
-  await expect(page.getByText(CLOSING)).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "How his day ended" }).getByText(CLOSING),
+  ).toBeVisible();
 
   await page.getByRole("link", { name: "Back to the Life Path" }).click();
   await expect(page).toHaveURL(/\/companions\/oppenheimer$/);
