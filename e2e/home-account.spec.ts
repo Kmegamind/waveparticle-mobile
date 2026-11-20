@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { baseUrlOf, signIn, stubTables, type StubAccount } from "./support/account";
-import { GOAL, sampleGoals } from "./support/goals-seed";
+import { GOAL, SESSION, sampleGoals } from "./support/goals-seed";
 
 // Signed-in Home and the Companions list against the test-only Supabase stub: findings left by
 // #268 (a second toast closing early, Esc during a change hiding its error, Moriarty's reason).
@@ -76,6 +76,75 @@ test("finding: Moriarty's reason is announced and describes Enter", async ({ pag
   await page.getByRole("radio", { name: /Oppenheimer/ }).click();
   await expect(reason).toBeEmpty();
   await expect(enter).not.toHaveAttribute("aria-describedby", /.+/);
+});
+
+/** The sample account with every time moved four days back: Home is HOME-3 (#87). */
+function fourDaysAway(userId: string) {
+  const shift = 4 * 24 * 60 * 60_000;
+  const older = (value: unknown) =>
+    typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)
+      ? new Date(Date.parse(value) - shift).toISOString()
+      : value;
+  const tables = sampleGoals(userId) as Record<string, Record<string, unknown>[]>;
+  return Object.fromEntries(
+    Object.entries(tables).map(([name, rows]) => [
+      name,
+      rows.map((row) => Object.fromEntries(Object.entries(row).map(([k, v]) => [k, older(v)]))),
+    ]),
+  );
+}
+
+test("#87 AC1 AC2 after more than three days Home shows a calm welcome back card", async ({
+  page,
+}) => {
+  await signIn(page.context(), baseUrlOf(page), fourDaysAway);
+  await page.goto("/");
+  const card = page.getByRole("region", { name: "Goal" });
+  await expect(card.getByText("Welcome back")).toBeVisible();
+  await expect(
+    card.getByRole("heading", { name: "Your Goal is where you left it." }),
+  ).toBeVisible();
+  await expect(card.getByText("Methods section for Friday")).toBeVisible();
+  await expect(card.getByRole("link", { name: "Pick it back up" })).toHaveAttribute(
+    "href",
+    `/focus?goal=${GOAL.methods}`,
+  );
+  await expect(card.getByRole("button", { name: "Start over" })).toBeVisible();
+  await expect(card).not.toContainText(/\d+\s*days?|abandon|meanwhile/i);
+});
+
+test("#87 AC3 AC4 Start over asks calmly; Not now returns; confirming restarts at Step 1", async ({
+  page,
+}) => {
+  const account = await signIn(page.context(), baseUrlOf(page), fourDaysAway);
+  await page.goto("/");
+  const startOver = page.getByRole("button", { name: "Start over" });
+  await startOver.click();
+  const sheet = page.getByRole("dialog", { name: "Start over?" });
+  await expect(sheet).toContainText("Nothing is lost.");
+  await expect(sheet).not.toContainText(/lose|\d+ of \d+/i);
+  await sheet.getByRole("button", { name: "Not now" }).click();
+  await expect(sheet).toBeHidden();
+  await expect(startOver).toBeFocused();
+
+  await startOver.click();
+  await sheet.getByRole("button", { name: "Start from Step 1" }).click();
+  await expect(page).toHaveURL(new RegExp(`/focus\\?goal=${GOAL.methods}$`));
+  // The open session is marked restarted and the focus page opens a new one at Step 1 (the stub
+  // takes inserts since #27); test_87_ac4_the_focus_page_then_opens_a_new_session_at_step_1 checks
+  // that the new session starts with nothing done and no card shown.
+  await expect
+    .poll(async () => {
+      const { sessions } = await stubTables(account);
+      return sessions
+        .filter((row) => (row as { goal_id: string }).goal_id === GOAL.methods)
+        .map(
+          (row) =>
+            `${(row as { id: string }).id === SESSION.methods ? "old" : "new"}:${(row as { state: string }).state}`,
+        )
+        .sort();
+    })
+    .toEqual(["new:open", "old:restarted"]);
 });
 
 test("#271 AC1 #92 AC2 a Quick Replay chip opens the goal dialogue with its text, not started", async ({

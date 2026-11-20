@@ -21,6 +21,7 @@ const FOCUS = `/focus?goal=${GOAL}`;
 
 const goalView: HomeView = {
   kind: "goal",
+  welcomeBack: false,
   card: {
     goalId: GOAL,
     title: "Methods section for Friday",
