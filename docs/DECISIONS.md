@@ -233,6 +233,7 @@ Yue answered the 19 questions that the specs clean-up (issue #295, pull request 
 | TAP-SIZE | 2026-11-17 | The Move up and Move down buttons are at least 44 by 44 px. | Code follow-up, not part of the documentation change. Replaces the 44 by 35 px area of pull request #273. |
 | OFFLINE-RESUME | 2026-11-17 | Going back to a Step offline shows the failure screen with Retry. | Removes the R-OFF promise "You can still go back to your Step". |
 | PORTRAIT-SHEET | 2026-11-17 | Tapping his portrait on the focus page opens the "Who I am" sheet, as in prototype v4 F1-C. | Code follow-up. |
+| DONE-LINE | 2026-11-20 | Each finished Step's line under "What I have done" in the "Who I am" sheet is the first sentence of the last card shown in that Step. No model call. | Gives FLOW F1-C's "one line per finished Step" a source, since CARDS-SPREAD removed the "just finished" card the prototype took it from (#72). |
 | AGE-TEXT | 2026-11-17 | `{age}` in a Companion's period text is visible only in the admin and never reaches a prompt. | Applies DATES-ADMIN-ONLY. |
 | LEN-RETURN | 2026-11-17 | The return pop-up is 1 or 2 sentences and at most 30 words. | Replaces 25 to 40 words (content model) and 14 words (AI spec). |
 | SAFETY-PREMADE | 2026-11-17 | The output safety check also runs on pre-made content before publishing. | |

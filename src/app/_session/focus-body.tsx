@@ -9,6 +9,7 @@ import type { LineResponse } from "@/lib/prototype/rest-lines";
 import {
   canUndo,
   completeStep,
+  doneLines,
   isFinished,
   isHolding,
   leaveSession,
@@ -34,6 +35,7 @@ import { fullPageLoad } from "../try/full-page-load";
 import { cardLabel } from "./card-label";
 import { COMPANION } from "./companion";
 import type { SessionPaths } from "./paths";
+import { WhoIAmSheet } from "./who-i-am-sheet";
 
 const TICK_MS = 250;
 const SWIPE_PX = 40;
@@ -53,6 +55,8 @@ export type FocusHost = {
   storageKey: string;
   /** His static "My goal" line for the story being played. */
   goalLine: string;
+  /** "Who I am" of the story being played, shown in the sheet from his portrait (#72). */
+  who: string;
   plan: FocusPlan;
   loadStepCards: (request: StepCardsRequest) => Promise<StepCardsResponse>;
   loadReturnLine: (request: {
@@ -108,7 +112,7 @@ export function FocusBody({ host }: { host: FocusHost }) {
   const cardsRetryLabel = useAppText("ui.F3.fail.retry");
   const returnFailureText = useAppText("ui.F-RET.fail.body");
   const returnRetryLabel = useAppText("ui.F-RET.fail.retry");
-  const { goalLine, paths, plan, storageKey } = host;
+  const { goalLine, paths, plan, storageKey, who } = host;
   const [session, setSession] = useState<FocusSession>(() => initialSession(host));
   const [now, setNow] = useState(currentTime);
   const [failed, setFailed] = useState<Record<number, boolean>>({});
@@ -125,6 +129,9 @@ export function FocusBody({ host }: { host: FocusHost }) {
   const returnRequested = useRef(false);
   const startButton = useRef<HTMLButtonElement>(null);
   const returnPopup = useRef<HTMLDivElement>(null);
+  // F1-C, the "Who I am" sheet from his portrait (#72, PORTRAIT-SHEET).
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const portrait = useRef<HTMLButtonElement>(null);
 
   const steps = plan.steps;
   const total = steps.length;
@@ -348,7 +355,11 @@ export function FocusBody({ host }: { host: FocusHost }) {
   const onBackControl = useRef<() => void>(() => {});
   useEffect(() => {
     onBackControl.current = () => {
-      if (session.returnPending) fullPageLoad(paths.home);
+      // F1-C: system back closes the sheet like Close; the focus page keeps its back entry.
+      if (sheetOpen) {
+        setSheetOpen(false);
+        window.history.pushState(window.history.state, "", window.location.href);
+      } else if (session.returnPending) fullPageLoad(paths.home);
       else if (!isFinished(session)) onPause();
     };
   });
@@ -415,12 +426,20 @@ export function FocusBody({ host }: { host: FocusHost }) {
         <div className="focus-middle" key={index}>
           <section aria-labelledby="his-side" className="focus-his">
             <div className="focus-mygoal">
-              <span aria-hidden="true" className="focus-avatar">
-                <span className="try-avatar">
+              <button
+                aria-expanded={sheetOpen}
+                aria-haspopup="dialog"
+                aria-label="Where I am now"
+                className="focus-avatar"
+                onClick={() => setSheetOpen(true)}
+                ref={portrait}
+                type="button"
+              >
+                <span aria-hidden="true" className="try-avatar">
                   {/* eslint-disable-next-line @next/next/no-img-element -- a decorative portrait */}
                   <img alt="" src={COMPANION.portrait} />
                 </span>
-              </span>
+              </button>
               <div>
                 <h2 className="focus-label" id="his-side">
                   My goal
@@ -584,6 +603,14 @@ export function FocusBody({ host }: { host: FocusHost }) {
           {announcement}
         </p>
       </div>
+
+      <WhoIAmSheet
+        lines={sheetOpen ? doneLines(session, now) : []}
+        onClose={() => setSheetOpen(false)}
+        open={sheetOpen && returnPending === null}
+        returnTo={portrait}
+        who={who}
+      />
 
       {returnPending ? (
         <div className="return-shade">

@@ -1640,6 +1640,48 @@ a {
   margin: 0;
 }
 
+/* F1-C, the "Who I am" sheet from his portrait (issue 72, prototype v4 .sheet). */
+.who-sheet-part {
+  display: grid;
+  gap: var(--space-small-gap);
+}
+
+.who-sheet-voice,
+.who-sheet-done li {
+  font-family: var(--type-voice);
+  font-size: var(--text-note-size);
+  line-height: var(--text-slip-small-leading);
+  margin: 0;
+}
+
+.who-sheet-voice {
+  color: var(--ink);
+}
+
+.who-sheet-done {
+  display: grid;
+  gap: var(--space-small-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.who-sheet-done li {
+  color: var(--ink-2);
+}
+
+/* The 48 px portrait ring is a button that opens the sheet. */
+button.focus-avatar {
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+button.focus-avatar:focus-visible {
+  outline: 3px solid var(--control);
+  outline-offset: 2px;
+}
+
 /* Rest page of the test path (/try/rest), issues 66 and 67. */
 .rest-page {
   display: grid;

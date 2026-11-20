@@ -15,7 +15,7 @@ export async function loadFocusPlan(
   userId: string,
   goalId: string | null,
   create: boolean,
-): Promise<{ plan: AccountFocusPlan; goalLine: string } | null> {
+): Promise<{ plan: AccountFocusPlan; goalLine: string; who: string } | null> {
   const store = createSupabaseProgressStore(client);
   const [progress, content] = await Promise.all([store.read(userId, userId), getStoryContent()]);
   // A new session plays the Life Path's current story (#258); an open one keeps its own.
@@ -33,6 +33,7 @@ export async function loadFocusPlan(
       await store.write(userId, { userId, goals: [], sessions: [session] });
     }
   }
-  const goalLine = pickStory(storyProfiles(content), opened.plan.storyId).goalShort;
-  return { plan: opened.plan, goalLine };
+  const story = pickStory(storyProfiles(content), opened.plan.storyId);
+  // "My goal" and the "Who I am" sheet (#72) show the session's own story.
+  return { plan: opened.plan, goalLine: story.goalShort, who: story.who };
 }

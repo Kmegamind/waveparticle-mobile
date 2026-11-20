@@ -32,6 +32,7 @@ export function FocusScreen({ stories }: { stories: StoryProfile[] }) {
         paths: TRY_PATHS,
         storageKey: SESSION_KEY,
         goalLine: story.goalShort,
+        who: story.who,
         plan,
         loadStepCards,
         loadReturnLine,

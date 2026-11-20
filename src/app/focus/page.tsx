@@ -33,6 +33,7 @@ async function FocusContent({ searchParams }: Pick<PageProps<"/focus">, "searchP
         goalLine={loaded?.goalLine ?? ""}
         keepClockRunning={profile.keepClockRunning}
         plan={loaded?.plan ?? null}
+        who={loaded?.who ?? ""}
       />
     </AppTextProvider>
   );
