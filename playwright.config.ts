@@ -1,10 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
+import { e2ePorts } from "./e2e/support/ports";
 
-const port = 3100;
+// Ports come from E2E_PORT, E2E_LIVE_PORT and E2E_STUB_PORT (#269); defaults 3100, 3101, 3199.
+const port = e2ePorts.app;
 // The "live" project (#254) runs a second app with a model configured: MODEL_API_URL points at a
 // test-only stub model (e2e/support/stub-model.mjs), which is never part of the app bundle.
-const livePort = 3101;
-const stubPort = 3199;
+const livePort = e2ePorts.live;
+const stubPort = e2ePorts.stub;
 // A test-only stand-in for Supabase (e2e/support/stub-supabase.mjs, #73): signed-in pages can be
 // tested with seeded data. A visitor without its cookie is still signed out.
 const supabaseStubPort = 3198;
