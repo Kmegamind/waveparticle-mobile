@@ -24,7 +24,17 @@ export type LifePathRow = {
    * input, not a stored line of his). Later: none.
    */
   line: string | null;
+  /**
+   * Finished: the record of that run, the one whose closing line the row shows (#94 AC1). Null for
+   * every other row: a story he lived before the account's start has no record (#94 AC4).
+   */
+  recordHref: string | null;
 };
+
+/** The Story record of one finished run, opened from the Life Path (#94). */
+export function storyRecordHref(sessionId: string): string {
+  return `/me/history/${encodeURIComponent(sessionId)}/chapter?from=life-path`;
+}
 
 export type LifePathView = {
   periods: { name: string; rows: LifePathRow[] }[];
@@ -43,22 +53,44 @@ export function lifePath(
   const STORY_IDS = storyIds(content);
   const start = Math.max(0, STORY_IDS.indexOf(startId ?? STORY_IDS[0]));
   const firstLine = new Map<string, string>();
+  const firstRun = new Map<string, string>();
   for (const session of progress.sessions) {
     if (session.state !== "completed" || session.companionId !== COMPANION_ID) continue;
-    if (!firstLine.has(session.storyId)) firstLine.set(session.storyId, session.closingLine ?? "");
+    if (firstLine.has(session.storyId)) continue;
+    firstLine.set(session.storyId, session.closingLine ?? "");
+    firstRun.set(session.storyId, session.id);
   }
   const currentId = STORY_IDS.slice(start).find((id) => !firstLine.has(id)) ?? null;
   const row = (id: string): LifePathRow => {
     const profile = storyProfile(content, id);
     if (firstLine.has(id)) {
-      return { id, title: profile.title, state: "finished", line: firstLine.get(id) || null };
+      return {
+        id,
+        title: profile.title,
+        state: "finished",
+        line: firstLine.get(id) || null,
+        recordHref: storyRecordHref(firstRun.get(id)!),
+      };
     }
     if (STORY_IDS.indexOf(id) < start) {
-      return { id, title: profile.title, state: "memory", line: profile.goalShort };
+      return {
+        id,
+        title: profile.title,
+        state: "memory",
+        line: profile.goalShort,
+        recordHref: null,
+      };
     }
-    if (id === currentId)
-      return { id, title: profile.title, state: "current", line: profile.goalShort };
-    return { id, title: profile.title, state: "later", line: null };
+    if (id === currentId) {
+      return {
+        id,
+        title: profile.title,
+        state: "current",
+        line: profile.goalShort,
+        recordHref: null,
+      };
+    }
+    return { id, title: profile.title, state: "later", line: null, recordHref: null };
   };
   const periods: LifePathView["periods"] = [];
   for (const id of STORY_IDS) {

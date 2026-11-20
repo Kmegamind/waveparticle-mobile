@@ -2018,6 +2018,12 @@ a {
   line-height: 1.3;
 }
 
+/* #94: a finished row's title opens its Story record; it keeps the title's size (an underlined
+   link with the 44 px target from the base link rule). */
+.life-record-link {
+  font-size: inherit;
+}
+
 /* Later rows fade by size and weight; --ink-2 keeps at least 5:1 (#96 AC3). */
 .life-row[data-state="later"] .life-title {
   color: var(--ink-2);

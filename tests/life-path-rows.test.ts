@@ -19,8 +19,20 @@ const view: LifePathView = {
     {
       name: "His youth",
       rows: [
-        { id: "a", title: "A Memory Title", state: "memory", line: "I wanted one real paper." },
-        { id: "b", title: "A Finished Title", state: "finished", line: "I sent it off." },
+        {
+          id: "a",
+          title: "A Memory Title",
+          state: "memory",
+          line: "I wanted one real paper.",
+          recordHref: null,
+        },
+        {
+          id: "b",
+          title: "A Finished Title",
+          state: "finished",
+          line: "I sent it off.",
+          recordHref: "/me/history/run-b/chapter?from=life-path",
+        },
       ],
     },
     {
@@ -31,8 +43,9 @@ const view: LifePathView = {
           title: "The Canyon and the Mesa",
           state: "current",
           line: "I must choose.",
+          recordHref: null,
         },
-        { id: "c", title: "A Later Title", state: "later", line: null },
+        { id: "c", title: "A Later Title", state: "later", line: null, recordHref: null },
       ],
     },
   ],
@@ -56,6 +69,28 @@ describe("#272 AC5 (#97 AC4) every row is named for screen readers", () => {
     for (const state of ["finished", "memory", "current", "later"]) {
       expect(html).toContain(`life-node life-node-${state}`);
     }
+  });
+});
+
+describe("#94 AC1 a finished row opens the record of that Story", () => {
+  it("test_94_ac1_the_finished_row_is_one_link_to_its_record", () => {
+    const row = rowOf("b");
+    const links = row.match(/<a [^>]*>/g) ?? [];
+    expect(links).toHaveLength(1);
+    expect(links[0]).toContain('href="/me/history/run-b/chapter?from=life-path"');
+    // The link keeps the row's screen-reader name and title.
+    expect(row).toMatch(/<a [^>]*>[\s\S]*Finished: [\s\S]*A Finished Title[\s\S]*<\/a>/);
+  });
+
+  it("test_94_ac1_the_record_opened_from_the_life_path_goes_back_to_it", () => {
+    const page = read("src/app/me/history/[session]/chapter/page.tsx");
+    expect(page).toContain('"life-path"');
+    expect(page).toContain("/companions/oppenheimer");
+  });
+
+  it("test_94_ac4_memory_and_current_rows_do_not_open_a_record", () => {
+    expect(rowOf("a")).not.toContain("/chapter");
+    expect(rowOf("site-search")).not.toContain("/chapter");
   });
 });
 
