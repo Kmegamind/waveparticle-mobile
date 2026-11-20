@@ -59,15 +59,17 @@ describe("#94 the record of a finished Story", () => {
     expect(html).toMatch(/href="\/me\/history\/s1"/);
   });
 
-  it("lists key moments only when the run merged some", () => {
+  it("test_no_merged_moments_the_record_never_lists_key_moments", () => {
+    // NO-MERGED-MOMENTS (2026-11-18) covers the summary and this record page.
     const html = renderToStaticMarkup(
       createElement(StoryRecordScreen, {
         record: { ...story, keyMoments: ["I chose the mesa."] },
         backHref: "/me/history/s1",
       }),
     );
-    expect(html).toContain("Key moments");
-    expect(html).toContain("I chose the mesa.");
+    expect(html).not.toContain("Key moments");
+    expect(html).not.toContain("I chose the mesa.");
+    expect(html).toContain("The day ended at the mesa.");
   });
 
   it("both pages show not found when there is no record", () => {

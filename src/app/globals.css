@@ -2740,8 +2740,7 @@ a {
   margin-top: var(--space-control-gap);
 }
 
-.rec-steps,
-.rec-moments {
+.rec-steps {
   display: grid;
   gap: var(--space-small-gap);
   list-style: none;
@@ -2753,11 +2752,6 @@ a {
   display: flex;
   font-size: var(--text-body-size);
   gap: var(--space-control-gap);
-}
-
-.rec-moments li {
-  font-family: var(--type-voice);
-  font-size: var(--text-slip-small-size);
 }
 
 .rec-chapter {
