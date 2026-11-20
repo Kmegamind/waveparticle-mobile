@@ -3,6 +3,7 @@ import { readSupabaseEnv } from "@/lib/supabase/env";
 import { parseStoryContent } from "./parse";
 import { parseStoryDeck, type CardVersions, type StoryDeck } from "./story-deck";
 import type { StoryContent } from "./types";
+import { logEvent } from "@/lib/logging/server-log";
 
 /**
  * The one way the app reads story content (#284): `getStoryContent()` returns the Companions and
@@ -130,7 +131,7 @@ export async function readStoryCardsFromSupabase(options: {
 }
 
 function logToServer(event: ContentLog) {
-  console.warn(JSON.stringify({ source: "story-content", ...event }));
+  logEvent("story-content", event);
 }
 
 const serverRepository = createContentRepository({
