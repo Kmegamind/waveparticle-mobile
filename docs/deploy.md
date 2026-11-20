@@ -137,12 +137,27 @@ that fills `prompts.activated_at` when the import or the table editor makes a ve
 (never changing a value already set), and fills it for the version active now. Without it, such a
 version shows as "Draft" once replaced and cannot be rolled back to. It only reads Publish history.
 
+## Server logs
+The server writes log lines only through `logEvent` in `src/lib/logging/server-log.ts` (#135). Each
+line is one JSON object: `level`, `feature` (`app_text`, `prompts`, `story-content`, `story-cards`,
+`model-gateway`), `event`, `requestId`, and for model calls `durationMs`, `call`, `reason`,
+`attempts` and `rejectedRules`. Lines are written for failed reads, failed model calls, and model
+calls that take 5 seconds or longer. They never hold a Goal, a Step, a chat message, a card or any
+other text: user-text field names are refused and every value must be a short identifier. A unit
+test fails if code passes user text, or logs with `console` anywhere else in `src/`.
+
+Where to look: in Vercel, open the project, then **Logs** (Runtime Logs). Filter by the level
+(Warning, Error) or search for a feature, for example `"feature":"model-gateway"`, or for a
+`requestId`. Vercel keeps runtime logs for **1 hour on Hobby** and **1 day on Pro**; Observability
+Plus on Pro keeps them for 30 days (Vercel documentation, checked on 2026-11-20). For longer
+retention, set up a Vercel log drain; none is configured.
+
 ## After each deploy
 - Smoke test: open the deployed home page and confirm the product name is
   visible. To run the end-to-end test against a deployed address instead of a local
   build: `E2E_BASE_URL=https://<the address> npm run test:e2e`.
-- Logs / monitoring: inspect the Vercel deployment logs and runtime errors for
-  the deployment.
+- Logs / monitoring: inspect the Vercel deployment logs and the runtime logs
+  (see "Server logs" above) for the deployment.
 - Rollback: use Vercel's deployment history to promote the last known-good
   deployment; do not rewrite `main`.
 

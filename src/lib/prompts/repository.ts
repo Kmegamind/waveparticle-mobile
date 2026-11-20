@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { readSupabaseEnv } from "@/lib/supabase/env";
+import { logEvent } from "@/lib/logging/server-log";
 
 /**
  * The one way the app reads a prompt (#282): `getActivePrompt(key)` returns the active version of
@@ -132,7 +133,7 @@ export async function readActivePromptsFromSupabase(
 }
 
 function logToServer(event: PromptLog) {
-  console.warn(JSON.stringify({ source: "prompts", ...event }));
+  logEvent("prompts", event);
 }
 
 const serverRepository = createPromptRepository({

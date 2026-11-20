@@ -2,6 +2,27 @@ import { getActivePrompt, type PromptSource } from "@/lib/prompts/repository";
 import { createModelGateway } from "./gateway";
 import { createHttpModelProvider } from "./http";
 import type { GatewayLog, ModelGateway } from "./types";
+import { logEvent } from "@/lib/logging/server-log";
+
+/** A model call that takes at least this long is logged as slow (#135). */
+export const SLOW_MODEL_CALL_MS = 5_000;
+
+/** The server log of a gateway call: failures and slow calls only, never prompt or answer text. */
+export function logGatewayCall(event: GatewayLog): void {
+  const failed = event.source === "failed";
+  if (!failed && event.latencyMs < SLOW_MODEL_CALL_MS) return;
+  logEvent(
+    "model-gateway",
+    {
+      event: failed ? "model_call_failed" : "model_call_slow",
+      call: event.call,
+      reason: event.reason,
+      attempts: event.attempts,
+      rejectedRules: event.rejectedRules,
+    },
+    { durationMs: event.latencyMs, level: failed ? "error" : "warn" },
+  );
+}
 
 /** Names the gateway reads. All are server-only. None are exposed to the browser. */
 export const MODEL_GATEWAY_ENV_NAMES = ["MODEL_API_KEY", "MODEL_API_URL", "MODEL_NAME"] as const;
@@ -27,7 +48,7 @@ export function createServerModelGateway(
     prompts: options.prompts ?? getActivePrompt,
     timeLimitMs: options.timeLimitMs,
     maxAttempts: options.maxAttempts,
-    log: options.log,
+    log: options.log ?? logGatewayCall,
     provider: configured
       ? createHttpModelProvider({
           apiKey,

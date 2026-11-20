@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { readSupabaseEnv } from "@/lib/supabase/env";
 import { APP_TEXT_DEFAULTS, isAppTextKey, type AppTexts } from "./catalog";
+import { logEvent } from "@/lib/logging/server-log";
 
 /**
  * The one way the app reads its own words (#288, decision APP-TEXT): `getAppTexts()` returns the
@@ -106,7 +107,7 @@ export async function readPublishedAppText(
 }
 
 function logToServer(event: AppTextLog) {
-  console.warn(JSON.stringify({ source: "app_text", ...event }));
+  logEvent("app_text", event);
 }
 
 const serverRepository = createAppTextRepository({
