@@ -47,6 +47,8 @@ test("test_289_ac1_ac2_publish_and_roll_back_each_write_a_row_newest_first", asy
 
   await page.goto("/admin/publish-history");
   await expect(page.getByRole("heading", { level: 1, name: "Publish history" })).toBeVisible();
+  // #317: the table has its own accessible name.
+  await expect(page.getByRole("table", { name: "Publish history" })).toBeVisible();
   const published = historyRow(page, 2, "Published");
   await expect(published).toContainText(`${account.userId}@example.invalid`);
   await expect(published).toContainText("App text");

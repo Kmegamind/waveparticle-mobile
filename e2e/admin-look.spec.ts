@@ -1,8 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 import { baseUrlOf, signIn } from "./support/account";
 
-// #313: at desktop widths the admin looks like the admin prototype. The expected values are the
-// computed styles of content-admin/admin-prototype_2026-11-14_v1.html at 1280 px (light theme).
+// #313: spot checks that the admin follows the admin prototype at desktop widths. It compares the
+// computed styles of the shell (rail, menu, heading, breadcrumb, Sign out) and of the Companions
+// table (panel, header cells, cells, id chip, Published pill) with
+// content-admin/admin-prototype_2026-11-14_v1.html at 1280 px, light theme only, and checks that
+// Companions, App text and Publish history have no sideways scroll at 1024 and 1280 px. Other
+// pages, the dark theme and the editors are not compared here.
 
 test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
 
