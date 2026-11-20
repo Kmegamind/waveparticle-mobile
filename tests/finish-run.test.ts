@@ -102,6 +102,7 @@ describe("#258 AC2 what END shows of the account's session", () => {
     const store = await storeWith({});
     expect(summaryOf(seed, await store.read(USER, USER), SESSION)).toEqual({
       sessionId: SESSION,
+      goalId: "g1",
       storyTitle: "The Trade of a Theorist",
       goalTitle: GOAL_TEXT,
       steps: [STEP_TITLE, "Draft"],

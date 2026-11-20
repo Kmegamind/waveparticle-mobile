@@ -3,14 +3,18 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { accountSessionKey, snapshotOf } from "@/lib/progress/focus-session";
-import { isFinished, loadSession } from "@/lib/prototype/session";
+import { isFinished, loadSession, saveSession } from "@/lib/prototype/session";
+import { summaryUndo, summaryUndoOpen } from "@/lib/summary/end-undo";
 import type { FinishOutcome, SummaryView } from "@/lib/summary/finish-run";
 import { focusLabel, focusSecondsOf, type FinishShown } from "@/lib/summary/run";
 import { useAppText } from "@/lib/app-text/provider";
+import { fullPageLoad } from "../try/full-page-load";
 import { recordFocusProgress } from "../focus/actions";
 import { finishRunAction } from "./actions";
 
 const NO_SUMMARY_TEXT = "There is no finished Step to sum up.";
+const UNDO_FAILED_TEXT = "The Step could not be undone. Try again.";
+const currentTime = () => Date.now();
 
 type View =
   | { kind: "waiting" }
@@ -48,17 +52,69 @@ function EndBody({ summary }: { summary: SummaryView }) {
     focusSecondsOf(loadSession(window.localStorage, accountSessionKey(summary.sessionId))),
   );
   const requested = useRef(false);
+  // The last Done's own progress write; Undo waits for it so the run is reopened after it.
+  const recording = useRef<Promise<unknown>>(Promise.resolve());
+  const storageKey = accountSessionKey(summary.sessionId);
+  // #27 AC4: the same "Step done" Undo toast as on the focus page, with the time it had left.
+  const [now, setNow] = useState(currentTime);
+  const [heldMs, setHeldMs] = useState<number | null>(null);
+  const [undoing, setUndoing] = useState(false);
+  const [undoFailed, setUndoFailed] = useState(false);
+  const [device, setDevice] = useState(() => loadSession(window.localStorage, storageKey));
+  const undoOpen = !undoFailed && (heldMs !== null || undoing || summaryUndoOpen(device, now));
+
+  useEffect(() => {
+    if (!undoOpen || heldMs !== null) return;
+    const timer = window.setInterval(() => setNow(currentTime()), 250);
+    return () => window.clearInterval(timer);
+  }, [undoOpen, heldMs]);
+
+  function holdToast() {
+    if (heldMs === null && device?.undo)
+      setHeldMs(Math.max(0, device.undo.untilMs - currentTime()));
+  }
+
+  function releaseToast() {
+    if (heldMs === null || !device?.undo) return;
+    const untilMs = currentTime() + heldMs;
+    setDevice((current) =>
+      current?.undo ? { ...current, undo: { ...current.undo, untilMs } } : current,
+    );
+    setHeldMs(null);
+    setNow(currentTime());
+  }
+
+  async function onUndo() {
+    if (undoing) return;
+    const back = summaryUndo(device, currentTime(), heldMs);
+    setHeldMs(null);
+    if (!back) return;
+    setUndoing(true);
+    await recording.current.catch(() => undefined);
+    const reopened = await recordFocusProgress(snapshotOf(summary.sessionId, back)).catch(
+      () => false,
+    );
+    if (!reopened) {
+      // The account still holds the finished run; this device keeps it too.
+      setUndoing(false);
+      setUndoFailed(true);
+      return;
+    }
+    saveSession(window.localStorage, back, storageKey);
+    fullPageLoad(`/focus?goal=${encodeURIComponent(summary.goalId)}`);
+  }
 
   useEffect(() => {
     if (view.kind !== "waiting" || requested.current) return;
     requested.current = true;
-    const device = loadSession(window.localStorage, accountSessionKey(summary.sessionId));
+    const stored = loadSession(window.localStorage, storageKey);
     // The last Done's progress may still be on its way: send this device's state first, so the
     // account knows the session is complete (#257 records it the same way).
     const recorded =
-      device && isFinished(device)
-        ? recordFocusProgress(snapshotOf(summary.sessionId, device)).catch(() => false)
+      stored && isFinished(stored)
+        ? recordFocusProgress(snapshotOf(summary.sessionId, stored)).catch(() => false)
         : Promise.resolve(false);
+    recording.current = recorded;
     recorded
       .then(() => finishRunAction({ sessionId: summary.sessionId }))
       .catch((): FinishOutcome => ({ status: "failed" }))
@@ -68,7 +124,7 @@ function EndBody({ summary }: { summary: SummaryView }) {
         else if (outcome.status === "failed") setView({ kind: "failed" });
         else setView({ kind: "none" });
       });
-  }, [summary.sessionId, view.kind]);
+  }, [storageKey, summary.sessionId, view.kind]);
 
   if (view.kind === "none") return <NoSummary />;
 
@@ -78,6 +134,7 @@ function EndBody({ summary }: { summary: SummaryView }) {
       className="app-screen end-page"
       data-ready="true"
       data-state={view.kind}
+      data-toast={undoOpen ? "open" : undefined}
     >
       <p className="focus-label">{summary.storyTitle}</p>
 
@@ -164,6 +221,28 @@ function EndBody({ summary }: { summary: SummaryView }) {
           Home
         </Link>
       </div>
+
+      {undoFailed ? <p role="alert">{UNDO_FAILED_TEXT}</p> : null}
+      {undoOpen ? (
+        <div
+          className="focus-toast"
+          onBlur={releaseToast}
+          onFocus={holdToast}
+          onMouseEnter={holdToast}
+          onMouseLeave={releaseToast}
+          role="status"
+        >
+          <span>Step done</span>
+          <button
+            aria-disabled={undoing}
+            className="focus-toast-action"
+            onClick={onUndo}
+            type="button"
+          >
+            Undo
+          </button>
+        </div>
+      ) : null}
     </main>
   );
 }
