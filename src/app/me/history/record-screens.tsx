@@ -48,15 +48,24 @@ export function SessionRecordScreen({ record }: { record: SessionRecordView }) {
 export function StoryRecordScreen({
   record,
   backHref,
+  backLabel = "Session record",
 }: {
   record: StoryRecordView;
   backHref: string;
+  /** Where the back link goes: the session record, or the Life Path it was opened from (#94). */
+  backLabel?: "Session record" | "Life Path";
 }) {
   return (
     <>
-      <Link aria-label="Back to the session record" className="life-back" href={backHref}>
+      <Link
+        aria-label={
+          backLabel === "Life Path" ? "Back to the Life Path" : "Back to the session record"
+        }
+        className="life-back"
+        href={backHref}
+      >
         <span aria-hidden="true">‹</span>
-        <span className="focus-label">Session record</span>
+        <span className="focus-label">{backLabel}</span>
       </Link>
       <h1>{record.storyTitle}</h1>
       {record.steps.map((step, index) =>
