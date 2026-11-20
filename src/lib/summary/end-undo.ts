@@ -26,3 +26,28 @@ export function summaryUndo(
   const next = undoDone(base, nowMs);
   return next === base ? null : next;
 }
+
+export type ReopenOutcome = "reopened" | "nothing" | "failed";
+
+/**
+ * Undo on the summary, in order: wait for every write the summary started on arrival (the last
+ * Done's progress and the closing line), then write the reopened run to the account, and only
+ * then keep it on this device. Waiting keeps a late arrival write from finishing the run again or
+ * wiping a stored closing line. If the account write fails, this device keeps the finished run.
+ */
+export async function reopenFromSummary(input: {
+  device: FocusSession | null;
+  nowMs: number;
+  heldMs: number | null;
+  pending: Promise<unknown>;
+  record: (back: FocusSession) => Promise<boolean>;
+  save: (back: FocusSession) => void;
+}): Promise<ReopenOutcome> {
+  const back = summaryUndo(input.device, input.nowMs, input.heldMs);
+  if (!back) return "nothing";
+  await input.pending.catch(() => undefined);
+  const reopened = await input.record(back).catch(() => false);
+  if (!reopened) return "failed";
+  input.save(back);
+  return "reopened";
+}

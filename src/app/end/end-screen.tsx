@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { accountSessionKey, snapshotOf } from "@/lib/progress/focus-session";
 import { isFinished, loadSession, saveSession } from "@/lib/prototype/session";
-import { summaryUndo, summaryUndoOpen } from "@/lib/summary/end-undo";
+import { reopenFromSummary, summaryUndoOpen } from "@/lib/summary/end-undo";
 import type { FinishOutcome, SummaryView } from "@/lib/summary/finish-run";
 import { focusLabel, focusSecondsOf, type FinishShown } from "@/lib/summary/run";
 import { useAppText } from "@/lib/app-text/provider";
@@ -52,8 +52,9 @@ function EndBody({ summary }: { summary: SummaryView }) {
     focusSecondsOf(loadSession(window.localStorage, accountSessionKey(summary.sessionId))),
   );
   const requested = useRef(false);
-  // The last Done's own progress write; Undo waits for it so the run is reopened after it.
-  const recording = useRef<Promise<unknown>>(Promise.resolve());
+  // The writes the summary starts on arrival (the last Done's progress, then the closing line).
+  // Undo waits for them, so it is the last write and nothing finishes the run again after it.
+  const arrival = useRef<Promise<unknown>>(Promise.resolve());
   const storageKey = accountSessionKey(summary.sessionId);
   // #27 AC4: the same "Step done" Undo toast as on the focus page, with the time it had left.
   const [now, setNow] = useState(currentTime);
@@ -86,22 +87,23 @@ function EndBody({ summary }: { summary: SummaryView }) {
 
   async function onUndo() {
     if (undoing) return;
-    const back = summaryUndo(device, currentTime(), heldMs);
-    setHeldMs(null);
-    if (!back) return;
     setUndoing(true);
-    await recording.current.catch(() => undefined);
-    const reopened = await recordFocusProgress(snapshotOf(summary.sessionId, back)).catch(
-      () => false,
-    );
-    if (!reopened) {
-      // The account still holds the finished run; this device keeps it too.
-      setUndoing(false);
-      setUndoFailed(true);
+    const outcome = await reopenFromSummary({
+      device,
+      nowMs: currentTime(),
+      heldMs,
+      pending: arrival.current,
+      record: (back) => recordFocusProgress(snapshotOf(summary.sessionId, back)),
+      save: (back) => saveSession(window.localStorage, back, storageKey),
+    });
+    setHeldMs(null);
+    if (outcome === "reopened") {
+      fullPageLoad(`/focus?goal=${encodeURIComponent(summary.goalId)}`);
       return;
     }
-    saveSession(window.localStorage, back, storageKey);
-    fullPageLoad(`/focus?goal=${encodeURIComponent(summary.goalId)}`);
+    setUndoing(false);
+    // The account still holds the finished run; this device keeps it too.
+    if (outcome === "failed") setUndoFailed(true);
   }
 
   useEffect(() => {
@@ -114,16 +116,16 @@ function EndBody({ summary }: { summary: SummaryView }) {
       stored && isFinished(stored)
         ? recordFocusProgress(snapshotOf(summary.sessionId, stored)).catch(() => false)
         : Promise.resolve(false);
-    recording.current = recorded;
-    recorded
+    const finished = recorded
       .then(() => finishRunAction({ sessionId: summary.sessionId }))
-      .catch((): FinishOutcome => ({ status: "failed" }))
-      .then((outcome) => {
-        requested.current = false;
-        if (outcome.status === "ok") setView({ kind: "shown", shown: outcome.shown });
-        else if (outcome.status === "failed") setView({ kind: "failed" });
-        else setView({ kind: "none" });
-      });
+      .catch((): FinishOutcome => ({ status: "failed" }));
+    arrival.current = finished;
+    finished.then((outcome) => {
+      requested.current = false;
+      if (outcome.status === "ok") setView({ kind: "shown", shown: outcome.shown });
+      else if (outcome.status === "failed") setView({ kind: "failed" });
+      else setView({ kind: "none" });
+    });
   }, [storageKey, summary.sessionId, view.kind]);
 
   if (view.kind === "none") return <NoSummary />;

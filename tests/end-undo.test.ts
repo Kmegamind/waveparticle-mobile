@@ -4,7 +4,7 @@ import { remainingSeconds } from "@/lib/clock";
 import type { AccountProgress } from "@/lib/progress/account-progress";
 import { applyFocusSnapshot, openFocusSession, snapshotOf } from "@/lib/progress/focus-session";
 import { HOLD_MS, UNDO_MS, completeStep, setStepCards, syncSession } from "@/lib/prototype/session";
-import { summaryUndo, summaryUndoOpen } from "@/lib/summary/end-undo";
+import { reopenFromSummary, summaryUndo, summaryUndoOpen } from "@/lib/summary/end-undo";
 
 // #27 AC4: the summary after the last Done shows the same Undo toast, and Undo reopens the run.
 
@@ -115,10 +115,78 @@ describe("#27 AC4 the summary's Undo toast", () => {
     expect(summaryUndo(back, 75_000, null)).toBeNull();
   });
 
+  it("test_27_ac4_undo_writes_only_after_the_summary_finished_its_own_writes", async () => {
+    const { device } = finishedRun();
+    const events: string[] = [];
+    let finishArrival!: () => void;
+    const pending = new Promise<void>((resolve) => {
+      finishArrival = () => {
+        events.push("arrival writes done");
+        resolve();
+      };
+    });
+    const result = reopenFromSummary({
+      device,
+      nowMs: 75_000,
+      heldMs: null,
+      pending,
+      record: async (back) => {
+        events.push(`record current=${back.current}`);
+        return true;
+      },
+      save: (back) => events.push(`save current=${back.current}`),
+    });
+    await Promise.resolve();
+    expect(events).toEqual([]);
+    finishArrival();
+    expect(await result).toBe("reopened");
+    expect(events).toEqual(["arrival writes done", "record current=1", "save current=1"]);
+  });
+
+  it("test_27_ac4_a_failed_account_write_keeps_the_finished_run_on_this_device", async () => {
+    const { device } = finishedRun();
+    const saved: unknown[] = [];
+    const failed = await reopenFromSummary({
+      device,
+      nowMs: 75_000,
+      heldMs: null,
+      pending: Promise.reject(new Error("arrival failed")),
+      record: async () => false,
+      save: (back) => saved.push(back),
+    });
+    expect(failed).toBe("failed");
+    expect(saved).toEqual([]);
+    const thrown = await reopenFromSummary({
+      device,
+      nowMs: 75_000,
+      heldMs: null,
+      pending: Promise.resolve(),
+      record: () => Promise.reject(new Error("offline")),
+      save: (back) => saved.push(back),
+    });
+    expect(thrown).toBe("failed");
+    expect(saved).toEqual([]);
+  });
+
+  it("test_27_ac4_nothing_is_written_after_the_toast_ran_out", async () => {
+    const { device } = finishedRun();
+    let recorded = false;
+    const outcome = await reopenFromSummary({
+      device,
+      nowMs: 70_000 + UNDO_MS + 1,
+      heldMs: null,
+      pending: Promise.resolve(),
+      record: async () => (recorded = true),
+      save: () => undefined,
+    });
+    expect(outcome).toBe("nothing");
+    expect(recorded).toBe(false);
+  });
+
   it("test_27_ac4_the_summary_page_shows_the_toast_and_opens_the_focus_page_after_undo", () => {
     const screen = readFileSync("src/app/end/end-screen.tsx", "utf8");
     expect(screen).toContain('role="status"');
     expect(screen).toContain("Step done");
-    expect(screen).toContain("summaryUndo(");
+    expect(screen).toContain("reopenFromSummary(");
   });
 });
