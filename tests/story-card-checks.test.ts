@@ -75,7 +75,7 @@ describe("story card checks (#304)", () => {
     expect(cardProblems(part("I sat in Rutherford’s office."), leaks)).toEqual([
       `Mentions "rutherford's office", which comes in a later part.`,
     ]);
-    expect(cardProblems(part("He said, I can't\ntell  you."), leaks)).toEqual([
+    expect(cardProblems(part("I said, I can't\ntell  you."), leaks)).toEqual([
       `Mentions "can't tell you", which comes in a later part.`,
     ]);
   });
@@ -99,5 +99,49 @@ describe("story card checks (#304)", () => {
 
   it("test_304_a_passing_card_has_no_problems", () => {
     expect(cardProblems(part("I sit at the bench and wait."), ["heisenberg"])).toEqual([]);
+  });
+});
+
+// #16 (US-FMT-4, D2): every card can be read on its own. The same rule runs on every admin save and
+// in the server's check before Publish, because both call cardProblems.
+describe("a card reads on its own (#16)", () => {
+  it.each(["He", "She", "It", "This"])("test_16_ac1_a_card_opening_with_%s_fails", (word) => {
+    expect(cardProblems(part(`${word} was cold in the lab.`), [])).toEqual([
+      `Opens with "${word}". Name who or what you mean, so the card reads on its own.`,
+    ]);
+  });
+
+  it("test_16_ac1_the_opener_is_found_after_quotes_and_in_any_case", () => {
+    expect(cardProblems(part("“this was the wrong door,” I say."), [])).toEqual([
+      'Opens with "this". Name who or what you mean, so the card reads on its own.',
+    ]);
+  });
+
+  it.each(["again", "another", "as I said", "the same", "that one"])(
+    "test_16_ac1_a_card_using_%s_fails",
+    (phrase) => {
+      expect(cardProblems(part(`I try ${phrase} door in the hall.`), [])).toEqual([
+        `Uses "${phrase}", which points at another card. The card must read on its own.`,
+      ]);
+    },
+  );
+
+  it("test_16_ac1_those_words_match_whole_words_only", () => {
+    // "Heat", "Items", "Thistle", "gain" and "sameness" are not the listed words.
+    expect(cardProblems(part("Heat rises. Items, thistle and a gain of sameness."), [])).toEqual(
+      [],
+    );
+    expect(cardProblems(part("Items sit on the bench."), [])).toEqual([]);
+  });
+
+  it("test_16_ac2_a_card_that_repeats_the_noun_passes", () => {
+    expect(cardProblems(part("The lab was cold. I keep the lab door shut."), [])).toEqual([]);
+  });
+
+  it("test_16_ac1_the_admin_save_and_the_publish_check_share_the_rule", () => {
+    // The background card goes through the same checks.
+    expect(
+      cardProblems({ kind: "background", part: null, body: "It rains again." }, []),
+    ).toHaveLength(2);
   });
 });
