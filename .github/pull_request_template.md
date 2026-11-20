@@ -16,6 +16,6 @@ Closes #
 - [ ] If code and `DESIGN.md` disagree, `DESIGN.md` was followed or the difference is explained here
 
 ## Docs
-- [ ] `docs/api/` updated for interface changes
+- [ ] One file under `docs/api/` added or updated for each interface change (then run `node scripts/docs-index.mjs`)
 - [ ] New file in `docs/decisions/` for any hard-to-reverse choice
 - [ ] `AGENTS.md` / `docs/memory/` updated if conventions, versions or pitfalls changed
