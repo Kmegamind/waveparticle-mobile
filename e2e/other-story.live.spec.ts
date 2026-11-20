@@ -1,11 +1,12 @@
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import stories from "../src/content/oppenheimer/stories.json";
+import { e2ePorts } from "./support/ports";
 
 // #254 AC3, AC4 and AC8 with a model configured (the "mobile-live" project): the app's
 // MODEL_API_URL points at the test-only stub model (e2e/support/stub-model.mjs).
 
-const STUB = "http://127.0.0.1:3199";
+const STUB = `http://127.0.0.1:${e2ePorts.stub}`;
 const bohr = stories.find((story) => story.id === "bohr-difficulties")!;
 const stage0 = JSON.parse(readFileSync("docs/demo/bohr-difficulties.stage0.json", "utf8"));
 const cache = JSON.parse(readFileSync("docs/demo/bohr-difficulties.generated.json", "utf8"));
