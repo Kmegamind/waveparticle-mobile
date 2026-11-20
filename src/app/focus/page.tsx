@@ -29,7 +29,11 @@ async function FocusContent({ searchParams }: Pick<PageProps<"/focus">, "searchP
   ).catch(() => null);
   return (
     <AppTextProvider texts={await getAppTexts()}>
-      <AccountFocus goalLine={loaded?.goalLine ?? ""} plan={loaded?.plan ?? null} />
+      <AccountFocus
+        goalLine={loaded?.goalLine ?? ""}
+        plan={loaded?.plan ?? null}
+        who={loaded?.who ?? ""}
+      />
     </AppTextProvider>
   );
 }

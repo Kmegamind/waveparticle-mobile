@@ -441,3 +441,32 @@ export function clearSession(storage: SessionStorage): void {
     // Nothing stored, nothing to clear.
   }
 }
+
+/** A period after these words, or after a single capital letter, does not end a sentence. */
+const NOT_A_SENTENCE_END = /(?:^|\s)(?:[A-Z]|Mr|Mrs|Ms|Dr|Gen|Col|Lt|Capt|Prof|St)\.$/;
+
+/** The first sentence of a card (DONE-LINE); a card of one sentence is kept whole. */
+export function firstSentence(text: string): string {
+  const trimmed = text.trim();
+  const ends = /[.!?]+(?=\s|$)/g;
+  for (let match = ends.exec(trimmed); match; match = ends.exec(trimmed)) {
+    const end = match.index + match[0].length;
+    if (!NOT_A_SENTENCE_END.test(trimmed.slice(0, end))) return trimmed.slice(0, end);
+  }
+  return trimmed;
+}
+
+/**
+ * "What I have done" in the "Who I am" sheet (#72, DONE-LINE): one line per finished Step, the
+ * first sentence of the last card shown in that Step. Never a Step ahead; no model call. A Step
+ * finished before any card was shown has no line.
+ */
+export function doneLines(session: FocusSession, nowMs: number): string[] {
+  const finished = Math.min(session.current, session.steps.length);
+  const lines: string[] = [];
+  for (let index = 0; index < finished; index += 1) {
+    const last = visibleCards(session, index, nowMs).at(-1);
+    if (last) lines.push(firstSentence(last));
+  }
+  return lines;
+}

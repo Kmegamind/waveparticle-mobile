@@ -416,7 +416,7 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 
 - **Frame:** sheet over F1, opened by tapping his portrait (PORTRAIT-SHEET). The clock keeps running behind it.
 - **Purpose:** let the user see who he is and what he has done so far, in his own words.
-- **Shows:** "Who I am" (one or two first-person sentences) and "What I have done" (one line per finished Step, never a row beyond them). No adjectives written about him, no quotation, no future plans, no name used as a label.
+- **Shows:** the title "Where I am now", "Who I am" (one or two first-person sentences) and "What I have done" (one line per finished Step, never a row beyond them). Each line is the first sentence of the last card shown in that Step, with no model call (DONE-LINE); before the first finished Step it says "Nothing yet tonight." No adjectives written about him, no quotation, no future plans, no name used as a label.
 - **Can do and leads to:** **Close** returns to F1.
 - **System back:** same as Close. Escape also closes.
 - **States:** not yet specified.

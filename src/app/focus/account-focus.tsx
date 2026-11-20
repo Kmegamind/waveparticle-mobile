@@ -18,9 +18,12 @@ const noSubscription = () => () => {};
 export function AccountFocus({
   plan,
   goalLine,
+  who,
 }: {
   plan: AccountFocusPlan | null;
   goalLine: string;
+  /** "Who I am" of the session's story, for the sheet from his portrait (#72). */
+  who: string;
 }) {
   const ready = useSyncExternalStore(
     noSubscription,
@@ -41,6 +44,7 @@ export function AccountFocus({
         paths: accountPathsFor(plan.sessionId),
         storageKey: accountSessionKey(plan.sessionId),
         goalLine,
+        who,
         plan: sessionPlanOf(plan),
         // #300: the pre-made cards of this session, by Step; nothing else goes to the server.
         loadStepCards: (request) =>
