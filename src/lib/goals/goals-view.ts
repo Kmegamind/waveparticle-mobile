@@ -227,6 +227,14 @@ function openAction(goal: Goal, index: Index) {
     return { action: "start" as const, actionHref: startHref(goal.title) };
   }
   const href = continueHref({ id: goal.id, status: "in_progress" });
+  // #75 AC5: an Ongoing Goal whose last run finished has no open Plan. Start opens a new run of
+  // the same Steps on the focus page.
+  const sessions = index.sessionsOf.get(goal.id) ?? [];
+  const runFinished =
+    goal.kind === "ongoing" &&
+    sessions.some((session) => session.state === "completed") &&
+    !sessions.some((session) => session.state === "open" || session.state === "on_hold");
+  if (runFinished && href) return { action: "start" as const, actionHref: href };
   return { action: href ? ("continue" as const) : null, actionHref: href };
 }
 

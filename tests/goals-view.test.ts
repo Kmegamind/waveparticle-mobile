@@ -226,6 +226,30 @@ describe("the Goals lists (prototype v4 G1, G5, G5-D)", () => {
     });
   });
 
+  it("test_75_ac5_an_ongoing_goal_after_its_last_step_offers_start_for_a_new_run", () => {
+    const input = data();
+    input.steps.push({
+      id: "s-i1",
+      goalId: G.ielts,
+      position: 0,
+      title: "Listen once",
+      description: null,
+      minutes: 10,
+    });
+    // Its only session is completed: no open Plan, so the row says Start, and Start opens a new
+    // run of the same Steps on the focus page (not a new Goal).
+    const lists = goalsLists(input, on);
+    expect(lists.ongoing[0]).toMatchObject({
+      action: "start",
+      actionHref: `/focus?goal=${G.ielts}`,
+    });
+    expect(goalDetail(input, G.ielts, on)).toMatchObject({
+      status: "in_progress",
+      primary: "start",
+      primaryHref: `/focus?goal=${G.ielts}`,
+    });
+  });
+
   it("#79 AC2 AC5 On hold rows offer Resume and Done rows Reopen", () => {
     const lists = goalsLists(data(), on);
     expect(lists.hold[0].action).toBe("resume");

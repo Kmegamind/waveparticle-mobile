@@ -15,6 +15,7 @@ import {
   accountReturnLine,
 } from "@/lib/progress/account-lines";
 import { premadeStepCards } from "@/lib/progress/premade-cards";
+import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
 import { isSessionPath } from "@/app/try/session-paths";
 import {
   completeStep,
@@ -211,6 +212,97 @@ describe("#257 AC3 and AC4 progress is recorded on the account", () => {
     });
     expect(back!.session.state).toBe("open");
     expect(back!.goal.status).toBe("in_progress");
+  });
+
+  it("test_75_ac5_an_ongoing_goal_stays_in_progress_after_its_last_step", () => {
+    const base = account();
+    const progress = opened({
+      ...base,
+      goals: base.goals.map((goal) => ({ ...goal, kind: "ongoing" as const })),
+    });
+    const plan = planOf(progress);
+    let session = runningSession(plan);
+    session = completeStep(session, 1_000);
+    session = setStepCards(session, 1, { opening: "Next.", story: [] }, 1_000);
+    session = completeStep(session, 5_000);
+    const done = applyFocusSnapshot(progress, snapshotOf(plan.sessionId, session), {
+      now: NOW,
+      newId: ids(),
+      userId: "user-1",
+    });
+    // The run is finished, so no Plan stays open; the Goal stays In progress and can Start again.
+    expect(done!.session.state).toBe("completed");
+    expect(done!.goal.status).toBe("in_progress");
+    const again = openFocusSession(
+      { ...progress, goals: [done!.goal], sessions: [done!.session] },
+      "goal-1",
+      { storyId: "site-search", newId: ids() },
+    );
+    expect(again).not.toBeNull();
+    expect(again!.plan.done).toEqual([false, false]);
+  });
+
+  it("test_75_ac5_a_one_time_goal_moves_to_done_after_its_last_step", () => {
+    const base = account();
+    const progress = opened({
+      ...base,
+      goals: base.goals.map((goal) => ({ ...goal, kind: "one_time" as const })),
+    });
+    const plan = planOf(progress);
+    let session = runningSession(plan);
+    session = completeStep(session, 1_000);
+    session = setStepCards(session, 1, { opening: "Next.", story: [] }, 1_000);
+    session = completeStep(session, 5_000);
+    const done = applyFocusSnapshot(progress, snapshotOf(plan.sessionId, session), {
+      now: NOW,
+      newId: ids(),
+      userId: "user-1",
+    });
+    expect(done!.goal.status).toBe("done");
+  });
+
+  it("test_75_ac5_the_account_store_reads_the_goal_type", async () => {
+    const tables: Record<string, Record<string, unknown>[]> = {
+      goals: [
+        {
+          id: "g-1",
+          user_id: "user-1",
+          title: "A",
+          text: "A",
+          status: "in_progress",
+          kind: "ongoing",
+        },
+        {
+          id: "g-2",
+          user_id: "user-1",
+          title: "B",
+          text: "B",
+          status: "in_progress",
+          kind: "one_time",
+        },
+        { id: "g-3", user_id: "user-1", title: "C", text: "C", status: "in_progress" },
+      ],
+      steps: [],
+      sessions: [],
+    };
+    const query = (rows: Record<string, unknown>[]) => {
+      const result = { data: rows, error: null };
+      const chain = {
+        select: () => chain,
+        eq: () => chain,
+        in: () => chain,
+        insert: () => chain,
+        upsert: () => chain,
+        delete: () => chain,
+        then: (resolve: (value: typeof result) => unknown) => Promise.resolve(resolve(result)),
+      };
+      return chain;
+    };
+    const store = createSupabaseProgressStore({
+      from: (table: string) => query(tables[table] ?? []),
+    });
+    const progress = await store.read("user-1", "user-1");
+    expect(progress.goals.map((goal) => goal.kind)).toEqual(["ongoing", "one_time", "one_time"]);
   });
 
   it("the pause message keeps its pause number and the return pop-up is written once", () => {

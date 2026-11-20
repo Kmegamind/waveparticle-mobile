@@ -269,8 +269,11 @@ export function applyFocusSnapshot(
   }
 
   const completed = current >= total;
+  // #75 AC5: a One-time Goal moves to Done at its last Step; an Ongoing Goal stays In progress with
+  // no open Plan (the session is completed), so its next visit starts a new run. Undo reopens both.
+  const goalDone = completed && goal.kind !== "ongoing";
   return {
-    goal: { ...goal, status: completed ? "done" : "in_progress" },
+    goal: { ...goal, status: goalDone ? "done" : "in_progress" },
     session: { ...session, state: completed ? "completed" : "open", steps: nextSteps, lines },
   };
 }
