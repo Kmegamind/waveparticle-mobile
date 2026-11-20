@@ -311,6 +311,35 @@ test.describe("the Goals page", () => {
     await expect(page.locator(".goals-history li")).toHaveCount(1);
   });
 
+  test("test_112_ac2_history_filters_by_goal_and_time_range", async ({ page, baseURL }) => {
+    await openGoals(page, baseURL!, sampleGoals, "/goals?tab=history");
+    const rows = page.locator(".goals-history li");
+    const goal = page.getByRole("combobox", { name: "Goal" });
+    const time = page.getByRole("combobox", { name: "Time" });
+    await expect(goal).toHaveValue("");
+    await expect(time).toHaveValue("all");
+    await expect(rows).toHaveCount(3);
+
+    // The Methods session was a few minutes ago; Lab report 10 days and the portfolio 15 days ago.
+    await time.selectOption({ label: "This week" });
+    await expect(rows).toHaveCount(1);
+    await expect(rows.first()).toContainText("Methods section for Friday");
+
+    await time.selectOption({ label: "All time" });
+    await goal.selectOption({ label: "Lab report" });
+    await expect(rows).toHaveCount(1);
+    await expect(rows.first()).toContainText("Lab report");
+
+    // AC3: no result is one plain sentence with no suggestion to start something.
+    await time.selectOption({ label: "This week" });
+    await expect(rows).toHaveCount(0);
+    await expect(page.getByRole("tabpanel")).toHaveText("No matches.");
+
+    // The filters belong to History only.
+    await tab(page, "Done").click();
+    await expect(goal).toBeHidden();
+  });
+
   test("#73 #79 #80 each tab has its quiet empty line", async ({ page, baseURL }) => {
     await openGoals(page, baseURL!, () => ({}));
     await expect(page.getByText("No goals yet.")).toBeVisible();

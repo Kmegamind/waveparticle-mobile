@@ -13,3 +13,5 @@
 - Name each test after the acceptance criterion it proves (`test_us1_ac2_rejects_empty_name`).
 - Write the failing test before the code.
 - Never weaken or delete a test to make CI pass; fix the code or raise it with a human.
+
+- Copy rules (#9): `tests/copy-rules.test.ts` scans the code default of every app text key (`src/content/app-text.json`) for "overdue", "behind", "missed", "owe", "catch up", "abandoned", "partial", any streak, and Mission or Task for the user's work. CI fails on a match and lists each key and text.

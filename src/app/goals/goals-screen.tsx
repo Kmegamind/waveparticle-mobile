@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, type KeyboardEvent } from "react";
 import {
   SHOW_FIRST,
+  filterHistory,
   goalsLists,
+  historyGoals,
   matchesSearch,
   type GoalRow,
   type GoalStatus,
   type GoalsData,
   type GoalsTab,
+  type HistoryRange,
   type HistoryRow,
 } from "@/lib/goals/goals-view";
 import { GoalMenu, NewGoalSheet, Toast, keptDraft } from "./goal-sheets";
@@ -33,6 +36,12 @@ const EMPTY: Record<GoalsTab, string> = {
   history: "Your sessions will show up here.",
 };
 
+const RANGES: { id: HistoryRange; label: string }[] = [
+  { id: "all", label: "All time" },
+  { id: "week", label: "This week" },
+  { id: "month", label: "This month" },
+];
+
 const EPOCH = { now: new Date(0), timeZone: "UTC" };
 
 /** After a change or Undo, keyboard focus goes to the selected tab: the row may have moved away. */
@@ -44,6 +53,9 @@ export function GoalsScreen({ data, initialTab }: { data: GoalsData; initialTab:
   const local = useLocalNow();
   const [tab, setTab] = useState<GoalsTab>(initialTab);
   const [query, setQuery] = useState("");
+  // History filters (#112, G6): one Goal or all, and a time range.
+  const [historyGoal, setHistoryGoal] = useState("");
+  const [range, setRange] = useState<HistoryRange>("all");
   const [showAll, setShowAll] = useState(false);
   const [menu, setMenu] = useState<{
     goalId: string;
@@ -156,6 +168,34 @@ export function GoalsScreen({ data, initialTab }: { data: GoalsData; initialTab:
           </button>
         ))}
       </div>
+      {tab === "history" && lists.history.length > 0 ? (
+        <div className="goals-filters">
+          <label className="goals-filter">
+            <span>Goal</span>
+            <select onChange={(event) => setHistoryGoal(event.target.value)} value={historyGoal}>
+              <option value="">All Goals</option>
+              {historyGoals(lists.history).map((goal) => (
+                <option key={goal.id} value={goal.id}>
+                  {goal.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="goals-filter">
+            <span>Time</span>
+            <select
+              onChange={(event) => setRange(event.target.value as HistoryRange)}
+              value={range}
+            >
+              {RANGES.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      ) : null}
       <section
         aria-labelledby={`goals-tab-${tab}`}
         className="goals-panel"
@@ -167,9 +207,13 @@ export function GoalsScreen({ data, initialTab }: { data: GoalsData; initialTab:
         {tab === "done" ? rowsPanel(lists.done, false) : null}
         {tab === "history" ? (
           <History
-            query={query}
+            filtered={query.trim() !== "" || historyGoal !== "" || range !== "all"}
             ready={ready}
-            rows={lists.history.filter((row) => matchesSearch(query, row.goalTitle))}
+            rows={filterHistory(
+              lists.history.filter((row) => matchesSearch(query, row.goalTitle)),
+              { goalId: historyGoal || null, range },
+              local ?? EPOCH,
+            )}
           />
         ) : null}
       </section>
@@ -281,9 +325,18 @@ function Empty({
   );
 }
 
-function History({ rows, query, ready }: { rows: HistoryRow[]; query: string; ready: boolean }) {
+function History({
+  rows,
+  filtered,
+  ready,
+}: {
+  rows: HistoryRow[];
+  /** A search or a filter is on: an empty list then reads "No matches." (#112 AC3). */
+  filtered: boolean;
+  ready: boolean;
+}) {
   if (rows.length === 0) {
-    return <p className="goals-empty">{query.trim() ? "No matches." : EMPTY.history}</p>;
+    return <p className="goals-empty">{filtered ? "No matches." : EMPTY.history}</p>;
   }
   return <HistoryList ready={ready} rows={rows} />;
 }
