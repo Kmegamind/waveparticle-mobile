@@ -171,7 +171,7 @@ describe("ADM-06 editor view (#304)", () => {
   });
 
   it("test_304_ac3_a_published_card_with_a_year_shows_as_failing", () => {
-    const rows = [row({ body: "It was 1943 and I was cold." })];
+    const rows = [row({ body: "The winter was 1943 and I was cold." })];
     const shown = storyDetail(story, [], rows, leaksForStory(rows, stageZero))!.parts[0].cards[0];
     expect(shown.problems).toEqual([
       'Mentions a year ("1943"). Years and dates stay in the admin.',
