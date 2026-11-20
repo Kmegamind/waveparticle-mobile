@@ -298,9 +298,10 @@ describe("#257 AC3 and AC4 progress is recorded on the account", () => {
       };
       return chain;
     };
-    const store = createSupabaseProgressStore({
-      from: (table: string) => query(tables[table] ?? []),
-    });
+    const client = { from: (table: string) => query(tables[table] ?? []) };
+    const store = createSupabaseProgressStore(
+      client as unknown as Parameters<typeof createSupabaseProgressStore>[0],
+    );
     const progress = await store.read("user-1", "user-1");
     expect(progress.goals.map((goal) => goal.kind)).toEqual(["ongoing", "one_time", "one_time"]);
   });
