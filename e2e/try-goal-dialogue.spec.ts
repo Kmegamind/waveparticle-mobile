@@ -374,3 +374,89 @@ test("#31 US-GD-14 every turn goes to the server; after the Plan there is no inp
   await expect(plan(page)).toBeVisible();
   await expect.poll(() => turns.length).toBe(5);
 });
+
+/** Server action calls to the dialogue whose body is a turn of this kind (#347). */
+function isTurn(request: import("@playwright/test").Request, kind: string) {
+  return (
+    request.method() === "POST" &&
+    Boolean(request.headers()["next-action"]) &&
+    (request.postData() ?? "").includes(`"kind":"${kind}"`)
+  );
+}
+
+/** Makes the first request of this kind fail before it reaches the server. */
+async function dropFirstTurn(page: Page, kind: string) {
+  let dropped = false;
+  await page.route("**/try/goal", async (route) => {
+    if (!dropped && isTurn(route.request(), kind)) {
+      dropped = true;
+      await route.abort("internetdisconnected");
+    } else {
+      await route.continue();
+    }
+  });
+}
+
+test("#347 AC1 a split lost on the network is sent again by Try again", async ({ page }) => {
+  await openDialogue(page);
+  await dropFirstTurn(page, "split");
+  await sendGoal(page, "Write the methods section of my lab report");
+  await setTime(page, 60);
+  await page.getByRole("button", { name: "Keep it broad" }).click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "That one wouldn’t split." }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(plan(page)).toContainText("60 min");
+});
+
+test("#347 AC1 Split again lost on the network can be tried again, also after Use one step", async ({
+  page,
+}) => {
+  await openDialogue(page);
+  await sendGoal(page, "Write the methods section of my lab report");
+  await setTime(page, 60);
+  await page.getByRole("button", { name: "Keep it broad" }).click();
+  await expect(plan(page)).toContainText("60 min");
+
+  await dropFirstTurn(page, "split-again");
+  await page.getByRole("button", { name: "Split again" }).click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "That one wouldn’t split." }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Use one step" }).click();
+  await expect(plan(page)).toContainText("1 step · 60 min");
+
+  await page.getByRole("button", { name: "Split again" }).click();
+  await expect(plan(page)).toContainText("2 steps · 60 min");
+});
+
+test("#347 AC2 decision 3: a turn the server refuses shows GD-F and nothing new", async ({
+  page,
+}) => {
+  await openDialogue(page);
+  await sendGoal(page, "Write the methods section of my lab report");
+  await expect(page.getByText("How long do you have?")).toBeVisible();
+  const slips = await page.locator(".try-slip").count();
+
+  // A forged token: the server refuses the time turn.
+  await page.route("**/try/goal", async (route) => {
+    const request = route.request();
+    if (isTurn(request, "time")) {
+      const body = (request.postData() ?? "").replace(/"token":"[^"]*"/, '"token":"forged.token"');
+      await route.continue({ postData: body });
+    } else {
+      await route.continue();
+    }
+  });
+  await setTime(page, 45);
+
+  const alert = page.getByRole("alert").filter({ hasText: "That one wouldn’t split." });
+  await expect(alert).toContainText(
+    "Nothing is lost. Your words are kept: “Write the methods section of my lab report”.",
+  );
+  await expect(page.locator(".try-slip")).toHaveCount(slips);
+  await expect(plan(page)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Split it finer" })).toHaveCount(0);
+});
