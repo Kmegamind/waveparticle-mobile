@@ -187,6 +187,31 @@ describe("US-GD-14 AC1 the server counts the turns", () => {
     expect(stateOf(planned).turns).toBe(2);
   });
 
+  it("#351 a goal that states more than 180 minutes is split for 180, not refused", async () => {
+    const { deps: d, split } = deps();
+    const goal = "study for 4 hours";
+    const afterGoal = await takeTurn({ kind: "goal", goal }, d);
+    expect(afterGoal).toMatchObject({ status: "turn", minutes: 180 });
+    const planned = await takeTurn(
+      { kind: "split", token: tokenOf(afterGoal), goal, splitFiner: false },
+      d,
+    );
+    expect(planned.status).toBe("plan");
+    expect(split).toHaveBeenCalledWith({ goal, totalMinutes: 180, splitFiner: false });
+    if (planned.status !== "plan") throw new Error("expected a plan");
+    expect(planned.plan.steps.reduce((sum, step) => sum + step.minutes, 0)).toBe(180);
+  });
+
+  it("#351 a stated 180 minutes is left as it is", async () => {
+    const { deps: d } = deps();
+    expect(await takeTurn({ kind: "goal", goal: "study for 3 hours" }, d)).toMatchObject({
+      minutes: 180,
+    });
+    expect(await takeTurn({ kind: "goal", goal: "study for 2 hours" }, d)).toMatchObject({
+      minutes: 120,
+    });
+  });
+
   it("Change on an understood time is the time turn", async () => {
     const { deps: d } = deps();
     const afterGoal = await takeTurn({ kind: "goal", goal: "Study for one hour" }, d);

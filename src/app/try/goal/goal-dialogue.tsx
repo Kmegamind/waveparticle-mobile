@@ -20,9 +20,11 @@ import {
   timeQuestionSlip,
 } from "@/lib/prototype/goal-lines";
 import {
+  CAPPED_TIME_NOTE,
   SLIDER_MAX_MINUTES,
   SLIDER_STEP_MINUTES,
   SLIDER_ZERO_HINT,
+  goalTimeWasCapped,
   minutesLabel,
   sliderStart,
   sliderValueText,
@@ -660,6 +662,11 @@ export function GoalDialogue({
         {phase === "plan" ? (
           <>
             <Slip>{PLAN_INTRO}</Slip>
+            {understood && goalTimeWasCapped(goal) && minutes === SLIDER_MAX_MINUTES ? (
+              <p className="try-caption-line" role="status">
+                {CAPPED_TIME_NOTE}
+              </p>
+            ) : null}
             <PlanCard
               editing={editing}
               onAdd={onAddStep}

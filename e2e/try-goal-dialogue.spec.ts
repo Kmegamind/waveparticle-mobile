@@ -176,6 +176,24 @@ test("GOAL-TIME a stated length skips the time question and can be changed", asy
   await expect(plan(page)).toContainText("· 120 min");
 });
 
+test("#351 a goal that states 4 hours is split for 3 hours, with one sentence saying so", async ({
+  page,
+}) => {
+  await openDialogue(page);
+  await sendGoal(page, "study for 4 hours");
+  await page.getByRole("button", { name: "Keep it broad" }).click();
+  await expect(plan(page)).toContainText("· 180 min");
+  await expect(page.getByText("Split for 3 hours, the most one Goal can hold.")).toHaveCount(1);
+});
+
+test("#351 a goal of 3 hours or less shows no such sentence", async ({ page }) => {
+  await openDialogue(page);
+  await sendGoal(page, "study for 3 hours");
+  await page.getByRole("button", { name: "Keep it broad" }).click();
+  await expect(plan(page)).toContainText("· 180 min");
+  await expect(page.getByText("the most one Goal can hold")).toHaveCount(0);
+});
+
 test("#30 AC5 stepping back keeps the typed text", async ({ page }) => {
   await openDialogue(page);
   await sendGoal(page, "Write the methods section of my lab report");

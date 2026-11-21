@@ -8,7 +8,7 @@
  * an earlier token again, which FLOW allows. Plan edits are never a turn, so he never answers them.
  * Never logs or keeps the goal text.
  */
-import { findTimeInGoal, SLIDER_MAX_MINUTES } from "@/lib/prototype/goal-time";
+import { capGoalMinutes, findTimeInGoal, SLIDER_MAX_MINUTES } from "@/lib/prototype/goal-time";
 import {
   MAX_GOAL_LENGTH,
   type SplitInput,
@@ -65,7 +65,7 @@ export async function takeTurn(request: TurnRequest, deps: TurnDeps): Promise<Tu
     const goal = request.goal.trim();
     if (goal.length === 0 || request.goal.length > MAX_GOAL_LENGTH) return REFUSED;
     if (gateFreeText(goal).action === "crisis-page") return { status: "crisis" };
-    const minutes = findTimeInGoal(goal);
+    const minutes = capGoalMinutes(findTimeInGoal(goal));
     const token = sign({
       id: deps.newId(),
       goal: goalHash(goal, secret),
