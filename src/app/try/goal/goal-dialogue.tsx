@@ -160,7 +160,10 @@ export function GoalDialogue({
   // earlier token; a new goal line starts a new dialogue.
   const [goalToken, setGoalToken] = useState<string | null>(null);
   const [timeToken, setTimeToken] = useState<string | null>(null);
-  const [planToken, setPlanToken] = useState<string | null>(null);
+  // The split request Split again and Try again send (#347): after a Plan or a failed split, a
+  // split-again on the token the server returned; after a request lost on the network, that same
+  // request again. Null after a refusal, which leaves the page on GD-F (owner decision 3).
+  const [retry, setRetry] = useState<TurnRequest | null>(null);
   const [sending, setSending] = useState(false);
 
   // The thread grows downward; each new turn scrolls it to its end, with no smooth scrolling.
@@ -175,12 +178,15 @@ export function GoalDialogue({
     setPhase("crisis");
   }
 
-  /** Sends one turn to the server (#31); a lost connection is a refusal, which shows GD-F. */
-  async function sendTurn(request: TurnRequest): Promise<TurnOutcome> {
+  /**
+   * Sends one turn to the server (#31). A request that never got an answer (network, timeout) is
+   * "unreachable", not a refusal: the server did not see it, so it can be sent again (#347).
+   */
+  async function sendTurn(request: TurnRequest): Promise<TurnOutcome | { status: "unreachable" }> {
     try {
       return await turn(request);
     } catch {
-      return { status: "refused" };
+      return { status: "unreachable" };
     }
   }
 
@@ -193,7 +199,7 @@ export function GoalDialogue({
       setDraft("");
       openCrisis("goal");
     } else if (outcome.status === "plan") {
-      setPlanToken(outcome.token);
+      setRetry({ kind: "split-again", token: outcome.token, goal: goalOf(request) });
       setPlanTitle(outcome.plan.title);
       setTitleDraft(outcome.plan.title || goalOf(request));
       setGoalId(crypto.randomUUID());
@@ -202,8 +208,13 @@ export function GoalDialogue({
       setEditing(null);
       setPhase("plan");
     } else {
-      // A failed split keeps its token so Try again stays in this dialogue; a refusal has none.
-      setPlanToken(outcome.status === "failed" ? outcome.token : null);
+      // A failed split keeps its token so Try again stays in this dialogue; a request lost on the
+      // network is sent again as it was; a refusal has nothing to retry.
+      if (outcome.status === "failed") {
+        setRetry({ kind: "split-again", token: outcome.token, goal: goalOf(request) });
+      } else {
+        setRetry(outcome.status === "unreachable" ? request : null);
+      }
       setPhase("failed");
     }
   }
@@ -233,7 +244,7 @@ export function GoalDialogue({
     setGoal(text);
     setGoalToken(null);
     setTimeToken(null);
-    setPlanToken(null);
+    setRetry(null);
     const outcome = await sendTurn({ kind: "goal", goal: text });
     if (outcome.status === "crisis") {
       setDraft("");
@@ -241,7 +252,7 @@ export function GoalDialogue({
       return null;
     }
     if (outcome.status !== "turn") {
-      setPlanToken(null);
+      setRetry(null);
       setPhase("failed");
       return null;
     }
@@ -280,7 +291,7 @@ export function GoalDialogue({
     const outcome = await sendTurn({ kind: "time", token: goalToken, minutes: value });
     setSending(false);
     if (outcome.status !== "turn") {
-      setPlanToken(null);
+      setRetry(null);
       setPhase("failed");
       return;
     }
@@ -346,12 +357,12 @@ export function GoalDialogue({
 
   /** Split again (GD4) and Try again (GD-F): no limit inside the dialogue (owner decision 1). */
   function splitAgain() {
-    if (planToken === null) {
+    if (retry === null) {
       // A refused turn has no dialogue to retry; the page stays on GD-F.
       setPhase("failed");
       return;
     }
-    void requestSplit({ kind: "split-again", token: planToken, goal });
+    void requestSplit(retry);
   }
 
   function useOneStep() {
