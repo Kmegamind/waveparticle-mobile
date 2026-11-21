@@ -8,8 +8,8 @@ Edit the prompt or its settings here or in the Supabase table editor; see README
 ```json
 {
   "key": "stuck_story",
-  "version": 1,
-  "note": "His stuck situation when the person pauses (AI_03, PAUSE-3). Moved from gateway.ts unchanged.",
+  "version": 2,
+  "note": "His stuck situation when the person pauses (AI_03, PAUSE-3). Version 2: the Story's scene table is an input (SCENE-PER-STORY, #64, #65).",
   "params": {
     "checks": {
       "max_sentences": 2,
@@ -33,4 +33,8 @@ One or two short first-person sentences about where his own work is stuck.
 Never tell the person what to do and never ask the person to stop pausing.
 Pause number: {{pauseNumber}}
 Facts already known: {{facts}}
+The one object his snag is about: {{pauseProp}}
+Objects that exist here (use no other object): {{props}}
+People present: {{present}}
+Names he may use (name no one else): {{allowedWords}}
 ```

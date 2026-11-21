@@ -1,3 +1,4 @@
+import { sceneTableOf } from "./scene";
 import type { Companion, KeySlice, Story, StoryContent, StoryFact } from "./types";
 
 /**
@@ -74,6 +75,7 @@ function storyOf(value: unknown): Story {
       forbiddenTerms: list(inputs.forbidden_terms, `${where} forbidden_terms`, isString),
       keySlices: list(inputs.key_moments, `${where} key_moments`, isKeySlice),
       stageZero: inputs.stage_zero,
+      scene: sceneTableOf(inputs.stage_zero),
     },
   };
 }

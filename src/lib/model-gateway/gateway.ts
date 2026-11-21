@@ -7,6 +7,7 @@ import {
   readPlanLimits,
   type LineLimits,
 } from "./checks";
+import { unlistedNames } from "@/lib/content/scene";
 import { checkRunList, reusesCardNouns } from "./run-list";
 import type {
   GatewayCall,
@@ -290,12 +291,19 @@ const BUILDERS = {
     const limits = lineLimits(checks(row), "checks");
     return {
       prompt: stuckPrompt(input, row),
-      accept: (raw) =>
-        acceptLine(raw, "story", "stuck_story", input.forbidTerms ?? [], limits, {
+      accept: (raw) => {
+        const forbidTerms = [...(input.forbidTerms ?? []), ...(input.scene?.laterWords ?? [])];
+        const accepted = acceptLine(raw, "story", "stuck_story", forbidTerms, limits, {
           earlierLines: input.earlierLines ?? [],
           lastCard: input.lastCard,
           companionName: input.companionName,
-        }),
+        });
+        // SCENE-PER-STORY (#65 AC1): the live scene never adds a person.
+        if (accepted.ok && input.scene && unlistedNames(accepted.value.text, input.scene).length) {
+          return { ok: false, rejectedRules: ["people"] };
+        }
+        return accepted;
+      },
     };
   },
   rest_reply(row: PromptRow, input: RestReplyInput): Built<Generated<LineResult>> {
@@ -351,6 +359,11 @@ const CHECK_CASES: {
   stuck_story: [
     { pauseNumber: 1, facts: "f" },
     { pauseNumber: 1000, facts: "f" },
+    {
+      pauseNumber: 1,
+      facts: "f",
+      scene: { present: ["p"], allowedWords: ["a"], props: ["o"], pauseProp: "o", laterWords: [] },
+    },
   ],
   rest_reply: [{ facts: "f", userMessage: "u" }],
   return_popup: [
@@ -576,13 +589,22 @@ function normalPauseNumber(value: number): number {
   return Number.isInteger(value) && value >= 1 ? value : 1;
 }
 
+/** A list for a prompt line; null (the line is left out) when there is nothing in it. */
+const listed = (items: string[] | undefined) =>
+  items && items.length > 0 ? items.join(", ") : null;
+
 function stuckPrompt(input: StuckStoryInput, row: PromptRow): string {
+  const scene = input.scene;
   const pauseNumber = normalPauseNumber(input.pauseNumber);
   const harderFrom = count(row.params.harder_from_pause, "harder_from_pause");
   return render(row, {
     situation: text(row, pauseNumber >= harderFrom ? "situation_harder" : "situation_first"),
     pauseNumber,
     facts: input.facts,
+    pauseProp: scene?.pauseProp || null,
+    props: listed(scene?.props),
+    present: listed(scene?.present),
+    allowedWords: listed(scene?.allowedWords),
   });
 }
 

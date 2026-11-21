@@ -355,7 +355,7 @@ A table that keeps cards and snags consistent about where he is, who is there, a
  "pauseProp": "notebook", "laterWords": ["Kapitza", "Club"]}
 ```
 
-`present` lists the people present and `allowedWords` the names a line may use (the `allowed_names` of section 2.11); `props` are the objects that exist; `pauseProp` is the one prop offered to the pause message; `laterWords` are words a line may not use yet. The same data is the input the live generator needs (allowed props, allowed names, rules), because no authored pool is ever shown (Decided, C1; NO-BACKUP). Today only the demo scripts read it, not the app.
+`present` lists the people present and `allowedWords` the names a line may use (the `allowed_names` of section 2.11); `props` are the objects that exist; `pauseProp` is the one prop offered to the pause message; `laterWords` are words a line may not use yet. The same data is the input the live generator needs (allowed props, allowed names, rules), because no authored pool is ever shown (Decided, C1; NO-BACKUP). The app reads it as `story.inputs.scene` (`src/lib/content/scene.ts`, #64): the admin card check fails a card that names a person who is not in it, and the pause message receives it as an input and is checked against its names and later words (#65).
 
 The older sample (`_meta.scene` in the Trinity snag file: one scene per entry state, with `one_way_scales` of rain, wind and sky) is reference only. The scene per entry state and the one-way scales are withdrawn (SCENE-PER-STORY).
 
@@ -719,7 +719,7 @@ Other missing pieces:
 - The real planning prompt (open, P1). The text in `docs/ai/AI_01` is a placeholder. Yue will supply the file (2026-11-21).
 - The review of the key moments and their first-person key lines for every story (KEY-REVIEW).
 - The parts (2 to 5) and the made-ahead cards, background card and closing line of every story, with their read status (STORY-PARTS, READ-STATUS). Stored cards are issue #293.
-- Generator inputs for all 26 stories: scene tables (drafted, one per story, in `docs/demo/*.stage0.json`, SCENE-PER-STORY; no app code reads them yet), allowed props, allowed names and rules, and the leak words per fact.
+- Generator inputs for all 26 stories: scene tables (drafted, one per story, in `docs/demo/*.stage0.json`, SCENE-PER-STORY; read by the app since #64), allowed props, allowed names and rules, and the leak words per fact.
 - The named periods of each Life Path (PERIOD-NAMES).
 - Moriarty's data and his world record (FICTION-RULES); Yue's reading of the 31 cards of his story 1 (MORIARTY-READ). The other six characters of the older product are out of scope for Release 1 (OTHER-COMPANIONS).
 
