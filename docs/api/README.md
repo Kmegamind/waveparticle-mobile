@@ -19,6 +19,7 @@ The public code interfaces today are listed below, one file per interface in thi
 - [supabase/migrations/20261114120000_delete_my_account.sql](delete-my-account-function.md): `public.delete_my_account()`, `security definer` with an empty search path, deletes only `auth.uid()`'s rows from the six tables and then the `auth.users` row; executable by `authenticated` only.
 - [src/app/end/actions.ts](end-actions.md): server action `finishRunAction({ sessionId })` for `/end`.
 - [src/lib/prototype/focus-cards.ts](focus-cards.md): server-only `cardsForStep({ storyId?, index, planMinutes, earlierCards }, gateway)` (#254: the chosen story's facts and inputs; a missing `storyId` is chapter 8, and an unknown one makes…
+- [src/lib/goal-dialogue/](goal-dialogue-turns.md): `src/lib/goal-dialogue/turns.ts`: `takeTurn(request, deps)` counts and checks one turn of the goal dialogue on the server (#31, `docs/decisions/0026`).
 - [src/lib/prototype/goal-lines.ts](goal-lines.md): his draft dialogue lines (READ-STATUS: written), `pickReturningOpening(previous)`, `classifyGoalShape(goal)` and `reactionFor(shape)`.
 - [src/lib/prototype/goal-time.ts](goal-time.md): `parseTypedTime(text)` (5 to 300 minutes, rounded to 15, otherwise `null`), `findTimeInGoal(goal)` (GOAL-TIME), `formatMinutes(minutes)` and `TIME_HINT`.
 - [src/app/goals/actions.ts](goals-actions.md): server actions, each returning `{ status: "ok" }` or `{ status: "failed" }` with no Goal text.
@@ -50,6 +51,6 @@ The public code interfaces today are listed below, one file per interface in thi
 - [src/lib/prototype/test-splitter.ts](test-splitter.md): `splitWithTestData(input)` (TEST DATA, 15-minute units).
 - [src/lib/prototype/test-story.ts](test-story.md): server-only `loadTestStory()` returns chapter 8 test data (`isTestData: true`): background card, four Steps with cards, pause message, rest replies, return line and closing line.
 - [src/app/try/focus/actions.ts](try-focus-actions.md): server actions used by `/try/focus`: `loadStepCards(request)` (runs `normaliseStepCardsRequest` first; an unusable request is `failed`), and `loadReturnLine({ trigger, awayMinutes })` for the return…
-- [src/app/try/goal/actions.ts](try-goal-actions.md): server action `splitGoalAction({ goal, totalMinutes, splitFiner })` for the goal dialogue on `/try`.
+- [src/app/try/goal/actions.ts](try-goal-actions.md): server action `goalTurnAction(request)` for the goal dialogue on `/try`, one call per turn (#31).
 - [src/app/try/rest/actions.ts](try-rest-actions.md): server actions `loadPauseMessage` and `loadRestReply` used by `/try/rest`.
 <!-- index:end -->

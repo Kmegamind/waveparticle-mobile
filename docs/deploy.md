@@ -39,6 +39,7 @@ usage in the model provider's dashboard.
 `PROMPTS_READ_TOKEN` (server only, Production and Preview) lets the server read the prompts table; see `docs/ai/prompts/README.md` (#282).
 `CONTENT_READ_KEY` (server only, Production and Preview) lets the server read the story content (#284, `docs/decisions/0019`). Make one with `node scripts/content/token.mjs`: it prints the key for Vercel and one SQL line that stores only its SHA-256 in `private.content_reader`. Then load the content with `node scripts/content/import.mjs` (prints SQL for the SQL editor) and redeploy. Without the migration, the key and the import, the pages that show story content fail.
 Before the next content import after #302, run `supabase/migrations/20261122000000_companion_mode.sql` (each Companion's `mode` and `key_code`, `docs/decisions/0022`). The import loads every Companion in `src/content/companions.json`; `node scripts/content/import.mjs --companion <id>` loads only that Companion's stories. A story whose screen lines are missing stops the import and is listed.
+`GOAL_DIALOGUE_SECRET` (server only, Production and Preview, at least 32 characters) signs the goal dialogue's turns (#31, `docs/decisions/0026`). Make one with `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`. Without it, every goal dialogue in that environment shows the failure screen (GD-F) and the log has `secret_missing`. Changing it ends only the dialogues open at that moment.
 Real values live in the platform's environment settings or CI secrets. `.env.example` lists the names.
 
 ## Admin roles
@@ -140,7 +141,7 @@ version shows as "Draft" once replaced and cannot be rolled back to. It only rea
 ## Server logs
 The server writes log lines only through `logEvent` in `src/lib/logging/server-log.ts` (#135). Each
 line is one JSON object: `level`, `feature` (`app_text`, `prompts`, `story-content`, `story-cards`,
-`model-gateway`), `event`, `requestId`, and for model calls `durationMs`, `call`, `reason`,
+`model-gateway`, `goal-dialogue`), `event`, `requestId`, and for model calls `durationMs`, `call`, `reason`,
 `attempts` and `rejectedRules`. Lines are written for failed reads, failed model calls, and model
 calls that take 5 seconds or longer. They never hold a Goal, a Step, a chat message, a card or any
 other text: user-text field names are refused and every value must be a short identifier. A unit
