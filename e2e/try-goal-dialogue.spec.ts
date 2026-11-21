@@ -73,28 +73,25 @@ test("#33 #34 #35 #36 the walk-through: goal, time, split question, plan, Start"
   await sendGoal(page, "Write the methods section of my lab report");
 
   // #34 AC1: one sentence about the shape, then the time question.
-  // TIME-SLIDER (Yue, 2026-11-12; replaces #35 AC5 and the quick replies): a slider from 0 to
-  // 3 hours, no fixed example times, no typed box; Not sure stays.
+  // TIME-SLIDER (Yue, 2026-11-12; replaces #35 AC5 and the quick replies): a slider from 1 minute to
+  // 3 hours (SLIDER-RANGE, 2026-11-17: no 0), no fixed example times, no typed box; Not sure stays.
   await expect(page.getByText("How long do you have?")).toBeVisible();
   const slider = timeSlider(page);
-  await expect(slider).toHaveAttribute("min", "0");
+  await expect(slider).toHaveAttribute("min", "1");
   await expect(slider).toHaveAttribute("max", "180");
   await expect(slider).toHaveAttribute("step", "1");
-  await expect(slider).toHaveValue("0");
+  await expect(slider).toHaveValue("30");
   for (const name of ["30 min", "1 hour", "2 hours"]) {
     await expect(page.getByRole("button", { name, exact: true })).toHaveCount(0);
   }
   await expect(page.getByRole("textbox", { name: "Your time" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Not sure", exact: true })).toBeVisible();
-  // The reason is tied to the slider, and Send stays in the Tab order while inactive.
-  const send = page.getByRole("button", { name: "Send" });
-  await expect(send).toBeDisabled();
-  await expect(send).toHaveAttribute("aria-disabled", "true");
-  await expect(send).not.toHaveAttribute("disabled", /.*/);
-  await expect(page.getByText("Choose a time above 0")).toBeVisible();
-  const hintId = await slider.getAttribute("aria-describedby");
-  expect(hintId).toBeTruthy();
-  await expect(page.locator(`[id="${hintId}"]`)).toHaveText("Choose a time above 0");
+  // No zero state: Send is active from the start, and no zero hint or "No time chosen" text exists.
+  await expect(page.getByRole("button", { name: "Send" })).toBeEnabled();
+  await expect(page.getByText("Choose a time above 0")).toHaveCount(0);
+  await expect(page.getByText("No time chosen")).toHaveCount(0);
+  await slider.fill("1");
+  await expect(slider).toHaveAttribute("aria-valuetext", "1 min");
   await slider.fill("60");
   await expect(slider).toHaveAttribute("aria-valuetext", "1 hour");
   await page.getByRole("button", { name: "Send" }).click();

@@ -123,20 +123,25 @@ export function minutesLabel(minutes: number): string {
   return `${minutes} min`;
 }
 
-/** The time question is a slider from 0 to 3 hours with no fixed example times (TIME-SLIDER). */
+/**
+ * The time question is a slider from 1 minute to 3 hours, with no 0 and no fixed example times
+ * (TIME-SLIDER, SLIDER-RANGE).
+ */
+export const SLIDER_MIN_MINUTES = 1;
 export const SLIDER_MAX_MINUTES = 180;
 export const SLIDER_STEP_MINUTES = 1;
-export const SLIDER_ZERO_HINT = "Choose a time above 0";
+/** Where the slider rests when no time is known: the same 30 minutes as "Not sure" and "Just split it". */
+export const SLIDER_DEFAULT_MINUTES = 30;
 
-/** Where the slider starts: at 0, or at the time read from the goal, never past 3 hours. */
+/** Where the slider starts: at the time read from the goal, else 30 minutes; always within 1 to 180. */
 export function sliderStart(understood: number | null): number {
-  if (understood === null) return 0;
-  return Math.min(Math.max(0, understood), SLIDER_MAX_MINUTES);
+  if (understood === null) return SLIDER_DEFAULT_MINUTES;
+  return Math.min(Math.max(SLIDER_MIN_MINUTES, understood), SLIDER_MAX_MINUTES);
 }
 
 /** The slider's value in words, shown beside it and read aloud. */
 export function sliderValueText(minutes: number): string {
-  return minutes <= 0 ? "No time chosen" : formatMinutes(minutes);
+  return formatMinutes(minutes);
 }
 
 /** A time read from the goal text is held to the most one Goal can hold (#351, SLIDER-RANGE). */
