@@ -45,8 +45,7 @@ const cardsJson = (count: number) =>
 const stuckJson = JSON.stringify({ story: "I am held on a small snag in my work." });
 const replyJson = JSON.stringify({ reply: "I stay with my own work." });
 const returnJson = JSON.stringify({
-  returnLine:
-    "I kept my eyes on the papers in front of me. The room stayed as I had left it a moment before. My hands returned to the work on the table.",
+  returnLine: "I kept my eyes on the papers in front of me. The room stayed as I had left it.",
 });
 
 /** Narrows a gateway result to the generated case; fails the test on a failure result. */
@@ -303,6 +302,58 @@ describe("model gateway", () => {
   describe("rules per line kind (#201)", () => {
     const chatWithQuestion = "Do you see the wind on the mesa? I keep my notes dry under my coat.";
     const oneWayKinds = ["step_card", "stuck_story", "return_popup"] as const;
+
+    describe("return pop-up length (LEN-RETURN, #57, #61)", () => {
+      const twoSentences =
+        "I kept my notes in order while the room stayed quiet. I feel steady again.";
+      const thirtyWords = `${"I kept working at the old table and "}${"the room stayed quiet ".repeat(4)}and I feel very steady now.`;
+
+      it("test_57_ac1_two_sentences_pass", () => {
+        expect(checkLine(twoSentences, "return_popup")).toEqual({ ok: true, text: twoSentences });
+      });
+
+      it("test_57_ac1_three_sentences_are_rejected", () => {
+        const three = `${twoSentences} My hands are warm.`;
+        expect(checkLine(three, "return_popup")).toEqual({ ok: false, rejectedRules: ["len"] });
+      });
+
+      it("test_57_ac1_exactly_thirty_words_pass_and_thirty_one_fail", () => {
+        expect(thirtyWords.split(/\s+/)).toHaveLength(30);
+        expect(checkLine(thirtyWords, "return_popup").ok).toBe(true);
+        const over = thirtyWords.replace("now.", "now today.");
+        expect(checkLine(over, "return_popup")).toEqual({ ok: false, rejectedRules: ["len"] });
+      });
+
+      it("test_61_ac1_the_cap_holds_even_when_the_stored_prompt_row_allows_more", () => {
+        const loose = { max_words: 40, max_sentences: 3 };
+        const three = `${twoSentences} My hands are warm.`;
+        expect(checkCompanionLine(three, "return_popup", [], loose)).toEqual({
+          ok: false,
+          rejectedRules: ["len"],
+        });
+      });
+
+      it("test_61_ac1_other_kinds_keep_their_own_limits", () => {
+        const loose = { max_words: 40, max_sentences: 3 };
+        const three = "I kept my notes in order. The room stayed quiet. I feel steady again.";
+        expect(checkCompanionLine(three, "stuck_story", [], loose).ok).toBe(true);
+      });
+
+      it("test_61_ac2_a_three_sentence_model_answer_is_retried_then_fails_with_no_text", async () => {
+        const three = JSON.stringify({
+          returnLine: "I kept my notes in order. The room stayed quiet. I feel steady again.",
+        });
+        const fake = provider(async () => three);
+        const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
+        const popup = await gateway.writeReturnPopup({
+          trigger: "absence",
+          facts: "He is at a table.",
+          awayMinutes: 12,
+        });
+        expect(popup.source).toBe("failed");
+        expect(fake.calls.length).toBeGreaterThan(1);
+      });
+    });
 
     it("test_201_ac1_rest_reply_allows_a_question_and_you", () => {
       const checked = checkLine(chatWithQuestion, "rest_reply");
@@ -629,5 +680,11 @@ describe("model gateway", () => {
       expect(result.source).toBe("failed");
       expect(JSON.stringify(result)).not.toContain(rejected);
     });
+  });
+});
+
+describe("return pop-up seed limits (LEN-RETURN, #57, #61)", () => {
+  it("test_57_ac1_the_seed_prompt_row_says_two_sentences_and_thirty_words", () => {
+    expect(seedLineLimits("return_popup")).toMatchObject({ max_sentences: 2, max_words: 30 });
   });
 });

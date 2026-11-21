@@ -108,13 +108,32 @@ export function readPlanLimits(value: unknown): PlanLimits | null {
   return names.every((name) => isCount(limits[name])) ? (limits as PlanLimits) : null;
 }
 
+/**
+ * The return pop-up is 1 or 2 sentences and at most 30 words (LEN-RETURN, 2026-11-17). This is a
+ * rule in code, not only a prompt setting: a stored prompt row that still allows more cannot
+ * lengthen the pop-up. A row may only make it shorter.
+ */
+export const RETURN_POPUP_LIMITS = { max_sentences: 2, max_words: 30 } as const;
+
+function capReturnPopup(limits: LineLimits): LineLimits {
+  return {
+    ...limits,
+    max_words: Math.min(limits.max_words, RETURN_POPUP_LIMITS.max_words),
+    max_sentences: Math.min(
+      limits.max_sentences ?? RETURN_POPUP_LIMITS.max_sentences,
+      RETURN_POPUP_LIMITS.max_sentences,
+    ),
+  };
+}
+
 export function checkCompanionLine(
   raw: string,
   kind: CompanionKind,
   forbidTerms: string[],
-  limits: LineLimits,
+  rowLimits: LineLimits,
   companionName = DEFAULT_COMPANION_NAME,
 ): { ok: true; text: string } | { ok: false; rejectedRules: string[] } {
+  const limits = kind === "return_popup" ? capReturnPopup(rowLimits) : rowLimits;
   const text = cleanLine(raw, companionName);
   const ownName = ownNamePattern(companionName);
   const rejected: string[] = [];
