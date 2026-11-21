@@ -6,6 +6,7 @@ import type { ModelGateway, PlanStep } from "@/lib/model-gateway";
 import { MODEL_GATEWAY_ENV_NAMES } from "@/lib/model-gateway/server";
 import { gateFreeText } from "@/lib/safety/crisis";
 import { takeModelCall } from "./cost-cap";
+import { SLIDER_MAX_MINUTES } from "./goal-time";
 import { splitWithTestData } from "./test-splitter";
 
 export type SplitInput = { goal: string; totalMinutes: number; splitFiner: boolean };
@@ -36,7 +37,7 @@ function isValidInput(input: SplitInput): boolean {
     input.goal.length <= MAX_GOAL_LENGTH &&
     Number.isInteger(input.totalMinutes) &&
     input.totalMinutes >= 1 &&
-    input.totalMinutes <= 300 &&
+    input.totalMinutes <= SLIDER_MAX_MINUTES &&
     typeof input.splitFiner === "boolean"
   );
 }
