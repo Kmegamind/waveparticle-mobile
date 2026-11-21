@@ -99,6 +99,11 @@ export type StuckStoryInput = {
    * words.
    */
   scene?: SceneTable;
+  /**
+   * Every person the Companion's Stories name (`companionPeople`). With `scene`, the answer fails
+   * `people` when it names one who is not in this Story's scene table, wherever in the line.
+   */
+  people?: string[];
 };
 
 export type RestReplyInput = {

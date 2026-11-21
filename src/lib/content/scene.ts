@@ -41,7 +41,7 @@ export function sceneTableOf(stageZero: Row | null | undefined): SceneTable | nu
   return { present, allowedWords, props, pauseProp, laterWords };
 }
 
-/** Every person a Companion's Stories name (each Story's `people` and `present`), each once. */
+/** Every person the given Stories name (each Story's `people` and `present`), each once. */
 export function companionPeople(stageZeros: Iterable<Row | null | undefined>): string[] {
   const found = new Set<string>();
   for (const stageZero of stageZeros) {
@@ -77,9 +77,14 @@ const TITLED =
  * The people a text names who are not in the Story's scene table (#64 AC2), in order. A known
  * person counts as named when the full name appears with the same capitals; a name is allowed when
  * it, or each of its capitalised words, is in the table. A title with an unlisted name ("Doctor
- * Whitlow") counts too.
+ * Whitlow") counts too, unless `titled` is false (the live pause message, where only known people
+ * count; fix round 1 of #374).
  */
-export function unseenPeople(text: string, scene: SceneCheck): string[] {
+export function unseenPeople(
+  text: string,
+  scene: SceneCheck,
+  options: { titled?: boolean } = {},
+): string[] {
   const allowed = new Set(scene.allowed);
   const allows = (name: string) =>
     allowed.has(name) ||
@@ -91,28 +96,29 @@ export function unseenPeople(text: string, scene: SceneCheck): string[] {
   for (const person of scene.people) {
     if (named(text, person) && !allows(person) && !found.includes(person)) found.push(person);
   }
+  if (options.titled === false) return found;
   for (const match of text.matchAll(TITLED)) {
     const name = match[2];
-    if (!allows(name) && !scene.people.includes(name) && !found.includes(match[1])) {
-      found.push(match[1].replace(/\s+/g, " "));
+    const titled = match[1].replace(/\s+/g, " ");
+    if (!allows(name) && !scene.people.includes(name) && !found.includes(titled)) {
+      found.push(titled);
     }
   }
   return found;
 }
 
 /**
- * Capitalised words inside a sentence that the scene table does not allow (a person or place the
- * live line adds; AI_03 section A4, "only names.allowed"). The first word of a sentence and "I"
- * are skipped. Used on the live pause message, where a failing line is generated again.
+ * The later words a text uses (#65 AC1, fix round 1 of #374): each entry as a whole word, or a
+ * whole phrase when it has several words. A capitalised entry (a proper noun such as "Mesa") is
+ * matched with its capitals, so "may" does not match "May" and "lost" does not match "Los"; an
+ * entry in lower case is matched in any case.
  */
-export function unlistedNames(text: string, scene: Pick<SceneTable, "present" | "allowedWords">) {
-  const allowed = new Set([...scene.present, ...scene.allowedWords]);
-  const found: string[] = [];
-  for (const sentence of text.split(/(?<=[.!?])\s+/)) {
-    const rest = sentence.replace(/^[^\p{L}]*[\p{L}'’-]+/u, "");
-    for (const match of rest.matchAll(/(?<![\p{L}'’])\p{Lu}\p{Ll}[\p{L}'’-]*/gu)) {
-      if (!allowed.has(match[0]) && !found.includes(match[0])) found.push(match[0]);
-    }
-  }
-  return found;
+export function laterWordHits(text: string, laterWords: string[]): string[] {
+  return laterWords.filter((word) => {
+    const entry = word.trim();
+    if (!entry) return false;
+    const flags = /^\p{Lu}/u.test(entry) ? "u" : "iu";
+    const phrase = escape(entry).replace(/\s+/g, "\\s+");
+    return new RegExp(`(?<![\\p{L}\\p{N}])${phrase}(?![\\p{L}\\p{N}])`, flags).test(text);
+  });
 }

@@ -7,7 +7,7 @@ import {
   readPlanLimits,
   type LineLimits,
 } from "./checks";
-import { unlistedNames } from "@/lib/content/scene";
+import { laterWordHits, unseenPeople } from "@/lib/content/scene";
 import { checkRunList, reusesCardNouns } from "./run-list";
 import type {
   GatewayCall,
@@ -292,17 +292,17 @@ const BUILDERS = {
     return {
       prompt: stuckPrompt(input, row),
       accept: (raw) => {
-        const forbidTerms = [...(input.forbidTerms ?? []), ...(input.scene?.laterWords ?? [])];
-        const accepted = acceptLine(raw, "story", "stuck_story", forbidTerms, limits, {
+        const accepted = acceptLine(raw, "story", "stuck_story", input.forbidTerms ?? [], limits, {
           earlierLines: input.earlierLines ?? [],
           lastCard: input.lastCard,
           companionName: input.companionName,
         });
-        // SCENE-PER-STORY (#65 AC1): the live scene never adds a person.
-        if (accepted.ok && input.scene && unlistedNames(accepted.value.text, input.scene).length) {
-          return { ok: false, rejectedRules: ["people"] };
-        }
-        return accepted;
+        // SCENE-PER-STORY (#65 AC1): the live scene adds no later word and no known person who is
+        // not in this Story's scene table. Both run on every answer, so a retry names every fix.
+        const rules = sceneRules(raw, input);
+        if (rules.length === 0) return accepted;
+        const earlier = accepted.ok ? [] : accepted.rejectedRules;
+        return { ok: false, rejectedRules: [...new Set([...earlier, ...rules])] };
       },
     };
   },
@@ -587,6 +587,20 @@ function stepCardPrompt(input: StepCardsInput, row: PromptRow, rules: CardRules)
 /** A Pause number that is not a whole number of at least 1 is read as the first Pause. */
 function normalPauseNumber(value: number): number {
   return Number.isInteger(value) && value >= 1 ? value : 1;
+}
+
+/** The scene table rules of a stuck story answer (#65 AC1): `leak` and `people`. */
+function sceneRules(raw: string, input: StuckStoryInput): string[] {
+  const scene = input.scene;
+  if (!scene) return [];
+  const parsed = parseModelJson(raw);
+  const story = isRecord(parsed) ? parsed.story : undefined;
+  if (typeof story !== "string") return [];
+  const rules: string[] = [];
+  if (laterWordHits(story, scene.laterWords).length > 0) rules.push("leak");
+  const check = { allowed: [...scene.present, ...scene.allowedWords], people: input.people ?? [] };
+  if (unseenPeople(story, check, { titled: false }).length > 0) rules.push("people");
+  return rules;
 }
 
 /** A list for a prompt line; null (the line is left out) when there is nothing in it. */

@@ -1,3 +1,4 @@
+import { companionPeople } from "@/lib/content/scene";
 import type { StoryContent } from "@/lib/content/types";
 import type { ModelGateway } from "@/lib/model-gateway";
 import { gateFreeText } from "@/lib/safety/crisis";
@@ -108,6 +109,11 @@ export async function pauseMessageFor(
     lastCard: request.lastCard,
     // SCENE-PER-STORY (#64, #65): the Story's one scene table is the pause message's input.
     scene: storyById(content, storyId).inputs.scene ?? undefined,
+    people: companionPeople(
+      content.stories
+        .filter((story) => story.companionId === storyById(content, storyId).companionId)
+        .map((story) => story.inputs.stageZero),
+    ),
   };
   return ask(() => gateway.writeStuckStory(input));
 }

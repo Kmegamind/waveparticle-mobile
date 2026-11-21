@@ -218,13 +218,19 @@ describe("#64 AC3 and #65 AC1: the scene table is an input to the pause message 
       JSON.stringify({ story: "I wait while Strauss reads my letter." }),
       JSON.stringify({ story: "The shaker lid sticks in my hand." }),
     ]);
+    const known = ["Strauss", "Kitty", "Haakon"];
     const logs: { rejectedRules: string[] }[] = [];
     const gateway = createModelGateway({
       prompts: seedPromptSource(),
       provider: fake.impl,
       log: (event) => logs.push(event as { rejectedRules: string[] }),
     });
-    const result = await gateway.writeStuckStory({ pauseNumber: 1, facts: "f", scene });
+    const result = await gateway.writeStuckStory({
+      pauseNumber: 1,
+      facts: "f",
+      scene,
+      people: known,
+    });
     expect(result).toEqual({ source: "generated", text: "The shaker lid sticks in my hand." });
     expect(fake.calls).toHaveLength(2);
     expect(logs.at(-1)?.rejectedRules).toContain("people");
@@ -232,7 +238,8 @@ describe("#64 AC3 and #65 AC1: the scene table is an input to the pause message 
 
   it("test_65_ac1_a_stuck_story_with_a_later_word_is_generated_again", async () => {
     const fake = provider([
-      JSON.stringify({ story: "I keep thinking about the mesa while the shaker sticks." }),
+      // Fix round 1 (C1): a capitalised later word matches only with its capitals.
+      JSON.stringify({ story: "I keep thinking about the Mesa while the shaker sticks." }),
       JSON.stringify({ story: "The shaker lid sticks in my hand." }),
     ]);
     const logs: { rejectedRules: string[] }[] = [];
@@ -254,5 +261,114 @@ describe("#64 AC3 and #65 AC1: the scene table is an input to the pause message 
   it("test_65_ac4_no_quiet_lines_are_written", () => {
     const stuck = seedRows().find((row) => row.key === "stuck_story")!;
     expect(JSON.stringify(stuck).toLowerCase()).not.toContain("quiet");
+  });
+});
+
+// Fix round 1 of #374 (review C1, I2, I4, M6).
+describe("#65 AC1 the scene checks on the live pause message, without false alarms", () => {
+  const sceneOf = (id: string) => seed.stories.find((story) => story.id === id)!.inputs.scene!;
+  const known = people;
+
+  function gatewayWith(lines: string[]) {
+    const calls: string[] = [];
+    const logs: { rejectedRules: string[] }[] = [];
+    const gateway = createModelGateway({
+      prompts: seedPromptSource(),
+      provider: async ({ prompt }) => {
+        calls.push(prompt);
+        return JSON.stringify({ story: lines.shift() ?? "My pencil is blunt." });
+      },
+      log: (event) => logs.push(event as { rejectedRules: string[] }),
+    });
+    return { gateway, calls, logs };
+  }
+
+  async function firstTry(id: string, line: string) {
+    const { gateway, calls, logs } = gatewayWith([line]);
+    const result = await gateway.writeStuckStory({
+      pauseNumber: 1,
+      facts: "f",
+      scene: sceneOf(id),
+      people: known,
+    });
+    return { result, calls, logs };
+  }
+
+  it("test_65_ac1_c1_common_words_are_not_later_words", async () => {
+    const cases: [string, string][] = [
+      ["oval-office", "I am worried I may fail."],
+      ["fermi-award", "This time my notes are out of order."],
+      ["fermi-award", "Sometimes my pen runs dry."],
+      ["groves-berkeley", "A new snag holds up my notes."],
+      ["trinity", "I have lost my place in the notes."],
+      ["site-search", "My boot lace is coming loose, so I stop close by."],
+      ["truchas-morning", "My hat is lost in the wind."],
+    ];
+    for (const [id, line] of cases) {
+      const { result, calls } = await firstTry(id, line);
+      expect(result, `${id}: ${line}`).toEqual({ source: "generated", text: line });
+      expect(calls, `${id}: ${line}`).toHaveLength(1);
+    }
+  });
+
+  it("test_65_ac1_c1_a_true_later_word_is_still_a_leak", async () => {
+    const { result, calls, logs } = await firstTry(
+      "trinity",
+      "I think of Los Alamos and my notes.",
+    );
+    expect(result.source).toBe("generated");
+    expect(calls.length).toBeGreaterThan(1);
+    expect(logs.at(-1)?.rejectedRules).toContain("leak");
+  });
+
+  it("test_65_ac1_c1_a_lower_case_later_word_matches_in_any_case", async () => {
+    const { laterWordHits } = await import("@/lib/content/scene");
+    expect(laterWordHits("The Kapitza Club meets.", ["kapitza club"])).toEqual(["kapitza club"]);
+    expect(laterWordHits("I may fail.", ["May"])).toEqual([]);
+    expect(laterWordHits("I will see New York.", ["New York"])).toEqual(["New York"]);
+  });
+
+  it("test_65_ac1_i2_a_known_person_at_the_start_of_a_sentence_fails", async () => {
+    for (const line of ["Strauss reads my letter.", "I wait. Dr. Strauss reads my letter."]) {
+      const { calls, logs } = await firstTry("trinity", line);
+      expect(calls.length, line).toBeGreaterThan(1);
+      expect(logs.at(-1)?.rejectedRules, line).toContain("people");
+    }
+  });
+
+  it("test_65_ac1_i4_an_unknown_capitalised_word_that_is_no_known_person_passes", async () => {
+    for (const line of [
+      "On Monday my notes are wet.",
+      "My Army boots pinch.",
+      "God knows my pencil is blunt.",
+    ]) {
+      const { result, calls } = await firstTry("bohr-difficulties", line);
+      expect(result, line).toEqual({ source: "generated", text: line });
+      expect(calls, line).toHaveLength(1);
+    }
+  });
+
+  it("test_65_ac1_m6_the_version_1_prompt_row_still_works_with_a_scene", async () => {
+    const v2 = seedRows().find((row) => row.key === "stuck_story")!;
+    const v1 = {
+      ...v2,
+      version: 1,
+      body: v2.body
+        .split("\n")
+        .filter((line) => !/\{\{(pauseProp|props|present|allowedWords)\}\}/.test(line))
+        .join("\n"),
+    };
+    const rows = seedRows().map((row) => (row.key === "stuck_story" ? v1 : row));
+    const gateway = createModelGateway({
+      prompts: async (key) => rows.find((row) => row.key === key) ?? null,
+      provider: async () => JSON.stringify({ story: "My pencil is blunt." }),
+    });
+    const result = await gateway.writeStuckStory({
+      pauseNumber: 1,
+      facts: "f",
+      scene: sceneOf("trinity"),
+      people: known,
+    });
+    expect(result).toEqual({ source: "generated", text: "My pencil is blunt." });
   });
 });
