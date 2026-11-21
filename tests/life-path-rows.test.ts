@@ -108,6 +108,13 @@ describe("#97 AC1 a finished row carries an arrow", () => {
   });
 });
 
+describe("#97 AC5 no lock", () => {
+  it("test_97_ac5_no_row_shows_a_lock", () => {
+    expect(html).not.toMatch(/lock|coming soon/i);
+    expect(html).not.toMatch(/<svg/i);
+  });
+});
+
 describe("#272 AC2 (#96 AC4) later rows", () => {
   it('say "Later, not available" and hide the title from screen readers', () => {
     const row = rowOf("c");
