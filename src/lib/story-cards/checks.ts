@@ -111,7 +111,7 @@ export function withoutQuotedSpeech(text: string): string {
       const opens =
         c === "‘" || (c !== "’" && !isLetter(previous) && next !== undefined && !/\s/.test(next));
       if (single === null && opens) single = i;
-      else if (single !== null && !opens && c !== "‘") {
+      else if (single !== null && !opens) {
         // A quote that closes: it must come at the end of a word.
         if (!isLetter(next)) {
           blank(single, i);
