@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { largeText } from "./support/large-text";
 
 // Issue #263: the goal dialogue (#234 to #237) and the focus page (#238) as prototype v4, at the
 // prototype's phone size. The e2e server has no model keys, so /try uses its labelled test data.
@@ -144,6 +145,38 @@ async function toPlan(page: Page) {
 
 const planCard = (page: Page) => page.getByRole("group", { name: "Your steps" });
 
+/** The touch area of each Move button, as the ::before box around the drawn button. */
+async function moveTouchAreas(page: Page) {
+  return planCard(page)
+    .locator(".try-move button")
+    .evaluateAll((buttons) =>
+      buttons.map((button) => {
+        const rect = button.getBoundingClientRect();
+        const before = getComputedStyle(button, "::before");
+        // An inset of -9px reaches 9px beyond the button; 0 stops at its edge.
+        return {
+          top: rect.top + parseFloat(before.top),
+          bottom: rect.bottom - parseFloat(before.bottom),
+          left: rect.left + parseFloat(before.left),
+          right: rect.right - parseFloat(before.right),
+        };
+      }),
+    );
+}
+
+type Area = { top: number; bottom: number; left: number; right: number };
+
+/** Touch areas may touch but never overlap, so a tap always reaches the button it is on. */
+function expectNoOverlap(areas: Area[]) {
+  for (const [index, a] of areas.entries()) {
+    for (const b of areas.slice(index + 1)) {
+      const overlapX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+      const overlapY = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+      expect(overlapX > 0.5 && overlapY > 0.5).toBe(false);
+    }
+  }
+}
+
 test.describe("the plan", () => {
   test("#237 AC1 the card starts with YOUR STEPS and an editable Goal field", async ({ page }) => {
     await toPlan(page);
@@ -211,34 +244,80 @@ test.describe("the plan", () => {
     page,
   }) => {
     await toPlan(page);
-    const areas = await planCard(page)
-      .locator(".try-move button")
-      .evaluateAll((buttons) =>
-        buttons.map((button) => {
-          const rect = button.getBoundingClientRect();
-          const before = getComputedStyle(button, "::before");
-          // An inset of -9px reaches 9px beyond the button; 0 stops at its edge.
-          const top = rect.top + parseFloat(before.top);
-          const bottom = rect.bottom - parseFloat(before.bottom);
-          const left = rect.left + parseFloat(before.left);
-          const right = rect.right - parseFloat(before.right);
-          return { top, bottom, left, right };
-        }),
-      );
+    const areas = await moveTouchAreas(page);
     expect(areas.length).toBe(4);
     for (const area of areas) {
       expect(Math.round(area.right - area.left)).toBe(44);
       expect(Math.round(area.bottom - area.top)).toBe(44);
     }
-    // Touch areas may touch but never overlap, so a tap always reaches the button it is on.
-    for (const [index, a] of areas.entries()) {
-      for (const b of areas.slice(index + 1)) {
-        const overlapX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
-        const overlapY = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
-        expect(overlapX > 0.5 && overlapY > 0.5).toBe(false);
-      }
-    }
+    expectNoOverlap(areas);
   });
+
+  // #340: the buttons are stacked, as in prototype v4. Side by side they left the Step title 38 px
+  // wide (7 lines for "Outline the methods section") at 320 px, and 28 px at 200% text.
+  for (const scale of ["100%", "200%"]) {
+    test(`#340 at 320 px and ${scale} text the Move buttons are stacked and stay inside the row`, async ({
+      page,
+    }) => {
+      await toPlan(page);
+      await page.setViewportSize({ width: 320, height: 640 });
+      if (scale === "200%") await largeText(page);
+      const rows = planCard(page).locator(".try-step-row");
+      // The touch size is 2.75rem, so it follows the text size.
+      const target = await page.evaluate(
+        () => parseFloat(getComputedStyle(document.documentElement).fontSize) * 2.75,
+      );
+      for (const row of await rows.all()) {
+        const [up, down] = await row.locator(".try-move button").all();
+        const upBox = await box(up);
+        const downBox = await box(down);
+        // Stacked: one above the other, in one column.
+        expect(Math.abs(upBox.x - downBox.x)).toBeLessThan(1);
+        expect(downBox.y).toBeGreaterThan(upBox.y + upBox.height - 1);
+        // Each row is at least two touch sizes high (88 px at 100%).
+        expect((await box(row)).height).toBeGreaterThanOrEqual(target * 2 - 1);
+      }
+      const areas = await moveTouchAreas(page);
+      expect(areas.length).toBe(4);
+      for (const area of areas) {
+        expect(Math.round(area.right - area.left)).toBe(Math.round(target));
+        expect(Math.round(area.bottom - area.top)).toBe(Math.round(target));
+      }
+      // No overlap between the two buttons of a row, or with the neighbouring row.
+      expectNoOverlap(areas);
+    });
+  }
+
+  test("#340 at 320 px a typical Step title is at most four lines (side by side it was seven)", async ({
+    page,
+  }) => {
+    await toPlan(page);
+    const card = planCard(page);
+    const rows = card.locator(".try-step-button");
+    // A typical title (27 characters), the one the large-text spec uses for its two-Step plan.
+    const title = "Outline the methods section";
+    await rows.first().click();
+    await card.getByLabel("Step title").fill(title);
+    await card.getByRole("button", { name: "Done editing" }).click();
+    await expect(rows.first().locator(".try-step-title")).toHaveText(title);
+    await page.setViewportSize({ width: 320, height: 640 });
+    const measured = await rows
+      .first()
+      .locator(".try-step-title")
+      .evaluate((element) => {
+        const lineHeight = parseFloat(getComputedStyle(element).lineHeight);
+        const rect = element.getBoundingClientRect();
+        return { width: rect.width, lines: Math.round(rect.height / lineHeight) };
+      });
+    expect(measured.width).toBeGreaterThan(70);
+    expect(measured.lines).toBeLessThanOrEqual(4);
+  });
+
+  // The owner's rule also asks for at most two lines at 200% text. Measured, that cannot hold yet:
+  // at 320 px the Plan card is 152 px wide inside at 200%, so the number, minutes and arrows leave
+  // the title 28 px (21 lines) and the row runs past the card. Stacking does not change that. It
+  // needs a narrow-screen layout for the card: issue #341.
+  test.fixme("#340 at 320 px and 200% text a typical Step title is at most two lines", async () => {});
 
   test("#237 AC3 Add a step and the count share a row; Split again is centred in the card", async ({
     page,

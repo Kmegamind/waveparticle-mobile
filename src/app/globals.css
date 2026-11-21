@@ -1436,7 +1436,7 @@ a {
   flex: 1 1 auto;
   font: inherit;
   gap: var(--space-control-gap);
-  min-height: var(--step-row-height);
+  min-height: calc(var(--target) * 2);
   min-width: 0;
   padding: var(--space-small-gap) 2px;
   text-align: left;
@@ -1483,12 +1483,15 @@ a {
   white-space: nowrap;
 }
 
-/* Move up and move down (STEP-EDIT, TAP-SIZE): 40 by 26 drawn, 44 by 44 to touch. Side by side,
-   so the two touch areas meet without overlapping (the gap is the touch size minus the drawn width). */
+/* Move up and move down (STEP-EDIT, TAP-SIZE, issue 340): stacked as in prototype v4, 40 by 26
+   drawn, 44 by 44 to touch. The gap is the touch size minus the drawn height, so the two touch areas
+   meet without overlapping, and the Step row is two touch sizes high so they stay inside it. This
+   keeps the Step title wide: side by side, it was 28 px wide at 320 px with 200% text. */
 .try-move {
   display: flex;
   flex: none;
-  gap: calc(var(--target) - var(--move-width));
+  flex-direction: column;
+  gap: calc(var(--target) - var(--move-height));
 }
 
 .try-move button {
