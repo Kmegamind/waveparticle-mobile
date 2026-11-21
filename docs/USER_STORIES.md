@@ -466,7 +466,7 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** product team, **I want** the content team to supply what the AI needs to write his stuck moment, **so that** the live scene stays true to the Story.
 
 **Acceptance criteria**
-- Given an entry state, then the data provides the scene table (US-CON-4), the allowed props, the allowed names and the rules the AI must follow, so that the live scene never adds an event, a person or a fact from later in the Story.
+- Given a Story, then the data provides its one scene table (US-CON-4, SCENE-PER-STORY), the allowed props, the allowed names and the rules the AI must follow, so that the live scene never adds an event, a person or a fact from later in the Story.
 - Given the AI cannot produce a passing message within the time limit, then the failure message is shown (one calm message in the app's own voice with Retry, FAIL-SCREEN); no stored or authored stuck line is shown in its place (NO-BACKUP).
 - Given authored stuck lines, then they are reference examples and evaluation material only and are never shown to the user (C1).
 - Given the quiet lines that the research notes also suggested, then they are not written, because the pause message replaces them (decision F1).
