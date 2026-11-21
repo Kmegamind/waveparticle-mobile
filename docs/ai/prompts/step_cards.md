@@ -8,8 +8,8 @@ Edit the prompt or its settings here or in the Supabase table editor; see README
 ```json
 {
   "key": "step_cards",
-  "version": 1,
-  "note": "His cards for one Step, with the background card on Step 1 (AI_10). No user text (#216). Moved from gateway.ts unchanged.",
+  "version": 2,
+  "note": "His cards for one Step, with the background card on Step 1 (AI_10). No user text (#216). Version 2: story cards carry no introduction phrase (M2, #13).",
   "params": {
     "checks": {
       "background_card": {
@@ -39,6 +39,7 @@ Return JSON only: {"cards":["..."]}
 {{cardsLine}}
 Each story card is 1 to 3 sentences and at most 45 words, in his first person, with no advice and no question.
 Every card says something new: never repeat what an earlier card said.
+Only the opening card introduces the people who are present. A story card never introduces anyone with a phrase such as "my name is", "I am J. Robert Oppenheimer", "let me introduce" or "allow me to introduce".
 {{backgroundLine}}
 This is Step {{stepNumber}} of {{stepCount}} of his Story.
 These moments must happen in these cards: {{mustUse}}

@@ -145,3 +145,42 @@ describe("a card reads on its own (#16)", () => {
     ).toHaveLength(2);
   });
 });
+
+// #13 (US-FMT-11, M2): only the background card introduces people; no later card carries an
+// introduction phrase. The same rule runs on every admin save and before Publish via cardProblems.
+describe("no introduction phrase after the background card (#13)", () => {
+  const phrases = [
+    "my name is",
+    "I am J. Robert Oppenheimer",
+    "I'm J. Robert Oppenheimer",
+    "let me introduce",
+    "allow me to introduce",
+  ];
+
+  it.each(phrases)("test_13_ac1_a_part_card_with_%s_fails", (phrase) => {
+    const found = cardProblems(part(`The door is shut. ${phrase} to the room.`), []);
+    expect(found).toHaveLength(1);
+    expect(found[0]).toMatch(
+      /^Introduces someone \(".+"\)\. Only the background card does that\.$/,
+    );
+  });
+
+  it("test_13_ac1_the_phrase_is_found_in_any_case_and_with_curly_quotes", () => {
+    expect(cardProblems(part("MY NAME IS Rabi, and I wait."), [])).toHaveLength(1);
+    expect(cardProblems(part("I’m J. Robert Oppenheimer, and I wait."), [])).toHaveLength(1);
+  });
+
+  it("test_13_ac1_the_background_card_may_introduce_people", () => {
+    const background = {
+      kind: "background" as const,
+      part: null,
+      body: "My name is Robert. Let me introduce Rabi, who works beside me.",
+    };
+    expect(cardProblems(background, [])).toEqual([]);
+  });
+
+  it("test_13_ac1_ordinary_story_text_passes", () => {
+    expect(cardProblems(part("Rabi says his name is on the door, and I nod."), [])).toEqual([]);
+    expect(cardProblems(part("I name the problem and write it down."), [])).toEqual([]);
+  });
+});

@@ -538,6 +538,7 @@ These apply to one-way lines. Rest chat replies answer the user and are not chec
 | No spoilers by part (RW8) | A card of part p may not contain terms of later parts. |
 | No echo between steps (RN2, RN3) | The same sentence never appears in two rows; the first card of the next row continues rather than repeats the last card of the previous row. |
 | Self-contained | No "again", "another", "as I said", "the same" pointing at another card, because a card may be reread on its own. |
+| No introduction after the background card (M2, US-FMT-11) | Only the background card introduces the people present. A story card may not carry an introduction phrase: "my name is", "I am J. Robert Oppenheimer", "I'm J. Robert Oppenheimer", "let me introduce", "allow me to introduce". The admin check lists the phrase and blocks Publish. |
 
 ### 7.4 Snag and return pop-up rules
 
