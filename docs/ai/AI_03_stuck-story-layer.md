@@ -7,7 +7,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 > - **Fallback (change list row 5, section A4 pool sizes):** there are no authored snag, quiet or return pools. A failing message is generated again within the time limit; then the app shows its failure message with Retry and no stored text (NO-BACKUP, FAIL-SCREEN). Authored snag lines are reference examples and evaluation material only (C1).
 > - **Return line (section C, change list row 7):** the return is the return pop-up, generated live after Back to step and after 5 minutes or more away (R1, A6, T6). In it he may describe how the time felt in his own words (TIME-WORDS); exact clock numbers stay out until decided (CLOCK-NUMBERS). There is no rule about whether he waits (H8). The HOME-2 line and the picked return card are gone. The pop-up is 1 or 2 sentences and at most 30 words, replacing the 14-word limit (LEN-RETURN). Going back to a Step offline shows the failure screen with Retry (OFFLINE-RESUME).
 > - Chinese, a second language: out (L1).
-> - **Decisions of 2026-11-21 (#369).** The pause message is made with two calls: first the stuck story, then his description of the predicament and his feelings (C1, PAUSE-TWO-CALLS). This is not v1's pair "stuck on Pause, resolved on Back" (D-AI-2, replaced by the return pop-up). Code chooses the category and the prop as in section A1. The props come from the story's one scene table (`props`, `pauseProp` in `docs/demo/<story>.stage0.json`); there are no weather or light scales (SCENE-PER-STORY), and "Weather" in the table below is a snag category, not a scale. The message is 1 or 2 sentences and at most 30 words (LEN-PAUSE). Main makes one call with a 20-word limit and no category or prop; see AI_09, "Next batch".
+> - **Decisions of 2026-11-21 (#369).** The pause message is made with two calls: first the stuck story, then his description of the predicament and his feelings (C1, PAUSE-TWO-CALLS). This is not v1's pair "stuck on Pause, resolved on Back" (D-AI-2, replaced by the return pop-up). Code chooses the category and the prop as in section A1. The props come from the story's one scene table (`props`, `pauseProp` in `docs/demo/<story>.stage0.json`); there are no weather or light scales (SCENE-PER-STORY), and there is no Weather snag category (removed from the table below). Call one (the stuck story) returns `{prop, story}`: the offered prop and the stuck story. Call two returns his words about the predicament and his feelings, which are the message he shows. Open: section A4 below still shows one structured answer `{prop, story, why, back}`; the owner is asked which shape holds. The message is 1 or 2 sentences and at most 30 words (LEN-PAUSE). Main makes one call with a 20-word limit and no category or prop; see AI_09, "Next batch".
 
 # AI-3 · Stuck story layer — v2 (after the user test)
 
@@ -39,7 +39,6 @@ Not by itself. A model asked for "one small thing that has him stuck" five times
 |---|---|---|
 | Body | cold hands, a dry throat, stiff neck | illness, injury |
 | Gear | hat, boots, watch strap, pencil, lighter | broken or lost key items |
-| Weather | wind, grit in the air, low light | a change of weather that "means" something |
 | Ground | gravel, mud, a slope | a place change |
 | Paper | map corner, notebook page, a smudged line | a missing or changed document |
 | Sound | a car idling, a loose sign, wind noise | someone arriving or speaking |
@@ -48,7 +47,7 @@ Not by itself. A model asked for "one small thing that has him stuck" five times
 
 ### A2. Maximum number of distinct snags per entry state (Guess)
 
-With 6 categories × about 3 props, an entry state supports **about 18 distinct snags** before a person would notice a pattern. A believable **run** is far shorter: after about 4 snags in one step, even distinct ones read as a running gag. So design for: **at most 2 new snags per step** (A3), plus quiet lines. 18 is a ceiling for authoring, not a target for use.
+With 5 categories × about 3 props, a Story supports **about 15 distinct snags** before a person would notice a pattern. A believable **run** is far shorter: after about 4 snags in one step, even distinct ones read as a running gag. So design for: **at most 2 new snags per step** (A3), plus quiet lines. 15 is a ceiling, not a target for use.
 
 ### A3. What he does on the Kth Pause (proposed rule; Recommendation)
 

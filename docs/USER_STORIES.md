@@ -1157,8 +1157,9 @@ These rules come from the product principles and from decisions. They are repeat
 
 **Acceptance criteria**
 - Given I pause, then the AI first generates a new stuck story and then, in a second call, he describes the snag his own work has hit and how he feels about it; the pause number is passed in (US-AI-5, PAUSE-3, PAUSE-TWO-CALLS).
-- Given I pause, then the code picks a category (body, gear, weather, ground, paper or sound) that was not used in the last two pauses and a prop not yet used in this Step, and the stuck story uses only that prop.
-- Given the answer is structured (prop, story, why, back), then the checks reject it if the prop is not the offered one, if it names an object outside the scene table, if it contains an event verb (arrives, says, decides, finds, loses and similar), a new person or place, a later fact, a near repeat, or if it is longer than 2 sentences or 30 words (LEN-PAUSE).
+- Given I pause, then the code picks a category (body, gear, ground, paper or sound; there is no weather category, SCENE-PER-STORY) that was not used in the last two pauses and a prop not yet used in this Step, and the stuck story uses only that prop.
+- Given the two calls, then call one returns `{prop, story}` and call two returns his words about the predicament and his feelings (PAUSE-TWO-CALLS). Open for the owner: AI_03 section A4 shows one structured answer `{prop, story, why, back}`.
+- Given the answer, then the checks reject it if the prop is not the offered one, if it names an object outside the scene table, if it contains an event verb (arrives, says, decides, finds, loses and similar), a new person or place, a later fact, a near repeat, or if it is longer than 2 sentences or 30 words (LEN-PAUSE).
 - Given the answer fails, then it is generated again with the reason within the time limit; if it still fails, the failure message with Retry is shown and no authored line stands in (FAIL-SCREEN, NO-BACKUP).
 - Given the moment, then it never moves his Story: it is texture, not an event, and he stays stuck until I tap Back.
 
@@ -1211,7 +1212,7 @@ These rules come from the product principles and from decisions. They are repeat
 **Acceptance criteria**
 - Given a reply, then it is checked for words from after his date (a list per Story), for advice, for length, and for questions, and it passes the same spoiler check as the story cards, against the parts I have not reached (CHAT-SPOILER-CHECK); a later word that I typed myself does not fail it (CHAT-USER-WORD).
 - Given a reply fails, then it is generated again within the time limit; if it still fails, the failure message with Retry is shown and no stored or authored reply stands in (FAIL-SCREEN, NO-BACKUP).
-- Given the cost caps, then only the last six turns are sent to the AI and a message of more than 300 characters is shortened.
+- Given the cost caps, then only the last six turns are sent to the AI and a message of more than 1000 characters is shortened.
 - Given the rest conversation, then there is no message limit and no hidden cap; cost is controlled by the length of each message only (decision R2).
 
 **Priority:** Must · **Area:** AI pipeline · **Screens:** R1-C · **Depends on:** US-AI-6 · **Size:** M · **Source:** DEC R2, CHAT-SPOILER-CHECK, CHAT-USER-WORD, NO-BACKUP, FAIL-SCREEN; AI04v2 section A4; AI09v2 T5; AI06
