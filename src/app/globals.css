@@ -3347,6 +3347,56 @@ button.focus-avatar:focus-visible {
     grid-column: 1 / -1;
     grid-row: 2;
   }
+
+  /*
+   * The Plan card (issue 341). Beside the number, the minutes and the Move buttons, the Step title
+   * was 28 px wide at 320 px with 200% text (21 lines). Here the dialogue and the card give up some
+   * side padding. The number and, under it, the minutes take the first two touch sizes of the row,
+   * with a touch size free on the right where the stacked Move buttons sit; the title takes the
+   * line below them, as wide as the card.
+   */
+  .try-dialogue {
+    --space-screen-inline: var(--space-small-gap);
+  }
+
+  .try-plan {
+    padding-inline: var(--space-row-after);
+  }
+
+  .try-step-row {
+    align-items: start;
+    display: grid;
+    gap: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .try-step-row > .try-step-button {
+    align-items: center;
+    display: grid;
+    grid-column: 1 / -1;
+    grid-row: 1;
+    grid-template-columns: minmax(0, 1fr) var(--target);
+    grid-template-rows: var(--target) var(--target) auto;
+    justify-items: start;
+  }
+
+  .try-step-row > .try-step-button .try-minutes {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .try-step-row > .try-step-button .try-step-title {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+
+  .try-step-row > .try-move {
+    grid-column: 2;
+    grid-row: 1;
+    margin-block-start: calc(var(--space-small-gap) + (var(--target) - var(--move-height)) / 2);
+    margin-inline-end: calc((var(--target) - var(--move-width)) / 2);
+    position: relative;
+  }
 }
 
 /* The content admin (issue 287), with the look of issue 313. A desktop tool for staff that follows the
