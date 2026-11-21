@@ -485,7 +485,7 @@ Disclosure that the companion is an AI appears only in the terms and the setting
 
 ## 7. Checks every line must pass
 
-These apply to every line the companion shows, made ahead or live, unless a row says otherwise. A made-ahead card, background card or closing line that fails cannot be published (LEN-CARD, SHARED-STORY); the output safety check also runs on made-ahead content before publishing (SAFETY-PREMADE). A live line that fails is generated again within the time limit; after that the failure message with Retry is shown and nothing stored stands in (NO-BACKUP, FAIL-SCREEN). Rule ids are the ones used in the check script of the card stack rules.
+These apply to every line the companion shows, made ahead or live, unless a row says otherwise. A made-ahead card, background card or closing line that fails cannot be published (LEN-CARD, SHARED-STORY); made-ahead content also gets the banned style words check, and no further AI-6 line rules, before publishing (SAFETY-PREMADE). A live line that fails is generated again within the time limit; after that the failure message with Retry is shown and nothing stored stands in (NO-BACKUP, FAIL-SCREEN). Rule ids are the ones used in the check script of the card stack rules.
 
 ### 7.1 Per line (failure means the line is not published or not shown)
 
