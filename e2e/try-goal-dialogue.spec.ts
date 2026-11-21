@@ -187,6 +187,21 @@ test("US-GD-11 a length of 50 minutes is kept as written and leaves the Goal tit
   await expect(plan(page).getByLabel("Goal", { exact: true })).toHaveValue("study chemistry");
 });
 
+for (const [goal, value] of [
+  ["study for 7 minutes", "7"],
+  ["study for 50 minutes", "50"],
+  ["study for 100 minutes", "100"],
+]) {
+  test(`US-GD-11 Change opens the slider on exactly the time read from ${goal}`, async ({
+    page,
+  }) => {
+    await openDialogue(page);
+    await sendGoal(page, goal);
+    await page.getByRole("button", { name: "Change time" }).click();
+    await expect(timeSlider(page)).toHaveValue(value);
+  });
+}
+
 test("US-GD-11 a 2 hour lecture is not the user's time, so the time question is asked", async ({
   page,
 }) => {

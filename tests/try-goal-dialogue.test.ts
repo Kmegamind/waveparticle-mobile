@@ -94,7 +94,7 @@ describe("#35 AC1 the typed time box accepts only a time", () => {
 describe("TIME-SLIDER the time slider runs from 0 to 3 hours", () => {
   it("has the range, the step and the zero hint", () => {
     expect(SLIDER_MAX_MINUTES).toBe(180);
-    expect(SLIDER_STEP_MINUTES).toBe(5);
+    expect(SLIDER_STEP_MINUTES).toBe(1);
     expect(SLIDER_ZERO_HINT).toBe("Choose a time above 0");
   });
 
@@ -102,6 +102,11 @@ describe("TIME-SLIDER the time slider runs from 0 to 3 hours", () => {
     expect(sliderStart(null)).toBe(0);
     expect(sliderStart(60)).toBe(60);
     expect(sliderStart(240)).toBe(180);
+  });
+
+  it.each([7, 50, 100, 33])("US-GD-11 can hold %i minutes read from the goal text exactly", (m) => {
+    expect(sliderStart(m)).toBe(m);
+    expect(m % SLIDER_STEP_MINUTES).toBe(0);
   });
 
   it("reads its value as words", () => {

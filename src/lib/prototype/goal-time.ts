@@ -125,7 +125,7 @@ export function minutesLabel(minutes: number): string {
 
 /** The time question is a slider from 0 to 3 hours with no fixed example times (TIME-SLIDER). */
 export const SLIDER_MAX_MINUTES = 180;
-export const SLIDER_STEP_MINUTES = 5;
+export const SLIDER_STEP_MINUTES = 1;
 export const SLIDER_ZERO_HINT = "Choose a time above 0";
 
 /** Where the slider starts: at 0, or at the time read from the goal, never past 3 hours. */
