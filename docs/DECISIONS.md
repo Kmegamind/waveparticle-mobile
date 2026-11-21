@@ -317,3 +317,4 @@ Yue decided these on 2026-11-18. Recorded in issue #313.
 ## 4. Later
 
 - Chat rules for rest chat, a limit after round 10, and free chat: see #337 (waits until version 1 is done).
+- Adding a Companion from a novel through staged, reusable prompts, then in batch: see #339 (waits until version 1 is done).
