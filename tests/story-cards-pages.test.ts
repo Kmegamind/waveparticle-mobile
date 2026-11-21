@@ -25,13 +25,16 @@ describe("ADM-06 Stories (#293)", () => {
     expect(shell).toContain('{ href: "/admin/stories", id: "ADM-06", label: "Stories" }');
   });
 
-  it("test_293_both_pages_say_the_cards_are_unreviewed_drafts", () => {
+  // Reworded for PUBLISH-FIRST (2026-11-21, #46): cards are published first and read afterwards.
+  it("test_46_both_pages_say_cards_are_published_first_and_read_afterwards", () => {
     for (const file of ["src/app/admin/stories/page.tsx", "src/app/admin/stories/[id]/page.tsx"]) {
-      expect(read(file), file).toContain("<UnreviewedNotice />");
+      expect(read(file), file).toContain("<PublishFirstNotice />");
     }
-    expect(read("src/app/admin/stories/unreviewed-notice.tsx")).toContain(
-      "AI-written drafts that no person has read yet",
-    );
+    const notice = read("src/app/admin/stories/publish-first-notice.tsx");
+    expect(notice).toContain("Published first, read afterwards.");
+    expect(notice).toContain("passed the automatic checks before it was published");
+    expect(notice).toContain("has not been read by a person yet");
+    expect(notice).not.toMatch(/Unreviewed drafts/);
   });
 
   it("test_293_ac3_pages_read_through_the_signed_in_users_own_client", () => {

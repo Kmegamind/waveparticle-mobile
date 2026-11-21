@@ -145,6 +145,18 @@ test("test_304_ac6_ac7_ac8_an_admin_publishes_rolls_back_and_pinned_sessions_kee
 });
 
 test("test_304_ac3_published_cards_with_years_show_as_failing", async ({ page, context }) => {
+  // The seed card was fixed (#46); the database can still hold the published version with the year.
+  const answer = await fetch(`${STUB_SUPABASE}/__story_cards`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      published: {
+        key: "crd.opp.cross-examination.p4.c2",
+        body: "Robb read from the 1943 transcript. I didn't recall saying it but would not deny it.",
+      },
+    }),
+  });
+  expect(answer.ok).toBe(true);
   await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
   await page.goto("/admin/stories/cross-examination");
   const failing = cardOf(page, "crd.opp.cross-examination.p4.c2");

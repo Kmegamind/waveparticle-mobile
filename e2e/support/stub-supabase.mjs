@@ -564,6 +564,14 @@ createServer(async (request, response) => {
       partTitles = storyCards.parts.map((part) => ({ ...part }));
       publishHistory = publishHistory.filter((row) => row.kind !== "story_card");
     }
+    // A published version 1 that differs from the seed, as when the database still holds a card
+    // the seed has since fixed (#46): { published: { key, body } }.
+    if (typeof body.published?.key === "string" && typeof body.published?.body === "string") {
+      const row = cardVersions.find(
+        (card) => card.key === body.published.key && card.version === 1,
+      );
+      if (row) row.body = body.published.body;
+    }
     return json(response, 204);
   }
 
