@@ -1067,7 +1067,7 @@ These rules come from the product principles and from decisions. They are repeat
 **Acceptance criteria**
 - Given the Goal states a session length ("for an hour", "90 minutes", "half an hour"), then the time question is skipped (GOAL-TIME), the length is kept as written and not rounded (NO-ROUNDING), and the phrase is removed from the title.
 - Given a duration describes the thing and not the session (for example "a 2-hour lecture"), then the length is not read and the time question is asked.
-- Given the time was taken from the Goal, then he acknowledges it in a short sentence and the Plan card shows the total, which I can change.
+- Given the time was taken from the Goal, then he gives no reaction and GD2 is not shown, GD3 shows the caption "Time I understood from your line: N min." with **Change**, and the Plan card shows the total, which I can change.
 
 **Priority:** Should · **Area:** Goal start dialogue (NF7) · **Screens:** GD2 · **Depends on:** US-GD-3, US-AI-1 · **Size:** M · **Status:** Decision GOAL-TIME (2026-11-12): the question is skipped and the understood time is shown and can be changed. · **Source:** NF7v7 section 3.1 (P3); DEC GOAL-TIME
 
