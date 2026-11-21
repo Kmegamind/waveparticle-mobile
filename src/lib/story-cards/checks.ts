@@ -69,6 +69,23 @@ function selfContainedProblems(body: string): string[] {
   return problems;
 }
 
+// US-FMT-11 (#13, M2): only the background card introduces the people who are present. A short,
+// explicit list of introduction phrases; a part card that carries one fails.
+const INTRODUCTION_PHRASES = [
+  "my name is",
+  "I am J. Robert Oppenheimer",
+  "I'm J. Robert Oppenheimer",
+  "let me introduce",
+  "allow me to introduce",
+];
+
+/** An introduction phrase in a part card; the background card is exempt (M2). */
+function introductionProblems(card: { kind: "background" | "part"; body: string }): string[] {
+  if (card.kind === "background") return [];
+  const phrase = INTRODUCTION_PHRASES.find((candidate) => mentions(card.body, candidate));
+  return phrase ? [`Introduces someone ("${phrase}"). Only the background card does that.`] : [];
+}
+
 export const LEAKS_UNREADABLE =
   "The spoiler check could not run: the story inputs could not be read.";
 
@@ -84,6 +101,7 @@ export function cardProblems(
     ...cardLengthProblems(card.kind, card.body),
     ...datesProblems(card.body),
     ...selfContainedProblems(card.body),
+    ...introductionProblems(card),
   ];
   if (laterLeaks === null) problems.push(LEAKS_UNREADABLE);
   else {
