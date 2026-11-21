@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -68,6 +69,146 @@ describe("docs index (#242)", () => {
 
   it("test_242_no_relative_link_under_docs_api_or_docs_architecture_is_broken", () => {
     expect(docsIndex.brokenLinks(root, ["docs/api", "docs/architecture"])).toEqual([]);
+  });
+
+  it("test_335_every_checked_link_in_the_repository_resolves", () => {
+    expect(docsIndex.brokenLinks(root, docsIndex.LINK_FOLDERS, docsIndex.linkFiles(root))).toEqual(
+      docsIndex.LINK_ALLOWLIST,
+    );
+  });
+
+  it("test_335_link_check_covers_readme_spec_map_pr_template_and_top_level_docs", () => {
+    const dir = fixture({
+      "README.md": "[gone](docs/gone.md)\n",
+      "docs/SPEC_MAP.md": "[ok](TOP.md)\n",
+      "docs/api/a.md": "# A\n",
+      "docs/architecture/a.md": "# A\n",
+      "docs/TOP.md": "[gone](gone.md)\n",
+      ".github/pull_request_template.md": "[gone](../docs/gone.md)\n",
+    });
+    const broken = docsIndex.brokenLinks(dir, docsIndex.LINK_FOLDERS, docsIndex.linkFiles(dir));
+    expect(broken.map((b: { file: string }) => b.file).sort()).toEqual([
+      ".github/pull_request_template.md",
+      "README.md",
+      "docs/TOP.md",
+    ]);
+  });
+
+  it("test_335_docs_paths_named_in_source_comments_exist", () => {
+    const dir = fixture({
+      "src/p.tsx": "// see (docs/api/there.md) and docs/api/missing.md.\n",
+      "docs/api/there.md": "# There\n",
+    });
+    expect(docsIndex.brokenDocPaths(dir, ["src/p.tsx"])).toEqual([
+      { file: "src/p.tsx", link: "docs/api/missing.md" },
+    ]);
+    expect(docsIndex.brokenDocPaths(root, docsIndex.DOC_PATH_FILES)).toEqual([]);
+    expect(docsIndex.DOC_PATH_FILES).toContain("src/app/try/focus/page.tsx");
+  });
+
+  it("test_335_check_flags_duplicate_or_out_of_order_index_lines", () => {
+    const dir = fixture({
+      "docs/api/README.md": README,
+      "docs/api/a.md": "# A\n\nA.\n",
+      "docs/api/b.md": "# B\n\nB.\n",
+    });
+    docsIndex.syncIndex(dir, "docs/api", { write: true });
+    const readme = path.join(dir, "docs/api/README.md");
+    const good = readFileSync(readme, "utf8");
+    expect(docsIndex.indexProblems(dir, "docs/api")).toEqual([]);
+
+    const a = "- [A](a.md): A.";
+    const b = "- [B](b.md): B.";
+    writeFileSync(readme, good.replace(`${a}\n${b}`, `${a}\n${a}\n${b}`));
+    expect(docsIndex.indexProblems(dir, "docs/api").join()).toContain("duplicate");
+    writeFileSync(readme, good.replace(`${a}\n${b}`, `${b}\n${a}`));
+    expect(docsIndex.indexProblems(dir, "docs/api").join()).toContain("out of order");
+    // A union merge can also leave a stale index; --check must still exit 1.
+    writeFileSync(readme, good.replace(`${a}\n${b}`, `${a}\n${a}\n${b}`));
+    const script = path.join(root, "scripts/docs-index.mjs");
+    let output = "";
+    try {
+      execFileSync("node", [script, "--check", dir], { stdio: "pipe" });
+    } catch (error) {
+      output = String((error as { stdout: Buffer }).stdout);
+    }
+    expect(output).toContain("duplicate");
+    expect(output).toContain("npm run docs:index");
+    expect(output).toContain("node scripts/docs-index.mjs");
+  });
+
+  it("test_335_gitattributes_uses_union_merge_for_both_index_files", () => {
+    const attrs = readFileSync(path.join(root, ".gitattributes"), "utf8");
+    expect(attrs).toMatch(/^docs\/api\/README\.md\s+merge=union$/m);
+    expect(attrs).toMatch(/^docs\/architecture\/README\.md\s+merge=union$/m);
+  });
+
+  it("test_335_two_branches_adding_files_in_the_same_gap_merge_without_conflict", () => {
+    const git = (cwd: string, ...args: string[]) =>
+      execFileSync(
+        "git",
+        [
+          "-c",
+          "user.name=t",
+          "-c",
+          "user.email=t@example.com",
+          "-c",
+          "commit.gpgsign=false",
+          ...args,
+        ],
+        { cwd, stdio: "pipe", encoding: "utf8" },
+      );
+    const dir = fixture({
+      "docs/api/README.md": README,
+      "docs/api/a.md": "# A\n\nA.\n",
+      "docs/api/z.md": "# Z\n\nZ.\n",
+      ".gitattributes": readFileSync(path.join(root, ".gitattributes"), "utf8"),
+    });
+    const script = path.join(root, "scripts/docs-index.mjs");
+    const regenerate = () => execFileSync("node", [script, dir], { stdio: "pipe" });
+    const addFile = (name: string, title: string) => {
+      writeFileSync(path.join(dir, `docs/api/${name}`), `# ${title}\n\n${title}.\n`);
+      regenerate();
+      git(dir, "add", "-A");
+      git(dir, "commit", "-m", `add ${name}`);
+    };
+    // Only docs/api exists in this fixture, so point the script at it.
+    git(dir, "init", "-b", "main");
+    regenerate();
+    git(dir, "add", "-A");
+    git(dir, "commit", "-m", "base");
+    git(dir, "checkout", "-b", "one");
+    addFile("clock-a.md", "Clock A");
+    git(dir, "checkout", "main");
+    git(dir, "checkout", "-b", "two");
+    addFile("clock-b.md", "Clock B");
+    git(dir, "merge", "one", "--no-edit");
+    // Git keeps both lines but may put them in the wrong order. --check must then say so
+    // (and never report a duplicate), and running the script again fixes it.
+    const check = () => {
+      try {
+        execFileSync("node", [script, "--check", dir], { stdio: "pipe" });
+        return "";
+      } catch (error) {
+        return String((error as { stdout: Buffer }).stdout);
+      }
+    };
+    const afterMerge = check();
+    expect(afterMerge).not.toContain("duplicate");
+    // Whichever order git used, a failing check names the fix.
+    if (afterMerge) {
+      expect(afterMerge).toContain("out of order");
+      expect(afterMerge).toContain("npm run docs:index");
+    }
+    regenerate();
+    expect(check()).toBe("");
+    expect(docsIndex.indexProblems(dir, "docs/api")).toEqual([]);
+    const merged = readFileSync(path.join(dir, "docs/api/README.md"), "utf8");
+    const at = (name: string) => merged.indexOf(`(${name})`);
+    expect(at("clock-a.md")).toBeGreaterThan(-1);
+    expect(at("clock-a.md")).toBeLessThan(at("clock-b.md"));
+    expect(merged.match(/\(clock-a\.md\)/g)).toHaveLength(1);
+    expect(merged.match(/\(clock-b\.md\)/g)).toHaveLength(1);
   });
 
   it("test_242_old_paths_still_resolve", () => {

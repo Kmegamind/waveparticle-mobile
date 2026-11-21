@@ -1,0 +1,5 @@
+# Merge the generated index files by keeping lines from both sides, so two branches that add
+# a file in the same gap do not conflict. Run `node scripts/docs-index.mjs` after merging
+# (`--check` fails on a duplicate or out-of-order line).
+docs/api/README.md merge=union
+docs/architecture/README.md merge=union
