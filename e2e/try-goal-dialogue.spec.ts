@@ -459,4 +459,59 @@ test("#347 AC2 decision 3: a turn the server refuses shows GD-F and nothing new"
   await expect(page.locator(".try-slip")).toHaveCount(slips);
   await expect(plan(page)).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Split it finer" })).toHaveCount(0);
+
+  // A refusal is not retried: Try again stays on GD-F and sends nothing.
+  const turns: string[] = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.headers()["next-action"]) turns.push(request.url());
+  });
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(alert).toBeVisible();
+  await expect(page.getByRole("button", { name: "Split it finer" })).toHaveCount(0);
+  expect(turns).toEqual([]);
+});
+
+test("#347 AC1 a goal turn lost on the network is sent again by Try again", async ({ page }) => {
+  await openDialogue(page);
+  await dropFirstTurn(page, "goal");
+  await sendGoal(page, "Write the methods section of my lab report");
+  await expect(
+    page.getByRole("alert").filter({ hasText: "That one wouldn’t split." }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByText("How long do you have?")).toBeVisible();
+  await setTime(page, 45);
+  await page.getByRole("button", { name: "Keep it broad" }).click();
+  await expect(plan(page)).toContainText("45 min");
+});
+
+test("#347 AC1 Just split it lost on the network at the goal turn is sent again by Try again", async ({
+  page,
+}) => {
+  await openDialogue(page);
+  await dropFirstTurn(page, "goal");
+  await page.getByLabel("Your goal").fill("Revise chapter four");
+  await page.getByRole("button", { name: "Just split it" }).click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "That one wouldn’t split." }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(plan(page)).toContainText("30 min");
+});
+
+test("#347 AC1 a time turn lost on the network is sent again by Try again", async ({ page }) => {
+  await openDialogue(page);
+  await dropFirstTurn(page, "time");
+  await sendGoal(page, "Write the methods section of my lab report");
+  await setTime(page, 45);
+  await expect(
+    page.getByRole("alert").filter({ hasText: "That one wouldn’t split." }),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "Try again" }).click();
+  await expect(page.getByRole("button", { name: "Split it finer" })).toBeVisible();
+  await page.getByRole("button", { name: "Keep it broad" }).click();
+  await expect(plan(page)).toContainText("45 min");
 });
