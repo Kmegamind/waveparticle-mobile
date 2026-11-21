@@ -396,6 +396,18 @@ describe("split server logic", () => {
     if (result.status === "plan") expect(result.plan.source).toBe("test-data");
   });
 
+  it("SLIDER-RANGE refuses more than the slider's maximum and accepts exactly the maximum", async () => {
+    const gateway = fakeGateway(async () => generated);
+    const over = deps({ env: keys, createGateway: () => gateway });
+    expect(await splitGoal({ ...input, totalMinutes: SLIDER_MAX_MINUTES + 1 }, over)).toEqual({
+      status: "failed",
+    });
+    expect(gateway.splitPlan).not.toHaveBeenCalled();
+    expect(over.written).toEqual([]);
+    const result = await splitGoal({ ...input, totalMinutes: SLIDER_MAX_MINUTES }, deps());
+    expect(result.status).toBe("plan");
+  });
+
   it("calls the model gateway when the keys are set and counts the call", async () => {
     const gateway = fakeGateway(async () => generated);
     const d = deps({ env: keys, createGateway: () => gateway });
