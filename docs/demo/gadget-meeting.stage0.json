@@ -148,7 +148,7 @@
     "present": ["Wilson"],
     "allowedWords": ["Wilson", "Robert", "Germany", "Weisskopf", "Bohr", "The", "Impact", "Gadget", "Civilization"],
     "pauseProp": "gloves",
-    "laterWords": ["United", "Nations", "April"],
+    "laterWords": ["United Nations"],
     "props": [
       "folding chair",
       "blackboard",

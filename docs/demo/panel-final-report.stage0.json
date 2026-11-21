@@ -44,12 +44,6 @@
       "line": "Ernest Lawrence is a fellow physicist and an old friend from Berkeley.",
       "first_card": "panel-final-report.s3.c1"
     },
-    "Bush": {
-      "role": "science adviser",
-      "inline": "a senior science adviser to the government",
-      "line": "Vannevar Bush is a senior science adviser to the government.",
-      "first_card": "panel-final-report.s8.c1"
-    },
     "Harrison": {
       "role": "aide to the Secretary of War",
       "inline": "the Secretary of War's aide",
@@ -233,9 +227,7 @@
       "We"
     ],
     "pauseProp": "pad of paper",
-    "laterWords": [
-      "Department"
-    ],
+    "laterWords": [],
     "props": [
       "desk",
       "pad of paper",

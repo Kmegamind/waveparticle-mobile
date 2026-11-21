@@ -108,17 +108,16 @@ export function unseenPeople(
 }
 
 /**
- * The later words a text uses (#65 AC1, fix round 1 of #374): each entry as a whole word, or a
- * whole phrase when it has several words. A capitalised entry (a proper noun such as "Mesa") is
- * matched with its capitals, so "may" does not match "May" and "lost" does not match "Los"; an
- * entry in lower case is matched in any case.
+ * The later words a text uses (#65 AC1): each entry as a whole word, or a whole phrase when it
+ * has several words, always with its exact capitals (owner decision of 2026-11-21 on #374). So
+ * "lost" does not match "Los Alamos" and "mesa" does not match "Mesa". The data holds no ordinary
+ * words such as "Time" or "May"; those entries were removed by the same decision.
  */
 export function laterWordHits(text: string, laterWords: string[]): string[] {
   return laterWords.filter((word) => {
     const entry = word.trim();
     if (!entry) return false;
-    const flags = /^\p{Lu}/u.test(entry) ? "u" : "iu";
     const phrase = escape(entry).replace(/\s+/g, "\\s+");
-    return new RegExp(`(?<![\\p{L}\\p{N}])${phrase}(?![\\p{L}\\p{N}])`, flags).test(text);
+    return new RegExp(`(?<![\\p{L}\\p{N}])${phrase}(?![\\p{L}\\p{N}])`, "u").test(text);
   });
 }

@@ -44,12 +44,6 @@
       "line": "Ernest Lawrence is a fellow physicist from Berkeley, and he is at the table too.",
       "first_card": "interim-committee.s2.c1"
     },
-    "Bush": {
-      "role": "science administrator",
-      "inline": "a senior science administrator",
-      "line": "Vannevar Bush is a senior science administrator at the table.",
-      "first_card": "interim-committee.s3.c1"
-    },
     "Compton": {
       "role": "physicist",
       "inline": "a fellow physicist",

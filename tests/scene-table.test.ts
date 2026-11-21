@@ -321,11 +321,54 @@ describe("#65 AC1 the scene checks on the live pause message, without false alar
     expect(logs.at(-1)?.rejectedRules).toContain("leak");
   });
 
-  it("test_65_ac1_c1_a_lower_case_later_word_matches_in_any_case", async () => {
+  // Owner decision of 2026-11-21 on #374: whole words and phrases only, always case-sensitive.
+  it("test_65_ac1_later_words_match_whole_phrases_with_their_exact_capitals", async () => {
     const { laterWordHits } = await import("@/lib/content/scene");
-    expect(laterWordHits("The Kapitza Club meets.", ["kapitza club"])).toEqual(["kapitza club"]);
-    expect(laterWordHits("I may fail.", ["May"])).toEqual([]);
+    expect(laterWordHits("The Kapitza Club meets.", ["Kapitza Club"])).toEqual(["Kapitza Club"]);
+    expect(laterWordHits("the kapitza club meets.", ["Kapitza Club"])).toEqual([]);
+    expect(laterWordHits("the kapitza club meets.", ["kapitza club"])).toEqual(["kapitza club"]);
+    expect(laterWordHits("The KAPITZA CLUB meets.", ["kapitza club"])).toEqual([]);
     expect(laterWordHits("I will see New York.", ["New York"])).toEqual(["New York"]);
+    expect(laterWordHits("A new snag in York.", ["New York"])).toEqual([]);
+    expect(laterWordHits("I lost the Alamos map.", ["Los Alamos"])).toEqual([]);
+  });
+
+  // Owner decision of 2026-11-21 on #374: ordinary words leave the later-words and name data.
+  it("test_65_ac1_the_data_holds_no_ordinary_word_later_words_or_names", () => {
+    const ORDINARY = [
+      "Time",
+      "May",
+      "New",
+      "York",
+      "God",
+      "Los",
+      "Alamos",
+      "Pinos",
+      "Limited",
+      "Twentieth",
+      "Century",
+      "Club",
+      "Kapitza",
+      "United",
+      "Nations",
+      "April",
+      "Ranch",
+      "School",
+      "Pajarito",
+      "Plateau",
+      "Department",
+      "Institute",
+    ];
+    for (const story of seed.stories) {
+      for (const word of ORDINARY)
+        expect(story.inputs.scene!.laterWords, story.id).not.toContain(word);
+    }
+    for (const name of ["Gray", "Bush", "Marks", "Fox", "May"]) expect(people).not.toContain(name);
+    expect(sceneOf("trinity").laterWords).toEqual(["Los Alamos"]);
+    expect(sceneOf("groves-berkeley").laterWords).toEqual([
+      "Twentieth Century Limited",
+      "New York",
+    ]);
   });
 
   it("test_65_ac1_i2_a_known_person_at_the_start_of_a_sentence_fails", async () => {
