@@ -32,7 +32,10 @@ describe("ADM-06 Stories (#293)", () => {
     }
     const notice = read("src/app/admin/stories/publish-first-notice.tsx");
     expect(notice).toContain("Published first, read afterwards.");
-    expect(notice).toContain("passed the automatic checks before it was published");
+    expect(notice).toContain("A card that fails an automatic check is marked on this page.");
+    expect(notice).toContain("loaded without the checks");
+    // Version 1 was loaded without the checks (#293), so the notice may not say every card passed.
+    expect(notice).not.toMatch(/Every card here passed/);
     expect(notice).toContain("has not been read by a person yet");
     expect(notice).not.toMatch(/Unreviewed drafts/);
   });

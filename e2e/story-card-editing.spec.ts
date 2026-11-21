@@ -5,8 +5,9 @@ import { STUB_SUPABASE, baseUrlOf, signIn } from "./support/account";
 test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
 
 // #304: editing, checking and publishing story cards in ADM-06. The Supabase stub keeps one set of
-// card versions for every test, so these tests run one after the other, change only the story
-// "eagle-hill-garden" (no other test reads it) and put the cards back before and after each test.
+// card versions for every test, so these tests run one after the other, change only the stories
+// "eagle-hill-garden" and "cross-examination" (no other test reads them) and put the cards back
+// before and after each test.
 
 test.describe.configure({ mode: "serial" });
 
