@@ -171,3 +171,38 @@ describe("#278 Begin always shows on the current story", () => {
     expect(html).not.toContain("test builds only");
   });
 });
+
+describe("#101 AC3 hand-drawn marks are hidden and never carry the only meaning", () => {
+  it("test_101_ac3_every_mark_on_the_rows_is_aria_hidden_and_a_name_is_beside_it", () => {
+    // Every node and arrow is aria-hidden; each row's state is also said in words.
+    const nodes = html.match(/<span[^>]*class="life-node [^"]*"[^>]*>/g) ?? [];
+    expect(nodes).toHaveLength(4);
+    for (const node of nodes) expect(node).toContain('aria-hidden="true"');
+    for (const arrow of html.match(/<span[^>]*class="life-arrow"[^>]*>/g) ?? []) {
+      expect(arrow).toContain('aria-hidden="true"');
+    }
+    for (const id of ["a", "b", "site-search", "c"]) {
+      expect(rowOf(id)).toMatch(
+        /class="sr-only">(His memory: |Finished: |Current story: |Later, not available)</,
+      );
+    }
+  });
+});
+
+describe("#101 AC5 CPAGE reads period, then rows in path order, then the current card", () => {
+  it("test_101_ac5_cpage_reading_order", () => {
+    const at = (text: string) => html.indexOf(text);
+    const order = [
+      at("His youth"),
+      at("A Memory Title"),
+      at("A Finished Title"),
+      at("The Manhattan Project years"),
+      at("The Canyon and the Mesa"),
+      at("I must choose."),
+      at("Begin"),
+      at("Later, not available"),
+    ];
+    expect(order.every((n) => n >= 0)).toBe(true);
+    expect([...order].sort((x, y) => x - y)).toEqual(order);
+  });
+});

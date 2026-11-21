@@ -143,3 +143,34 @@ describe("#81 final review: accessibility", () => {
     expect(readFileSync("src/app/me/me-screen.tsx", "utf8")).toMatch(/<input[\s\S]{0,80}autoFocus/);
   });
 });
+
+describe("#101 AC4 and AC5 the history panel", () => {
+  it("test_101_ac4_a_quiet_day_is_not_focusable_and_the_list_is_an_equivalent", () => {
+    const calendar = renderToStaticMarkup(createElement(HistoryPanel, { history: view.history }));
+    // Quiet days are plain text, gaps and marks are hidden, and a marked day names itself.
+    expect(calendar).toMatch(/<span class="me-day me-day-quiet">1<\/span>/);
+    expect(calendar).toMatch(/aria-label="November 3, worked"/);
+    for (const mark of calendar.match(/<span[^>]*class="me-(?:dot|day-gap)"[^>]*>/g) ?? []) {
+      expect(mark).toContain('aria-hidden="true"');
+    }
+    // The list view reaches every session that the calendar's marked days reach.
+    const list = renderToStaticMarkup(
+      createElement(HistoryPanel, { history: view.history, initialView: "list" }),
+    );
+    for (const id of ["s1", "s2"]) {
+      expect(list).toContain(`href="/me/history/${id}"`);
+    }
+  });
+
+  it("test_101_ac5_me_cal_reads_the_view_switch, then the month, then the days", () => {
+    const html = renderToStaticMarkup(createElement(HistoryPanel, { history: view.history }));
+    const order = [
+      html.indexOf("History view"),
+      html.indexOf("November 2026"),
+      html.indexOf("November 2, worked"),
+      html.indexOf("November 3, worked"),
+    ];
+    expect(order.every((n) => n >= 0)).toBe(true);
+    expect([...order].sort((x, y) => x - y)).toEqual(order);
+  });
+});
