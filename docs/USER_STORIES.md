@@ -1158,8 +1158,8 @@ These rules come from the product principles and from decisions. They are repeat
 **Acceptance criteria**
 - Given I pause, then the AI first generates a new stuck story and then, in a second call, he describes the snag his own work has hit and how he feels about it; the pause number is passed in (US-AI-5, PAUSE-3, PAUSE-TWO-CALLS).
 - Given I pause, then the code picks a category (body, gear, ground, paper or sound; there is no weather category, SCENE-PER-STORY) that was not used in the last two pauses and a prop not yet used in this Step, and the stuck story uses only that prop.
-- Given the two calls, then call one returns `{prop, story}` and call two returns his words about the predicament and his feelings (PAUSE-TWO-CALLS). Open for the owner: AI_03 section A4 shows one structured answer `{prop, story, why, back}`.
-- Given the answer, then the checks reject it if the prop is not the offered one, if it names an object outside the scene table, if it contains an event verb (arrives, says, decides, finds, loses and similar), a new person or place, a later fact, a near repeat, or if it is longer than 2 sentences or 30 words (LEN-PAUSE).
+- Given the two calls, then call one returns `{prop, story}` and call two returns his words about the predicament and his feelings (PAUSE-TWO-CALLS). Neither call has a `why` or `back` field: he never urges, and call two is plain text, not JSON (AI_03 section A4).
+- Given the answers, then the checks reject them if the prop is not the offered one, if it names an object outside the scene table, if it contains an event verb (arrives, says, decides, finds, loses and similar), a new person or place, a later fact, a near repeat, or if it is longer than 2 sentences or 30 words (LEN-PAUSE).
 - Given the answer fails, then it is generated again with the reason within the time limit; if it still fails, the failure message with Retry is shown and no authored line stands in (FAIL-SCREEN, NO-BACKUP).
 - Given the moment, then it never moves his Story: it is texture, not an event, and he stays stuck until I tap Back.
 
