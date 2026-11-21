@@ -2,10 +2,24 @@
 // Keeps the index of each split documentation folder up to date.
 // Each folder has one small file per item and a README.md with the lines
 // between <!-- index:start --> and <!-- index:end -->. Only those lines are
-// rewritten, so two branches that each add a file never edit the same line.
+// rewritten, so two branches that each add a file edit different files.
 //
-//   node scripts/docs-index.mjs          rewrite the indexes
-//   node scripts/docs-index.mjs --check  exit 1 when an index is out of date
+// Two branches that add files sorting into the same gap still insert at the
+// same spot of the index. .gitattributes sets merge=union for the index files,
+// so git keeps both lines; --check then fails on a duplicate or out-of-order
+// line (a union merge may leave the new lines in the wrong order) and the fix
+// is to run this script again. GitHub's web merge ignores merge drivers, so a
+// conflict shown on GitHub is fixed by merging main locally.
+//
+//   node scripts/docs-index.mjs [root]          rewrite the indexes
+//   node scripts/docs-index.mjs --check [root]  exit 1 when an index is stale,
+//                                               has duplicate lines or is out of order
+//
+// The link check (brokenLinks) covers the folders in LINK_FOLDERS and the files
+// in LINK_FILES, every docs/*.md file (linkFiles), plus the docs paths named in the source files in DOC_PATH_FILES
+// (brokenDocPaths). It only checks that the file a relative [text](path) link or
+// a docs/....md path points to exists. Anchors (#heading) and reference-style
+// links ([text][ref]) are NOT checked.
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,6 +28,13 @@ export const INDEXED_FOLDERS = ["docs/api", "docs/architecture"];
 export const START = "<!-- index:start -->";
 export const END = "<!-- index:end -->";
 const MAX_SENTENCE = 200;
+
+export const LINK_FOLDERS = ["docs/api", "docs/architecture"];
+export const LINK_FILES = ["README.md", ".github/pull_request_template.md"];
+const LINK_TOP_LEVEL_DOCS = "docs";
+export const DOC_PATH_FILES = ["src/app/try/focus/page.tsx"];
+// Links known to be broken on main. Keep empty; add an entry only with a comment saying why.
+export const LINK_ALLOWLIST = [];
 
 export function firstSentence(text) {
   const line = text.replace(/\s+/g, " ").trim();
@@ -77,11 +98,24 @@ function markdownFiles(dir) {
   return found;
 }
 
+// The files the link check reads one by one: LINK_FILES and the top-level docs/*.md.
+export function linkFiles(root) {
+  const top = readdirSync(path.join(root, LINK_TOP_LEVEL_DOCS))
+    .filter((n) => n.endsWith(".md"))
+    .sort()
+    .map((n) => `${LINK_TOP_LEVEL_DOCS}/${n}`);
+  return [...LINK_FILES, ...top].filter((f) => existsSync(path.join(root, f)));
+}
+
 // Relative markdown links ([text](target)) that point to a file that does not exist.
-export function brokenLinks(root, folders) {
+export function brokenLinks(root, folders, files = []) {
   const broken = [];
-  for (const folder of folders) {
-    for (const file of markdownFiles(path.join(root, folder))) {
+  const all = [
+    ...folders.flatMap((folder) => markdownFiles(path.join(root, folder))),
+    ...files.map((f) => path.join(root, f)),
+  ];
+  {
+    for (const file of all) {
       const text = readFileSync(file, "utf8").replace(/```[\s\S]*?```/g, "");
       for (const m of text.matchAll(/\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g)) {
         const target = m[1].split("#")[0];
@@ -95,16 +129,67 @@ export function brokenLinks(root, folders) {
   return broken;
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-  const check = process.argv.includes("--check");
-  let stale = 0;
-  for (const folder of INDEXED_FOLDERS) {
-    const { changed } = syncIndex(root, folder, { write: !check });
-    if (changed) {
-      stale += 1;
-      console.log(`${check ? "stale" : "updated"}: ${folder}/README.md`);
+// docs/....md paths written in source files (for example in a code comment) that do not exist.
+export function brokenDocPaths(root, files) {
+  const broken = [];
+  for (const f of files) {
+    const text = readFileSync(path.join(root, f), "utf8");
+    for (const m of text.matchAll(/\bdocs\/[\w./-]+?\.md\b/g)) {
+      if (!existsSync(path.join(root, m[0]))) broken.push({ file: f, link: m[0] });
     }
   }
-  process.exit(check && stale ? 1 : 0);
+  return broken;
+}
+
+// Problems in the index lines of one folder: a duplicate line or lines out of order.
+export function indexProblems(root, folder) {
+  const text = readFileSync(path.join(root, folder, "README.md"), "utf8");
+  const a = text.indexOf(START);
+  const b = text.indexOf(END);
+  if (a === -1 || b === -1 || b < a) return [`${folder}/README.md is missing the index markers`];
+  const lines = text
+    .slice(a + START.length, b)
+    .split("\n")
+    .filter((l) => l.trim() !== "");
+  const problems = [];
+  const seen = new Set();
+  const names = [];
+  for (const line of lines) {
+    if (seen.has(line)) problems.push(`${folder}/README.md: duplicate index line: ${line}`);
+    seen.add(line);
+    const m = line.match(/^- \[[^\]]*\]\(([^)]+)\)/);
+    if (m) names.push(m[1]);
+  }
+  for (let i = 1; i < names.length; i++) {
+    if (names[i - 1] > names[i]) {
+      problems.push(
+        `${folder}/README.md: index lines out of order: ${names[i - 1]} before ${names[i]}`,
+      );
+    }
+  }
+  return problems;
+}
+
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  const here = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const rootArg = process.argv.slice(2).find((a) => !a.startsWith("--"));
+  const root = rootArg ? path.resolve(rootArg) : here;
+  const check = process.argv.includes("--check");
+  // With an explicit root (used by tests) a folder that does not exist there is skipped.
+  const folders = INDEXED_FOLDERS.filter((f) => !rootArg || existsSync(path.join(root, f)));
+  let bad = 0;
+  for (const folder of folders) {
+    const { changed } = syncIndex(root, folder, { write: !check });
+    if (changed) {
+      bad += 1;
+      console.log(`${check ? "stale" : "updated"}: ${folder}/README.md`);
+    }
+    if (check) {
+      for (const problem of indexProblems(root, folder)) {
+        bad += 1;
+        console.log(problem);
+      }
+    }
+  }
+  process.exit(check && bad ? 1 : 0);
 }
