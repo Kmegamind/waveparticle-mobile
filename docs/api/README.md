@@ -21,7 +21,7 @@ The public code interfaces today are listed below, one file per interface in thi
 - [src/lib/prototype/focus-cards.ts](focus-cards.md): server-only `cardsForStep({ storyId?, index, planMinutes, earlierCards }, gateway)` (#254: the chosen story's facts and inputs; a missing `storyId` is chapter 8, and an unknown one makes…
 - [src/lib/goal-dialogue/](goal-dialogue-turns.md): `src/lib/goal-dialogue/turns.ts`: `takeTurn(request, deps)` counts and checks one turn of the goal dialogue on the server (#31, `docs/decisions/0026`).
 - [src/lib/prototype/goal-lines.ts](goal-lines.md): his draft dialogue lines (READ-STATUS: written), `pickReturningOpening(previous)`, `classifyGoalShape(goal)` and `reactionFor(shape)`.
-- [src/lib/prototype/goal-time.ts](goal-time.md): `parseTypedTime(text)` (5 to 300 minutes, rounded to 15, otherwise `null`), `findTimeInGoal(goal)` (GOAL-TIME), `formatMinutes(minutes)` and `TIME_HINT`.
+- [src/lib/prototype/goal-time.ts](goal-time.md): `parseTypedTime(text)` (5 to 300 minutes, rounded to 15, otherwise `null`), `findTimeInGoal(goal)` (GOAL-TIME; whole minutes as written, NO-ROUNDING; a duration that describes the thing, such as "a 2…
 - [src/app/goals/actions.ts](goals-actions.md): server actions, each returning `{ status: "ok" }` or `{ status: "failed" }` with no Goal text.
 - [src/app/home-actions.ts](home-actions.md): server action `setGoalStatusAction({ goalId, status, sessionId?
 - [src/lib/summary/life-path.ts](life-path.md): `lifePath(progress, startId = chapter 1)` gives `{ periods: [{ name, rows }], currentId }`.

@@ -176,6 +176,26 @@ test("GOAL-TIME a stated length skips the time question and can be changed", asy
   await expect(plan(page)).toContainText("· 120 min");
 });
 
+test("US-GD-11 a length of 50 minutes is kept as written and leaves the Goal title", async ({
+  page,
+}) => {
+  await openDialogue(page);
+  await sendGoal(page, "study chemistry for 50 minutes");
+  await expect(page.getByText("Time I understood from your line: 50 min.")).toBeVisible();
+  await page.getByRole("button", { name: "Keep it broad" }).click();
+  await expect(plan(page)).toContainText("· 50 min");
+  await expect(plan(page).getByLabel("Goal", { exact: true })).toHaveValue("study chemistry");
+});
+
+test("US-GD-11 a 2 hour lecture is not the user's time, so the time question is asked", async ({
+  page,
+}) => {
+  await openDialogue(page);
+  await sendGoal(page, "take notes on a 2 hour lecture");
+  await expect(page.getByText("How long do you have?")).toBeVisible();
+  await expect(page.getByText(/Time I understood from your line/)).toHaveCount(0);
+});
+
 test("#30 AC5 stepping back keeps the typed text", async ({ page }) => {
   await openDialogue(page);
   await sendGoal(page, "Write the methods section of my lab report");

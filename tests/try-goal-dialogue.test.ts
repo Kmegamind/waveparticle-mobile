@@ -25,6 +25,7 @@ import {
   formatMinutes,
   minutesLabel,
   parseTypedTime,
+  removeTimePhrase,
   SLIDER_MAX_MINUTES,
   SLIDER_STEP_MINUTES,
   SLIDER_ZERO_HINT,
@@ -118,6 +119,41 @@ describe("GOAL-TIME a goal that states a length skips the time question", () => 
     ["practise piano for 1.5 hours", 90],
   ])("understands %s as %i minutes", (goal, minutes) => {
     expect(findTimeInGoal(goal)).toBe(minutes);
+  });
+
+  it.each([
+    ["study for 50 minutes", 50],
+    ["study for 100 minutes", 100],
+    ["write for 7 minutes", 7],
+    ["write for 2.5 hours", 150],
+    ["I have an hour to revise", 60],
+  ])("US-GD-11 AC1 keeps %s as written: %i minutes, not rounded", (goal, minutes) => {
+    expect(findTimeInGoal(goal)).toBe(minutes);
+  });
+
+  it.each([
+    "watch a 2 hour lecture",
+    "summarise a 2-hour lecture",
+    "review the 90 minute video",
+    "an hour lecture notes",
+  ])("US-GD-11 AC2 does not read %s as the user's time", (goal) => {
+    expect(findTimeInGoal(goal)).toBeNull();
+  });
+
+  it("US-GD-11 AC2 still reads the user's time when a duration also describes the thing", () => {
+    expect(findTimeInGoal("take notes on a 2 hour lecture for 45 minutes")).toBe(45);
+  });
+
+  it.each([
+    ["study chemistry for one hour", "study chemistry"],
+    ["Write the report for 45 minutes", "Write the report"],
+    ["2 hours of revision", "revision"],
+    ["read for half an hour, then stop", "read, then stop"],
+    ["watch a 2 hour lecture", "watch a 2 hour lecture"],
+    ["Write the methods section", "Write the methods section"],
+    ["for an hour", "for an hour"],
+  ])("US-GD-11 AC1 title for %s is %s", (goal, title) => {
+    expect(removeTimePhrase(goal)).toBe(title);
   });
 
   it.each(["Write the methods section", "finish chapter 3", "read 20 pages"])(

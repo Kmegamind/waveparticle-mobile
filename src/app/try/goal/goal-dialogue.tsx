@@ -24,6 +24,7 @@ import {
   SLIDER_STEP_MINUTES,
   SLIDER_ZERO_HINT,
   minutesLabel,
+  removeTimePhrase,
   sliderStart,
   sliderValueText,
 } from "@/lib/prototype/goal-time";
@@ -210,8 +211,9 @@ export function GoalDialogue({
         turn: "split",
         request: { kind: "split-again", token: outcome.token, goal: goalOf(request) },
       });
-      setPlanTitle(outcome.plan.title);
-      setTitleDraft(outcome.plan.title || goalOf(request));
+      const planGoal = removeTimePhrase(outcome.plan.title || goalOf(request));
+      setPlanTitle(removeTimePhrase(outcome.plan.title));
+      setTitleDraft(planGoal);
       setGoalId(crypto.randomUUID());
       setSaveFailed(false);
       setSteps(fromPlan(outcome.plan.steps));
@@ -396,11 +398,13 @@ export function GoalDialogue({
 
   function useOneStep() {
     const total = minutes ?? DEFAULT_MINUTES;
-    setPlanTitle(goal);
-    setTitleDraft(goal);
+    setPlanTitle(removeTimePhrase(goal));
+    setTitleDraft(removeTimePhrase(goal));
     setGoalId(crypto.randomUUID());
     setSaveFailed(false);
-    setSteps(fromPlan([{ title: goal.slice(0, 80), description: "", minutes: total }]));
+    setSteps(
+      fromPlan([{ title: removeTimePhrase(goal).slice(0, 80), description: "", minutes: total }]),
+    );
     setEditing(null);
     setPhase("plan");
   }
@@ -527,7 +531,7 @@ export function GoalDialogue({
     if (committed === null) return;
     // The Goal field is the user's own text: it passes the same safety gate as a Step (#237).
     if (gateFreeText(titleDraft).action === "crisis-page") {
-      setTitleDraft(planTitle || goal);
+      setTitleDraft(planTitle || removeTimePhrase(goal));
       openCrisis("plan");
       return;
     }
