@@ -20,7 +20,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 
 | # | Decision | Status |
 |---|---|---|
-| D-AI-1 | Hybrid: authored spine (AI-2); model for stuck story, rest chat, end line, goal split; always behind checks with authored fallback | **Superseded**: story cards, the background card and the closing line are made ahead per story and read before publishing; there is no authored fallback (SHARED-STORY, CLOSING-AHEAD, NO-BACKUP) |
+| D-AI-1 | Hybrid: authored spine (AI-2); model for stuck story, rest chat, end line, goal split; always behind checks with authored fallback | **Superseded**: story cards, the background card and the closing line are made ahead per story, published, and read afterwards; there is no authored fallback (SHARED-STORY, CLOSING-AHEAD, NO-BACKUP, PUBLISH-FIRST) |
 | D-AI-2 | Stuck story = two calls (stuck on Pause, resolved on Back) | **Replaced**: on Back the return pop-up is generated live (R1, T6); there is no quiet pause (PAUSE-3) |
 | D-AI-3..9 | See v1 | Stays |
 | D-AI-4 | No chat reply limit | Stays (R2); the third-Pause warning is cancelled (F1) |

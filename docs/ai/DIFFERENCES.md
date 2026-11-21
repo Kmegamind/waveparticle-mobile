@@ -143,7 +143,7 @@ How to read it: each item names the decision id in brackets. The spec section is
 
 - [ ] Inputs: `happened` comes from the facts covered by the steps the user marked done, not from the database's list of tasks (T3). Rename the old word for the user's work where it appears.
 - [ ] Add the merged key moments as an input if the closing line should refer to them. The summary lists them separately, one first-person line each (C2). Add the key lines to the data requirements.
-- [ ] The closing line is made ahead with the story's cards and read and published with them (CLOSING-AHEAD); 1 to 3 sentences, at most 45 words (LEN-CARD). Rewrite the live-call design as a prompt for making stories ahead.
+- [ ] The closing line is made ahead with the story's cards and published with them, then read afterwards (CLOSING-AHEAD, PUBLISH-FIRST); 1 to 3 sentences, at most 45 words (LEN-CARD). Rewrite the live-call design as a prompt for making stories ahead.
 - [ ] `mode` (smooth or rough): delete it. The closing line tells what happened to him that day and how he feels; it does not count the user's pauses and does not judge the user (END-TONE).
 - [ ] Timing (section 8): there is no call at the last Done; delete the live timing.
 - [ ] Fallback: delete `closing_fallback`; there are no fallback lines (NO-FALLBACK-TABLES).

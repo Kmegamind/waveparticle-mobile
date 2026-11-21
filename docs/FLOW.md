@@ -280,7 +280,7 @@ Each entry gives: **Frame** (page, sheet or state), **Purpose**, **Shows**, **Ca
 - **Shows:** a plain ruler with ticks and a marker and no fill, and a list of rows with every story of the path. Shape carries the state of each row:
   - Finished (you finished it): solid dot and ›, the story title and his past-tense line. Tappable.
   - Current (exactly one): heavy ring, a card with his first-person line, and the **Begin** button.
-  - The stored past-tense and present-tense lines are not fixed; they wait for Yue's inner-thoughts framework, and until then the rows use the story's goal sentence (STORY-LINES-LATER).
+  - The stored past-tense and present-tense lines are not fixed; they wait for Yue's inner-thoughts framework. Today (main) the rows show the story's goal sentence; nothing new is built until the framework exists (STORY-LINES-LATER).
   - The other stories of the path: all 26 chapters are shown with their titles, grouped under named periods, with no dates or ages (PERIODS, DATES-ADMIN-ONLY). Chapters ahead of the current one are visible but not tappable, play is in order, and none is marked locked or "coming soon".
   - New users start at chapter 1. No marker of any kind is shown for scenes or key moments on the rows or on the current card. No totals, future dates or source labels.
 - **Can do and leads to:**
@@ -655,7 +655,7 @@ Also removed, not as screens but as rules: the 24-hour limit on resuming, the ca
 
 The interactive prototype `wp-prototype_2026-10-29_v1.html` is the current visual reference, but it differs from the decisions in these ways. Follow the decisions.
 
-1. **Cards at the start of a Step.** The prototype shows several story cards when a Step opens. The first Step opens with the background card; the cards of all parts are spread across the Steps in story order, none dropped, at least one new card per Step, with no special opening card for later Steps (CARDS-SPREAD). The cards are made ahead once per story part, read before publishing and shared by all users, with no fallback cards (SHARED-STORY, CARDS-PER-PART, NO-FALLBACK-TABLES).
+1. **Cards at the start of a Step.** The prototype shows several story cards when a Step opens. The first Step opens with the background card; the cards of all parts are spread across the Steps in story order, none dropped, at least one new card per Step, with no special opening card for later Steps (CARDS-SPREAD). The cards are made ahead once per story part, published and shared by all users, and read by a person afterwards, with no fallback cards (SHARED-STORY, CARDS-PER-PART, PUBLISH-FIRST, NO-FALLBACK-TABLES).
 2. **Background card.** The prototype has none. One background card, told in his own voice, is shown first at the start of the Goal.
 3. **Gesture direction.** The prototype moves to an earlier card when the user swipes right and uses a row with the oldest card at the left. Decided: a stack, where swiping the top card left shows the previous card and swiping right brings the newer card back.
 4. **Third pause.** The prototype shows R-WARN on the third pause and restarts the Step clock after resting. Both are cancelled. Pause has no limit and no reset. From the third pause the same rest page opens with a stronger message from him.

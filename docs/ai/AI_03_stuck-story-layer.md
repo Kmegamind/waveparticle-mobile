@@ -44,7 +44,7 @@ Not by itself. A model asked for "one small thing that has him stuck" five times
 | Paper | map corner, notebook page, a smudged line | a missing or changed document |
 | Sound | a car idling, a loose sign, wind noise | someone arriving or speaking |
 
-Props come from an authored list per entry state (WP2.3 owns it; size in §A4). Rules: pick a category not used in the last two Pauses of this run; pick a prop not used before in this **step**; the model sees only `category`, `prop`, `entry.news`, `entry.why`.
+~~Props come from an authored list per entry state (WP2.3 owns it; size in §A4).~~ (SCENE-PER-STORY: `props` and `pauseProp` of the Story's scene table.) Rules: pick a category not used in the last two Pauses of this run; pick a prop not used before in this **step**; the model sees only `category`, `prop`, `entry.news`, `entry.why`.
 
 ### A2. Maximum number of distinct snags per entry state (Guess)
 

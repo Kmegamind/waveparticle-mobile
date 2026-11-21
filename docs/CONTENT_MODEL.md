@@ -207,7 +207,7 @@ Shape C, made-ahead card (proposed; stored cards are issue #293 and not built ye
 | id | text | `crd.<short>.<story>.p<n>.c<n>`, or `crd.<short>.<story>.bg` (NAMING-CODE). |
 | part | integer | The story part the card belongs to (CARDS-PER-PART). |
 | position | integer | Order inside its part. |
-| text | text | First person. Passes the checks of section 7; a card over the length limit cannot be published (LEN-CARD). Never edited after it is shown. |
+| text | text | First person. Passes the checks of section 7; a card over the length limit cannot be published (LEN-CARD). A published card can be edited and published again (PUBLISH-FIRST); a line already shown in a session is not changed (`session_lines` is insert-only; `docs/decisions/0021`). |
 | state | `written`, `checked by script`, `read by a person` | Only published cards are shown (ADMIN). The state is not a condition for publishing: a published card may still be `written` or `checked by script` (READ-STATUS, PUBLISH-FIRST). |
 | prompt version | text | The prompt version that wrote it (PROMPT-PARTS). |
 | facts used | list of fact ids | Which story facts the card draws on; used by the leak check. |
@@ -533,7 +533,7 @@ These apply to one-way lines. Rest chat replies answer the user and are not chec
 | Connected (RW3) | Each card connects to the one before: shares a content word or uses so, because, but, which. |
 | No forward reference (RW4) | A card never depends on a later card, so any prefix of the row is complete. |
 | No repetition (RW6) | No two cards of a row overlap by half their words or repeat a sentence. |
-| Consistency (RW7, RN1) | Optional state tags change in one direction only along a row and a run. There are no weather or light scales (SCENE-PER-STORY). |
+| Consistency (RW7, RN1) | Optional state tags change in one direction only along a row and a run. No such tags exist now, because there are no weather or light scales (SCENE-PER-STORY); the rule applies only if one is added. |
 | No spoilers by part (RW8) | A card of part p may not contain terms of later parts. |
 | No echo between steps (RN2, RN3) | The same sentence never appears in two rows; the first card of the next row continues rather than repeats the last card of the previous row. |
 | Self-contained | No "again", "another", "as I said", "the same" pointing at another card, because a card may be reread on its own. |
@@ -701,7 +701,7 @@ Story cards, the background card and the closing line are made ahead once per st
 |---|---|---|---|---|
 | Story database entry (facts, goal, background) | Yes | Yes | Yes (5 database tasks; date is a placeholder) | Yes, all 26 |
 | Key moments (2 to 4) and key lines | Machine-derived, unconfirmed (KEY-UNCONFIRMED); s4, s6, s8 proposed earlier | Machine-derived, unconfirmed; s4, s6 proposed earlier | Machine-derived, unconfirmed | Machine-derived, unconfirmed |
-| Made-ahead cards, background card and closing line, read and published | None | None | None | None |
+| Made-ahead cards, background card and closing line, published (and read afterwards, PUBLISH-FIRST) | None | None | None | None |
 | Slices (reference only) | 8 slices | 7 slices | No | No (24 of 26 have none) |
 | Authored reference cards | 41 cards, older shape | 135 cards: 21 rows of chain cards plus 30 return cards, current shape | None | None |
 | Step lines and where-now | Yes, all 8 slices | The older pool has 22 such records (type HIS); not in the new shape | None | None |

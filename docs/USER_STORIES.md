@@ -455,7 +455,7 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user, **I want** each card to tell me one new true thing, **so that** an hour of work does not feel as if nothing happened.
 
 **Acceptance criteria**
-- Given a story card, then it contains at least one new element that is not an event: a new background fact from the Story's knowledge field, the movement of a one-way scale such as rain easing where the Story already has that change, or a shift in what he is worried about.
+- Given a story card, then it contains at least one new element that is not an event: a new background fact from the Story's knowledge field, a new prop from the Story's scene table, or a shift in what he is worried about. There are no weather or light scales to move (SCENE-PER-STORY).
 - Given a card, then it never adds a new named person, a new conversation or a new outcome.
 - Given a build of the content, then a check warns when a card shares too many content words with the earlier cards of the same Step.
 
@@ -495,7 +495,7 @@ These rules come from the product principles and from decisions. They are repeat
 
 **Priority:** Must · **Area:** Story content and data (NF3) · **Screens:** F1 · **Depends on:** US-CON-1, US-FMT-1, US-FMT-11 · **Size:** M · **Source:** DEC M1, T3, D4, NO-BACKUP, NO-FALLBACK-TABLES; NF3v1 sections 3 and 4
 
-### US-CON-12 · Automatic card checks, and reading after publishing
+### US-CON-12 · Automatic card checks (no human review gate)
 
 **As a** product owner, **I want** every authored line to pass the automatic checks before it ships and to be read by a person after it is published (PUBLISH-FIRST: there is no human review gate), **so that** real people are portrayed carefully and no card leaks the future.
 
@@ -1245,7 +1245,7 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user who finished the last Step, **I want** a closing line that tells what happened to him that day, **so that** the ending feels earned.
 
 **Acceptance criteria**
-- Given a Story, then its closing line is made ahead with the Story's cards and is read and published with them (CLOSING-AHEAD); it is 1 to 3 sentences and at most 45 words in his voice, and a line over the limit cannot be published (LEN-CARD).
+- Given a Story, then its closing line is made ahead with the Story's cards and is published with them (and read afterwards, PUBLISH-FIRST) (CLOSING-AHEAD); it is 1 to 3 sentences and at most 45 words in his voice, and a line over the limit cannot be published (LEN-CARD).
 - Given the line, then it tells what happened to him that day and how he feels about it; it does not count my pauses and does not judge me (END-TONE).
 - Given the prompt that makes it, then it receives no text from me, no Goal and no Step names.
 - Given the line, then it is checked (US-AI-8), shown on the summary and in the record of the Story, and never regenerated; a closing line that is not published is never shown, and no fallback line stands in (NO-BACKUP).

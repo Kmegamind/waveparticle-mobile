@@ -21,7 +21,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 |---|---|
 | 1 | New **scope policy**: five scopes, one row of behaviour each (§A2) |
 | 2 | Recommendation: **stay in his day, answer from his side, never answer the task or general knowledge**; he deflects in character with a plain bridge to his own line (§A1, §A3) |
-| 3 | The model returns `scope` with the reply so code can check consistency (§A4) |
+| 3 | ~~The model returns `scope` with the reply so code can check consistency (§A4)~~ Withdrawn (CHAT-NO-LABEL) |
 | 4 | Personal and emotional messages: boundary and examples (§B) |
 | 5 | AI-4 v1 §12 (system warning on the third Pause, "step will fail") treated as **cancelled** with the timer-reset rule; confirm in AI_09 v2 |
 | 6 | v1 §11 Q1 (may he ask a question?) answered: yes at most one question, never in a deflection, never as the last line of a pause that the user may leave (§B) |
@@ -75,7 +75,7 @@ Add to the v1 Rules block:
 - Name the topic of the user's message to yourself: your world, their task, general knowledge, you, or how they feel.
 - If it is their task or something you could not know in 1942, do not answer it, and do not teach. Say, in one sentence, that it is not something you know or can help with from where you stand, then say one thing about your own side.
 - If it is about you or how they feel, answer with something small from your own side. No advice. No comfort method.
-- Output one JSON object: {"scope": "his_world|task|knowledge|personal|meta|emotional|unknown", "reply": "..."}
+- ~~Output one JSON object: {"scope": "his_world|task|knowledge|personal|meta|emotional|unknown", "reply": "..."}~~ (withdrawn, CHAT-NO-LABEL)
 ```
 
 Output moves from plain text to JSON (v1 §6). This costs about 15 extra output tokens and removes a second classifier call.
@@ -86,7 +86,7 @@ Output moves from plain text to JSON (v1 §6). This costs about 15 extra output 
 
 | Check | Rule |
 |---|---|
-| Scope-reply consistency | `knowledge` or `task` replies must contain no domain term from the user message (word list from the message minus stop-words); they must contain a first-person pronoun and no imperative to the user |
+| ~~Scope-reply consistency~~ | ~~`knowledge` or `task` replies must contain no domain term from the user message (word list from the message minus stop-words); they must contain a first-person pronoun and no imperative to the user~~ Withdrawn (CHAT-NO-LABEL, ERA-ANSWER) |
 | Anachronism | Denylist of post-1942 words in `reply` (algorithm, statistics terms, "AI", brand names); list per story. A word the user typed himself is allowed (CHAT-USER-WORD) |
 | Later knowledge | AI-6 R19 probe words |
 | Question | At most one question; the reply may end on it (CHAT-QUESTION-END) |
@@ -127,7 +127,7 @@ Wizard of Oz: a person plays him using the scope table, with 8 to 10 testers who
 
 ## Questions to other sessions
 
-**WP2.3:** period-appropriate deflection lines (3 per entry state per scope × 2 scopes = 6 per entry state), the post-1942 denylist, `rest_chat_fallback` per scope.
+**WP2.3:** ~~period-appropriate deflection lines (3 per entry state per scope × 2 scopes = 6 per entry state)~~, the post-1942 denylist, ~~`rest_chat_fallback` per scope~~ (withdrawn: no label, CHAT-NO-LABEL; no fallback, NO-BACKUP).
 **WP2.6:** whether chat history stays visible when the user returns to rest later in the same step; where `meta` ("are you an AI") is answered if the policy is out-of-character (a plain line in his bubble style or a system line).
 
 ## Open questions

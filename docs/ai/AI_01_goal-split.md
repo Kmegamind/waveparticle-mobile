@@ -10,7 +10,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 
 ## 1. Purpose
 
-Turn the goal the person typed and the minutes they gave into N steps they can start. Two small calls:
+Turn the goal the person typed and the minutes they gave into N steps they can start. Two small calls (in version 1, 1a is a local rule, not a model call: GOAL-SHAPE-LOCAL):
 
 - **1a Shape classifier** → one word (`specific`, `vague`, `big`, `unknown`). It only decides **which authored reaction line** he says at GD2. It never writes his line (NF7 D-G2: goal text goes to classification and splitting only, not to line generation).
 - **1b Split** → JSON of steps.
