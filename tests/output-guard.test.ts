@@ -67,8 +67,12 @@ describe("#55 output guard", () => {
     expect(JSON.stringify(reply)).not.toContain(rejected);
   });
 
-  it("test_55_ac3_safety_premade_the_banned_words_of_the_shared_checks_block_a_premade_card", () => {
+  it("test_55_ac3_safety_premade_the_banned_style_words_are_checked_on_premade_cards", () => {
     const card = { kind: "part" as const, part: 1, body: "The room had good vibes that night." };
     expect(cardProblems(card, [])).toContain('Uses a banned word ("vibes").');
   });
+
+  it.todo(
+    "test_55_ac3_safety_premade_the_ai6_line_rules_chosen_by_the_owner_block_a_premade_card (hook, form, len, name, back, praise, first_person, failure_text, you; owner decision and tests in issue #378)",
+  );
 });
