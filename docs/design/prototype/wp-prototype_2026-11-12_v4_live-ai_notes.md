@@ -74,7 +74,7 @@ Not verified: the real fonts were loaded in the test, but only with the stand-in
 
 ## Sixth round: decisions of 2026-11-21 (issue #369 follow-up)
 
-- R1 shows the two-call pause in order: first his stuck story (the code picks the category and a prop; the model returns the prop and the story), then his description of the predicament and his feelings (PAUSE-TWO-CALLS). Quiet demo notes above each slip say which call it is; they are shown only before the user has written.
+- R1 shows the two-call pause in order: first his stuck story (the code picks the category and a prop; the model returns the prop and the story), then his description of the predicament and his feelings (PAUSE-TWO-CALLS). Call one returns the prop and the story, and the page checks that the prop is the one the code picked. The panel beside the phone says which call each slip is (never inside the chat); it shows only before the user has written.
 - R1-C: no category label and no per-message label; the chat reply prompt no longer asks for a scope field (CHAT-NO-LABEL).
 - GD2 carries a demo note that the goal shape uses the local rule with no model call (GOAL-SHAPE-LOCAL).
 - CPAGE, CPAGE-M and END carry a demo note that their lines wait for the owner's inner-thoughts framework (STORY-LINES-LATER, END-LINE-PENDING). These screens are not redrawn. S6 and the long-term chat are not drawn.

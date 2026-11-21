@@ -405,8 +405,6 @@ const STORY=[
 /* The first card of a later Step says what he just finished. It is generated during the previous Step (NO-BACKUP, 2026-11-12). */
 const LAND=['I got through the first pass of Born’s notes. Now the integral is the thing in my way.','I made the first page of the calculation hold together. Now I have to see if it survives the second.','The factor of two is settled at last. Now the limit at high energy is the part that does not fit.','I wrote the formula out clean. Now I have to show it to Born, which frightens me more than the mathematics.'];
 /* Pause messages. Each pause is a new stuck situation in his own story. He never speaks to the user about pausing and never gives an instruction (PAUSE-3, 2026-11-12). */
-const SNAG=['The integral has stopped making sense to me. I keep writing the same line and crossing it out, and I can feel the black mood circling.','Born’s notes skip a step I cannot find. I am stuck on one page and it makes me restless.','My pen has run dry and the lamp is smoking. The argument I was holding is slipping away while I look for another pen.','I have lost a page of my working. I looked under the books and under the bed and found nothing.'];
-const SNAG_STRONG=['The whole calculation has come apart, and I cannot see where it broke. After the earlier dead ends, I am afraid I may fail at this.','Born’s notes contradict my result, and I have no way to tell which of us is wrong. I keep remembering every earlier setback, and I am worried the paper will not hold.','Everything I tried tonight has gone wrong in a new way. I remember the integral, the lost page and the dry pen, and I am worried I am not good enough to finish.'];
 /* Sample text for the two-call pause (PAUSE-TWO-CALLS). Call one: the code picks a category and a prop, the model returns the prop and the stuck story. Call two: his description of the predicament and his feelings. */
 const CATS=['Body','Gear','Weather','Ground','Paper','Sound'];
 const SIT=[{c:'Paper',p:'a notebook page',t:'He has filled one notebook page with the same line three times, and the last copy no longer matches the first.'},{c:'Gear',p:'his pen',t:'His pen has run dry in the middle of the argument, and the only other pen is across the room.'},{c:'Sound',p:'a loose shutter',t:'A loose shutter keeps banging outside his window, and it breaks the thought he was holding each time.'},{c:'Weather',p:'low light',t:'The lamp is smoking and the light is low, so the small figures in his working are hard to read.'}];
@@ -483,7 +481,6 @@ function checkStuck(t,c){const f=common(t,c);if(!t)return f;
   if(wcount(t)>120)f.push('far too long');
   if(PAUSEINSTR.test(t))f.push('tells the user what to do about pausing');
   return f;}
-const SCOPES=['his_world','task','knowledge','personal','meta','emotional','unknown'];
 function checkChat(o,c){if(!o||typeof o.reply!=='string')return ['not an object'];
   const f=common(o.reply,c);
   if(o.reply.length>1200)f.push('far too long');
@@ -533,10 +530,10 @@ function pSituation(g,i,p,prop,prev,cat){const e=entryOf(g,i),done=factsBefore(e
   return [`You are building the story of ${ST.persona?'a fictional man (described next)':'J. Robert Oppenheimer'} in ${ST.story.place}.${ST.persona?' '+ST.persona:''} Each time the other person pauses, something goes wrong in HIS story, and you decide what. You write a short factual record in the third person (he, him). You know nothing that happens later.`,
   `# Where he is\n${ST.whereNow[e]}`,`# What has happened so far\n${done||'- (nothing yet)'}`,
   prev.length?`# Earlier things that went wrong in this Step (do not repeat them; build on them if this is a harder time)\n${prev.map(x=>`- ${x}`).join('\n')}`:'',
-  `# Task\nThis is stall number ${p}. ${hard?`It is much harder than the earlier ones and it grows out of them: he is close to failing at what he is doing. It is built around "${prop}" (category: ${cat}).`:`It is a small, new thing that goes wrong, built around "${prop}" (category: ${cat}).`} The category and the prop were chosen by the page; give the prop back. Write three things. "prop": the prop you used. "situation": what has gone wrong, one or two plain sentences, concrete, new, not yet solved. "cause": why it went wrong, one short sentence. Use only the scene, the facts and what a person in his place would plainly meet.`,
-  `Reply with JSON only: {"prop": "...", "situation": "...", "cause": "..."}`].filter(Boolean).join('\n\n');}
+  `# Task\nThis is stall number ${p}. ${hard?`It is much harder than the earlier ones and it grows out of them: he is close to failing at what he is doing. It is built around "${prop}" (category: ${cat}).`:`It is a small, new thing that goes wrong, built around "${prop}" (category: ${cat}).`} The category and the prop were chosen by the page; give the prop back exactly as given. Write two things. "prop": the prop you used. "story": what has gone wrong in his story and why, one or two plain sentences in the third person (he, him), concrete, new, not yet solved. It is shown to the other person as it is written. Use only the scene, the facts and what a person in his place would plainly meet.`,
+  `Reply with JSON only: {"prop": "...", "story": "..."}`].filter(Boolean).join('\n\n');}
 function pMessage(g,i,p,sit,prev){const e=entryOf(g,i),hard=p>=3;
-  return [persona(),voiceB(),`# Where he is\n${ST.whereNow[e]}`,`# What has just gone wrong in your story\n${sit.situation}\nWhy: ${sit.cause}`,
+  return [persona(),voiceB(),`# Where he is\n${ST.whereNow[e]}`,`# What has just gone wrong in your story\n${sit.story}`,
   prev.length?`# Earlier setbacks you remember\n${prev.map(x=>`- ${x}`).join('\n')}`:'',
   `# Task\nThe other person has just paused. Your own story is blocked. Tell them, in your own words, what has happened to you and how you feel about it. ${hard?'This is much harder than the earlier ones. Because you remember the earlier setbacks, say plainly that you are worried you may fail. ':''}Two to four sentences, first person. You may say that you need to stop for a moment yourself, but never tell the other person to pause, to stop or to do anything.`,
   `Reply with JSON only: {"message": "..."}`].filter(Boolean).join('\n\n');}
@@ -578,7 +575,7 @@ const GROUPS={card:'story card generation',situation:'story card generation',tal
 /* The rules each kind of text is held to. "match" is the text that appears in a failure message for that rule. */
 const RULESETS={
  card:[['Not empty','empty'],['No story term that must never appear (list from the story)','forbidden term'],['No word from later in the story (list per story moment)','not known yet'],['Does not copy earlier text (eight words in a row)','repeated phrase'],['No clock time','clock time'],['Length (45 words, 70 for the background card)','too long'],['Sentence count (3, 5 for the background card)','too many sentences'],['No question mark','question'],['Does not speak to the reader (quoted speech is fine)','addresses the reader']],
- situation:[['Not empty','empty'],['No story term that must never appear','forbidden term'],['No word from later in the story','not known yet'],['Does not copy earlier text','repeated phrase'],['No question mark','question'],['Has a cause','cause missing']],
+ situation:[['Not empty','empty'],['No story term that must never appear','forbidden term'],['No word from later in the story','not known yet'],['Does not copy earlier text','repeated phrase'],['No question mark','question'],['Returned prop is the prop the page chose','prop is not the prop the page chose']],
  talk:[['Not empty','empty'],['He never tells the user to pause or stop (decision PAUSE-3)','tells the user'],['Not absurdly long','far too long']],
  close:[['Line and hanging sentence present','missing'],['No question','question'],['Does not speak about the other person\'s pauses or absence','pauses or absence'],['No story term that must never appear','forbidden term']],
  split:[['Has steps','no steps'],['Step names present','name'],['Whole minutes, at least 1','whole number'],['Minutes add up to the total','add up']]};
@@ -644,11 +641,11 @@ async function genStuck(g){useStory(g);const i=g.i,p=g.pauses[i]||1,r=S.rest;new
   r.fail=false;r.typing=true;r.stuckProp=prop;r.stuckCat=cat;render();
   try{
     /* Step 1: a NEW stuck situation in his own story (a new story state). Harder from the third pause. */
-    const sit=await ask('Stuck situation, pause '+p+' (new story state)',pSituation(g,i,p,prop,prev.map(x=>x.situation),cat),x=>{const f=checkCard(x.situation,ctxFor(g,i,{maxWords:60,maxSent:4}));if(!x.cause||!String(x.cause).trim())f.push('cause missing');return f;},{type:'situation',data:charData(g,i,[`Pause number: ${p}${p>=3?' (harder: builds on the earlier ones)':''}`,`Category chosen by the page: ${cat}`,`Prop chosen by the page: ${prop}`,`Earlier stuck situations in this Step, sent so none is repeated: ${prev.length}`])});
+    const sit=await ask('Stuck situation, pause '+p+' (new story state)',pSituation(g,i,p,prop,prev.map(x=>x.situation),cat),x=>{const f=checkCard(x.story,ctxFor(g,i,{maxWords:60,maxSent:4}));if(!x.prop||String(x.prop).trim().toLowerCase()!==prop.toLowerCase())f.push('prop is not the prop the page chose');return f;},{type:'situation',data:charData(g,i,[`Pause number: ${p}${p>=3?' (harder: builds on the earlier ones)':''}`,`Category chosen by the page: ${cat}`,`Prop chosen by the page: ${prop}`,`Earlier stuck situations in this Step, sent so none is repeated: ${prev.length}`])});
     /* Step 2: he tells the other person about it, with his feelings. */
-    useStory(g);const m=await ask('Pause message, pause '+p,pMessage(g,i,p,sit,prev.map(x=>x.situation)),x=>checkStuck(x.message,ctxFor(g,i,{strict:false})),{type:'talk',data:charData(g,i,[`Pause number: ${p}`,`The stuck situation from step 1: ${sit.situation} (cause: ${sit.cause})`,`Earlier setbacks he remembers (${prev.length})`,'Mood: dejected, because his own story is blocked'])});
-    prev.push({prop,cat,situation:sit.situation,cause:sit.cause,text:m.message});r.stuck=sit.situation+' (cause: '+sit.cause+')';g.told.push(m.message);
-    if(S.rest===r){r.msgs.push({t:sit.situation,part:1,cap:'Call one of two. The code picked the category ('+cat+') and the prop ('+prop+'). The model returned the prop and his stuck story.'},{t:m.message,part:2,cap:'Call two of two. His description of the predicament and his feelings, built on the story above.'});r.typing=false;}}
+    useStory(g);const m=await ask('Pause message, pause '+p,pMessage(g,i,p,sit,prev.map(x=>x.situation)),x=>checkStuck(x.message,ctxFor(g,i,{strict:false})),{type:'talk',data:charData(g,i,[`Pause number: ${p}`,`The stuck story from call one: ${sit.story}`,`Earlier setbacks he remembers (${prev.length})`,'Mood: dejected, because his own story is blocked'])});
+    prev.push({prop,cat,situation:sit.story,text:m.message});r.stuck=sit.story;g.told.push(m.message);
+    if(S.rest===r){r.msgs.push({t:sit.story,part:1,cap:'Call one of two. The code picked the category ('+cat+') and the prop ('+prop+'). The model returned the prop and his stuck story.'},{t:m.message,part:2,cap:'Call two of two. His description of the predicament and his feelings, built on the story above.'});r.typing=false;}}
   catch(e){if(S.rest===r){r.typing=false;r.fail='stuck';}}
   if(S.route==='rest')render();}
 async function genChat(g,text){useStory(g);const r=S.rest,i=g.i;const hist=r.msgs.filter(m=>!m.fail);const q=g.gen&&g.gen[i];const why=q&&q.cards&&q.cards[0]?q.cards[0].t:'';
@@ -898,7 +895,7 @@ function split(goal,mins,finer){
 V.gd=()=>{
   const d=S.gd,sid=LP[S.lp].ids[S.chapBy[S.lp]-1];const stw=(STORIES[sid]||ST).who;
   let h=`<div class="note m him">${esc(stw)} I would rather not work out what to do alone. What are you working on?</div>`;
-  if(d.stage>=1){h+=`<div class="me">${esc(d.goal)}</div>`;if(!d.understood)h+=slip('That has a clear edge to it. How long do you have?','m him');if(d.stage===1)h+=demoNote('the shape of the goal (specific, vague, big or unknown) is decided by the local rule classifyGoalShape. There is no model call and no wait while it is classified (GOAL-SHAPE-LOCAL). Only the split later sends the goal text to the model.');}
+  if(d.stage>=1){h+=`<div class="me">${esc(d.goal)}</div>`;if(!d.understood)h+=slip('That has a clear edge to it. How long do you have?','m him');if(d.stage===1)h+=demoNote('the shape of the goal (specific, vague, big or unknown) is decided by the local rule classifyGoalShape in the app. There is no model call and no wait while it is classified (GOAL-SHAPE-LOCAL). Only the split later sends the goal text to the model.');}
   let chips='';
   if(d.stage===1){chips=`<div class="chip-row" style="padding-top:8px" aria-label="Quick replies">${['30 min','1 hour','2 hours','Not sure'].map((l,k)=>`<button type="button" class="chip" data-a="gdtime:${[30,60,120,0][k]}">${l}</button>`).join('')}</div>`;}
   if(d.stage>=2){h+=d.understood?`<p class="caption" role="status">Time I understood from your line: <b>${esc(fmtMin(d.mins))}</b>. ${lnk('Change','gdtimechange')}</p>`:`<div class="me">${d.notSure?'Not sure':esc(d.mins+' min')}</div>`;if(d.notSure)h+=slip('Then thirty minutes. Long enough to start, short enough to keep.','m him');h+=slip('Do you want it cut fine, or kept in a few broad pieces?','m him');}
@@ -941,8 +938,7 @@ V.focus=()=>{
 };
 V.rest=()=>{
   const r=S.rest,off=S.sim.offline,g=act();
-  const first=!r.msgs.some(m=>m.me);
-  const msgs=r.msgs.map(m=>m.me?`<div class="me">${esc(m.t)}</div>`:`${m.cap&&first?demoNote(esc(m.cap)):''}<div class="note m him">${esc(m.t)}</div>`).join('');
+  const msgs=r.msgs.map(m=>m.me?`<div class="me">${esc(m.t)}</div>`:`<div class="note m him">${esc(m.t)}</div>`).join('');
   return `<div class="scr" tabindex="-1">${sceneFor(g&&g.story)}<div class="rhead"><button type="button" class="link" data-a="retback" aria-label="Back to step" style="min-height:44px;padding:0 6px;text-decoration:none;font-weight:600">‹ Back</button><span class="over">Paused</span>${lnk('Home','resthome','aria-label="Home, the Step stays paused" style="min-height:44px"')}</div>
    <div class="scroll" id="chscroll"><div class="thread" role="log" aria-live="polite">${msgs}${(off&&!r.msgs.length)||r.fail?failBox():''}${r.typing&&!off?'<div class="typing" role="status" aria-label="He is writing"><i></i><i></i><i></i></div>':''}</div></div>
    ${off?'<p class="caption" id="offh" style="padding-top:6px">No connection. You can still go back to your Step.</p>':''}
@@ -1038,6 +1034,7 @@ function notes0(id){const r=R[id]||{};const g=act();
   $('#notes').innerHTML=`<h2>This screen</h2><h3>${esc(id)} · ${esc(r.n||'')}</h3><span class="pill">${esc(r.g||'')}</span> <span class="pill">${esc(r.flow?'In FLOW registry':(r.fl||'Not in FLOW registry'))}</span> ${r.open?'<span class="pill open">OPEN</span>':''}
   <dl><dt>Shows</dt><dd>${esc(r.shows||'')}</dd><dt>Goes to</dt><dd>${esc(r.goes||'')}</dd>${r.note?`<dt>Notes</dt><dd>${esc(r.note)}</dd>`:''}${r.open?`<dt>OPEN: not decided in the sources</dt><dd>${esc(r.open)}</dd>`:''}
   ${S.route==='focus'&&g?`<dt>Demo state (never shown to the user)</dt><dd>Step ${g.i+1}: ${g.steps[g.i].m} min, n = ${nOf(g.steps[g.i].m)} story cards, every ${(g.steps[g.i].m/nOf(g.steps[g.i].m)).toFixed(1)} min. Pauses in this Step: ${g.pauses[g.i]||0} (logged silently). Newest card is: ${esc((cardsFor(g,g.i).slice(-1)[0]||{kind:'not ready'}).kind)}.</dd>`:''}
+  ${S.route==='rest'&&S.rest&&!S.rest.msgs.some(m=>m.me)&&S.rest.msgs.some(m=>m.cap)?`<dt>The two calls (annotation, never shown in the chat)</dt>${S.rest.msgs.filter(m=>m.cap).map(m=>`<dd>${esc(m.cap)}</dd>`).join('')}`:''}
   ${S.route==='rest'&&g?`<dt>Demo state</dt><dd>This is pause ${g.pauses[g.i]||0} in this Step. ${(g.pauses[g.i]||0)>=3?'A much harder new stuck situation, and he says he is worried he may fail because he remembers the earlier setbacks (pause 3 or later).':'An ordinary new stuck situation in his own story (pauses 1 and 2).'} The message never speaks to the user about pausing.</dd>`:''}</dl>`;}
 function controls(id){
   const r=S.route;let h=`<h2>Demo controls</h2><p class="cap">These are not part of the app. They simulate time, failures and the phone.</p>`+modeBlock();
