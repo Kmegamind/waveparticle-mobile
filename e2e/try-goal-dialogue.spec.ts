@@ -79,7 +79,7 @@ test("#33 #34 #35 #36 the walk-through: goal, time, split question, plan, Start"
   const slider = timeSlider(page);
   await expect(slider).toHaveAttribute("min", "0");
   await expect(slider).toHaveAttribute("max", "180");
-  await expect(slider).toHaveAttribute("step", "5");
+  await expect(slider).toHaveAttribute("step", "1");
   await expect(slider).toHaveValue("0");
   for (const name of ["30 min", "1 hour", "2 hours"]) {
     await expect(page.getByRole("button", { name, exact: true })).toHaveCount(0);
