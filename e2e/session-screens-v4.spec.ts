@@ -207,30 +207,36 @@ test.describe("the plan", () => {
     await expect(card.getByRole("button", { name: `Move down: ${first}` })).toBeFocused();
   });
 
-  test("#237 each move button is 44 wide and 35 tall to touch (prototype size, see the PR)", async ({
+  test("#111 each move button is 44 wide and 44 tall to touch (TAP-SIZE), and no two touch areas overlap", async ({
     page,
   }) => {
     await toPlan(page);
-    const sizes = await planCard(page)
+    const areas = await planCard(page)
       .locator(".try-move button")
       .evaluateAll((buttons) =>
         buttons.map((button) => {
           const rect = button.getBoundingClientRect();
           const before = getComputedStyle(button, "::before");
-          const top = parseFloat(before.top);
-          const bottom = parseFloat(before.bottom);
-          const left = parseFloat(before.left);
-          const right = parseFloat(before.right);
-          return {
-            width: rect.width - left - right,
-            height: rect.height - top - bottom,
-          };
+          // An inset of -9px reaches 9px beyond the button; 0 stops at its edge.
+          const top = rect.top + parseFloat(before.top);
+          const bottom = rect.bottom - parseFloat(before.bottom);
+          const left = rect.left + parseFloat(before.left);
+          const right = rect.right - parseFloat(before.right);
+          return { top, bottom, left, right };
         }),
       );
-    expect(sizes.length).toBe(4);
-    for (const size of sizes) {
-      expect(Math.round(size.width)).toBe(44);
-      expect(Math.round(size.height)).toBe(35);
+    expect(areas.length).toBe(4);
+    for (const area of areas) {
+      expect(Math.round(area.right - area.left)).toBe(44);
+      expect(Math.round(area.bottom - area.top)).toBe(44);
+    }
+    // Touch areas may touch but never overlap, so a tap always reaches the button it is on.
+    for (const [index, a] of areas.entries()) {
+      for (const b of areas.slice(index + 1)) {
+        const overlapX = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+        const overlapY = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+        expect(overlapX > 0.5 && overlapY > 0.5).toBe(false);
+      }
     }
   });
 
