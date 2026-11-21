@@ -23,7 +23,8 @@ import {
   CAPPED_TIME_NOTE,
   SLIDER_MAX_MINUTES,
   SLIDER_STEP_MINUTES,
-  SLIDER_ZERO_HINT,
+  SLIDER_DEFAULT_MINUTES,
+  SLIDER_MIN_MINUTES,
   goalTimeWasCapped,
   minutesLabel,
   removeTimePhrase,
@@ -67,7 +68,7 @@ type Phase = "goal" | "time" | "split" | "splitting" | "plan" | "failed" | "cris
 // is sent, which makes it "asked".
 type TimeMode = "asked" | "not-sure" | "understood";
 
-const DEFAULT_MINUTES = 30;
+const DEFAULT_MINUTES = SLIDER_DEFAULT_MINUTES;
 
 /** A turn Try again can send again (#347). */
 type Retry =
@@ -148,7 +149,7 @@ export function GoalDialogue({
   const [goal, setGoal] = useState("");
   const [reaction, setReaction] = useState("");
   // TIME-SLIDER: the time question is a slider from 0 to 3 hours (Yue, 2026-11-12).
-  const [sliderMinutes, setSliderMinutes] = useState(0);
+  const [sliderMinutes, setSliderMinutes] = useState(SLIDER_DEFAULT_MINUTES);
   const [minutes, setMinutes] = useState<number | null>(null);
   const [timeMode, setTimeMode] = useState<TimeMode | null>(null);
   const [splitFiner, setSplitFiner] = useState<boolean | null>(null);
@@ -296,7 +297,7 @@ export function GoalDialogue({
     setReaction(reactionFor(classifyGoalShape(text)));
     setSplitFiner(null);
     setJustSplit(false);
-    setSliderMinutes(0);
+    setSliderMinutes(sliderStart(null));
     if (accepted.minutes !== null) {
       setMinutes(accepted.minutes);
       setTimeMode("understood");
@@ -331,7 +332,6 @@ export function GoalDialogue({
 
   function onSendTime(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (sliderMinutes <= 0) return;
     void sendTime(sliderMinutes, "asked");
   }
 
@@ -746,12 +746,11 @@ export function GoalDialogue({
             )}
             <form className="try-time" onSubmit={onSendTime}>
               <input
-                aria-describedby={sliderMinutes <= 0 ? "try-time-hint" : undefined}
                 aria-label="Your time"
                 aria-valuetext={sliderValueText(sliderMinutes)}
                 className="try-time-slider"
                 max={SLIDER_MAX_MINUTES}
-                min={0}
+                min={SLIDER_MIN_MINUTES}
                 onChange={(event) => setSliderMinutes(Number(event.target.value))}
                 step={SLIDER_STEP_MINUTES}
                 type="range"
@@ -760,13 +759,8 @@ export function GoalDialogue({
               <output aria-hidden="true" className="try-time-value">
                 {sliderValueText(sliderMinutes)}
               </output>
-              <SendButton disabled={sliderMinutes <= 0} />
+              <SendButton />
             </form>
-            {sliderMinutes <= 0 ? (
-              <p className="try-hint" id="try-time-hint">
-                {SLIDER_ZERO_HINT}
-              </p>
-            ) : null}
           </>
         ) : null}
 

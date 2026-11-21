@@ -27,9 +27,10 @@ import {
   minutesLabel,
   parseTypedTime,
   removeTimePhrase,
+  SLIDER_DEFAULT_MINUTES,
   SLIDER_MAX_MINUTES,
+  SLIDER_MIN_MINUTES,
   SLIDER_STEP_MINUTES,
-  SLIDER_ZERO_HINT,
   sliderStart,
   sliderValueText,
 } from "@/lib/prototype/goal-time";
@@ -91,17 +92,22 @@ describe("#35 AC1 the typed time box accepts only a time", () => {
   });
 });
 
-describe("TIME-SLIDER the time slider runs from 0 to 3 hours", () => {
-  it("has the range, the step and the zero hint", () => {
+describe("SLIDER-RANGE the time slider runs from 1 minute to 3 hours", () => {
+  it("has the range and the step, and no zero hint", async () => {
+    expect(SLIDER_MIN_MINUTES).toBe(1);
     expect(SLIDER_MAX_MINUTES).toBe(180);
     expect(SLIDER_STEP_MINUTES).toBe(1);
-    expect(SLIDER_ZERO_HINT).toBe("Choose a time above 0");
+    const goalTime = await import("@/lib/prototype/goal-time");
+    expect("SLIDER_ZERO_HINT" in goalTime).toBe(false);
   });
 
-  it("starts at 0, or at an understood time capped at 3 hours", () => {
-    expect(sliderStart(null)).toBe(0);
+  it("starts at 30 minutes when no time is known, else at the understood time kept within 1 to 180", () => {
+    expect(SLIDER_DEFAULT_MINUTES).toBe(30);
+    expect(sliderStart(null)).toBe(30);
     expect(sliderStart(60)).toBe(60);
     expect(sliderStart(240)).toBe(180);
+    expect(sliderStart(0)).toBe(1);
+    expect(sliderStart(1)).toBe(1);
   });
 
   it.each([7, 50, 100, 33])("US-GD-11 can hold %i minutes read from the goal text exactly", (m) => {
@@ -110,7 +116,7 @@ describe("TIME-SLIDER the time slider runs from 0 to 3 hours", () => {
   });
 
   it("reads its value as words", () => {
-    expect(sliderValueText(0)).toBe("No time chosen");
+    expect(sliderValueText(1)).toBe("1 min");
     expect(sliderValueText(75)).toBe("1 hour 15 min");
     expect(sliderValueText(5)).toBe("5 min");
   });
