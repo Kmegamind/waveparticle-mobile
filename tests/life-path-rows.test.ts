@@ -94,6 +94,20 @@ describe("#94 AC1 a finished row opens the record of that Story", () => {
   });
 });
 
+describe("#97 AC1 a finished row carries an arrow", () => {
+  it("test_97_ac1_the_finished_row_shows_a_hidden_arrow_inside_its_link", () => {
+    const row = rowOf("b");
+    expect(row).toMatch(
+      /<a [^>]*>[\s\S]*<span aria-hidden="true" class="life-arrow">›<\/span><\/a>/,
+    );
+    // The arrow is decoration: the name stays "Finished: <title>".
+  });
+
+  it("test_97_ac1_memory_current_and_later_rows_have_no_arrow", () => {
+    for (const id of ["a", "site-search", "c"]) expect(rowOf(id)).not.toContain("life-arrow");
+  });
+});
+
 describe("#272 AC2 (#96 AC4) later rows", () => {
   it('say "Later, not available" and hide the title from screen readers', () => {
     const row = rowOf("c");

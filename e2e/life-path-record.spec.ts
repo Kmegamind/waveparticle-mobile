@@ -82,6 +82,10 @@ test("test_94_ac1_a_finished_life_path_row_opens_the_record_of_that_story", asyn
   const link = finished.getByRole("link", { name: /^Finished: / });
   await expect(link).toHaveAttribute("href", `/me/history/${SESSION}/chapter?from=life-path`);
 
+  // #97 AC1: the arrow marks the row as tappable and is not read aloud.
+  await expect(link.locator(".life-arrow")).toHaveText("›");
+  await expect(link).toHaveAccessibleName(/^Finished: .*[^›]$/);
+
   // AC4: the current and later rows open no record.
   await expect(
     page.locator('.life-row:not([data-state="finished"]) a[href*="/chapter"]'),
