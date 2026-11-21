@@ -7,6 +7,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 > - **Fallback (section A4):** there is no `rest_chat_fallback`. After retrying within the time limit the app shows its failure message with Retry (NO-BACKUP, FAIL-SCREEN).
 > - **`meta` ("Are you an AI?"):** the conversation never mentions it; disclosure is in the terms and settings only (A4).
 > - Low mood is deferred (A5b); no Chinese message in the test set (L1); no message cap (R2).
+> - **Decisions of 2026-11-21 (#369).** A reply carries **no label** for the user's message (CHAT-NO-LABEL): the model does not return `scope`, the output stays the reply only, and the checks tied to the label (section A4, "Scope-reply consistency", and the "Scope accuracy" measure in section C) are withdrawn. The scope table in A2 stays only as guidance for the prompt. The feelings rule of section B (one line of his own of similar weight, no advice, no method) and "end on his own situation" are written into the `rest_reply` prompt. The advice and one-question checks run on every reply. **Later words (CHAT-USER-WORD):** he may repeat a later word that the user typed himself, so "I have never heard of a computer" passes when the user wrote "computer"; the later-knowledge and spoiler checks fail a later word only when the user did not type it. Code gaps: AI_09, "Next batch".
 
 # AI-4 · Rest chat — v2 (after the user test)
 
@@ -20,7 +21,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 |---|---|
 | 1 | New **scope policy**: five scopes, one row of behaviour each (§A2) |
 | 2 | Recommendation: **stay in his day, answer from his side, never answer the task or general knowledge**; he deflects in character with a plain bridge to his own line (§A1, §A3) |
-| 3 | The model returns `scope` with the reply so code can check consistency (§A4) |
+| 3 | ~~The model returns `scope` with the reply so code can check consistency (§A4)~~ Withdrawn (CHAT-NO-LABEL) |
 | 4 | Personal and emotional messages: boundary and examples (§B) |
 | 5 | AI-4 v1 §12 (system warning on the third Pause, "step will fail") treated as **cancelled** with the timer-reset rule; confirm in AI_09 v2 |
 | 6 | v1 §11 Q1 (may he ask a question?) answered: yes at most one question, never in a deflection, never as the last line of a pause that the user may leave (§B) |
@@ -44,7 +45,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 
 ### A2. Scope table
 
-The model labels each user message with one scope; code and checks use the label.
+~~The model labels each user message with one scope; code and checks use the label.~~ Withdrawn (CHAT-NO-LABEL): no label is returned; the table is guidance for the prompt only.
 
 | Scope | Example | He may | He must not |
 |---|---|---|---|
@@ -74,17 +75,19 @@ Add to the v1 Rules block:
 - Name the topic of the user's message to yourself: your world, their task, general knowledge, you, or how they feel.
 - If it is their task or something you could not know in 1942, do not answer it, and do not teach. Say, in one sentence, that it is not something you know or can help with from where you stand, then say one thing about your own side.
 - If it is about you or how they feel, answer with something small from your own side. No advice. No comfort method.
-- Output one JSON object: {"scope": "his_world|task|knowledge|personal|meta|emotional|unknown", "reply": "..."}
+- ~~Output one JSON object: {"scope": "his_world|task|knowledge|personal|meta|emotional|unknown", "reply": "..."}~~ (withdrawn, CHAT-NO-LABEL)
 ```
 
 Output moves from plain text to JSON (v1 §6). This costs about 15 extra output tokens and removes a second classifier call.
 
-### A4. Checks tied to the scope label
+> **Withdrawn (CHAT-NO-LABEL, 2026-11-21):** the reply carries no `scope`. The prompt instead holds the feelings rule (one line of his own, no advice) and ends on his own situation.
+
+### A4. Checks tied to the scope label (label withdrawn, CHAT-NO-LABEL; the checks without the label stay)
 
 | Check | Rule |
 |---|---|
-| Scope-reply consistency | `knowledge` or `task` replies must contain no domain term from the user message (word list from the message minus stop-words); they must contain a first-person pronoun and no imperative to the user |
-| Anachronism | Denylist of post-1942 words in `reply` (algorithm, statistics terms, "AI", brand names); list per story |
+| ~~Scope-reply consistency~~ | ~~`knowledge` or `task` replies must contain no domain term from the user message (word list from the message minus stop-words); they must contain a first-person pronoun and no imperative to the user~~ Withdrawn (CHAT-NO-LABEL, ERA-ANSWER) |
+| Anachronism | Denylist of post-1942 words in `reply` (algorithm, statistics terms, "AI", brand names); list per story. A word the user typed himself is allowed (CHAT-USER-WORD) |
 | Later knowledge | AI-6 R19 probe words |
 | Question | At most one question; the reply may end on it (CHAT-QUESTION-END) |
 | Length | 1 to 3 sentences (v1); 1 to 2 for deflections |
@@ -109,7 +112,7 @@ No real-model run exists yet (Evidence: none). Before the next prototype test, r
 |---|---|---|
 | Relevance | Human 1 to 5: does the reply respond to what was said, even by deflecting | ≥ 4 on ≥ 80% |
 | In-character rate | Human yes/no: no coach, no anachronism, no assistant voice | ≥ 95% |
-| Scope accuracy | Reply scope label vs a human label | ≥ 90% |
+| ~~Scope accuracy~~ | ~~Reply scope label vs a human label~~ Withdrawn: no label (CHAT-NO-LABEL) | — |
 | Leakage of future facts | Probe words + human read on the 3 adversarial prompts per state | 0 in 180 |
 | Advising rate | Rule hit rate before retry | < 10% (canvas flag line is 30%) |
 | Retry and fallback rate | Counts | retry < 25%, fallback < 5% |
@@ -124,7 +127,7 @@ Wizard of Oz: a person plays him using the scope table, with 8 to 10 testers who
 
 ## Questions to other sessions
 
-**WP2.3:** period-appropriate deflection lines (3 per entry state per scope × 2 scopes = 6 per entry state), the post-1942 denylist, `rest_chat_fallback` per scope.
+**WP2.3:** ~~period-appropriate deflection lines (3 per entry state per scope × 2 scopes = 6 per entry state)~~, the post-1942 denylist, ~~`rest_chat_fallback` per scope~~ (withdrawn: no label, CHAT-NO-LABEL; no fallback, NO-BACKUP).
 **WP2.6:** whether chat history stays visible when the user returns to rest later in the same step; where `meta` ("are you an AI") is answered if the policy is out-of-character (a plain line in his bubble style or a system line).
 
 ## Open questions

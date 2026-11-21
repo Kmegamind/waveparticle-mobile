@@ -1,6 +1,6 @@
 Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIONS.md overrides this document where they differ.
 
-> **Status after the decisions up to 2026-11-15 (#295).** Every proposal below is settled in the decision log; the outcome is written in each row. The ids P1 to P6 here are not the decision log's P1 (the real planning prompt). This file is history; open items live in `docs/DECISIONS.md` section 3.
+> **Status after the decisions up to 2026-11-15 (#295).** Every proposal below is settled in the decision log; the outcome is written in each row. The ids P1 to P6 here are not the decision log's P1 (the real planning prompt). This file is history; open items live in `docs/DECISIONS.md` section 3. **Exception:** the section "Next batch" below lists the code and prompt gaps found when the decisions of 2026-11-21 were recorded (#369).
 
 # AI decisions log and to-do — v2 (2026-11-04, after the user test)
 
@@ -20,7 +20,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 
 | # | Decision | Status |
 |---|---|---|
-| D-AI-1 | Hybrid: authored spine (AI-2); model for stuck story, rest chat, end line, goal split; always behind checks with authored fallback | **Superseded**: story cards, the background card and the closing line are made ahead per story and read before publishing; there is no authored fallback (SHARED-STORY, CLOSING-AHEAD, NO-BACKUP) |
+| D-AI-1 | Hybrid: authored spine (AI-2); model for stuck story, rest chat, end line, goal split; always behind checks with authored fallback | **Superseded**: story cards, the background card and the closing line are made ahead per story, published, and read afterwards; there is no authored fallback (SHARED-STORY, CLOSING-AHEAD, NO-BACKUP, PUBLISH-FIRST) |
 | D-AI-2 | Stuck story = two calls (stuck on Pause, resolved on Back) | **Replaced**: on Back the return pop-up is generated live (R1, T6); there is no quiet pause (PAUSE-3) |
 | D-AI-3..9 | See v1 | Stays |
 | D-AI-4 | No chat reply limit | Stays (R2); the third-Pause warning is cancelled (F1) |
@@ -50,10 +50,25 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 | T8 | Offline real-model run for AI-3 snags (AI-3 v2 §A6): 20 runs × 5 Pauses × 4 entry states, categories on and off | WP2.8 (after Yue agrees) |
 | T9 | Offline real-model run for rest chat (AI-4 v2 §C): 180 replies | WP2.8 |
 | T10 | Wizard of Oz arms for Pauses, chat, return line | Yue recruits real users |
-| T11 | Scope label and JSON output for AI-4 (prompt change) | WP2.8 |
+| T11 | (cancelled) Scope label and JSON output for AI-4: a rest reply carries no label (CHAT-NO-LABEL) | — |
 | T12 | `used_lines` run store and dedupe check in the AI-6 checker | Engineering |
 | T13 | (cancelled) English only (L1) | — |
 | T14 | Authored props / `scene_objects` / `places` / `people` per entry state | WP2.3 |
+
+## Next batch (owner answers of 2026-11-21, #369)
+
+Code and prompt gaps found while the answers of 2026-11-21 were recorded (read only; #369 changed documents only). These are open work for the next batch; the decision log is the rule.
+
+| # | Item | What exists today | What is missing | Decision |
+|---|---|---|---|---|
+| N1 | Pause message, prompt 1: the stuck story | `docs/ai/prompts/stuck_story.md` (key `stuck_story`). The admin Prompts page (ADM-08) lists it, because it is in `PROMPT_KEYS` (`src/lib/prompts/repository.ts`), with the purpose "His stuck situation when the person pauses (the harder one from the third Pause)" (`src/lib/prompts/admin.ts`). | It receives only the pause number and the facts: no scene table, no category, no prop, no allowed names, no rules. | PAUSE-TWO-CALLS, SCENE-PER-STORY |
+| N2 | Pause message, prompt 2: his description of the predicament and his feelings | Nothing. | No file in `docs/ai/prompts/`, no key in `PROMPT_KEYS`, so no row on the admin Prompts page, and no gateway call. | PAUSE-TWO-CALLS, C1 |
+| N3 | Two calls | Main makes one call (`writeStuckStory` in `src/lib/model-gateway/gateway.ts`) and shows its `story` text as his message. | The second call, fed by the first call's output and the pause number. | PAUSE-TWO-CALLS, FR-REST-2 |
+| N4 | Word limit | `stuck_story` checks `max_words: 20`. | 30 words (LEN-PAUSE). | LEN-PAUSE |
+| N5 | Category and prop chosen by code | Not built. | A category not used in the last two Pauses and a prop not used before in the Step, from the Story's scene table (AI_03 section A1). | PAUSE-TWO-CALLS, SCENE-PER-STORY |
+| N6 | Rest reply prompt | `docs/ai/prompts/rest_reply.md` returns the reply only, with no label (as decided), and says "No advice". | The feelings rule (one line of his own of similar weight, no advice, no method) and "end on his own situation". | CHAT-NO-LABEL |
+| N7 | Later words in the rest reply | The reply check receives an empty list of later words (`rest_reply` in `gateway.ts`), and the spoiler check against unreached parts is not applied. | The later-words and spoiler checks; a later word the user typed himself must not fail the reply. | CHAT-USER-WORD, CHAT-SPOILER-CHECK |
+| N8 | Prompt problem points | The current prompts (`docs/ai/prompts/`, the placeholder in AI_01, the old prompt in AI_01a). | The problem points are to be marked for a later full rewrite. The planning prompt (P1) comes from Yue; engineering does not draft one. | GOAL-SHAPE-LOCAL, P1 |
 
 ## What a small test would prove (summary)
 

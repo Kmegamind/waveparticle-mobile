@@ -7,6 +7,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 > - **Fallback (change list row 5, section A4 pool sizes):** there are no authored snag, quiet or return pools. A failing message is generated again within the time limit; then the app shows its failure message with Retry and no stored text (NO-BACKUP, FAIL-SCREEN). Authored snag lines are reference examples and evaluation material only (C1).
 > - **Return line (section C, change list row 7):** the return is the return pop-up, generated live after Back to step and after 5 minutes or more away (R1, A6, T6). In it he may describe how the time felt in his own words (TIME-WORDS); exact clock numbers stay out until decided (CLOCK-NUMBERS). There is no rule about whether he waits (H8). The HOME-2 line and the picked return card are gone. The pop-up is 1 or 2 sentences and at most 30 words, replacing the 14-word limit (LEN-RETURN). Going back to a Step offline shows the failure screen with Retry (OFFLINE-RESUME).
 > - Chinese, a second language: out (L1).
+> - **Decisions of 2026-11-21 (#369).** The pause message is made with two calls: first the stuck story, then his description of the predicament and his feelings (C1, PAUSE-TWO-CALLS). This is not v1's pair "stuck on Pause, resolved on Back" (D-AI-2, replaced by the return pop-up). Code chooses the category and the prop as in section A1. The props come from the story's one scene table (`props`, `pauseProp` in `docs/demo/<story>.stage0.json`); there are no weather or light scales (SCENE-PER-STORY), and "Weather" in the table below is a snag category, not a scale. The message is 1 or 2 sentences and at most 30 words (LEN-PAUSE). Main makes one call with a 20-word limit and no category or prop; see AI_09, "Next batch".
 
 # AI-3 · Stuck story layer — v2 (after the user test)
 
@@ -43,7 +44,7 @@ Not by itself. A model asked for "one small thing that has him stuck" five times
 | Paper | map corner, notebook page, a smudged line | a missing or changed document |
 | Sound | a car idling, a loose sign, wind noise | someone arriving or speaking |
 
-Props come from an authored list per entry state (WP2.3 owns it; size in §A4). Rules: pick a category not used in the last two Pauses of this run; pick a prop not used before in this **step**; the model sees only `category`, `prop`, `entry.news`, `entry.why`.
+~~Props come from an authored list per entry state (WP2.3 owns it; size in §A4).~~ (SCENE-PER-STORY: `props` and `pauseProp` of the Story's scene table.) Rules: pick a category not used in the last two Pauses of this run; pick a prop not used before in this **step**; the model sees only `category`, `prop`, `entry.news`, `entry.why`.
 
 ### A2. Maximum number of distinct snags per entry state (Guess)
 

@@ -1,6 +1,6 @@
 Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIONS.md overrides this document where they differ.
 
-> **Status after the decisions up to 2026-11-15 (#295).** The "Authored / model" and "Fallback" columns are superseded. F1 and F1S: the background card and the story cards are made ahead once per story part, read and published, and the app spreads the parts across the Steps (SHARED-STORY, CARDS-PER-PART); the cards of all parts are spread across the Steps and none is dropped, Step 1 opens with the background card and later Steps have no special opening card (CARDS-SPREAD); there is no time-up card or "still at it" card (T8, CARDS-SPREAD), no back-from-rest card and no bundled card (NO-BACKUP). R1: his stuck message is generated live with the pause number (F1, PAUSE-3). R2 and Back: the return pop-up, generated live (R1, T6). C1: live, no limit (R2). END: the closing line is made ahead (CLOSING-AHEAD). R-WARN is cancelled (F1). HOME-2 and HOME-4 do not exist (T6, H7, X3). There are no status lines; HOME-1 shows the last line he said in the most recent session (HOME-LINE). F1-CARD: tapping his portrait opens the "Who I am" sheet (PORTRAIT-SHEET). S1: two tiers (A5b). For every live line the fallback is the app's failure message with Retry, never an authored line (FAIL-SCREEN).
+> **Status after the decisions up to 2026-11-15 (#295).** The "Authored / model" and "Fallback" columns are superseded. F1 and F1S: the background card and the story cards are made ahead once per story part, published (and read afterwards, PUBLISH-FIRST), and the app spreads the parts across the Steps (SHARED-STORY, CARDS-PER-PART); the cards of all parts are spread across the Steps and none is dropped, Step 1 opens with the background card and later Steps have no special opening card (CARDS-SPREAD); there is no time-up card or "still at it" card (T8, CARDS-SPREAD), no back-from-rest card and no bundled card (NO-BACKUP). R1: his stuck message is generated live with the pause number (F1, PAUSE-3). R2 and Back: the return pop-up, generated live (R1, T6). C1: live, no limit (R2). END: the closing line is made ahead (CLOSING-AHEAD). R-WARN is cancelled (F1). HOME-2 and HOME-4 do not exist (T6, H7, X3). There are no status lines; HOME-1 shows the last line he said in the most recent session (HOME-LINE). F1-CARD: tapping his portrait opens the "Who I am" sheet (PORTRAIT-SHEET). S1: two tiers (A5b). For every live line the fallback is the app's failure message with Retry, never an authored line (FAIL-SCREEN).
 
 # AI-n tags for the prototype's per-screen notes
 
@@ -12,7 +12,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 | G4 / G4-N | AI-5 | "Start with…" editable | hook only | S1 |
 | CPAGE / CPAGE-S | — | Begin → GD1 | — | — |
 | GD1 | AI-5 | His opening (authored); goal input | authored + hook | S1 |
-| GD2 | **AI-1a**, AI-5 | His reaction to the shape (authored line chosen by a one-word classifier); typed time | model (classify) → authored line | `confirm_goal` |
+| GD2 | **AI-1a**, AI-5 | His reaction to the shape (authored line chosen by a one-word classifier); typed time | local rule `classifyGoalShape`, no model call in version 1 (GOAL-SHAPE-LOCAL) → authored line | `confirm_goal` |
 | GD3 | — | Buttons; his reply authored | authored | — |
 | GD4 | **AI-1b**, AI-5 | Plan card (steps JSON); his intro and close authored | model (split) | GD-F |
 | GD-F | AI-1, AI-5 | System voice; Try again / Start with one step | system | one-step plan |
@@ -40,7 +40,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 
 | AI | Purpose | Screens | Model call or authored | Fallback |
 |---|---|---|---|---|
-| AI-1 | Goal text + minutes → N steps; shape tag picks his reaction line | GD2, GD4, GD-N1, GD-F | Model (2 small calls) | Retry once → GD-F; one-step plan; no silent generic steps |
+| AI-1 | Goal text + minutes → N steps; shape tag picks his reaction line | GD2, GD4, GD-N1, GD-F | One model call (split); the shape by local rule `classifyGoalShape` (GOAL-SHAPE-LOCAL) | Retry once → GD-F; one-step plan; no silent generic steps |
 | AI-2 | His story cards (landing+concern, state, time-up) and Home lines (spine) | F1, F1S, F1-CARD, F2, F3, F4, HOME-1/2 (L1, L2 removed) | Authored (model offline only) | Bundled lines + ambient |
 | AI-3 | On Pause: a small thing that has him stuck; on Back: how it resolved | R1, R2/Back, HOME-2 | Model (2 calls) | Authored obstacle / return pool |
 | AI-4 | Rest chat, no limit; 3rd Pause in a step shows a system warning | R1, C1, R-WARN | Model every reply; warning authored | Authored chat fallback (to write) |

@@ -4,7 +4,7 @@ This document describes the data an engineer needs in order to build the story s
 
 Every field name, type and example below is taken from the real content files unless it is marked "proposed". Where a file and a decision disagree, `docs/DECISIONS.md` wins and the disagreement is stated.
 
-> **Changed 2026-11-14 and 2026-11-15 (`docs/DECISIONS.md`, decisions SHARED-STORY to CLOSING-AHEAD).** The background card, the step story cards and the closing line are made ahead once per story part, read by a person and shared by all users; only the pause message, the rest conversation, the return pop-up and the goal split are live. There are no authored or generic fallback lines (NO-BACKUP, NO-FALLBACK-TABLES). The authored cards of two stories are reference examples and evaluation material only. This document was brought in line with these decisions in issue #295, and with the decisions of 2026-11-17 in issue #298.
+> **Changed 2026-11-14 and 2026-11-15 (`docs/DECISIONS.md`, decisions SHARED-STORY to CLOSING-AHEAD).** The background card, the step story cards and the closing line are made ahead once per story part, published and shared by all users, and read by a person afterwards (changed 2026-11-21, PUBLISH-FIRST); only the pause message, the rest conversation, the return pop-up and the goal split are live. There are no authored or generic fallback lines (NO-BACKUP, NO-FALLBACK-TABLES). The authored cards of two stories are reference examples and evaluation material only. This document was brought in line with these decisions in issue #295, and with the decisions of 2026-11-17 in issue #298.
 
 ## 0. How to read this document
 
@@ -152,7 +152,7 @@ Real slice priorities for `site-search`: s1 1, s2 2, s3 2, s4 2, s5 1, s6 3, s7 
 
 ### 2.4 Card
 
-A card is one first-person text the companion shows while the user works. Story cards are made ahead once per story part from the story facts, checked, read by a person and published, then shared by all users (SHARED-STORY, CARDS-PER-PART, READ-STATUS); their shape is Shape C. The two authored shapes A and B below exist for two stories and are reference examples and evaluation material only; they are never shown to the user (NO-BACKUP, NO-FALLBACK-TABLES).
+A card is one first-person text the companion shows while the user works. Story cards are made ahead once per story part from the story facts, checked and published, then shared by all users; a person reads them after publishing and may edit a published card (SHARED-STORY, CARDS-PER-PART, READ-STATUS, PUBLISH-FIRST); their shape is Shape C. The two authored shapes A and B below exist for two stories and are reference examples and evaluation material only; they are never shown to the user (NO-BACKUP, NO-FALLBACK-TABLES).
 
 Shape A, `site-search` (older mock, 41 cards):
 
@@ -207,8 +207,8 @@ Shape C, made-ahead card (proposed; stored cards are issue #293 and not built ye
 | id | text | `crd.<short>.<story>.p<n>.c<n>`, or `crd.<short>.<story>.bg` (NAMING-CODE). |
 | part | integer | The story part the card belongs to (CARDS-PER-PART). |
 | position | integer | Order inside its part. |
-| text | text | First person. Passes the checks of section 7; a card over the length limit cannot be published (LEN-CARD). Never edited after it is shown. |
-| state | `written`, `checked by script`, `read by a person` | Only published cards are shown (READ-STATUS, ADMIN). |
+| text | text | First person. Passes the checks of section 7; a card over the length limit cannot be published (LEN-CARD). A published card can be edited and published again (PUBLISH-FIRST); a line already shown in a session is not changed (`session_lines` is insert-only; `docs/decisions/0021`). |
+| state | `written`, `checked by script`, `read by a person` | Only published cards are shown (ADMIN). The state is not a condition for publishing: a published card may still be `written` or `checked by script` (READ-STATUS, PUBLISH-FIRST). |
 | prompt version | text | The prompt version that wrote it (PROMPT-PARTS). |
 | facts used | list of fact ids | Which story facts the card draws on; used by the leak check. |
 
@@ -252,9 +252,9 @@ The pacing fields are defined in 2.14. For the two stories with authored cards, 
 
 | Field | Type | Notes |
 |---|---|---|
-| text | text | What the user typed in a free text box, at most about 200 characters (limit pending). There is no restriction on what a goal can be and no list of unsupported kinds (Decided, D1a). Stored on our server (Decided, S3). Goes to the model only in the planning prompt and in the shape classification; the story cards are made ahead and shared, so they never receive it (SHARED-STORY). |
+| text | text | What the user typed in a free text box, at most about 200 characters (limit pending). There is no restriction on what a goal can be and no list of unsupported kinds (Decided, D1a). Stored on our server (Decided, S3). Goes to the model only in the planning prompt; its shape is decided by a local rule (GOAL-SHAPE-LOCAL); the story cards are made ahead and shared, so they never receive it (SHARED-STORY). |
 | title | text | At most 40 characters, produced by the planning prompt. |
-| shape | `specific`, `vague`, `big`, `unknown` | One-word classification that selects his reaction line (slots GD1S, GD1V, GD1B). It never refuses or redirects a goal. |
+| shape | `specific`, `vague`, `big`, `unknown` | One-word shape, decided in version 1 by the local rule `classifyGoalShape` with no model call (GOAL-SHAPE-LOCAL), that selects his reaction line (slots GD1S, GD1V, GD1B). It never refuses or redirects a goal. |
 | total minutes | integer | The time the user gave, on a time slider from 1 minute to 3 hours with no 0 (SLIDER-RANGE); not rounded to 15 minutes (NO-ROUNDING). Follows the user's edits to the steps (Decided, D1d). |
 | split finer | boolean | Proposed: the user's answer to the question asked after the time, whether to split the goal into finer steps. Passed to the planning prompt. |
 | status | text | planned, in progress, on hold, done. A one-time goal moves to done automatically when its last step is finished (Decided, G4). One goal has at most one session in progress (goal management rule). |
@@ -326,7 +326,7 @@ Length: 1 or 2 sentences, at most 30 words (LEN-RETURN). Proposed checks, kept f
 
 ### 2.10 Snag
 
-A small obstacle in his own world that his message on the rest page is built from when the user pauses (Decided, C1: the AI first generates a stuck story, then the character describes his predicament and how he feels). It must not be an event. The AI generates a new stuck story at every Pause (PAUSE-3). The authored snags below are reference examples and evaluation material only (C1, NO-BACKUP).
+A small obstacle in his own world that his message on the rest page is built from when the user pauses (Decided, C1: the AI first generates a stuck story, then the character describes his predicament and how he feels). It must not be an event. The AI generates a new stuck story at every Pause (PAUSE-3). The message is made with two calls, and code chooses the category and the prop (PAUSE-TWO-CALLS). The authored snags below are reference examples and evaluation material only (C1, NO-BACKUP).
 
 | Field | Type | Example (`s4.p1`) |
 |---|---|---|
@@ -347,18 +347,17 @@ Decided (M2, refined): there is no person content type, no introduction phrase a
 
 ### 2.12 Scene
 
-A table that keeps cards and snags consistent about where he is, who is there, and what objects exist. Draft (recommended, not confirmed: C5). Real sample (`_meta.scene` in the snag file):
+A table that keeps cards and snags consistent about where he is, who is there, and what objects exist. Decided 2026-11-21 (SCENE-PER-STORY): one scene table per story, as drafted in `docs/demo/<story>.stage0.json` (field `scene`), with no weather or light scales. Reading it is not a gate (PUBLISH-FIRST). Drafted shape (`bohr-difficulties`, lists shortened):
 
 ```json
-{"state": "s4", "where": "outside the bunker, in the wind and rain",
- "present": ["Groves"], "allowed_names": ["Groves"],
- "props": ["coat", "collar", "hat", "brim", "bunker door", "door", "hands", "pockets", "boots", "mud", "match", "cigarette", "flashlight", "button", "fingers", "ground", "wall"],
- "one_way_scales": {"rain": "steady", "wind": "strong", "sky": "unchanged"}}
+{"present": [], "allowedWords": ["Cambridge", "Dirac", "Rutherford", "Bohr"],
+ "props": ["desk", "lamp", "notebook", "pencil", "blackboard", "chalk", "teacup"],
+ "pauseProp": "notebook", "laterWords": ["Kapitza", "Club"]}
 ```
 
-`one_way_scales` lists things only the story may move (rain, wind, sky). A snag may not move them. The same data is the input the live generator needs (allowed props, allowed names, rules), because no authored pool is ever shown (Decided, C1; NO-BACKUP). The content team supplies it for every story.
+`present` lists the people present and `allowedWords` the names a line may use (the `allowed_names` of section 2.11); `props` are the objects that exist; `pauseProp` is the one prop offered to the pause message; `laterWords` are words a line may not use yet. The same data is the input the live generator needs (allowed props, allowed names, rules), because no authored pool is ever shown (Decided, C1; NO-BACKUP). Today only the demo scripts read it, not the app.
 
-A scene covers several entry states that share place and props. Trinity needs about three scenes: the mess hall (s1 to s2), on the way and outside the bunker (s3 to s6), and the early morning (s7).
+The older sample (`_meta.scene` in the Trinity snag file: one scene per entry state, with `one_way_scales` of rain, wind and sky) is reference only. The scene per entry state and the one-way scales are withdrawn (SCENE-PER-STORY).
 
 
 ### 2.13 Background card
@@ -368,7 +367,7 @@ The card that opens the first step of a goal (Decided, T4, T9). It is not progre
 | Field | Notes |
 |---|---|
 | text | Told in the character's own voice, as storytelling: who is here, where this is, and what each person knows (Decided, D3). It introduces the people who are present; no later card introduces anyone (Decided, M2). Never from a third-party point of view, so that the experience stays immersive. Replaces the earlier proposal of a three-line summary. |
-| source | Made ahead once per story, read by a person and published, then shared by all users (SHARED-STORY, READ-STATUS). |
+| source | Made ahead once per story and published, then shared by all users; read by a person afterwards (SHARED-STORY, PUBLISH-FIRST). |
 | when | Once, as the one card with which the first step opens; later steps have no special opening card (CARDS-SPREAD). It is the oldest card in the first step's stack and needs no button to dismiss it (Decided, T9). |
 | input | Story facts true at the start: the story's `who_i_am`, the opening `where_now`, the people and the `knowledge` field. Nothing that happens later, and no dates (DATES-ADMIN-ONLY). |
 | checks | The per-line checks of section 7.1 (first person, no clock times, dates, years or ages, no future facts, leak map). At most 70 words; a background card over the limit cannot be published (LEN-CARD). |
@@ -467,18 +466,18 @@ Card count of a step: n, the cards it receives, at least 1 and no upper limit; n
 
 ## 6. Where each content type comes from
 
-"Made ahead" means generated once per story part, checked, read by a person and published (decision SHARED-STORY); every user sees the published version. "Live" means generated for this user at runtime and checked before it is shown. His goal-dialogue lines picked from written lists are authored fixed lines (FIXED-LINES, APP-TEXT), not stored text under NO-BACKUP. Nothing stored ever stands in for a failed live line (NO-BACKUP): after the retries within the time limit, the screen shows the failure message with Retry (FAIL-SCREEN).
+"Made ahead" means generated once per story part, checked and published, then read by a person afterwards (decisions SHARED-STORY, PUBLISH-FIRST); every user sees the published version. "Live" means generated for this user at runtime and checked before it is shown. His goal-dialogue lines picked from written lists are authored fixed lines (FIXED-LINES, APP-TEXT), not stored text under NO-BACKUP. Nothing stored ever stands in for a failed live line (NO-BACKUP): after the retries within the time limit, the screen shows the failure message with Retry (FAIL-SCREEN).
 
 | Content type | Source | If generation fails |
 |---|---|---|
-| Goal conversation lines (GD0 to GD4C) | Authored pools; the model only classifies the goal's shape and splits the plan (Decided, T2) | Failure message with Retry |
+| Goal conversation lines (GD0 to GD4C) | Authored pools; the goal's shape is decided by a local rule (GOAL-SHAPE-LOCAL) and the model only splits the plan (Decided, T2) | Failure message with Retry |
 | Plan: step titles, descriptions and minutes | Live, from the planning prompt (P1) | Failure message with Retry; the typed text is kept |
 | Background card | Made ahead, once per story (SHARED-STORY) | If it fails to load: failure screen with Retry; the clock does not start (FAIL-PREMADE) |
 | Story cards | Made ahead, once per story part, from the story's facts and key moments (SHARED-STORY, CARDS-PER-PART) | If they fail to load: failure screen with Retry; the clock does not start (FAIL-PREMADE) |
 | Closing line | Made ahead with the story's cards (CLOSING-AHEAD); END-TONE applies | If it fails to load: failure screen with Retry on the summary (CLOSING-FAIL) |
-| His message on the rest page (snag) | Live (C1, F1, PAUSE-3), from allowed props, names and rules; receives the pause number | Failure message with Retry |
+| His message on the rest page (snag) | Live, in two calls (C1, F1, PAUSE-3, PAUSE-TWO-CALLS), from the story's scene table (SCENE-PER-STORY) and the category and prop chosen by code; receives the pause number | Failure message with Retry |
 | Return pop-up text | Live (T6, R1) | Failure message with Retry |
-| Rest chat reply | Live, no message limit (R2, A3); passes the spoiler check (CHAT-SPOILER-CHECK) | Failure message with Retry |
+| Rest chat reply | Live, no message limit (R2, A3); passes the spoiler check (CHAT-SPOILER-CHECK), where a later word the user typed himself does not fail it (CHAT-USER-WORD); no label for the user's message (CHAT-NO-LABEL) | Failure message with Retry |
 | Story goal, where-now | Authored from the story database | None needed |
 | Safety response | Code plus a small classifier (A5b); system voice | Keyword layer alone if the classifier fails |
 
@@ -534,7 +533,7 @@ These apply to one-way lines. Rest chat replies answer the user and are not chec
 | Connected (RW3) | Each card connects to the one before: shares a content word or uses so, because, but, which. |
 | No forward reference (RW4) | A card never depends on a later card, so any prefix of the row is complete. |
 | No repetition (RW6) | No two cards of a row overlap by half their words or repeat a sentence. |
-| Consistency (RW7, RN1) | Optional state tags (for example `{"rain": 3}`) change in one direction only along a row and a run. |
+| Consistency (RW7, RN1) | Optional state tags change in one direction only along a row and a run. No such tags exist now, because there are no weather or light scales (SCENE-PER-STORY); the rule applies only if one is added. |
 | No spoilers by part (RW8) | A card of part p may not contain terms of later parts. |
 | No echo between steps (RN2, RN3) | The same sentence never appears in two rows; the first card of the next row continues rather than repeats the last card of the previous row. |
 | Self-contained | No "again", "another", "as I said", "the same" pointing at another card, because a card may be reread on its own. |
@@ -544,7 +543,7 @@ These apply to one-way lines. Rest chat replies answer the user and are not chec
 
 - Use only the props listed for the scene, and every declared prop must appear in the obstacle text.
 - No new named person; only names in `allowed_names`.
-- No move on a one-way scale (rain, wind, sky). Words like cleared, eased, died down, worse, better are blocked.
+- ~~No move on a one-way scale (rain, wind, sky). Words like cleared, eased, died down, worse, better are blocked.~~ Withdrawn: there are no weather or light scales (SCENE-PER-STORY).
 - No event verbs (arrives, comes, says, tells, asks, decides, finds, loses, breaks and similar) and no new objects.
 - The resolution restores the situation as it was.
 - No fact of a later part; no forbid term.
@@ -554,7 +553,7 @@ These apply to one-way lines. Rest chat replies answer the user and are not chec
 
 ### 7.5 Checks by hand
 
-The script cannot judge cause and effect or voice. Each row needs a person to: read it forwards ("is each card the consequence of the one before?"), read it backwards, cut it after every card and see whether any card refers to something later, give it to a stranger and ask what happened and why he worries, and compare it with the previous row for echo. No row has had this reading yet. A script check passing never counts as this reading; only Yue, or a person Yue names, sets "read by a person", and a made-ahead card is published only after that (READ-STATUS, SHARED-STORY).
+The script cannot judge cause and effect or voice. Each row needs a person to: read it forwards ("is each card the consequence of the one before?"), read it backwards, cut it after every card and see whether any card refers to something later, give it to a stranger and ask what happened and why he worries, and compare it with the previous row for echo. No row has had this reading yet. A script check passing never counts as this reading; only Yue, or a person Yue names, sets "read by a person". This reading happens after publishing and is not a gate (READ-STATUS, PUBLISH-FIRST).
 
 ### 7.6 Current check results
 
@@ -577,12 +576,10 @@ Stored made-ahead cards, the background card and the closing line are issue #293
 ```
 leak_terms(story_id text, fact_seq integer, term text)     -- from the leak map; per fact or per part
 
-scenes(
-  story_id text, id text,
-  entry_slices text[],                 -- entry states this scene covers
-  where_text text, present text[], allowed_names text[], props text[],
-  one_way_scales jsonb,
-  primary key (story_id, id)
+scenes(                               -- one per story (SCENE-PER-STORY); no entry slices, no scales
+  story_id text primary key,
+  present text[], allowed_names text[], props text[],
+  pause_prop text, later_words text[]
 )
 
 snags(                                 -- authored reference samples only; never shown (C1, NO-BACKUP)
@@ -698,13 +695,13 @@ Notes for the schema:
 
 ## 9. What exists today and what is missing
 
-Story cards, the background card and the closing line are made ahead once per story part, read by a person and published (SHARED-STORY, CARDS-PER-PART, CLOSING-AHEAD). A story therefore needs its facts, parts and key moments, then its made-ahead cards; the live parts (pause message, return pop-up, rest chat) need generator inputs. Authored cards are reference examples and evaluation material only (NO-FALLBACK-TABLES). The table shows what exists.
+Story cards, the background card and the closing line are made ahead once per story part and published, then read by a person (SHARED-STORY, CARDS-PER-PART, CLOSING-AHEAD, PUBLISH-FIRST). A story therefore needs its facts, parts and key moments, then its made-ahead cards; the live parts (pause message, return pop-up, rest chat) need generator inputs. Authored cards are reference examples and evaluation material only (NO-FALLBACK-TABLES). The table shows what exists.
 
 | Content | Chapter 8, "The Canyon and the Mesa" (`site-search`) | The Trinity night, chapter 13 (`trinity`) | Chapter 1, "The Trade of a Theorist" (`bohr-difficulties`) | Other Oppenheimer chapters |
 |---|---|---|---|---|
 | Story database entry (facts, goal, background) | Yes | Yes | Yes (5 database tasks; date is a placeholder) | Yes, all 26 |
 | Key moments (2 to 4) and key lines | Machine-derived, unconfirmed (KEY-UNCONFIRMED); s4, s6, s8 proposed earlier | Machine-derived, unconfirmed; s4, s6 proposed earlier | Machine-derived, unconfirmed | Machine-derived, unconfirmed |
-| Made-ahead cards, background card and closing line, read and published | None | None | None | None |
+| Made-ahead cards, background card and closing line, published (and read afterwards, PUBLISH-FIRST) | None | None | None | None |
 | Slices (reference only) | 8 slices | 7 slices | No | No (24 of 26 have none) |
 | Authored reference cards | 41 cards, older shape | 135 cards: 21 rows of chain cards plus 30 return cards, current shape | None | None |
 | Step lines and where-now | Yes, all 8 slices | The older pool has 22 such records (type HIS); not in the new shape | None | None |
@@ -715,14 +712,14 @@ Story cards, the background card and the closing line are made ahead once per st
 | Leak map | No separate file (forbid list and a checking script) | Yes (7 slices) | None | None |
 | Scene table (generator input) | None | One scene (s4) in the sample | None | None |
 
-Decision M1 (2026-11-05): new users start at chapter 1, with no designated entry story. Chapter 1 needs its made-ahead cards, background card and closing line, read by a person and published, its reviewed key moments, and the generator inputs for the live parts (scene table, allowed props, allowed names, rules). The authored reference cards cover chapter 8 and the Trinity night only. Any demo for the first test must say which chapter it uses.
+Decision M1 (2026-11-05): new users start at chapter 1, with no designated entry story. Chapter 1 needs its made-ahead cards, background card and closing line, published (and read afterwards, PUBLISH-FIRST), its reviewed key moments, and the generator inputs for the live parts (scene table, allowed props, allowed names, rules). The authored reference cards cover chapter 8 and the Trinity night only. Any demo for the first test must say which chapter it uses.
 
 Other missing pieces:
 
-- The real planning prompt (open, P1). The text in `docs/ai/AI_01` is a placeholder.
+- The real planning prompt (open, P1). The text in `docs/ai/AI_01` is a placeholder. Yue will supply the file (2026-11-21).
 - The review of the key moments and their first-person key lines for every story (KEY-REVIEW).
 - The parts (2 to 5) and the made-ahead cards, background card and closing line of every story, with their read status (STORY-PARTS, READ-STATUS). Stored cards are issue #293.
-- Generator inputs for all 26 stories: scene tables, allowed props, allowed names and rules, and the leak words per fact.
+- Generator inputs for all 26 stories: scene tables (drafted, one per story, in `docs/demo/*.stage0.json`, SCENE-PER-STORY; no app code reads them yet), allowed props, allowed names and rules, and the leak words per fact.
 - The named periods of each Life Path (PERIOD-NAMES).
 - Moriarty's data and his world record (FICTION-RULES); Yue's reading of the 31 cards of his story 1 (MORIARTY-READ). The other six characters of the older product are out of scope for Release 1 (OTHER-COMPANIONS).
 
