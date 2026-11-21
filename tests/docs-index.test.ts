@@ -126,7 +126,15 @@ describe("docs index (#242)", () => {
     // A union merge can also leave a stale index; --check must still exit 1.
     writeFileSync(readme, good.replace(`${a}\n${b}`, `${a}\n${a}\n${b}`));
     const script = path.join(root, "scripts/docs-index.mjs");
-    expect(() => execFileSync("node", [script, "--check", dir], { stdio: "pipe" })).toThrow();
+    let output = "";
+    try {
+      execFileSync("node", [script, "--check", dir], { stdio: "pipe" });
+    } catch (error) {
+      output = String((error as { stdout: Buffer }).stdout);
+    }
+    expect(output).toContain("duplicate");
+    expect(output).toContain("npm run docs:index");
+    expect(output).toContain("node scripts/docs-index.mjs");
   });
 
   it("test_335_gitattributes_uses_union_merge_for_both_index_files", () => {
@@ -187,12 +195,20 @@ describe("docs index (#242)", () => {
     };
     const afterMerge = check();
     expect(afterMerge).not.toContain("duplicate");
-    if (afterMerge) expect(afterMerge).toContain("out of order");
+    // Whichever order git used, a failing check names the fix.
+    if (afterMerge) {
+      expect(afterMerge).toContain("out of order");
+      expect(afterMerge).toContain("npm run docs:index");
+    }
     regenerate();
     expect(check()).toBe("");
+    expect(docsIndex.indexProblems(dir, "docs/api")).toEqual([]);
     const merged = readFileSync(path.join(dir, "docs/api/README.md"), "utf8");
-    expect(merged).toContain("(clock-a.md)");
-    expect(merged).toContain("(clock-b.md)");
+    const at = (name: string) => merged.indexOf(`(${name})`);
+    expect(at("clock-a.md")).toBeGreaterThan(-1);
+    expect(at("clock-a.md")).toBeLessThan(at("clock-b.md"));
+    expect(merged.match(/\(clock-a\.md\)/g)).toHaveLength(1);
+    expect(merged.match(/\(clock-b\.md\)/g)).toHaveLength(1);
   });
 
   it("test_242_old_paths_still_resolve", () => {

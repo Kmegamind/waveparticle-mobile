@@ -191,5 +191,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
       }
     }
   }
+  if (check && bad) {
+    console.log(
+      "Run `npm run docs:index` (or `node scripts/docs-index.mjs`) and commit the result.",
+    );
+  }
   process.exit(check && bad ? 1 : 0);
 }
