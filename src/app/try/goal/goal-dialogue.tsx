@@ -23,7 +23,6 @@ import {
   SLIDER_MAX_MINUTES,
   SLIDER_STEP_MINUTES,
   SLIDER_ZERO_HINT,
-  findTimeInGoal,
   minutesLabel,
   sliderStart,
   sliderValueText,
@@ -54,11 +53,11 @@ import {
   STEP_DESCRIPTION_MAX,
   STEP_TITLE_MAX,
 } from "@/lib/prototype/plan-edit";
-import type { SplitInput, SplitOutcome } from "@/lib/prototype/split-goal";
+import type { TurnOutcome, TurnRequest } from "@/lib/goal-dialogue/turns";
 import { pickStory } from "@/lib/prototype/story-ids";
 import { gateFreeText } from "@/lib/safety/crisis";
 import { usePrototypeState } from "../use-prototype-state";
-import { splitGoalAction } from "./actions";
+import { goalTurnAction } from "./actions";
 
 type Phase = "goal" | "time" | "split" | "splitting" | "plan" | "failed" | "crisis";
 // "understood": the time was read from the goal line (GOAL-TIME); Change keeps it until a new time
@@ -66,6 +65,10 @@ type Phase = "goal" | "time" | "split" | "splitting" | "plan" | "failed" | "cris
 type TimeMode = "asked" | "not-sure" | "understood";
 
 const DEFAULT_MINUTES = 30;
+
+function goalOf(request: TurnRequest): string {
+  return "goal" in request ? request.goal : "";
+}
 
 /** The account save on Start (#32). Defined in src/lib/goals; /try passes nothing. */
 type StartInput = {
@@ -80,8 +83,8 @@ type StartOutcome =
   | { status: "signed-out" | "crisis" | "invalid" | "failed" };
 
 type GoalDialogueProps = {
-  /** The split; /try uses its own action (docs/decisions/0012). */
-  split?: (input: SplitInput) => Promise<SplitOutcome>;
+  /** One turn on the server (#31); /try uses its own action (docs/decisions/0012, 0026). */
+  turn?: (request: TurnRequest) => Promise<TurnOutcome>;
   /** Saves the Goal and Plan on the account before the focus page opens (/goal only). */
   start?: (input: StartInput) => Promise<StartOutcome>;
   /** The test path's stories (#254): the first opening comes from the chosen story's inputs. */
@@ -107,7 +110,7 @@ const BACK_LABEL: Partial<Record<Phase, string>> = {
 };
 
 export function GoalDialogue({
-  split = splitGoalAction,
+  turn = goalTurnAction,
   start,
   stories,
   focusPath,
@@ -153,6 +156,12 @@ export function GoalDialogue({
   const [goalId, setGoalId] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
+  // The server's signed dialogue state after each turn (#31). Going back a turn reuses the
+  // earlier token; a new goal line starts a new dialogue.
+  const [goalToken, setGoalToken] = useState<string | null>(null);
+  const [timeToken, setTimeToken] = useState<string | null>(null);
+  const [planToken, setPlanToken] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
   // The thread grows downward; each new turn scrolls it to its end, with no smooth scrolling.
   const thread = useRef<HTMLDivElement>(null);
@@ -166,28 +175,36 @@ export function GoalDialogue({
     setPhase("crisis");
   }
 
-  async function requestSplit(input: { goal: string; totalMinutes: number; splitFiner: boolean }) {
+  /** Sends one turn to the server (#31); a lost connection is a refusal, which shows GD-F. */
+  async function sendTurn(request: TurnRequest): Promise<TurnOutcome> {
+    try {
+      return await turn(request);
+    } catch {
+      return { status: "refused" };
+    }
+  }
+
+  /** Runs a split turn: the split answer, Just split it, Split again or Try again. */
+  async function requestSplit(request: TurnRequest) {
     setWaitLine(splittingLine());
     setPhase("splitting");
-    let outcome: SplitOutcome;
-    try {
-      outcome = await split(input);
-    } catch {
-      outcome = { status: "failed" };
-    }
+    const outcome = await sendTurn(request);
     if (outcome.status === "crisis") {
       setDraft("");
       openCrisis("goal");
-    } else if (outcome.status === "failed") {
-      setPhase("failed");
-    } else {
+    } else if (outcome.status === "plan") {
+      setPlanToken(outcome.token);
       setPlanTitle(outcome.plan.title);
-      setTitleDraft(outcome.plan.title || input.goal);
+      setTitleDraft(outcome.plan.title || goalOf(request));
       setGoalId(crypto.randomUUID());
       setSaveFailed(false);
       setSteps(fromPlan(outcome.plan.steps));
       setEditing(null);
       setPhase("plan");
+    } else {
+      // A failed split keeps its token so Try again stays in this dialogue; a refusal has none.
+      setPlanToken(outcome.status === "failed" ? outcome.token : null);
+      setPhase("failed");
     }
   }
 
@@ -206,18 +223,47 @@ export function GoalDialogue({
     return text;
   }
 
-  function onSendGoal(event: FormEvent<HTMLFormElement>) {
+  /**
+   * The goal turn: always a new dialogue on the server (owner decision 2). Returns its token, or
+   * null when the safety page or GD-F opened instead.
+   */
+  async function sendGoalTurn(
+    text: string,
+  ): Promise<{ token: string; minutes: number | null } | null> {
+    setGoal(text);
+    setGoalToken(null);
+    setTimeToken(null);
+    setPlanToken(null);
+    const outcome = await sendTurn({ kind: "goal", goal: text });
+    if (outcome.status === "crisis") {
+      setDraft("");
+      openCrisis("goal");
+      return null;
+    }
+    if (outcome.status !== "turn") {
+      setPlanToken(null);
+      setPhase("failed");
+      return null;
+    }
+    setGoalToken(outcome.token);
+    return { token: outcome.token, minutes: outcome.minutes };
+  }
+
+  async function onSendGoal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (sending) return;
     const text = acceptGoal();
     if (text === null) return;
-    setGoal(text);
+    setSending(true);
+    const accepted = await sendGoalTurn(text);
+    setSending(false);
+    if (accepted === null) return;
     setReaction(reactionFor(classifyGoalShape(text)));
     setSplitFiner(null);
     setJustSplit(false);
     setSliderMinutes(0);
-    const understood = findTimeInGoal(text);
-    if (understood !== null) {
-      setMinutes(understood);
+    if (accepted.minutes !== null) {
+      setMinutes(accepted.minutes);
       setTimeMode("understood");
       setPhase("split");
     } else {
@@ -227,22 +273,31 @@ export function GoalDialogue({
     }
   }
 
-  function chooseTime(value: number) {
+  /** The time turn, on the token of the goal turn (going back replays it, which FLOW allows). */
+  async function sendTime(value: number, mode: TimeMode) {
+    if (sending || goalToken === null) return;
+    setSending(true);
+    const outcome = await sendTurn({ kind: "time", token: goalToken, minutes: value });
+    setSending(false);
+    if (outcome.status !== "turn") {
+      setPlanToken(null);
+      setPhase("failed");
+      return;
+    }
+    setTimeToken(outcome.token);
     setMinutes(value);
-    setTimeMode("asked");
+    setTimeMode(mode);
     setPhase("split");
   }
 
   function chooseNotSure() {
-    setMinutes(DEFAULT_MINUTES);
-    setTimeMode("not-sure");
-    setPhase("split");
+    void sendTime(DEFAULT_MINUTES, "not-sure");
   }
 
   function onSendTime(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (sliderMinutes <= 0) return;
-    chooseTime(sliderMinutes);
+    void sendTime(sliderMinutes, "asked");
   }
 
   function openTimeQuestion() {
@@ -250,37 +305,53 @@ export function GoalDialogue({
     setPhase("time");
   }
 
-  function onJustSplit() {
+  /** The token the split answer goes on: after the time turn, or after the goal turn. */
+  function answerToken(): string | null {
+    if (timeMode === "asked" || timeMode === "not-sure") return timeToken;
+    return goalToken;
+  }
+
+  async function onJustSplit() {
+    if (sending) return;
     let text = goal;
+    let token = answerToken();
     let total = minutes;
     if (phase === "goal") {
       const accepted = acceptGoal();
       if (accepted === null) return;
+      setSending(true);
+      const sent = await sendGoalTurn(accepted);
+      setSending(false);
+      if (sent === null) return;
       text = accepted;
-      setGoal(accepted);
-      total = findTimeInGoal(accepted);
+      token = sent.token;
+      total = sent.minutes;
     }
-    const finalMinutes = total ?? DEFAULT_MINUTES;
-    setMinutes(finalMinutes);
+    if (token === null) return;
+    setMinutes(total ?? DEFAULT_MINUTES);
     setJustSplit(true);
     setSplitFiner(false);
     setCameFrom(phase);
-    void requestSplit({ goal: text, totalMinutes: finalMinutes, splitFiner: false });
+    void requestSplit({ kind: "split", token, goal: text, splitFiner: null });
   }
 
   function answerSplit(finer: boolean) {
+    const token = answerToken();
+    if (token === null) return;
     setSplitFiner(finer);
     setJustSplit(false);
     setCameFrom("split");
-    void requestSplit({ goal, totalMinutes: minutes ?? DEFAULT_MINUTES, splitFiner: finer });
+    void requestSplit({ kind: "split", token, goal, splitFiner: finer });
   }
 
+  /** Split again (GD4) and Try again (GD-F): no limit inside the dialogue (owner decision 1). */
   function splitAgain() {
-    void requestSplit({
-      goal,
-      totalMinutes: minutes ?? DEFAULT_MINUTES,
-      splitFiner: splitFiner ?? false,
-    });
+    if (planToken === null) {
+      // A refused turn has no dialogue to retry; the page stays on GD-F.
+      setPhase("failed");
+      return;
+    }
+    void requestSplit({ kind: "split-again", token: planToken, goal });
   }
 
   function useOneStep() {
@@ -294,7 +365,7 @@ export function GoalDialogue({
     setPhase("plan");
   }
 
-  /** GD-F: Change my line puts the goal back in the composer. */
+  /** GD-F: Change my line puts the goal back in the composer; sending it starts a new dialogue. */
   function changeLine() {
     setDraft(goal);
     setPhase("goal");

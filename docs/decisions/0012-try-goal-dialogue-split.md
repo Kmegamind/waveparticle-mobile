@@ -35,4 +35,4 @@ CI and local runs have no model keys. Decision NO-BACKUP forbids silent stand-in
   product owner.
 - The Plan is saved in the browser store on `/try`. Saving the Goal on the account is done for
   the signed-in `/goal` (#32), which uses the same split with its own cost-cap cookie (path
-  `/goal`). Counting turns on the server (#31) is still to do.
+  `/goal`). The server counts the turns since #31 (`docs/decisions/0026`); the split now runs inside a turn.

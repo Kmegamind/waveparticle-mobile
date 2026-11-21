@@ -327,3 +327,50 @@ test("#30 AC2 a returning visit opens with one question that is not the previous
   expect(text).toMatch(/^[^.?!]*\?$/);
   expect(text).not.toMatch(/welcome/i);
 });
+
+test("#31 US-GD-14 every turn goes to the server; after the Plan there is no input and edits send nothing", async ({
+  page,
+}) => {
+  const turns: string[] = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.headers()["next-action"]) {
+      turns.push(new URL(request.url()).pathname);
+    }
+  });
+  await openDialogue(page);
+
+  // AC1: goal, time and the split answer are each one turn on the server.
+  await sendGoal(page, "Write the methods section of my lab report");
+  await expect(page.getByText("How long do you have?")).toBeVisible();
+  await expect.poll(() => turns.length).toBe(1);
+  await setTime(page, 45);
+  await expect(page.getByRole("button", { name: "Split it finer" })).toBeVisible();
+  await expect.poll(() => turns.length).toBe(2);
+  await page.getByRole("button", { name: "Split it finer" }).click();
+  await expect(plan(page)).toContainText("45 min");
+  expect(turns).toEqual(["/try/goal", "/try/goal", "/try/goal"]);
+
+  // AC2: the Plan card is shown and the goal input is gone.
+  await expect(page.getByLabel("Your goal")).toHaveCount(0);
+
+  // AC3: editing the Plan sends nothing to the server and he says nothing.
+  const slips = await page.locator(".try-slip").count();
+  const card = plan(page);
+  await card.getByRole("button", { name: /^1 / }).click();
+  await card.getByLabel("Step title").fill("My own first Step");
+  await card.getByRole("button", { name: "Done editing" }).click();
+  await card.getByRole("button", { name: "+ Add a step" }).click();
+  await card.getByLabel("Step title").fill("One more");
+  await card.getByRole("button", { name: "Done editing" }).click();
+  await expect(card).toContainText("My own first Step");
+  await expect(card).toContainText("One more");
+  expect(turns).toHaveLength(3);
+  await expect(page.locator(".try-slip")).toHaveCount(slips);
+
+  // Owner decision 1: Split again is another turn on the same dialogue, with no limit.
+  await page.getByRole("button", { name: "Split again" }).click();
+  await expect(plan(page)).toBeVisible();
+  await page.getByRole("button", { name: "Split again" }).click();
+  await expect(plan(page)).toBeVisible();
+  await expect.poll(() => turns.length).toBe(5);
+});

@@ -26,6 +26,9 @@ const appEnv = {
   NEXT_PUBLIC_SUPABASE_ANON_KEY: "playwright-placeholder",
   // Turns on the sign-in-free test path (#208) for the e2e servers only.
   PROTOTYPE_ENABLED: "1",
+  // Signs the goal dialogue's turns (#31). `next start` runs in production mode, where a missing
+  // key refuses every turn; this test-only value is not used anywhere else.
+  GOAL_DIALOGUE_SECRET: "e2e-goal-dialogue-key-for-tests-only-0001",
 };
 
 export default defineConfig({

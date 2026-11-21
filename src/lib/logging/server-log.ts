@@ -14,7 +14,8 @@
  * because logging must not break the page that is failing.
  */
 
-export type LogFeature = "app_text" | "prompts" | "story-content" | "story-cards" | "model-gateway";
+export type LogFeature =
+  "app_text" | "prompts" | "story-content" | "story-cards" | "model-gateway" | "goal-dialogue";
 
 export type LogLevel = "warn" | "error";
 

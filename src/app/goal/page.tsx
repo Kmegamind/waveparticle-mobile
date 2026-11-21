@@ -6,7 +6,7 @@ import { parseLine } from "@/lib/goals/goals-view";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { GoalDialogue } from "../try/goal/goal-dialogue";
-import { splitGoalForAccountAction, startGoalAction } from "./actions";
+import { goalTurnForAccountAction, startGoalAction } from "./actions";
 
 export const instant = false;
 
@@ -26,7 +26,7 @@ async function GoalContent({ searchParams }: PageProps<"/goal">) {
         focusPath="/focus"
         home={{ href: "/", label: "Back to Home" }}
         initialDraft={parseLine(line)}
-        split={splitGoalForAccountAction}
+        turn={goalTurnForAccountAction}
         start={startGoalAction}
       />
     </AppTextProvider>
