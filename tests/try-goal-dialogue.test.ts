@@ -22,6 +22,7 @@ import {
 import {
   TIME_HINT,
   findTimeInGoal,
+  goalTimeWasCapped,
   formatMinutes,
   minutesLabel,
   parseTypedTime,
@@ -154,6 +155,13 @@ describe("GOAL-TIME a goal that states a length skips the time question", () => 
     ["for an hour", "for an hour"],
   ])("US-GD-11 AC1 title for %s is %s", (goal, title) => {
     expect(removeTimePhrase(goal)).toBe(title);
+  });
+
+  it("#351 knows when the goal text states more than 3 hours", () => {
+    expect(goalTimeWasCapped("study for 4 hours")).toBe(true);
+    expect(goalTimeWasCapped("study for 3 hours")).toBe(false);
+    expect(goalTimeWasCapped("study for 45 minutes")).toBe(false);
+    expect(goalTimeWasCapped("finish chapter 3")).toBe(false);
   });
 
   it.each(["Write the methods section", "finish chapter 3", "read 20 pages"])(

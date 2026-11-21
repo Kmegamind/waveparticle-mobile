@@ -5,7 +5,7 @@ import type { LifePathRow, LifePathView } from "@/lib/summary/life-path";
  * The rows of the Life Path (CPAGE, #96, #97, prototype v4). State is carried by the node's shape
  * and by a name for screen readers, never by colour alone: finished (filled dot), his memory (open
  * ring, italic), current (heavy ring and the card) and later (dotted circle, title only, not
- * focusable, read as "Later, not available"). A finished row's title opens its Story record (#94).
+ * focusable, read as "Later, not available"). A finished row's title and its › arrow open its Story record (#94).
  * No dates or ages (PERIODS).
  */
 export function LifePathList({ view }: { view: LifePathView }) {
@@ -83,6 +83,9 @@ function Row({ row }: { row: LifePathRow }) {
           {row.recordHref ? (
             <Link className="life-record-link" href={row.recordHref}>
               {title}
+              <span aria-hidden="true" className="life-arrow">
+                ›
+              </span>
             </Link>
           ) : (
             title

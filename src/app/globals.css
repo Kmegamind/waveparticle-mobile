@@ -2061,6 +2061,13 @@ button.focus-avatar:focus-visible {
   font-size: inherit;
 }
 
+/* #97: the › that marks a finished row as tappable; shape, not colour, so it is plain text. */
+.life-arrow {
+  margin-inline-start: var(--space-2);
+  text-decoration: none;
+  display: inline-block;
+}
+
 /* Later rows fade by size and weight; --ink-2 keeps at least 5:1 (#96 AC3). */
 .life-row[data-state="later"] .life-title {
   color: var(--ink-2);
