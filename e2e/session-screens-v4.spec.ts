@@ -316,7 +316,7 @@ test.describe("the plan", () => {
   // The owner's rule also asks for at most two lines at 200% text. Measured, that cannot hold yet:
   // at 320 px the Plan card is 152 px wide inside at 200%, so the number, minutes and arrows leave
   // the title 28 px (21 lines) and the row runs past the card. Stacking does not change that. It
-  // needs a narrow-screen layout for the card, which is a separate issue.
+  // needs a narrow-screen layout for the card: issue #341.
   test.fixme("#340 at 320 px and 200% text a typical Step title is at most two lines", async () => {});
 
   test("#237 AC3 Add a step and the count share a row; Split again is centred in the card", async ({
