@@ -79,7 +79,7 @@ test("#33 #34 #35 #36 the walk-through: goal, time, split question, plan, Start"
   const slider = timeSlider(page);
   await expect(slider).toHaveAttribute("min", "0");
   await expect(slider).toHaveAttribute("max", "180");
-  await expect(slider).toHaveAttribute("step", "5");
+  await expect(slider).toHaveAttribute("step", "1");
   await expect(slider).toHaveValue("0");
   for (const name of ["30 min", "1 hour", "2 hours"]) {
     await expect(page.getByRole("button", { name, exact: true })).toHaveCount(0);
@@ -186,6 +186,21 @@ test("US-GD-11 a length of 50 minutes is kept as written and leaves the Goal tit
   await expect(plan(page)).toContainText("· 50 min");
   await expect(plan(page).getByLabel("Goal", { exact: true })).toHaveValue("study chemistry");
 });
+
+for (const [goal, value] of [
+  ["study for 7 minutes", "7"],
+  ["study for 50 minutes", "50"],
+  ["study for 100 minutes", "100"],
+]) {
+  test(`US-GD-11 Change opens the slider on exactly the time read from ${goal}`, async ({
+    page,
+  }) => {
+    await openDialogue(page);
+    await sendGoal(page, goal);
+    await page.getByRole("button", { name: "Change time" }).click();
+    await expect(timeSlider(page)).toHaveValue(value);
+  });
+}
 
 test("US-GD-11 a 2 hour lecture is not the user's time, so the time question is asked", async ({
   page,
