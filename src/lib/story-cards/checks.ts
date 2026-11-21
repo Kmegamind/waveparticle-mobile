@@ -112,8 +112,11 @@ export function withoutQuotedSpeech(text: string): string {
         c === "‘" || (c !== "’" && !isLetter(previous) && next !== undefined && !/\s/.test(next));
       if (single === null && opens) single = i;
       else if (single !== null && !opens) {
-        // A quote that closes: it must come at the end of a word.
-        if (!isLetter(next)) {
+        // A quote that closes: it ends a word and is not a possessive (boys' lab). After a letter
+        // it counts only at the end of the text or before punctuation; otherwise a stray opener
+        // could pair with a later possessive and hide a real introduction.
+        const afterLetterOk = next === undefined || /[,.;:!?)\]]/.test(next);
+        if (!isLetter(next) && (!isLetter(previous) || afterLetterOk)) {
           blank(single, i);
           single = null;
         }

@@ -227,4 +227,20 @@ describe("the introduction check ignores quoted dialogue (#365)", () => {
       introduces("He said \u201cMy name is Oppenheimer\u201d, and I am J. Robert Oppenheimer."),
     ).toHaveLength(1);
   });
+
+  it("test_365_fix1_a_stray_single_quote_does_not_hide_an_introduction", () => {
+    expect(introduces("He said 'go. My name is Oppenheimer. The boys' lab.")).toHaveLength(1);
+    expect(introduces("'Twas night. My name is Oppenheimer. The boys' lab.")).toHaveLength(1);
+    expect(
+      introduces("The boys' lab was cold. I don't know. My name is Oppenheimer."),
+    ).toHaveLength(1);
+    expect(
+      introduces("He said \u2018go. My name is Oppenheimer. The boys\u2019 lab."),
+    ).toHaveLength(1);
+  });
+
+  it("test_365_fix1_a_single_quoted_line_that_ends_in_a_letter_before_punctuation_passes", () => {
+    expect(introduces("He said 'My name is Oppenheimer', and left.")).toEqual([]);
+    expect(introduces("He said \u2018My name is Oppenheimer\u2019, and left.")).toEqual([]);
+  });
 });
