@@ -306,3 +306,20 @@ test("#72 AC3 the sheet has no name label, no quote and no What I plan", async (
   await expect(whoSheet(page)).not.toContainText(/what i plan/i);
   await expect(whoSheet(page).locator("q, blockquote")).toHaveCount(0);
 });
+
+test("#101 AC3 every drawn mark on the focus page is hidden from screen readers", async ({
+  page,
+}) => {
+  await seed(page, threeSteps);
+  await expect(slip(page)).toBeVisible();
+  const exposed = await page.evaluate(() =>
+    Array.from(
+      document.querySelectorAll(
+        ".focus-tape, .focus-ticks, .focus-dots, .focus-steps-mark, .try-avatar, .rest-dots",
+      ),
+    )
+      .filter((node) => !node.closest('[aria-hidden="true"]'))
+      .map((node) => node.className),
+  );
+  expect(exposed).toEqual([]);
+});
