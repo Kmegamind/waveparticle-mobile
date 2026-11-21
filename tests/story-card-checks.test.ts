@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import decks from "@/content/oppenheimer/story-decks.json";
 import { cardProblems, datesProblems, laterPartLeaks } from "@/lib/story-cards/checks";
 
 // #304 AC3: the checks every save of a story card runs in the admin.
@@ -182,5 +183,48 @@ describe("no introduction phrase after the background card (#13)", () => {
   it("test_13_ac1_ordinary_story_text_passes", () => {
     expect(cardProblems(part("Rabi says his name is on the door, and I nod."), [])).toEqual([]);
     expect(cardProblems(part("I name the problem and write it down."), [])).toEqual([]);
+  });
+});
+
+// #365: a line inside quotation marks is dialogue, not him introducing himself (product owner,
+// 2026-11-21). The check ignores quoted text; his own voice outside quotes still fails.
+describe("the introduction check ignores quoted dialogue (#365)", () => {
+  const introduces = (body: string) =>
+    cardProblems(part(body), []).filter((p) => /^Introduces/.test(p));
+
+  it("test_365_ac1_shelter_island_part_4_card_2_passes", () => {
+    // Real text: src/content/oppenheimer/story-decks.json, "shelter-island", part 4, second card.
+    const shelter = (
+      decks as Record<string, { parts: { n: number; cards: { text: string }[] }[] }>
+    )["shelter-island"];
+    const body = shelter.parts.find((p) => p.n === 4)!.cards[1].text;
+    expect(body).toContain("My name is Oppenheimer.");
+    expect(introduces(body)).toEqual([]);
+  });
+
+  it("test_365_ac2_an_introduction_outside_quotes_still_fails", () => {
+    expect(introduces("I stepped off the plane. My name is Oppenheimer.")).toHaveLength(1);
+    expect(introduces("I am J. Robert Oppenheimer, a physicist.")).toHaveLength(1);
+    expect(introduces("I am Robert Oppenheimer, a physicist.")).toHaveLength(1);
+    expect(introduces('I said "Hello." My name is Oppenheimer.')).toHaveLength(1);
+  });
+
+  it("test_365_ac3_an_apostrophe_inside_a_word_is_not_a_quote", () => {
+    expect(introduces("I don't know them. My name is Oppenheimer.")).toHaveLength(1);
+    expect(introduces("Oppenheimer's captain waited. My name is Oppenheimer.")).toHaveLength(1);
+    expect(introduces("Don\u2019t ask. I am Robert Oppenheimer, a physicist.")).toHaveLength(1);
+  });
+
+  it("test_365_ac3_quoted_dialogue_passes_in_every_quote_style", () => {
+    expect(introduces('He said "My name is Oppenheimer." and left.')).toEqual([]);
+    expect(introduces("He said \u201cMy name is Oppenheimer.\u201d and left.")).toEqual([]);
+    expect(introduces("He said \u2018My name is Oppenheimer.\u2019 and left.")).toEqual([]);
+    expect(introduces("He said 'My name is Oppenheimer.' and left.")).toEqual([]);
+    expect(introduces("He said \u201cI don\u2019t care. My name is Oppenheimer.\u201d")).toEqual(
+      [],
+    );
+    expect(
+      introduces("He said \u201cMy name is Oppenheimer\u201d, and I am J. Robert Oppenheimer."),
+    ).toHaveLength(1);
   });
 });

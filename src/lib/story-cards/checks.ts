@@ -75,14 +75,59 @@ const INTRODUCTION_PHRASES = [
   "my name is",
   "I am J. Robert Oppenheimer",
   "I'm J. Robert Oppenheimer",
+  "I am Robert Oppenheimer",
+  "I'm Robert Oppenheimer",
   "let me introduce",
   "allow me to introduce",
 ];
 
+const isLetter = (character: string | undefined) =>
+  character !== undefined && /[\p{L}\p{N}]/u.test(character);
+
+/**
+ * The text with every quoted line blanked out (#365): a line in quotation marks is dialogue, not
+ * the character introducing himself. Straight and curly, double and single quotes; an apostrophe
+ * inside a word (don't, Oppenheimer's) is not a quote, and a quote that is never closed hides
+ * nothing.
+ */
+export function withoutQuotedSpeech(text: string): string {
+  const chars = Array.from(text);
+  let double: { at: number; curly: boolean } | null = null;
+  let single: number | null = null;
+  const blank = (from: number, to: number) => {
+    for (let i = from; i <= to; i++) chars[i] = " ";
+  };
+  for (let i = 0; i < chars.length; i++) {
+    const c = chars[i];
+    if (c === "“" || (c === '"' && double === null)) double = { at: i, curly: c === "“" };
+    else if ((c === "”" && double?.curly) || (c === '"' && double && !double.curly)) {
+      blank(double.at, i);
+      double = null;
+      single = null;
+    } else if (c === "'" || c === "‘" || c === "’") {
+      const previous = chars[i - 1];
+      const next = chars[i + 1];
+      if (isLetter(previous) && isLetter(next)) continue; // inside a word
+      const opens =
+        c === "‘" || (c !== "’" && !isLetter(previous) && next !== undefined && !/\s/.test(next));
+      if (single === null && opens) single = i;
+      else if (single !== null && !opens && c !== "‘") {
+        // A quote that closes: it must come at the end of a word.
+        if (!isLetter(next)) {
+          blank(single, i);
+          single = null;
+        }
+      }
+    }
+  }
+  return chars.join("");
+}
+
 /** An introduction phrase in a part card; the background card is exempt (M2). */
 function introductionProblems(card: { kind: "background" | "part"; body: string }): string[] {
   if (card.kind === "background") return [];
-  const phrase = INTRODUCTION_PHRASES.find((candidate) => mentions(card.body, candidate));
+  const spoken = withoutQuotedSpeech(card.body);
+  const phrase = INTRODUCTION_PHRASES.find((candidate) => mentions(spoken, candidate));
   return phrase ? [`Introduces someone ("${phrase}"). Only the background card does that.`] : [];
 }
 
