@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { largeText } from "./support/large-text";
+import { largeText, overflowReport } from "./support/large-text";
 
 // Issue #263: the goal dialogue (#234 to #237) and the focus page (#238) as prototype v4, at the
 // prototype's phone size. The e2e server has no model keys, so /try uses its labelled test data.
@@ -313,11 +313,61 @@ test.describe("the plan", () => {
     expect(measured.lines).toBeLessThanOrEqual(4);
   });
 
-  // The owner's rule also asks for at most two lines at 200% text. Measured, that cannot hold yet:
-  // at 320 px the Plan card is 152 px wide inside at 200%, so the number, minutes and arrows leave
-  // the title 28 px (21 lines) and the row runs past the card. Stacking does not change that. It
-  // needs a narrow-screen layout for the card: issue #341.
-  test.fixme("#340 at 320 px and 200% text a typical Step title is at most two lines", async () => {});
+  // #341: the owner's rule also asks for at most two lines at 200% text. Before #341 the Plan card
+  // was 152 px wide inside there, so the number, minutes and arrows left the title 28 px (21 lines)
+  // and the row ran past the card. Now the card gives up some padding and the title takes a line of
+  // its own below the number and the minutes, with the stacked arrows beside those two.
+  test("#340 #341 at 320 px and 200% text a typical Step title is at most two lines", async ({
+    page,
+  }) => {
+    await toPlan(page);
+    const card = planCard(page);
+    const rows = card.locator(".try-step-button");
+    const title = "Outline the methods section";
+    await rows.first().click();
+    await card.getByLabel("Step title").fill(title);
+    await card.getByRole("button", { name: "Done editing" }).click();
+    await expect(rows.first().locator(".try-step-title")).toHaveText(title);
+    await page.setViewportSize({ width: 320, height: 640 });
+    await largeText(page);
+    const measured = await rows
+      .first()
+      .locator(".try-step-title")
+      .evaluate((element) => {
+        const lineHeight = parseFloat(getComputedStyle(element).lineHeight);
+        const rect = element.getBoundingClientRect();
+        return { width: rect.width, lines: Math.round(rect.height / lineHeight) };
+      });
+    expect(measured.lines).toBeLessThanOrEqual(2);
+    // Nothing in a Step row runs past the card's inner edge.
+    const cardBox = await box(card);
+    for (const row of await card.locator(".try-step-row").all()) {
+      for (const part of await row.locator("*").all()) {
+        const partBox = await box(part);
+        expect(partBox.x).toBeGreaterThanOrEqual(cardBox.x);
+        expect(partBox.x + partBox.width).toBeLessThanOrEqual(cardBox.x + cardBox.width);
+      }
+    }
+    expect(await overflowReport(page)).toEqual([]);
+  });
+
+  test("#341 at 375 px and 100% text the Step row keeps number, title and minutes on one line", async ({
+    page,
+  }) => {
+    await toPlan(page);
+    await page.setViewportSize({ width: 375, height: 800 });
+    const row = planCard(page).locator(".try-step-row").first();
+    const number = await box(row.locator(".try-step-number"));
+    const title = await box(row.locator(".try-step-title"));
+    const minutes = await box(row.locator(".try-minutes"));
+    const move = await box(row.locator(".try-move"));
+    // Side by side, left to right, as before #341: the narrow layout is for large text only.
+    expect(title.x).toBeGreaterThan(number.x + number.width);
+    expect(minutes.x).toBeGreaterThan(title.x + title.width - 1);
+    expect(move.x).toBeGreaterThan(minutes.x + minutes.width);
+    const middle = (b: { y: number; height: number }) => b.y + b.height / 2;
+    expect(Math.abs(middle(number) - middle(minutes))).toBeLessThan(4);
+  });
 
   test("#237 AC3 Add a step and the count share a row; Split again is centred in the card", async ({
     page,
