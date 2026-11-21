@@ -1483,12 +1483,12 @@ a {
   white-space: nowrap;
 }
 
-/* Move up and move down (STEP-EDIT): 40 by 26 drawn, 44 by 44 to touch. */
+/* Move up and move down (STEP-EDIT, TAP-SIZE): 40 by 26 drawn, 44 by 44 to touch. Side by side,
+   so the two touch areas meet without overlapping (the gap is the touch size minus the drawn width). */
 .try-move {
   display: flex;
   flex: none;
-  flex-direction: column;
-  gap: 2px;
+  gap: calc(var(--target) - var(--move-width));
 }
 
 .try-move button {
@@ -1512,14 +1512,6 @@ a {
   inset: calc((var(--target) - var(--move-height)) / -2)
     calc((var(--target) - var(--move-width)) / -2);
   position: absolute;
-}
-
-.try-move button:first-child::before {
-  bottom: 0;
-}
-
-.try-move button:last-child::before {
-  top: 0;
 }
 
 .try-move button:disabled {

@@ -313,3 +313,8 @@ Yue decided these on 2026-11-18. Recorded in issue #313.
 | KEY-REVIEW | The review of the machine-derived key moments (KEY-MOMENTS-DRAFT) |
 | PERIOD-NAMES | The named periods of each character's Life Path (PERIODS), drafted for Yue to approve |
 | MORIARTY-READ | Yue's reading of the 31 cards of Moriarty story 1 (MORIARTY-6) |
+
+## 4. Later
+
+- Chat rules for rest chat, a limit after round 10, and free chat: see #337 (waits until version 1 is done).
+- Adding a Companion from a novel through staged, reusable prompts, then in batch: see #339 (waits until version 1 is done).
