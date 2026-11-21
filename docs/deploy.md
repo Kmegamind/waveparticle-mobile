@@ -34,6 +34,9 @@ Production. It is server-only: never give it the `NEXT_PUBLIC_` prefix. Keep Ver
 Protection on for previews, because the test path can call the paid model. Production also calls the
 paid model for signed-in sessions, with no per-account cap (#256 is in "Later"); the owner monitors
 usage in the model provider's dashboard.
+The per-browser daily limit of 20 real model calls (cookie `wp_try_model_calls`, `src/lib/prototype/cost-cap.ts`) is
+counted separately for `/try` and `/goal`: the cookie is scoped to each path, so a browser gets 20 on each
+page, not 20 shared between them.
 
 ## Secrets
 `PROMPTS_READ_TOKEN` (server only, Production and Preview) lets the server read the prompts table; see `docs/ai/prompts/README.md` (#282).
