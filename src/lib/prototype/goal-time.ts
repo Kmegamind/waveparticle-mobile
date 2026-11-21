@@ -77,3 +77,16 @@ export function sliderStart(understood: number | null): number {
 export function sliderValueText(minutes: number): string {
   return minutes <= 0 ? "No time chosen" : formatMinutes(minutes);
 }
+
+/** A time read from the goal text is held to the most one Goal can hold (#351, SLIDER-RANGE). */
+export function capGoalMinutes(minutes: number | null): number | null {
+  return minutes === null ? null : Math.min(minutes, SLIDER_MAX_MINUTES);
+}
+
+/** True when the goal text states more time than one Goal can hold, so the split was made for 3 hours. */
+export function goalTimeWasCapped(goal: string): boolean {
+  const found = findTimeInGoal(goal);
+  return found !== null && found > SLIDER_MAX_MINUTES;
+}
+
+export const CAPPED_TIME_NOTE = "Split for 3 hours, the most one Goal can hold.";
