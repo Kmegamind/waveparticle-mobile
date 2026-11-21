@@ -66,6 +66,12 @@ type TimeMode = "asked" | "not-sure" | "understood";
 
 const DEFAULT_MINUTES = 30;
 
+/** A turn Try again can send again (#347). */
+type Retry =
+  | { turn: "split"; request: TurnRequest }
+  | { turn: "goal"; text: string; justSplit: boolean }
+  | { turn: "time"; value: number; mode: TimeMode };
+
 function goalOf(request: TurnRequest): string {
   return "goal" in request ? request.goal : "";
 }
@@ -160,10 +166,11 @@ export function GoalDialogue({
   // earlier token; a new goal line starts a new dialogue.
   const [goalToken, setGoalToken] = useState<string | null>(null);
   const [timeToken, setTimeToken] = useState<string | null>(null);
-  // The split request Split again and Try again send (#347): after a Plan or a failed split, a
+  // What Try again and Split again send (#347). For a split: after a Plan or a failed split, a
   // split-again on the token the server returned; after a request lost on the network, that same
-  // request again. Null after a refusal, which leaves the page on GD-F (owner decision 3).
-  const [retry, setRetry] = useState<TurnRequest | null>(null);
+  // request. For a goal or time turn lost on the network: that same turn. Null after a refusal,
+  // which leaves the page on GD-F (owner decision 3).
+  const [retry, setRetry] = useState<Retry | null>(null);
   const [sending, setSending] = useState(false);
 
   // The thread grows downward; each new turn scrolls it to its end, with no smooth scrolling.
@@ -199,7 +206,10 @@ export function GoalDialogue({
       setDraft("");
       openCrisis("goal");
     } else if (outcome.status === "plan") {
-      setRetry({ kind: "split-again", token: outcome.token, goal: goalOf(request) });
+      setRetry({
+        turn: "split",
+        request: { kind: "split-again", token: outcome.token, goal: goalOf(request) },
+      });
       setPlanTitle(outcome.plan.title);
       setTitleDraft(outcome.plan.title || goalOf(request));
       setGoalId(crypto.randomUUID());
@@ -211,9 +221,12 @@ export function GoalDialogue({
       // A failed split keeps its token so Try again stays in this dialogue; a request lost on the
       // network is sent again as it was; a refusal has nothing to retry.
       if (outcome.status === "failed") {
-        setRetry({ kind: "split-again", token: outcome.token, goal: goalOf(request) });
+        setRetry({
+          turn: "split",
+          request: { kind: "split-again", token: outcome.token, goal: goalOf(request) },
+        });
       } else {
-        setRetry(outcome.status === "unreachable" ? request : null);
+        setRetry(outcome.status === "unreachable" ? { turn: "split", request } : null);
       }
       setPhase("failed");
     }
@@ -240,6 +253,7 @@ export function GoalDialogue({
    */
   async function sendGoalTurn(
     text: string,
+    justSplit: boolean,
   ): Promise<{ token: string; minutes: number | null } | null> {
     setGoal(text);
     setGoalToken(null);
@@ -252,7 +266,8 @@ export function GoalDialogue({
       return null;
     }
     if (outcome.status !== "turn") {
-      setRetry(null);
+      // Lost on the network: Try again sends the same line again (#347). Refused: nothing to retry.
+      setRetry(outcome.status === "unreachable" ? { turn: "goal", text, justSplit } : null);
       setPhase("failed");
       return null;
     }
@@ -265,8 +280,13 @@ export function GoalDialogue({
     if (sending) return;
     const text = acceptGoal();
     if (text === null) return;
+    await submitGoal(text);
+  }
+
+  /** Sends the goal turn and moves on to the time or the split question. */
+  async function submitGoal(text: string) {
     setSending(true);
-    const accepted = await sendGoalTurn(text);
+    const accepted = await sendGoalTurn(text, false);
     setSending(false);
     if (accepted === null) return;
     setReaction(reactionFor(classifyGoalShape(text)));
@@ -291,7 +311,7 @@ export function GoalDialogue({
     const outcome = await sendTurn({ kind: "time", token: goalToken, minutes: value });
     setSending(false);
     if (outcome.status !== "turn") {
-      setRetry(null);
+      setRetry(outcome.status === "unreachable" ? { turn: "time", value, mode } : null);
       setPhase("failed");
       return;
     }
@@ -324,26 +344,32 @@ export function GoalDialogue({
 
   async function onJustSplit() {
     if (sending) return;
-    let text = goal;
-    let token = answerToken();
-    let total = minutes;
     if (phase === "goal") {
       const accepted = acceptGoal();
       if (accepted === null) return;
-      setSending(true);
-      const sent = await sendGoalTurn(accepted);
-      setSending(false);
-      if (sent === null) return;
-      text = accepted;
-      token = sent.token;
-      total = sent.minutes;
+      await justSplitFromGoal(accepted);
+      return;
     }
+    const token = answerToken();
     if (token === null) return;
-    setMinutes(total ?? DEFAULT_MINUTES);
+    setMinutes(minutes ?? DEFAULT_MINUTES);
     setJustSplit(true);
     setSplitFiner(false);
     setCameFrom(phase);
-    void requestSplit({ kind: "split", token, goal: text, splitFiner: null });
+    void requestSplit({ kind: "split", token, goal, splitFiner: null });
+  }
+
+  /** Just split it on GD1: the goal turn, then the split with no time (30 minutes). */
+  async function justSplitFromGoal(text: string) {
+    setSending(true);
+    const sent = await sendGoalTurn(text, true);
+    setSending(false);
+    if (sent === null) return;
+    setMinutes(sent.minutes ?? DEFAULT_MINUTES);
+    setJustSplit(true);
+    setSplitFiner(false);
+    setCameFrom("goal");
+    void requestSplit({ kind: "split", token: sent.token, goal: text, splitFiner: null });
   }
 
   function answerSplit(finer: boolean) {
@@ -362,7 +388,10 @@ export function GoalDialogue({
       setPhase("failed");
       return;
     }
-    void requestSplit(retry);
+    if (retry.turn === "split") void requestSplit(retry.request);
+    else if (retry.turn === "time") void sendTime(retry.value, retry.mode);
+    else if (retry.justSplit) void justSplitFromGoal(retry.text);
+    else void submitGoal(retry.text);
   }
 
   function useOneStep() {
