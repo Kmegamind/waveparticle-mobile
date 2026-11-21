@@ -12,7 +12,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 | G4 / G4-N | AI-5 | "Start with…" editable | hook only | S1 |
 | CPAGE / CPAGE-S | — | Begin → GD1 | — | — |
 | GD1 | AI-5 | His opening (authored); goal input | authored + hook | S1 |
-| GD2 | **AI-1a**, AI-5 | His reaction to the shape (authored line chosen by a one-word classifier); typed time | model (classify) → authored line | `confirm_goal` |
+| GD2 | **AI-1a**, AI-5 | His reaction to the shape (authored line chosen by a one-word classifier); typed time | local rule `classifyGoalShape`, no model call in version 1 (GOAL-SHAPE-LOCAL) → authored line | `confirm_goal` |
 | GD3 | — | Buttons; his reply authored | authored | — |
 | GD4 | **AI-1b**, AI-5 | Plan card (steps JSON); his intro and close authored | model (split) | GD-F |
 | GD-F | AI-1, AI-5 | System voice; Try again / Start with one step | system | one-step plan |

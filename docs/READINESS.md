@@ -40,7 +40,7 @@ Development of the repository setup (Sprint 1) can start now. Feature work shoul
 |---|---|---|
 | Story database (26 stories, facts) | Ready | |
 | Pre-written fallback cards | Not needed: no stored text is shown when generation fails (NO-BACKUP, NO-FALLBACK-TABLES). The authored cards of two stories are reference examples and evaluation material only | |
-| Made-ahead story cards and closing lines | Made once per story part, read by a person, then published (SHARED-STORY, CARDS-PER-PART, CLOSING-AHEAD, READ-STATUS) | Blocks showing a story to users |
+| Made-ahead story cards and closing lines | Made once per story part and published, then read by a person on the phone; there is no review gate (SHARED-STORY, CARDS-PER-PART, CLOSING-AHEAD, PUBLISH-FIRST) | Blocks showing a story to users |
 | Planning prompt for goal splitting | Exists in the old web app (`AI_01a`); needs an update for step descriptions of one or two sentences and no maximum number of steps | Blocks Sprint 1 |
 | Prompts for making the story cards, the background card and the closing line ahead, and the live prompts for the stuck story, the rest conversation and the return pop-up | Specs exist but are older than the decisions | Blocks Sprint 2 and 3; `ai/DIFFERENCES.md` lists what each AI spec must change |
 | Safety: classifier design, hotline list by region, English test sets, legal and clinical review | Not done | Blocks Sprint 3 |

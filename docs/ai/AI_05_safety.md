@@ -1,6 +1,6 @@
 Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIONS.md overrides this document where they differ.
 
-> **Status after the decisions up to 2026-11-15 (#295).** The first demo has two tiers, crisis (real hotlines by region) and ordinary stress; low mood (T2 below, with its step-out line) is deferred (A5, A5b). English only: no Chinese test sets, keyword layer or `lang` field (L1). That the Companion is an AI is stated only in the terms and settings, so option (b) "I am a program" is out (A4). The output safety check also runs on pre-made content (cards, closing line) before publishing (SAFETY-PREMADE). The rest is a draft for compliance.
+> **Status after the decisions up to 2026-11-15 (#295).** The first demo has two tiers, crisis (real hotlines by region) and ordinary stress; low mood (T2 below, with its step-out line) is deferred (A5, A5b). English only: no Chinese test sets, keyword layer or `lang` field (L1). That the Companion is an AI is stated only in the terms and settings, so option (b) "I am a program" is out (A4). The output safety check also runs on pre-made content (cards, closing line) before publishing (SAFETY-PREMADE). **Decided 2026-11-21 (NO-DENYLIST):** there is no word list of dangerous method or instruction words, and none is owned by compliance; the output guard is the AI-6 rules and the style checks (`src/lib/model-gateway/checks.ts`). The rest is a draft for compliance.
 
 # AI-5 · Safety — v2 (after the user test, un-parked)
 
@@ -72,7 +72,7 @@ One JSON object only: {"tier": "crisis|low_mood|task_stress|none", "lang": "en|z
 ```
 
 3. **Merge rule:** final tier = the higher of the two layers. If the classifier fails or exceeds 1.5 s, the keyword layer decides alone (v1 §7).
-4. **Output guard** (unchanged from v1): AI-6 rules on every model reply, plus a method/instruction denylist owned by compliance.
+4. **Output guard**: AI-6 rules, including the style checks, on every model reply. ~~Plus a method/instruction denylist owned by compliance.~~ Withdrawn (NO-DENYLIST, 2026-11-21): there is no such word list.
 
 ## 4. Error budget (Guess; set with compliance before any real use)
 
