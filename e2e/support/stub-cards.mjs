@@ -79,7 +79,9 @@ function card(stepNumber, position) {
 export const STUB_INDIRECT_CRISIS = "I have given my things away";
 
 function classify(prompt) {
-  const message = prompt.split("The message to classify:")[1] ?? "";
+  // Only the person's message between the markers: the instructions quote example phrases.
+  const after = prompt.split("The message to classify:")[1] ?? "";
+  const message = after.split("<<<")[1]?.split(">>>")[0] ?? "";
   if (message.includes(STUB_INDIRECT_CRISIS)) return JSON.stringify({ tier: "crisis" });
   if (/killing me|tired/i.test(message)) return JSON.stringify({ tier: "stress" });
   return JSON.stringify({ tier: "none" });
