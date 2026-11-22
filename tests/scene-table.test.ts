@@ -214,9 +214,10 @@ describe("#64 AC3 and #65 AC1: the scene table is an input to the pause message 
   });
 
   it("test_65_ac1_a_stuck_story_that_adds_a_person_is_generated_again", async () => {
+    // #56: call one returns {prop, story} with the offered prop (here the scene's pause prop).
     const fake = provider([
-      JSON.stringify({ story: "I wait while Strauss reads my letter." }),
-      JSON.stringify({ story: "The shaker lid sticks in my hand." }),
+      JSON.stringify({ prop: "shaker", story: "He waits by the shaker while Strauss reads." }),
+      JSON.stringify({ prop: "shaker", story: "The shaker lid sticks in my hand." }),
     ]);
     const known = ["Strauss", "Kitty", "Haakon"];
     const logs: { rejectedRules: string[] }[] = [];
@@ -231,7 +232,11 @@ describe("#64 AC3 and #65 AC1: the scene table is an input to the pause message 
       scene,
       people: known,
     });
-    expect(result).toEqual({ source: "generated", text: "The shaker lid sticks in my hand." });
+    expect(result).toEqual({
+      source: "generated",
+      prop: "shaker",
+      story: "The shaker lid sticks in my hand.",
+    });
     expect(fake.calls).toHaveLength(2);
     expect(logs.at(-1)?.rejectedRules).toContain("people");
   });
@@ -239,8 +244,11 @@ describe("#64 AC3 and #65 AC1: the scene table is an input to the pause message 
   it("test_65_ac1_a_stuck_story_with_a_later_word_is_generated_again", async () => {
     const fake = provider([
       // Fix round 1 (C1): a capitalised later word matches only with its capitals.
-      JSON.stringify({ story: "I keep thinking about the Mesa while the shaker sticks." }),
-      JSON.stringify({ story: "The shaker lid sticks in my hand." }),
+      JSON.stringify({
+        prop: "shaker",
+        story: "He thinks about the Mesa while the shaker sticks.",
+      }),
+      JSON.stringify({ prop: "shaker", story: "The shaker lid sticks in my hand." }),
     ]);
     const logs: { rejectedRules: string[] }[] = [];
     const gateway = createModelGateway({
@@ -264,7 +272,8 @@ describe("#64 AC3 and #65 AC1: the scene table is an input to the pause message 
   });
 });
 
-// Fix round 1 of #374 (review C1, I2, I4, M6).
+// Fix round 1 of #374 (review C1, I2, I4, M6). Since #56 the message he shows is call two
+// (`pause_predicament`, plain text); these scene checks run on it as they did on the one call.
 describe("#65 AC1 the scene checks on the live pause message, without false alarms", () => {
   const sceneOf = (id: string) => seed.stories.find((story) => story.id === id)!.inputs.scene!;
   const known = people;
@@ -276,7 +285,7 @@ describe("#65 AC1 the scene checks on the live pause message, without false alar
       prompts: seedPromptSource(),
       provider: async ({ prompt }) => {
         calls.push(prompt);
-        return JSON.stringify({ story: lines.shift() ?? "My pencil is blunt." });
+        return lines.shift() ?? "My pencil is blunt.";
       },
       log: (event) => logs.push(event as { rejectedRules: string[] }),
     });
@@ -285,9 +294,10 @@ describe("#65 AC1 the scene checks on the live pause message, without false alar
 
   async function firstTry(id: string, line: string) {
     const { gateway, calls, logs } = gatewayWith([line]);
-    const result = await gateway.writeStuckStory({
+    const result = await gateway.writePausePredicament({
       pauseNumber: 1,
       facts: "f",
+      story: "s.",
       scene: sceneOf(id),
       people: known,
     });
@@ -416,7 +426,8 @@ describe("#65 AC1 the scene checks on the live pause message, without false alar
     const rows = seedRows().map((row) => (row.key === "stuck_story" ? v1 : row));
     const gateway = createModelGateway({
       prompts: async (key) => rows.find((row) => row.key === key) ?? null,
-      provider: async () => JSON.stringify({ story: "My pencil is blunt." }),
+      provider: async () =>
+        JSON.stringify({ prop: "coffee cup", story: "His coffee cup has gone cold." }),
     });
     const result = await gateway.writeStuckStory({
       pauseNumber: 1,
@@ -424,6 +435,10 @@ describe("#65 AC1 the scene checks on the live pause message, without false alar
       scene: sceneOf("trinity"),
       people: known,
     });
-    expect(result).toEqual({ source: "generated", text: "My pencil is blunt." });
+    expect(result).toEqual({
+      source: "generated",
+      prop: "coffee cup",
+      story: "His coffee cup has gone cold.",
+    });
   });
 });

@@ -8,8 +8,8 @@ Edit the prompt or its settings here or in the Supabase table editor; see README
 ```json
 {
   "key": "retry_hints",
-  "version": 1,
-  "note": "Added to a prompt after a rejected answer: one fix per check that failed. Rule ids only, never user text. Moved from gateway.ts unchanged.",
+  "version": 2,
+  "note": "Added to a prompt after a rejected answer: one fix per check that failed. Rule ids only, never user text. Version 2 (#56): fixes for the pause checks (prop, object, event, place, plain).",
   "params": {
     "fixes": {
       "back": "Use no behind-the-scenes words such as step, session, app, screen or task.",
@@ -21,6 +21,7 @@ Edit the prompt or its settings here or in the Supabase table editor; see README
       "cmd": "Give no orders or advice.",
       "dash": "Use no dashes.",
       "empty": "Write a non-empty line within the size asked for.",
+      "event": "Nothing may happen in his story: no one arrives, speaks, decides, finds, loses or breaks anything.",
       "failure_text": "Do not mention errors or failures.",
       "first_person": "Write in his first person.",
       "form": "Use no exclamation marks, emoji or links, and end with a full stop.",
@@ -29,10 +30,14 @@ Edit the prompt or its settings here or in the Supabase table editor; see README
       "len": "Keep within the length asked for.",
       "minutes": "Use positive whole minutes that add up to the total.",
       "name": "Never say his own name.",
+      "object": "Name no object other than the objects listed.",
       "opening": "Do not start with the same three words as a recent line.",
       "parse": "Return valid JSON in exactly the shape asked for.",
       "people": "Name no people or places other than the names listed.",
+      "place": "Name no place other than the names listed.",
+      "plain": "Write plain text only, not JSON.",
       "praise": "Give no praise.",
+      "prop": "Use the object chosen for you, and give it back as prop exactly as written.",
       "question": "Ask no question, or at most one where a question is allowed.",
       "repeat": "Do not repeat a line already shown.",
       "similar": "Do not write a line close to one already shown.",

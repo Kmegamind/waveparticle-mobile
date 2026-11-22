@@ -162,6 +162,28 @@ function capReturnPopup(limits: LineLimits): LineLimits {
   };
 }
 
+/**
+ * LEN-PAUSE (2026-11-15): his pause message, and the stuck story of call one, are 1 or 2 sentences
+ * and at most 30 words (#56). A rule in code: a prompt row may make them shorter, never longer.
+ */
+export const PAUSE_MESSAGE_LIMITS = { max_sentences: 2, max_words: 30 } as const;
+
+function capLimits(limits: LineLimits, cap: { max_sentences: number; max_words: number }) {
+  return {
+    ...limits,
+    max_words: Math.min(limits.max_words, cap.max_words),
+    max_sentences: Math.min(limits.max_sentences ?? cap.max_sentences, cap.max_sentences),
+  };
+}
+
+function limitsFor(kind: CompanionKind, limits: LineLimits): LineLimits {
+  if (kind === "return_popup") return capReturnPopup(limits);
+  if (kind === "stuck_story" || kind === "pause_message") {
+    return capLimits(limits, PAUSE_MESSAGE_LIMITS);
+  }
+  return limits;
+}
+
 export function checkCompanionLine(
   raw: string,
   kind: CompanionKind,
@@ -169,7 +191,8 @@ export function checkCompanionLine(
   rowLimits: LineLimits,
   companionName = DEFAULT_COMPANION_NAME,
 ): { ok: true; text: string } | { ok: false; rejectedRules: string[] } {
-  const limits = kind === "return_popup" ? capReturnPopup(rowLimits) : rowLimits;
+  const limits = limitsFor(kind, rowLimits);
+  const live = kind === "rest_reply" || kind === "stuck_story" || kind === "pause_message";
   const text = cleanLine(raw, companionName);
   const ownName = ownNamePattern(companionName);
   const rejected: string[] = [];
@@ -180,12 +203,7 @@ export function checkCompanionLine(
   push(rejected, "failure_text", FAILURE_WORDING.test(text));
   push(rejected, "cjk", CJK.test(text));
   push(rejected, "dash", DASH.test(text));
-  push(
-    rejected,
-    "ban",
-    BANNED.test(text) ||
-      ((kind === "rest_reply" || kind === "stuck_story") && LIVE_AI_WORDS.test(text)),
-  );
+  push(rejected, "ban", BANNED.test(text) || (live && LIVE_AI_WORDS.test(text)));
   push(rejected, "clock", CLOCK.test(text));
   push(rejected, "back", BACKSTAGE.test(text));
   push(rejected, "cmd", kind === "rest_reply" && ORDERING.test(text));
@@ -201,7 +219,8 @@ export function checkCompanionLine(
   push(rejected, "form", EXCLAIM_OR_EMOJI.test(text) || LINK.test(text) || !endsWell);
   // He never names himself (#302: the name of the Companion speaking, not a fixed one).
   push(rejected, "name", ownName !== null && ownName.test(text));
-  push(rejected, "first_person", !FIRST_PERSON.test(text));
+  // The stuck story of call one is a third-person record (he, him); every other line is his own.
+  push(rejected, "first_person", kind !== "stuck_story" && !FIRST_PERSON.test(text));
   push(rejected, "blame", kind === "return_popup" && BLAME.test(text));
   push(rejected, "len", lengthFails(limits, sentenceCount, wordCount));
   push(

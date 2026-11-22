@@ -120,7 +120,7 @@ describe("model gateway", () => {
 
     expect(cards).toEqual({ source: "generated", cards: distinctCards.slice(0, 2) });
     expect(stuck.source).toBe("generated");
-    expect(generated(stuck).text).toMatch(/\.$/);
+    expect(generated(stuck).story).toMatch(/\.$/);
     expect(reply).toEqual({ source: "generated", text: "I stay with my own work." });
     expect(popup.source).toBe("generated");
     expect(generated(popup).text.endsWith(".")).toBe(true);
@@ -336,7 +336,8 @@ describe("model gateway", () => {
       it("test_61_ac1_other_kinds_keep_their_own_limits", () => {
         const loose = { max_words: 40, max_sentences: 3 };
         const three = "I kept my notes in order. The room stayed quiet. I feel steady again.";
-        expect(checkCompanionLine(three, "stuck_story", [], loose).ok).toBe(true);
+        // The pause lines have their own cap since #56 (LEN-PAUSE); the closing line has none.
+        expect(checkCompanionLine(three, "closing_line", [], loose).ok).toBe(true);
       });
 
       it("test_61_ac2_a_three_sentence_model_answer_is_retried_then_fails_with_no_text", async () => {
@@ -428,15 +429,19 @@ describe("model gateway", () => {
   describe("pause number and return trigger in the prompts (#202)", () => {
     const stepName = "SECRET_STEP_NAME";
     const goalText = "SECRET_GOAL_NAME";
-    const worry = /worried he may fail/i;
+    // Since #56 the worry is said in call two, in his own voice ("you" are him in that prompt).
+    const worry = /worried (?:he|you) may fail/i;
     const noOrder = /never (?:tell|give) the person (?:what to do|an instruction)/i;
     const noStopAsk = /never ask the person to stop pausing/i;
 
+    /** Both prompts of the pause message (#56): call one, then call two. */
     async function stuckPromptFor(pauseNumber: number): Promise<string> {
       const fake = provider(async () => stuckJson);
       const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
       await gateway.writeStuckStory({ pauseNumber, facts: "He is at a table." });
-      return fake.calls[0] ?? "";
+      const first = fake.calls[0] ?? "";
+      await gateway.writePausePredicament({ pauseNumber, facts: "He is at a table.", story: "s." });
+      return `${first}\n${fake.calls[1] ?? ""}`;
     }
 
     async function returnPromptFor(trigger: "rest" | "absence"): Promise<string> {
@@ -531,7 +536,7 @@ describe("model gateway", () => {
       );
       const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
       const result = await gateway.writeStuckStory({ pauseNumber: 1, facts });
-      expect(result).toEqual({ source: "generated", text: goodStory });
+      expect(result).toMatchObject({ source: "generated", story: goodStory });
       expect(fake.calls).toHaveLength(2);
       expect(fake.calls[1]?.startsWith(fake.calls[0] ?? "-")).toBe(true);
       expect(fake.calls[1]).toContain("The last answer was rejected");
@@ -544,7 +549,7 @@ describe("model gateway", () => {
       );
       const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
       const result = await gateway.writeStuckStory({ pauseNumber: 2, facts });
-      expect(result).toEqual({ source: "generated", text: goodStory });
+      expect(result).toMatchObject({ source: "generated", story: goodStory });
       expect(fake.calls).toHaveLength(3);
     });
 
@@ -662,7 +667,7 @@ describe("model gateway", () => {
       const fake = provider(async (attempt) => story(attempt === 1 ? reuse : fresh));
       const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
       const result = await gateway.writeStuckStory({ pauseNumber: 1, facts, lastCard });
-      expect(result).toEqual({ source: "generated", text: fresh });
+      expect(result).toMatchObject({ source: "generated", story: fresh });
       expect(fake.calls[1]).toMatch(/last card/i);
     });
 

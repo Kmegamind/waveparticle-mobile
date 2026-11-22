@@ -1,7 +1,14 @@
+import type { PauseCategory } from "@/lib/content/pause-snag";
 import type { SceneTable } from "@/lib/content/scene";
 
 export type GatewayCall =
-  "plan_split" | "step_cards" | "stuck_story" | "rest_reply" | "return_popup" | "closing_line";
+  | "plan_split"
+  | "step_cards"
+  | "stuck_story"
+  | "pause_predicament"
+  | "rest_reply"
+  | "return_popup"
+  | "closing_line";
 
 export type LineSource = "generated" | "failed";
 
@@ -82,12 +89,28 @@ export type StepCardsResult =
     }
   | GatewayFailure;
 
+/**
+ * Call one of the pause message (PAUSE-TWO-CALLS, #56): the stuck story, a short third-person
+ * record of what has gone wrong in his own work, built around the category and the prop the code
+ * picked (`pickPauseSnag`). It is never an event: it never moves his Story.
+ */
 export type StuckStoryInput = {
   /** The name of the Companion speaking, for the `name` check (#302). Default: Oppenheimer. */
   companionName?: string;
   /** 1-based number of this Pause in the current Step. From 3 the snag is much harder (F1, PAUSE-3). */
   pauseNumber: number;
   facts: string;
+  /** The snag category the code picked (AI_03 section A1). */
+  category?: PauseCategory;
+  /** The prop the code picked from the scene table; the answer must give it back and use it. */
+  prop?: string;
+  /** The stuck stories of the earlier Pauses in this Step, oldest first (no repeats). */
+  earlierStories?: string[];
+  /**
+   * Every prop the Companion's Stories name. An object among them that is not in this Story's
+   * scene table fails `object`, as do the common objects listed in the checks.
+   */
+  companionProps?: string[];
   forbidTerms?: string[];
   /** One-way lines already shown in this run, oldest first (per-run list, US-AI-8). */
   earlierLines?: string[];
@@ -105,6 +128,32 @@ export type StuckStoryInput = {
    */
   people?: string[];
 };
+
+/**
+ * Call two of the pause message (PAUSE-TWO-CALLS, #56): his own words about the predicament of
+ * call one's stuck story and his feelings, as plain text (not JSON). This is the message he shows:
+ * 1 or 2 sentences and at most 30 words (LEN-PAUSE).
+ */
+export type PausePredicamentInput = {
+  companionName?: string;
+  pauseNumber: number;
+  facts: string;
+  /** The stuck story that call one returned. */
+  story: string;
+  /** The prop of call one; the last-card noun rule ignores it. */
+  prop?: string;
+  /** The stuck stories of the earlier Pauses in this Step, oldest first (he remembers them). */
+  earlierStories?: string[];
+  forbidTerms?: string[];
+  /** One-way lines already shown in this run, oldest first (per-run list, US-AI-8). */
+  earlierLines?: string[];
+  lastCard?: string;
+  scene?: SceneTable;
+  people?: string[];
+};
+
+export type StuckStoryResult =
+  { source: "generated"; prop: string; story: string } | GatewayFailure;
 
 export type RestReplyInput = {
   /** The name of the Companion speaking, for the `name` check (#302). Default: Oppenheimer. */
@@ -163,11 +212,19 @@ export type ClosingLineResult =
 export type ModelGateway = {
   splitPlan(input: PlanSplitInput): Promise<PlanSplitResult>;
   writeStepCards(input: StepCardsInput): Promise<StepCardsResult>;
-  writeStuckStory(input: StuckStoryInput): Promise<LineResult>;
+  writeStuckStory(input: StuckStoryInput): Promise<StuckStoryResult>;
+  writePausePredicament(input: PausePredicamentInput): Promise<LineResult>;
   writeRestReply(input: RestReplyInput): Promise<LineResult>;
   writeReturnPopup(input: ReturnPopupInput): Promise<LineResult>;
   writeClosingLine(input: ClosingLineInput): Promise<ClosingLineResult>;
 };
 
+/** `stuck_story` is call one (third person); `pause_message` is call two, the message he shows. */
 export type CompanionKind =
-  "step_card" | "background_card" | "stuck_story" | "rest_reply" | "return_popup" | "closing_line";
+  | "step_card"
+  | "background_card"
+  | "stuck_story"
+  | "pause_message"
+  | "rest_reply"
+  | "return_popup"
+  | "closing_line";

@@ -10,6 +10,14 @@ import {
   type LineLimits,
 } from "./checks";
 import { laterWordHits, unseenPeople } from "@/lib/content/scene";
+import { PAUSE_CATEGORIES, type PauseCategory } from "@/lib/content/pause-snag";
+import {
+  eventVerbs,
+  propRules,
+  unlistedObjects,
+  unlistedPlaces,
+  withoutProp,
+} from "./pause-checks";
 import { checkRunList, reusesCardNouns } from "./run-list";
 import type {
   GatewayCall,
@@ -19,6 +27,7 @@ import type {
   LineResult,
   ModelGateway,
   ModelProvider,
+  PausePredicamentInput,
   PlanSplitInput,
   PlanSplitResult,
   RestReplyInput,
@@ -29,6 +38,7 @@ import type {
   StepCardsInput,
   StepCardsResult,
   StuckStoryInput,
+  StuckStoryResult,
 } from "./types";
 
 /** Waiting time limit for one call, all attempts included. The real value is set by testing (TIME-LIMIT). */
@@ -249,8 +259,12 @@ export function createModelGateway(options: {
       run("plan_split", "plan_split", (row) => BUILDERS.plan_split(row, input)),
     writeStepCards: (input): Promise<StepCardsResult> =>
       run("step_cards", "step_cards", (row) => BUILDERS.step_cards(row, input)),
-    writeStuckStory: (input): Promise<LineResult> =>
+    writeStuckStory: (input): Promise<StuckStoryResult> =>
       run("stuck_story", "stuck_story", (row) => BUILDERS.stuck_story(row, input)),
+    writePausePredicament: (input): Promise<LineResult> =>
+      run("pause_predicament", "pause_predicament", (row) =>
+        BUILDERS.pause_predicament(row, input),
+      ),
     writeRestReply: (input): Promise<LineResult> =>
       run("rest_reply", "rest_reply", (row) => BUILDERS.rest_reply(row, input)),
     writeReturnPopup: (input): Promise<LineResult> =>
@@ -289,23 +303,18 @@ const BUILDERS = {
       accept: (raw) => acceptCards(raw, input, rules),
     };
   },
-  stuck_story(row: PromptRow, input: StuckStoryInput): Built<Generated<LineResult>> {
+  stuck_story(row: PromptRow, input: StuckStoryInput): Built<Generated<StuckStoryResult>> {
     const limits = lineLimits(checks(row), "checks");
     return {
       prompt: stuckPrompt(input, row),
-      accept: (raw) => {
-        const accepted = acceptLine(raw, "story", "stuck_story", input.forbidTerms ?? [], limits, {
-          earlierLines: input.earlierLines ?? [],
-          lastCard: input.lastCard,
-          companionName: input.companionName,
-        });
-        // SCENE-PER-STORY (#65 AC1): the live scene adds no later word and no known person who is
-        // not in this Story's scene table. Both run on every answer, so a retry names every fix.
-        const rules = sceneRules(raw, input);
-        if (rules.length === 0) return accepted;
-        const earlier = accepted.ok ? [] : accepted.rejectedRules;
-        return { ok: false, rejectedRules: [...new Set([...earlier, ...rules])] };
-      },
+      accept: (raw) => acceptStuckStory(raw, input, limits),
+    };
+  },
+  pause_predicament(row: PromptRow, input: PausePredicamentInput): Built<Generated<LineResult>> {
+    const limits = lineLimits(checks(row), "checks");
+    return {
+      prompt: predicamentPrompt(input, row),
+      accept: (raw) => acceptPredicament(raw, input, limits),
     };
   },
   rest_reply(row: PromptRow, input: RestReplyInput): Built<Generated<LineResult>> {
@@ -359,10 +368,22 @@ const CHECK_CASES: {
   ],
   stuck_story: [
     { pauseNumber: 1, facts: "f" },
-    { pauseNumber: 1000, facts: "f" },
-    {
+    { pauseNumber: 1000, facts: "f", earlierStories: ["s"] },
+    ...PAUSE_CATEGORIES.map((category) => ({
       pauseNumber: 1,
       facts: "f",
+      category,
+      prop: "o",
+      scene: { present: ["p"], allowedWords: ["a"], props: ["o"], pauseProp: "o", laterWords: [] },
+    })),
+  ],
+  pause_predicament: [
+    { pauseNumber: 1, facts: "f", story: "s" },
+    {
+      pauseNumber: 1000,
+      facts: "f",
+      story: "s",
+      earlierStories: ["e"],
       scene: { present: ["p"], allowedWords: ["a"], props: ["o"], pauseProp: "o", laterWords: [] },
     },
   ],
@@ -608,36 +629,164 @@ function normalPauseNumber(value: number): number {
   return Number.isInteger(value) && value >= 1 ? value : 1;
 }
 
-/** The scene table rules of a stuck story answer (#65 AC1): `leak` and `people`. */
-function sceneRules(raw: string, input: StuckStoryInput): string[] {
-  const scene = input.scene;
+/**
+ * The scene table rules of a pause line (#65 AC1): `leak` (a later word, whole words with their
+ * capitals) and `people` (a known person who is not in this Story's scene table).
+ */
+function sceneRules(
+  text: string,
+  scene: StuckStoryInput["scene"],
+  people: string[] | undefined,
+): string[] {
   if (!scene) return [];
+  const rules: string[] = [];
+  if (laterWordHits(text, scene.laterWords).length > 0) rules.push("leak");
+  const check = { allowed: [...scene.present, ...scene.allowedWords], people: people ?? [] };
+  if (unseenPeople(text, check, { titled: false }).length > 0) rules.push("people");
+  return rules;
+}
+
+const merged = <T>(attempt: Attempt<T>, rules: string[]): Attempt<T> => {
+  if (rules.length === 0) return attempt;
+  const earlier = attempt.ok ? [] : attempt.rejectedRules;
+  return { ok: false, rejectedRules: [...new Set([...earlier, ...rules])] };
+};
+
+/** The offered prop: the one the code picked, or the scene's pause prop when none was passed. */
+const offeredProp = (input: StuckStoryInput) => input.prop || input.scene?.pauseProp || null;
+
+/**
+ * Call one (#56, AI_03 section A4): `{prop, story}`. Every rule runs on every answer, so a retry
+ * names every fix: the line checks (third person, LEN-PAUSE), the offered prop, objects outside
+ * the scene table, event verbs, new people and places, later words, and near repeats.
+ */
+function acceptStuckStory(
+  raw: string,
+  input: StuckStoryInput,
+  limits: LineLimits,
+): Attempt<Generated<StuckStoryResult>> {
   const parsed = parseModelJson(raw);
   const story = isRecord(parsed) ? parsed.story : undefined;
-  if (typeof story !== "string") return [];
+  if (!isRecord(parsed) || typeof story !== "string")
+    return { ok: false, rejectedRules: ["parse"] };
+  const prop = offeredProp(input);
+  const checked = checkCompanionLine(
+    story,
+    "stuck_story",
+    input.forbidTerms ?? [],
+    limits,
+    input.companionName,
+  );
+  const text = checked.ok ? checked.text : story.trim();
   const rules: string[] = [];
-  if (laterWordHits(story, scene.laterWords).length > 0) rules.push("leak");
-  const check = { allowed: [...scene.present, ...scene.allowedWords], people: input.people ?? [] };
-  if (unseenPeople(story, check, { titled: false }).length > 0) rules.push("people");
-  return rules;
+  if (prop) rules.push(...propRules(parsed.prop, text, prop));
+  if (input.scene) {
+    if (unlistedObjects(text, input.scene, input.companionProps).length > 0) rules.push("object");
+    if (unlistedPlaces(text, input.scene).length > 0) rules.push("place");
+  }
+  if (eventVerbs(text).length > 0) rules.push("event");
+  rules.push(...sceneRules(text, input.scene, input.people));
+  rules.push(
+    ...checkRunList(text, [...(input.earlierLines ?? []), ...(input.earlierStories ?? [])]),
+  );
+  const nounText = prop ? withoutProp(text, prop) : text;
+  if (input.lastCard && reusesCardNouns(nounText, input.lastCard)) rules.push("card_nouns");
+  const attempt: Attempt<Generated<StuckStoryResult>> = checked.ok
+    ? {
+        ok: true,
+        value: { source: "generated", prop: prop ?? String(parsed.prop ?? ""), story: text },
+      }
+    : checked;
+  return merged(attempt, rules);
+}
+
+/**
+ * Call two (#56): his words as plain text, not JSON. The line checks in his first person with the
+ * LEN-PAUSE limit in code, the scene rules, and the run list; the stuck story it describes is not
+ * a repeat of it.
+ */
+function acceptPredicament(
+  raw: string,
+  input: PausePredicamentInput,
+  limits: LineLimits,
+): Attempt<Generated<LineResult>> {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("{") || trimmed.startsWith("```")) {
+    return { ok: false, rejectedRules: ["plain"] };
+  }
+  const checked = checkCompanionLine(
+    trimmed,
+    "pause_message",
+    input.forbidTerms ?? [],
+    limits,
+    input.companionName,
+  );
+  const text = checked.ok ? checked.text : trimmed;
+  const rules = [...sceneRules(text, input.scene, input.people)];
+  rules.push(...checkRunList(text, input.earlierLines ?? []));
+  const prop = input.prop;
+  const nounText = prop ? withoutProp(text, prop) : text;
+  if (input.lastCard && reusesCardNouns(nounText, input.lastCard)) rules.push("card_nouns");
+  const attempt: Attempt<Generated<LineResult>> = checked.ok
+    ? { ok: true, value: { source: "generated", text } }
+    : checked;
+  return merged(attempt, rules);
 }
 
 /** A list for a prompt line; null (the line is left out) when there is nothing in it. */
 const listed = (items: string[] | undefined) =>
   items && items.length > 0 ? items.join(", ") : null;
 
+/** Earlier stuck stories for a prompt line, one sentence after another; null when there are none. */
+const sentencesOf = (items: string[] | undefined) =>
+  items && items.length > 0 ? items.map((item) => item.trim()).join(" ") : null;
+
+/** The row's words for a snag category (`params.categories`). */
+function categoryText(row: PromptRow, category: PauseCategory | undefined): string | null {
+  if (!category) return null;
+  const categories = row.params.categories;
+  const value =
+    typeof categories === "object" && categories !== null
+      ? (categories as Record<string, unknown>)[category]
+      : null;
+  if (typeof value !== "string") throw missing(`categories.${category}`);
+  return value;
+}
+
+function situation(row: PromptRow, pauseNumber: number): string {
+  const harderFrom = count(row.params.harder_from_pause, "harder_from_pause");
+  return text(row, pauseNumber >= harderFrom ? "situation_harder" : "situation_first");
+}
+
 function stuckPrompt(input: StuckStoryInput, row: PromptRow): string {
   const scene = input.scene;
   const pauseNumber = normalPauseNumber(input.pauseNumber);
-  const harderFrom = count(row.params.harder_from_pause, "harder_from_pause");
   return render(row, {
-    situation: text(row, pauseNumber >= harderFrom ? "situation_harder" : "situation_first"),
+    situation: situation(row, pauseNumber),
     pauseNumber,
     facts: input.facts,
-    pauseProp: scene?.pauseProp || null,
+    category: categoryText(row, input.category),
+    prop: offeredProp(input),
+    // Version 2 of the row names the prop {{pauseProp}}; it gets the offered prop too.
+    pauseProp: offeredProp(input),
     props: listed(scene?.props),
     present: listed(scene?.present),
     allowedWords: listed(scene?.allowedWords),
+    earlierStories: sentencesOf(input.earlierStories),
+  });
+}
+
+function predicamentPrompt(input: PausePredicamentInput, row: PromptRow): string {
+  const scene = input.scene;
+  const pauseNumber = normalPauseNumber(input.pauseNumber);
+  return render(row, {
+    situation: situation(row, pauseNumber),
+    pauseNumber,
+    facts: input.facts,
+    story: input.story,
+    present: listed(scene?.present),
+    allowedWords: listed(scene?.allowedWords),
+    earlierStories: sentencesOf(input.earlierStories),
   });
 }
 
