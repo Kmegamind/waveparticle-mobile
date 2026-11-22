@@ -36,18 +36,22 @@ const EVENT_VERBS = [
   ...["win", "wins", "won", "winning"],
 ];
 
-/** Verbs that, said of himself in the first person, describe his own stuck state, not an event. */
+/**
+ * Verbs that describe his stuck state only when ongoing ("I keep losing it", "the lead keeps
+ * breaking"); said once and done ("I found the error", "I lost the argument") they are events
+ * (fix round 2). "Decide" is never his stuck state unless negated ("I can't decide").
+ */
 const SELF_VERBS = new Set([
   ...["find", "finds", "found", "finding"],
   ...["lose", "loses", "lost", "losing"],
   ...["break", "breaks", "broke", "breaking"],
-  ...["decide", "decides", "decided", "deciding"],
 ]);
+const ONGOING = new Set(["keep", "keeps", "kept"]);
 
 /** Words that may stand between "I" and his verb ("I can't find", "I keep losing"). */
 const BETWEEN = new Set(
   (
-    "can can't cannot could couldn't do don't did didn't have haven't had hadn't keep kept " +
+    "can can't cannot could couldn't do don't did didn't have haven't had hadn't keep keeps kept " +
     "am was just still almost nearly not to seem seems seemed try tried will won't would " +
     "wouldn't simply even never always again"
   ).split(" "),
@@ -58,11 +62,11 @@ const NEGATIONS = new Set(
 const FIRST_PERSON = new Set(["i", "i've", "i'm", "i'd", "i'll"]);
 
 /**
- * "lost his place", "losing my thread", "coming loose": his own stuck state or a thing's state,
- * in either person, not an event.
+ * "lost his place", "losing the thread", "coming loose", "keep coming back to", "what to say":
+ * his own stuck state or a thing's state, in either person, not an event.
  */
 const STUCK_STATE =
-  /\b(?:(?:lose|loses|lost|losing)\s+(?:his|my)\s+(?:own\s+)?(?:place|thread|track|way|train|nerve|patience|temper|grip|footing|count|balance|concentration|focus|line)|(?:come|comes|came|coming)\s+(?:loose|apart|undone|unstuck|off|away|unravelled|unraveled))\b/giu;
+  /\b(?:(?:lose|loses|lost|losing)\s+(?:his|my|the)\s+(?:own\s+)?(?:place|thread|track|way|train|nerve|patience|temper|grip|footing|count|balance|concentration|focus|line)|(?:come|comes|came|coming)\s+(?:loose|apart|undone|unstuck|off|away|unravelled|unraveled)|(?:keep|keeps|kept)\s+coming\s+back|(?:what|how|where)\s+to\s+(?:say|tell|ask|begin|find))\b/giu;
 
 /**
  * Common objects that are new to any scene unless its table lists them: a telegram, a car that
@@ -226,20 +230,18 @@ export function eventVerbs(text: string, options: { firstPerson?: boolean } = {}
   tokens.forEach((token, index) => {
     if (!EVENT_VERBS.includes(token) || found.includes(token)) return;
     if (options.firstPerson) {
-      // "My hat is lost", "I keep losing it": a verb of his own state with him just before it.
-      const near = tokens.slice(Math.max(0, index - 4), index);
-      if (SELF_VERBS.has(token) && near.some((word) => FIRST_PERSON.has(word) || word === "my")) {
-        return;
-      }
       let back = index - 1;
       let negated = false;
+      let ongoing = false;
       while (back >= 0 && BETWEEN.has(tokens[back]) && index - back <= 4) {
         if (NEGATIONS.has(tokens[back])) negated = true;
+        if (ONGOING.has(tokens[back])) ongoing = true;
         back -= 1;
       }
-      if (back >= 0 && FIRST_PERSON.has(tokens[back]) && (SELF_VERBS.has(token) || negated)) {
-        return;
-      }
+      // "I keep losing it", "the lead keeps breaking": ongoing, his stuck state.
+      if (SELF_VERBS.has(token) && ongoing && token.endsWith("ing")) return;
+      // "I can't find the line", "I can't decide", "I don't say it well": negated, with him.
+      if (back >= 0 && FIRST_PERSON.has(tokens[back]) && negated) return;
     }
     found.push(token);
   });

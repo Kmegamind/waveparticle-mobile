@@ -312,13 +312,22 @@ describe("#65 AC1 the scene checks on the live pause message, without false alar
       ["groves-berkeley", "A new snag holds up my notes."],
       ["trinity", "I have lost my place in the notes."],
       ["site-search", "My boot lace is coming loose, so I stop close by."],
-      ["truchas-morning", "My hat is lost in the wind."],
     ];
     for (const [id, line] of cases) {
       const { result, calls } = await firstTry(id, line);
       expect(result, `${id}: ${line}`).toEqual({ source: "generated", text: line });
       expect(calls, `${id}: ${line}`).toHaveLength(1);
     }
+  });
+
+  // Fix round 2 of #386: "My hat is lost in the wind." is a story change by AI_03 section A4 ("the
+  // map is lost"), so it now fails `event`; the #374 point still holds: it is no later word.
+  it("test_65_ac1_c1_a_lost_hat_is_an_event_but_not_a_later_word", async () => {
+    const { calls, logs } = await firstTry("truchas-morning", "My hat is lost in the wind.");
+    expect(calls.length).toBeGreaterThan(1);
+    const rules = logs.at(-1)?.rejectedRules ?? [];
+    expect(rules).toContain("event");
+    expect(rules).not.toContain("leak");
   });
 
   it("test_65_ac1_c1_a_true_later_word_is_still_a_leak", async () => {
