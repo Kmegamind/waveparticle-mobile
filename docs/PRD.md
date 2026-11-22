@@ -339,7 +339,7 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | FR-SAFETY-9 | Legal and clinical review approves the wording of every safety message and the hotline list; the log rule for what is stored is settled. | Must | A5 |
 | FR-SAFETY-10 | The Companion never mentions, knows about or reacts to the safety layer. | Must | |
 | FR-SAFETY-11 | The app never claims to be a therapist, tutor or coach, and never infers mood for adapting content. | Must | H3 |
-| FR-SAFETY-12 | Model output also passes the output guard: the shared checks (FR-AI-1), including the style checks. There is no word list of method or instruction words. The output check also runs on pre-made content before publishing. | Must | SAFETY-PREMADE, NO-DENYLIST |
+| FR-SAFETY-12 | Model output also passes the output guard: the shared checks (FR-AI-1), including the style checks. There is no word list of method or instruction words. Pre-made content gets only the banned style words before publishing, the same as the admin save check (no further AI-6 line rules). | Must | SAFETY-PREMADE, NO-DENYLIST |
 
 ### 4.13 Accounts and data (FR-DATA)
 
@@ -425,7 +425,7 @@ There are no status lines on the focus page (HOME-LINE).
 
 ### 6.2 Checks
 
-Every model-written line passes the same pipeline: parse, clean, rules. A live line that fails is generated again within the time limit, then the failure message is shown; a made-ahead line that fails cannot be published; made-ahead content also passes the output safety check before publishing (SAFETY-PREMADE). The rules cover length, language, dash, banned words, clock times and durations, backstage words ("step", "timer", "app"), advising, invented people (only allowed names), later knowledge, blaming, no question, no "you", no hook, no praise, no exclamation marks, a full stop at the end and no use of his own name. Obstacles also pass checks against new events, escalation and repeats. The advising rule over-blocks most and needs tuning.
+Every model-written line passes the same pipeline: parse, clean, rules. A live line that fails is generated again within the time limit, then the failure message is shown; a made-ahead line that fails cannot be published; made-ahead content also passes the banned style words check, and no further AI-6 line rules, before publishing (SAFETY-PREMADE). The rules cover length, language, dash, banned words, clock times and durations, backstage words ("step", "timer", "app"), advising, invented people (only allowed names), later knowledge, blaming, no question, no "you", no hook, no praise, no exclamation marks, a full stop at the end and no use of his own name. Obstacles also pass checks against new events, escalation and repeats. The advising rule over-blocks most and needs tuning.
 
 ### 6.3 Decisions that shape AI behaviour
 

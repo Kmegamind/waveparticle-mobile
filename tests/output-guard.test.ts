@@ -9,7 +9,8 @@ import { seedLineLimits, seedPromptSource } from "./support/seed-prompts";
 
 // #55 (US-SAF-9): the output guard on every AI reply is the shared checks, including the style
 // checks. There is no word list of dangerous method or instruction words (NO-DENYLIST,
-// 2026-11-21). SAFETY-PREMADE still holds for pre-made content.
+// 2026-11-21). SAFETY-PREMADE (changed 2026-11-21): pre-made cards get only the banned style words, the same as
+// the admin save check; the further AI-6 line rules do not apply to them.
 
 const root = path.join(import.meta.dirname, "..");
 
@@ -71,8 +72,4 @@ describe("#55 output guard", () => {
     const card = { kind: "part" as const, part: 1, body: "The room had good vibes that night." };
     expect(cardProblems(card, [])).toContain('Uses a banned word ("vibes").');
   });
-
-  it.todo(
-    "test_55_ac3_safety_premade_the_ai6_line_rules_chosen_by_the_owner_block_a_premade_card (hook, form, len, name, back, praise, first_person, failure_text, you; owner decision and tests in issue #378)",
-  );
 });
