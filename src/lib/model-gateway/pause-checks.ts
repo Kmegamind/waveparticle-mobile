@@ -108,7 +108,7 @@ const ORDINARY_WORDS = new Set(
   (
     "ground dust wind sky breath sunlight light wall page pages front long sheet water path " +
     "trail grass lawn lake rock rocks stairs floorboard floorboards note notes paper papers " +
-    "program pack tie tree trees row rows air floor"
+    "program pack tie tree trees row rows air floor stack counter"
   ).split(" "),
 );
 
