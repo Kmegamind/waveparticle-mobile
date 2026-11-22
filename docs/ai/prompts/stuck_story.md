@@ -43,7 +43,7 @@ Use that object in the story, and give it back as "prop" exactly as written.
 Nothing happens in his Story: no one arrives, speaks, decides, finds or loses anything. It is a small snag, not an event. Use none of these words in any form: arrive, come, leave, enter, say, tell, ask, agree, refuse, decide, announce, call, find, lose, break, win.
 Pause number: {{pauseNumber}}
 Facts already known: {{facts}}
-Objects that exist here (name no other object): {{props}}
+Objects that exist here (name none of them except the one chosen for you, and no other object): {{props}}
 People present: {{present}}
 Names he may use (name no other person or place): {{allowedWords}}
 Earlier snags in this Step (do not repeat them): {{earlierStories}}

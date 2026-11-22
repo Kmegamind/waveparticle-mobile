@@ -3,6 +3,7 @@ import { createModelGateway, type GatewayLog, type ModelProvider } from "@/lib/m
 import { checkCompanionLine, PAUSE_MESSAGE_LIMITS } from "@/lib/model-gateway/checks";
 import {
   eventVerbs,
+  otherProps,
   unlistedObjects,
   unlistedPlaces,
   usesProp,
@@ -138,6 +139,25 @@ describe("#56 AC3 the checks on call one", () => {
         story: "His cold fingers will not hold the pencil steady.",
       }),
     ).toContain("prop");
+  });
+
+  it("test_56_ac2_the_story_uses_only_the_offered_prop", async () => {
+    expect(
+      await rulesFor({
+        prop: "shaker",
+        story: "The shaker sticks, and the lamp is too dim to see it.",
+      }),
+    ).toContain("prop");
+    expect(
+      otherProps("The martini glass and the shaker.", "martini glass", ["martini glass", "glass"]),
+    ).toEqual([]);
+    expect(otherProps("His car door sticks.", "car door", ["car", "car door"])).toEqual([]);
+    expect(
+      otherProps("His car door sticks by the car.", "car door", ["car", "car door", "map"]),
+    ).toEqual([]);
+    expect(otherProps("His map flaps against the car.", "map", ["car", "car door", "map"])).toEqual(
+      ["car"],
+    );
   });
 
   it("test_56_ac3_an_object_outside_the_scene_table_fails", async () => {

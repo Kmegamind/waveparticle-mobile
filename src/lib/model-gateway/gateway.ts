@@ -679,7 +679,7 @@ function acceptStuckStory(
   );
   const text = checked.ok ? checked.text : story.trim();
   const rules: string[] = [];
-  if (prop) rules.push(...propRules(parsed.prop, text, prop));
+  if (prop) rules.push(...propRules(parsed.prop, text, prop, input.scene?.props));
   if (input.scene) {
     if (unlistedObjects(text, input.scene, input.companionProps).length > 0) rules.push("object");
     if (unlistedPlaces(text, input.scene).length > 0) rules.push("place");

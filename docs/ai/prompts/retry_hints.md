@@ -37,7 +37,7 @@ Edit the prompt or its settings here or in the Supabase table editor; see README
       "place": "Name no place other than the names listed.",
       "plain": "Write plain text only, not JSON.",
       "praise": "Give no praise.",
-      "prop": "Use the object chosen for you, and give it back as prop exactly as written.",
+      "prop": "Use the object chosen for you and no other object, and give it back as prop exactly as written.",
       "question": "Ask no question, or at most one where a question is allowed.",
       "repeat": "Do not repeat a line already shown.",
       "similar": "Do not write a line close to one already shown.",

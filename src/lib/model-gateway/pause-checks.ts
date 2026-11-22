@@ -5,7 +5,8 @@ import type { SceneTable } from "@/lib/content/scene";
  * never an event (docs/ai/AI_03 section A4). Each returns rule ids; the gateway generates the
  * answer again with the matching fix from `retry_hints`.
  *
- * - `prop`: the answer's `prop` is not the offered prop, or the story does not use it.
+ * - `prop`: the answer's `prop` is not the offered prop, the story does not use it, or the story
+ *   also names another prop of the scene table (the story uses only the offered prop, #56 AC2).
  * - `object`: the story names an object that is not in this Story's scene table: a prop of
  *   another of the Companion's Stories, or one of the common objects below.
  * - `event`: the story contains an event verb (someone arrives, says, decides, finds, loses...).
@@ -145,11 +146,31 @@ export function usesProp(text: string, prop: string): boolean {
   );
 }
 
-/** `prop`: the answer gives back the offered prop and its story uses it. */
-export function propRules(answerProp: unknown, story: string, offered: string): string[] {
+/** The other props of the scene that the story names (a prop inside the offered one is not one). */
+export function otherProps(story: string, offered: string, props: string[]): string[] {
+  const own = new Set(wordsOf(offered).map(singular));
+  return props.filter(
+    (prop) =>
+      prop.trim().toLowerCase() !== offered.trim().toLowerCase() &&
+      !wordsOf(prop).every((word) => own.has(singular(word))) &&
+      usesProp(story.replace(new RegExp(escape(offered), "gi"), " "), prop),
+  );
+}
+
+/**
+ * `prop`: the answer gives back the offered prop, its story uses it, and it names no other prop
+ * of the scene table.
+ */
+export function propRules(
+  answerProp: unknown,
+  story: string,
+  offered: string,
+  props: string[] = [],
+): string[] {
   const given = typeof answerProp === "string" ? answerProp.trim().toLowerCase() : "";
   const same = given === offered.trim().toLowerCase();
-  return same && usesProp(story, offered) ? [] : ["prop"];
+  const only = otherProps(story, offered, props).length === 0;
+  return same && usesProp(story, offered) && only ? [] : ["prop"];
 }
 
 /** The objects the story names that this scene does not have (rule `object`). */
