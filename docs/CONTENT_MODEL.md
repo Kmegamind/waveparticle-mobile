@@ -557,7 +557,7 @@ The script cannot judge cause and effect or voice. Each row needs a person to: r
 
 ### 7.6 Current check results
 
-The Trinity chain pool (135 cards, 21 rows, 3 runs) passes the script with no failures and no warnings. The `site-search` cards (41) pass the failure rules using temporarily widened length limits. The Trinity snag sample (8 snags) passes with no failures. The card stack version 3 proposals are not adopted; pacing is decided in section 5. No made-ahead cards have been run through the script yet.
+The Trinity chain pool (135 cards, 21 rows, 3 runs) passes the script with no failures and no warnings. The `site-search` cards (41) pass the failure rules using temporarily widened length limits. The Trinity snag sample (8 snags) passes with no failures. The card stack version 3 proposals are not adopted; pacing is decided in section 5. The made-ahead seed pool (`src/content/oppenheimer/story-decks.json`, 26 stories, 277 cards) runs through the admin card checks and a repeated-lines check in every pull request (`npm run check:cards`, #46). On 2026-11-21 it had 25 failing cards: all 25 were fixed in the seed text (a card opening with He or She, a pointer word, a year, a repeated opening); the pointer-word check also reads quoted speech (owner decision, 2026-11-21). The published version 1 rows in the database are not changed by this; see #46.
 
 ## 8. Relational schema for Supabase
 

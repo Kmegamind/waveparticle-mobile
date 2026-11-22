@@ -5,7 +5,7 @@ import { storyDetail } from "@/lib/story-cards/admin";
 import { leaksForStory } from "@/lib/story-cards/checks";
 import { readStageZeros, readStoryCardsData, sceneCheckFor } from "@/lib/story-cards/reader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { UnreviewedNotice } from "../unreviewed-notice";
+import { PublishFirstNotice } from "../publish-first-notice";
 import { CardEditor } from "./card-editor";
 import { PartTitleEditor } from "./part-title-editor";
 import { Breadcrumb } from "@/app/admin/admin-ui";
@@ -43,7 +43,7 @@ export default async function AdminStory({ params }: PageProps<"/admin/stories/[
       />
       <h1>{detail?.title ?? "Story"}</h1>
       {detail ? <p className="admin-text-key">{detail.key}</p> : null}
-      <UnreviewedNotice />
+      <PublishFirstNotice />
       <p className="admin-lede">
         Saving a card makes a new draft; phones keep the published version. Every save checks the
         length (a part card: 1 to 3 sentences, at most 45 words; the background card: at most 70
