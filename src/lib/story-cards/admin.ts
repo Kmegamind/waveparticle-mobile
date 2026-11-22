@@ -1,3 +1,4 @@
+import type { SceneCheck } from "@/lib/content/scene";
 import { cardProblems } from "./checks";
 
 // The Stories admin page (ADM-06, #293): the story list with its part and card counts, one story's
@@ -143,9 +144,14 @@ function shownVersions(cards: StoryCardRow[]): StoryCardRow[] {
 const noLeaks: LeaksFor = () => [];
 
 /** One card: its shown version, a newer draft and every version (#304). */
-function view(row: StoryCardRow, all: StoryCardRow[], leaksFor: LeaksFor): StoryCardView {
+function view(
+  row: StoryCardRow,
+  all: StoryCardRow[],
+  leaksFor: LeaksFor,
+  scene: SceneCheck | null | undefined,
+): StoryCardView {
   const problemsOf = (body: string) =>
-    cardProblems({ kind: row.kind, part: row.part, body }, leaksFor(row.part));
+    cardProblems({ kind: row.kind, part: row.part, body }, leaksFor(row.part), scene);
   const versions = all
     .filter((entry) => entry.key === row.key)
     .sort((left, right) => right.version - left.version);
@@ -195,6 +201,8 @@ export function storyDetail(
   parts: StoryPartRow[],
   cards: StoryCardRow[],
   leaksFor: LeaksFor = noLeaks,
+  /** The Story's scene check (#64); left out, it does not run; null blocks every card. */
+  scene?: SceneCheck | null,
 ): StoryDetail | null {
   if (!story) return null;
   const own = cards.filter((row) => row.story_id === story.id);
@@ -212,14 +220,14 @@ export function storyDetail(
     key: `${COMPANION_SHORT}.${story.id}`,
     title: story.title,
     sequence: story.sequence,
-    background: background ? view(background, own, leaksFor) : null,
+    background: background ? view(background, own, leaksFor, scene) : null,
     parts: numbers.map((part) => ({
       part,
       title: titles.get(part) ?? null,
       cards: partCards
         .filter((row) => row.part === part)
         .sort((left, right) => left.position - right.position)
-        .map((row) => view(row, own, leaksFor)),
+        .map((row) => view(row, own, leaksFor, scene)),
     })),
   };
 }
@@ -230,11 +238,12 @@ export function storyList(
   parts: StoryPartRow[],
   cards: StoryCardRow[],
   leaksOf: (storyId: string) => LeaksFor = () => noLeaks,
+  sceneOf?: (storyId: string) => SceneCheck | null,
 ): StoryListRow[] {
   return [...stories]
     .sort((left, right) => left.sequence - right.sequence)
     .map((story) => {
-      const detail = storyDetail(story, parts, cards, leaksOf(story.id))!;
+      const detail = storyDetail(story, parts, cards, leaksOf(story.id), sceneOf?.(story.id))!;
       const all = [
         ...(detail.background ? [detail.background] : []),
         ...detail.parts.flatMap((part) => part.cards),

@@ -43,12 +43,6 @@
       "line": "Robb is the lawyer who will question me after Garrison, and he reads from files I have never seen.",
       "first_card": "cross-examination.s1.c1"
     },
-    "Frank": {
-      "role": "a man whose name comes up",
-      "inline": "a man whose part in the Chevalier matter is in question",
-      "line": "Frank is a man whose part in the Chevalier matter is in question.",
-      "first_card": "cross-examination.s1.c1"
-    },
     "Chevalier": {
       "role": "the man at the center of an approach",
       "inline": "the man whose approach to me is being asked about",
@@ -60,18 +54,6 @@
       "inline": "the Army intelligence officer who once questioned me",
       "line": "Pash is the Army intelligence officer who once questioned me.",
       "first_card": "cross-examination.s5.c1"
-    },
-    "Gray": {
-      "role": "chairman of the hearing",
-      "inline": "the man who chairs the hearing",
-      "line": "Gray is the man who chairs the hearing.",
-      "first_card": "cross-examination.s7.c1"
-    },
-    "Jean": {
-      "role": "a woman I once knew",
-      "inline": "a woman I once knew well",
-      "line": "Jean is a woman I once knew well.",
-      "first_card": "cross-examination.s8.c1"
     }
   },
   "slices": [

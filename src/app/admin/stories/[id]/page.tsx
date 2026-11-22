@@ -3,7 +3,7 @@ import { connection } from "next/server";
 import { readContentRole } from "@/lib/admin/roles";
 import { storyDetail } from "@/lib/story-cards/admin";
 import { leaksForStory } from "@/lib/story-cards/checks";
-import { readStageZeros, readStoryCardsData } from "@/lib/story-cards/reader";
+import { readStageZeros, readStoryCardsData, sceneCheckFor } from "@/lib/story-cards/reader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PublishFirstNotice } from "../publish-first-notice";
 import { CardEditor } from "./card-editor";
@@ -32,7 +32,9 @@ export default async function AdminStory({ params }: PageProps<"/admin/stories/[
   const story = data.stories.find((row) => row.id === id);
   if (data.ok && !story) notFound();
   const leaks = leaksForStory(data.cards, zeros?.get(id) ?? null);
-  const detail = story ? storyDetail(story, data.parts, data.cards, leaks) : null;
+  const detail = story
+    ? storyDetail(story, data.parts, data.cards, leaks, sceneCheckFor(zeros, id))
+    : null;
 
   return (
     <>

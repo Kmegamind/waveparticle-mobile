@@ -32,12 +32,6 @@
     "s8": "I'm in the room with Crouch and the lawyers, and I have just asked him what exactly I am supposed to have said."
   },
   "people": {
-    "Marks": {
-      "role": "attorney",
-      "inline": "one of my attorneys",
-      "line": "Herb Marks is one of my attorneys.",
-      "first_card": "face-to-face-with-crouch.s1.c1"
-    },
     "Volpe": {
       "role": "attorney",
       "inline": "my other attorney",
@@ -49,12 +43,6 @@
       "inline": "the man who swears I hosted a Communist meeting",
       "line": "Crouch is the man who swears that I hosted a Communist meeting.",
       "first_card": "face-to-face-with-crouch.s1.c1"
-    },
-    "May": {
-      "role": "man from earlier years",
-      "inline": "a man I knew from earlier years",
-      "line": "Kenneth May is a man I knew from earlier years.",
-      "first_card": "face-to-face-with-crouch.s3.c1"
     }
   },
   "slices": [
@@ -217,7 +205,6 @@
   ],
   "scene": {
     "present": [
-      "Marks",
       "Volpe"
     ],
     "allowedWords": [

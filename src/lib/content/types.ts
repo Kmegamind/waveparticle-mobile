@@ -1,3 +1,5 @@
+import type { SceneTable } from "./scene";
+
 /**
  * Story content as the app holds it (#284): the Companions and their stories, read from Supabase
  * through `src/lib/content/repository.ts`. Display fields carry the names the screens use; the
@@ -58,6 +60,8 @@ export type StoryInputs = {
   keySlices: KeySlice[];
   /** The other stage 0 inputs (place, forbidden and later words, ...). */
   stageZero: Record<string, unknown>;
+  /** The Story's one scene table (SCENE-PER-STORY); null when the inputs have none. */
+  scene: SceneTable | null;
 };
 
 export type Story = {
