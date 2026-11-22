@@ -84,7 +84,7 @@ Built in #56 (`pause-checks.ts`, rule ids in brackets): prop echo [`prop`], scen
 | Event verbs | Denylist: arrives, comes, leaves, enters, says, tells, asks, agrees, refuses, decides, announces, calls, finds, loses, breaks, wins | Social or story action (an event) |
 | People and place | Name gate (only `names.allowed`); no place nouns beyond the entry state's `places` list | New people, location change |
 | Later knowledge | Probe words (AI-6 R19) | Leak of later facts |
-| Escalation | Severity words (worse, again, still, "more and more", "even") are blocked in `story` for K=2 | Pauses that seem to hurt him |
+| Escalation (pending, not built) | Severity words (worse, again, still, "more and more", "even") are blocked in `story` for K=2. Pending: the word "still" is too common to block, and from the third Pause the harder situation is intended (PAUSE-3) | Pauses that seem to hurt him |
 | Near repeat | 3-gram Jaccard ≥ 0.5 with any `used_lines` entry, or same opening 3 words | Repeats (see §B) |
 | Wrong shape | `story` or the call two text > 30 words (LEN-PAUSE), > 2 sentences, no full stop | AI-6 length and ending rules |
 
