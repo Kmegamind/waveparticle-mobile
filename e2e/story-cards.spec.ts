@@ -15,9 +15,8 @@ test("test_293_ac3_a_writer_sees_the_26_stories_in_story_order_with_parts_and_ca
   const response = await page.goto("/admin/stories");
   expect(response?.status()).toBe(200);
   await expect(page.getByRole("heading", { level: 1, name: "Stories" })).toBeVisible();
-  await expect(page.getByRole("note")).toContainText(
-    "AI-written drafts that no person has read yet",
-  );
+  await expect(page.getByRole("note")).toContainText("Published first, read afterwards.");
+  await expect(page.getByRole("note")).toContainText("has not been read by a person yet");
   const menu = page.getByRole("navigation", { name: "Admin pages" });
   await expect(menu.getByRole("link", { name: /Stories/ })).toContainText("ADM-06");
 

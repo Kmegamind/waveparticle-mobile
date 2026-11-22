@@ -5,7 +5,7 @@ import { storyList } from "@/lib/story-cards/admin";
 import { leaksForStory } from "@/lib/story-cards/checks";
 import { readStageZeros, readStoryCardsData } from "@/lib/story-cards/reader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { UnreviewedNotice } from "./unreviewed-notice";
+import { PublishFirstNotice } from "./publish-first-notice";
 import { Breadcrumb } from "@/app/admin/admin-ui";
 
 // ADM-06 Stories (#293, #304): Oppenheimer's stories in story order with their number of parts and
@@ -21,7 +21,7 @@ export default function AdminStories() {
         card, its cards and its part titles. A card that fails a check (its length, a year, date or
         age, a word from a later part, or a banned word) is counted as failing.
       </p>
-      <UnreviewedNotice />
+      <PublishFirstNotice />
       <Suspense fallback={null}>
         <StoryTable />
       </Suspense>
