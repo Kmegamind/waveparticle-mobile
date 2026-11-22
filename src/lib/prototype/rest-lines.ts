@@ -2,6 +2,7 @@ import { pickPauseSnag, type PauseCategory } from "@/lib/content/pause-snag";
 import { companionPeople, sceneTableOf } from "@/lib/content/scene";
 import type { StoryContent } from "@/lib/content/types";
 import type { ModelGateway } from "@/lib/model-gateway";
+import { keywordOnlySafetyCheck, type SafetyCheck } from "@/lib/safety/check";
 import { gateFreeText } from "@/lib/safety/crisis";
 import type { RestMessage, ReturnTrigger } from "./session";
 import { laterStoryWords } from "./rest-later-words";
@@ -221,9 +222,16 @@ export async function restReplyFor(
     stepCount?: number;
   },
   gateway: ModelGateway | null,
+  /** The server's check (#117): the keyword layer and the classifier. Keyword only if omitted. */
+  safety: SafetyCheck = keywordOnlySafetyCheck,
 ): Promise<RestReplyResponse> {
-  // The safety gate runs first: a crisis message is never sent to the model (US-SAF-1).
-  if (gateFreeText(request.message).action === "crisis-page") return { status: "crisis" };
+  // The safety check runs first: a crisis message is never sent to the reply model (US-SAF-1,
+  // #117). The classifier sees the message and the last two earlier messages of this chat.
+  const previous = request.history
+    .filter((message) => message.from === "you")
+    .map((message) => message.text);
+  const gate = await safety(request.message, { position: "rest_chat", previous });
+  if (gate.action === "crisis-page") return { status: "crisis" };
   const content = await contentOf(source);
   const storyId = storyOf(content, request.storyId);
   if (content === null || storyId === null) return { status: "failed" };

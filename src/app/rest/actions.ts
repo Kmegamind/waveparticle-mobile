@@ -5,6 +5,7 @@ import { createServerModelGateway } from "@/lib/model-gateway/server";
 import { accountPauseMessage, accountRestReply } from "@/lib/progress/account-lines";
 import { modelIsConfigured } from "@/lib/prototype/focus-cards";
 import type { PauseResponse, RestReplyResponse } from "@/lib/prototype/rest-lines";
+import { serverSafetyCheck } from "@/lib/safety/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 
@@ -30,5 +31,5 @@ export async function loadAccountPauseMessage(request: unknown): Promise<PauseRe
 /** His reply on the rest page. The safety gate runs first, before any model call. */
 export async function loadAccountRestReply(request: unknown): Promise<RestReplyResponse> {
   if (!(await isSignedIn())) return { status: "failed" };
-  return accountRestReply(storyContent, request, gateway());
+  return accountRestReply(storyContent, request, gateway(), serverSafetyCheck());
 }

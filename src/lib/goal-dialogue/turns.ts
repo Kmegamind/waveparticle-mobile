@@ -15,7 +15,7 @@ import {
   type SplitOutcome,
   type SplitPlan,
 } from "@/lib/prototype/split-goal";
-import { gateFreeText } from "@/lib/safety/crisis";
+import { keywordOnlySafetyCheck, type SafetyCheck } from "@/lib/safety/check";
 import { goalHash, signDialogueToken, verifyDialogueToken, type DialogueState } from "./token";
 
 export const MAX_TURNS = 3;
@@ -45,6 +45,8 @@ export type TurnDeps = {
   newId: () => string;
   /** The split itself (safety gate, cost cap, model or test data): `splitGoal` with its deps. */
   split: (input: SplitInput) => Promise<SplitOutcome>;
+  /** The server's safety check on the goal line (#117); the keyword layer alone if omitted. */
+  safety?: SafetyCheck;
 };
 
 const REFUSED: TurnOutcome = { status: "refused" };
@@ -64,7 +66,10 @@ export async function takeTurn(request: TurnRequest, deps: TurnDeps): Promise<Tu
     if (typeof request.goal !== "string") return REFUSED;
     const goal = request.goal.trim();
     if (goal.length === 0 || request.goal.length > MAX_GOAL_LENGTH) return REFUSED;
-    if (gateFreeText(goal).action === "crisis-page") return { status: "crisis" };
+    const safety = deps.safety ?? keywordOnlySafetyCheck;
+    if ((await safety(goal, { position: "goal_input" })).action === "crisis-page") {
+      return { status: "crisis" };
+    }
     const minutes = capGoalMinutes(findTimeInGoal(goal));
     const token = sign({
       id: deps.newId(),

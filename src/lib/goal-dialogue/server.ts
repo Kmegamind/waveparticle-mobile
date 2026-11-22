@@ -5,6 +5,7 @@
  */
 import { logEvent } from "@/lib/logging/server-log";
 import type { SplitInput, SplitOutcome } from "@/lib/prototype/split-goal";
+import { serverSafetyCheck } from "@/lib/safety/server";
 import { dialogueSecret } from "./token";
 import type { TurnDeps } from "./turns";
 
@@ -13,5 +14,11 @@ export function serverTurnDeps(split: (input: SplitInput) => Promise<SplitOutcom
   if (!secret) {
     logEvent("goal-dialogue", { event: "secret_missing", setting: "GOAL_DIALOGUE_SECRET" });
   }
-  return { secret, now: () => Date.now(), newId: () => crypto.randomUUID(), split };
+  return {
+    secret,
+    now: () => Date.now(),
+    newId: () => crypto.randomUUID(),
+    split,
+    safety: serverSafetyCheck(),
+  };
 }

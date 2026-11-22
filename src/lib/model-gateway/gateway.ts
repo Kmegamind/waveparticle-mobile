@@ -368,7 +368,9 @@ const BUILDERS = {
 
 /** Inputs that reach every branch of each builder: each optional line and each chosen text. */
 const CHECK_CASES: {
-  [K in Exclude<PromptKey, "retry_hints">]: Parameters<(typeof BUILDERS)[K]>[1][];
+  [K in Exclude<PromptKey, "retry_hints" | "safety_classifier">]: Parameters<
+    (typeof BUILDERS)[K]
+  >[1][];
 } = {
   plan_split: [
     { goal: "g", totalMinutes: 30, splitFiner: true },
@@ -435,6 +437,11 @@ export function promptRowProblems(row: PromptRow): string[] {
   };
   if (row.key === "retry_hints") {
     attempt(() => render(row, { fixes: "x" }));
+    return problems;
+  }
+  if (row.key === "safety_classifier") {
+    // The safety classifier (#117) fills only the message and up to two earlier messages.
+    attempt(() => render(row, { text: "x", prev_1: "x", prev_2: "x" }));
     return problems;
   }
   const key = row.key;

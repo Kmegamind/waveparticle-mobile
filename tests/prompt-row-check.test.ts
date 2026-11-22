@@ -21,7 +21,8 @@ function withParams(key: PromptKey, change: (params: Settings) => void): PromptR
 describe("promptRowProblems (#308 AC7)", () => {
   it("test_308_ac7_every_seed_prompt_passes", () => {
     const rows = seedRows();
-    expect(rows).toHaveLength(8);
+    // 9 since #117 added safety_classifier.
+    expect(rows).toHaveLength(9);
     for (const row of rows) expect(promptRowProblems(row), row.key).toEqual([]);
   });
 

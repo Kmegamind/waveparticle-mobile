@@ -4,7 +4,7 @@
  */
 import type { ModelGateway, PlanStep } from "@/lib/model-gateway";
 import { MODEL_GATEWAY_ENV_NAMES } from "@/lib/model-gateway/server";
-import { gateFreeText } from "@/lib/safety/crisis";
+import { keywordOnlySafetyCheck, type SafetyCheck } from "@/lib/safety/check";
 import { takeModelCall } from "./cost-cap";
 import { SLIDER_MAX_MINUTES } from "./goal-time";
 import { splitWithTestData } from "./test-splitter";
@@ -22,6 +22,8 @@ export type SplitDeps = {
   readCounter: () => string | undefined;
   writeCounter: (value: string) => void;
   createGateway?: () => ModelGateway;
+  /** The server's safety check (#117); the keyword layer alone if omitted. */
+  safety?: SafetyCheck;
 };
 
 export const MAX_GOAL_LENGTH = 500;
@@ -59,7 +61,10 @@ function isValidPlan(plan: SplitPlan, totalMinutes: number): boolean {
 
 export async function splitGoal(input: SplitInput, deps: SplitDeps): Promise<SplitOutcome> {
   if (!isValidInput(input)) return { status: "failed" };
-  if (gateFreeText(input.goal).action === "crisis-page") return { status: "crisis" };
+  const safety = deps.safety ?? keywordOnlySafetyCheck;
+  if ((await safety(input.goal, { position: "plan_split" })).action === "crisis-page") {
+    return { status: "crisis" };
+  }
   const clean = { ...input, goal: input.goal.trim() };
 
   let plan: SplitPlan;

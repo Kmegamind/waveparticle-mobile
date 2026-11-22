@@ -4,7 +4,7 @@ import {
   type GoalStatusWriter,
   type SetGoalStatusOutcome,
 } from "@/lib/home/goal-status";
-import { gateFreeText } from "@/lib/safety/crisis";
+import { keywordOnlySafetyCheck, type SafetyCheck } from "@/lib/safety/check";
 import { isGoalId } from "./goals-reader";
 import type { GoalKind } from "./goals-view";
 
@@ -21,7 +21,12 @@ export type GoalEditWriter = {
   newestSessionIn(goalId: string, state: "on_hold"): Promise<string | null>;
 };
 
-type Deps = { userId: string | null; writer: GoalEditWriter };
+type Deps = {
+  userId: string | null;
+  writer: GoalEditWriter;
+  /** The server's safety check (#117); the keyword layer alone if omitted. */
+  safety?: SafetyCheck;
+};
 type Outcome = { status: "ok" } | { status: "failed" };
 
 export const TITLE_MAX = 1000;
@@ -42,7 +47,10 @@ export async function renameGoal(
   if (!deps.userId || !isGoalId(goalId) || typeof raw !== "string") return { status: "failed" };
   const title = raw.trim();
   if (title.length === 0 || title.length > TITLE_MAX) return { status: "failed" };
-  if (gateFreeText(title).action === "crisis-page") return { status: "crisis" };
+  const safety = deps.safety ?? keywordOnlySafetyCheck;
+  if ((await safety(title, { position: "goal_rename" })).action === "crisis-page") {
+    return { status: "crisis" };
+  }
   try {
     await deps.writer.rename(goalId, title);
     return { status: "ok" };

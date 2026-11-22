@@ -40,6 +40,8 @@ export const PROMPT_PURPOSE: Record<PromptKey, string> = {
   return_popup: "His line in the return pop-up, after the rest chat or an absence",
   closing_line: "His closing line and the line he carries, on the summary",
   retry_hints: "The fix added to a prompt after a rejected answer, one per failed check",
+  safety_classifier:
+    "The safety classifier: crisis, everyday stress or none for one free-text message (#117)",
 };
 
 /** The longest prompt text the admin saves. */
@@ -90,7 +92,7 @@ function versionsOf(key: string, rows: PromptVersionRow[]) {
 const stateOf = (row: PromptVersionRow): PromptVersionState =>
   row.active ? "active" : row.activated_at !== null ? "earlier" : "draft";
 
-/** The 7 prompts in the gateway's order, each with its active version and any newer draft. */
+/** The prompts in the gateway's order, each with its active version and any newer draft. */
 export function promptList(rows: PromptVersionRow[]): PromptListRow[] {
   return PROMPT_KEYS.map((key) => {
     const { active, draft } = versionsOf(key, rows);

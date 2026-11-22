@@ -1,5 +1,6 @@
 import { classifyGoalShape, type GoalShape } from "@/lib/prototype/goal-lines";
 import { STEP_DESCRIPTION_MAX, STEP_TITLE_MAX } from "@/lib/prototype/plan-edit";
+import { keywordOnlySafetyCheck, type SafetyCheck } from "@/lib/safety/check";
 import { gateFreeText } from "@/lib/safety/crisis";
 
 /**
@@ -91,15 +92,30 @@ function isCrisis(text: string): boolean {
 
 export async function startGoal(
   input: StartGoalInput,
-  deps: { userId: string | null; writer: GoalWriter },
+  deps: {
+    userId: string | null;
+    writer: GoalWriter;
+    /** The server's safety check (#117); the keyword layer alone if omitted. */
+    safety?: SafetyCheck;
+  },
 ): Promise<StartGoalOutcome> {
   if (!deps.userId) return { status: "signed-out" };
   if (!isWellFormed(input)) return { status: "invalid" };
 
+  // The keyword layer on every field first, then the classifier on the goal, the title and the
+  // whole Plan as one text (three calls side by side, so the wait is at most 1.5 s, #117).
   if (isCrisis(input.goalText) || isCrisis(input.title)) return { status: "crisis" };
   if (input.steps.some((step) => isCrisis(`${step.title}\n${step.description}`))) {
     return { status: "crisis" };
   }
+  const safety = deps.safety ?? keywordOnlySafetyCheck;
+  const plan = input.steps.map((step) => `${step.title}\n${step.description}`).join("\n");
+  const gates = await Promise.all([
+    safety(input.goalText, { position: "goal_input" }),
+    safety(input.title, { position: "goal_title" }),
+    safety(plan, { position: "plan_edit" }),
+  ]);
+  if (gates.some((gate) => gate.action === "crisis-page")) return { status: "crisis" };
 
   // AC3: the server removes Steps whose name is empty.
   const steps = input.steps

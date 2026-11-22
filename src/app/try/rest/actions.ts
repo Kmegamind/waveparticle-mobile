@@ -12,6 +12,7 @@ import {
   type RestReplyResponse,
 } from "@/lib/prototype/rest-lines";
 import type { RestMessage } from "@/lib/prototype/session";
+import { serverSafetyCheck } from "@/lib/safety/server";
 
 // TODO(cost cap): the goal-dialogue PR adds an httpOnly-cookie cap on real model calls per browser
 // per day. It is not on main yet; when it lands, apply it to both calls below.
@@ -48,5 +49,5 @@ export async function loadRestReply(request: {
   stepCount?: number;
 }): Promise<RestReplyResponse> {
   if (!isPrototypeEnabled()) return { status: "failed" };
-  return restReplyFor(storyContent, normaliseRestRequest(request), gateway());
+  return restReplyFor(storyContent, normaliseRestRequest(request), gateway(), serverSafetyCheck());
 }

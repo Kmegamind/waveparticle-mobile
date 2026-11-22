@@ -8,6 +8,7 @@ import { createSupabaseGoalWriter } from "@/lib/goals/supabase-goal-writer";
 import { createServerModelGateway } from "@/lib/model-gateway/server";
 import { COST_CAP_COOKIE } from "@/lib/prototype/cost-cap";
 import { splitGoal } from "@/lib/prototype/split-goal";
+import { serverSafetyCheck } from "@/lib/safety/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 
@@ -18,7 +19,11 @@ import { getCurrentUser } from "@/lib/supabase/session";
 export async function startGoalAction(input: StartGoalInput): Promise<StartGoalOutcome> {
   const client = await createSupabaseServerClient();
   const user = await getCurrentUser(client);
-  return startGoal(input, { userId: user?.id ?? null, writer: createSupabaseGoalWriter(client) });
+  return startGoal(input, {
+    userId: user?.id ?? null,
+    writer: createSupabaseGoalWriter(client),
+    safety: serverSafetyCheck(),
+  });
 }
 
 /**
@@ -43,6 +48,7 @@ export async function goalTurnForAccountAction(request: TurnRequest): Promise<Tu
           maxAge: 60 * 60 * 24,
         }),
       createGateway: () => createServerModelGateway(),
+      safety: serverSafetyCheck(),
     });
   return takeTurn(request, serverTurnDeps(split));
 }

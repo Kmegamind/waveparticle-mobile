@@ -21,6 +21,7 @@ export const PROMPT_KEYS = [
   "return_popup",
   "closing_line",
   "retry_hints",
+  "safety_classifier",
 ] as const;
 
 export type PromptKey = (typeof PROMPT_KEYS)[number];
