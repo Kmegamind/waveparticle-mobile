@@ -55,12 +55,6 @@
       "line": "Sam Allison is a physicist on the team.",
       "first_card": "trinity.s5.c1"
     },
-    "Frank": {
-      "role": "my brother",
-      "inline": "my brother",
-      "line": "Frank is my brother, and he is with me.",
-      "first_card": "trinity.s5.c1"
-    },
     "Kistiakowsky": {
       "role": "explosives expert",
       "inline": "the team's explosives expert",
@@ -83,12 +77,6 @@
       "role": "Army general",
       "inline": "a general who works under Groves",
       "line": "General Farrell is a general who works under Groves.",
-      "first_card": "trinity.s8.c1"
-    },
-    "Kitty": {
-      "role": "my wife",
-      "inline": "my wife, back home",
-      "line": "Kitty is my wife, back home.",
       "first_card": "trinity.s8.c1"
     }
   },

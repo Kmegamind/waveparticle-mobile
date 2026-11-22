@@ -363,7 +363,19 @@ describe("#65 AC1 the scene checks on the live pause message, without false alar
       for (const word of ORDINARY)
         expect(story.inputs.scene!.laterWords, story.id).not.toContain(word);
     }
-    for (const name of ["Gray", "Bush", "Marks", "Fox", "May"]) expect(people).not.toContain(name);
+    for (const name of [
+      "Gray",
+      "Bush",
+      "Marks",
+      "Fox",
+      "May",
+      "Frank",
+      "Jean",
+      "Peter",
+      "Roger",
+      "Kitty",
+    ])
+      expect(people).not.toContain(name);
     expect(sceneOf("trinity").laterWords).toEqual(["Los Alamos"]);
     expect(sceneOf("groves-berkeley").laterWords).toEqual([
       "Twentieth Century Limited",

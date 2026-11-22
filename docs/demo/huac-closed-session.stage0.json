@@ -67,12 +67,6 @@
       "line": "Haakon Chevalier is an old friend of mine.",
       "first_card": "huac-closed-session.s4.c1"
     },
-    "Frank": {
-      "role": "brother",
-      "inline": "my younger brother",
-      "line": "Frank is my younger brother.",
-      "first_card": "huac-closed-session.s6.c1"
-    },
     "Nixon": {
       "role": "congressman",
       "inline": "a congressman on the committee",
