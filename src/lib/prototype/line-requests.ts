@@ -59,11 +59,13 @@ export function normalisePauseRequest(raw: unknown): {
   const request = record(raw);
   const pauseNumber = request?.pauseNumber;
   return {
-    // #56: what the earlier Pauses used. Checked again on the server (`pickPauseSnag`).
+    // #56: what the earlier Pauses used. Checked again on the server (`pickPauseSnag`). The
+    // earlier texts come from the browser, so they are only compared against (near repeats) and
+    // never put into a prompt (#216), and they are kept short.
     recentCategories: texts(request?.recentCategories, 2, 20),
     usedProps: texts(request?.usedProps, 50, 100),
-    earlierStories: texts(request?.earlierStories, 8, 1_000),
-    earlierLines: texts(request?.earlierLines, 8, 1_000),
+    earlierStories: texts(request?.earlierStories, 4, 300),
+    earlierLines: texts(request?.earlierLines, 8, 300),
     storyId: storyIdOf(request?.storyId),
     pauseNumber:
       typeof pauseNumber === "number" && Number.isInteger(pauseNumber) && pauseNumber >= 1

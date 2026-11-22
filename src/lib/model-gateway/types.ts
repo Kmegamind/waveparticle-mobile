@@ -104,8 +104,16 @@ export type StuckStoryInput = {
   category?: PauseCategory;
   /** The prop the code picked from the scene table; the answer must give it back and use it. */
   prop?: string;
-  /** The stuck stories of the earlier Pauses in this Step, oldest first (no repeats). */
+  /**
+   * The stuck stories of the earlier Pauses in this Step, oldest first. Used only for the
+   * near-repeat check, never put into the prompt: they come from the browser (#216, fix round 1).
+   */
   earlierStories?: string[];
+  /**
+   * When the whole pause message started (ms since the epoch). Both calls share one time limit
+   * counted from it, so call two gets only the time call one left (fix round 1). Default: now.
+   */
+  startedAt?: number;
   /**
    * Every prop the Companion's Stories name. An object among them that is not in this Story's
    * scene table fails `object`, as do the common objects listed in the checks.
@@ -142,8 +150,12 @@ export type PausePredicamentInput = {
   story: string;
   /** The prop of call one; the last-card noun rule ignores it. */
   prop?: string;
-  /** The stuck stories of the earlier Pauses in this Step, oldest first (he remembers them). */
+  /** Every prop the Companion's Stories name, for the `object` rule (as in call one). */
+  companionProps?: string[];
+  /** As in call one: for checks only, never in the prompt. */
   earlierStories?: string[];
+  /** As in call one: the start of the whole pause message, for the shared time limit. */
+  startedAt?: number;
   forbidTerms?: string[];
   /** One-way lines already shown in this run, oldest first (per-run list, US-AI-8). */
   earlierLines?: string[];

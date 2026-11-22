@@ -152,7 +152,7 @@ describe("#56 AC2 the code picks from the earlier Pauses", () => {
     });
     expect(request.recentCategories).toEqual(["gear", "sound"]);
     expect(request.usedProps).toHaveLength(50);
-    expect(request.earlierStories[0]).toHaveLength(1_000);
+    expect(request.earlierStories[0]).toHaveLength(300);
     expect(request.earlierLines).toEqual([]);
   });
 });

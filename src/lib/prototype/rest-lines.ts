@@ -157,7 +157,9 @@ export async function pauseMessageFor(
       })
     : null;
   const facts = stuckFacts(content, request.pauseNumber, storyId);
+  // One time limit for the whole pause message: call two gets what call one left (TIME-LIMIT).
   const shared = {
+    startedAt: Date.now(),
     pauseNumber: request.pauseNumber,
     facts,
     forbidTerms: inputs.forbidTerms,
@@ -178,7 +180,12 @@ export async function pauseMessageFor(
     });
     if (first.source !== "generated" || !first.story.trim()) return { status: "failed" };
     const second = await ask(() =>
-      gateway.writePausePredicament({ ...shared, story: first.story, prop: first.prop }),
+      gateway.writePausePredicament({
+        ...shared,
+        story: first.story,
+        prop: first.prop,
+        companionProps,
+      }),
     );
     if (second.status !== "ok") return { status: "failed" };
     return {

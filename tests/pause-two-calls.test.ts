@@ -176,7 +176,7 @@ describe("#56 AC3 the checks on call one", () => {
       "He finds the shaker lid stuck fast.",
       "He decides the shaker can wait.",
       "Kitty says the shaker lid is stuck.",
-      "He loses his grip on the shaker.",
+      "He loses the shaker under the table.",
     ]) {
       expect(await rulesFor({ prop: "shaker", story }), story).toContain("event");
     }

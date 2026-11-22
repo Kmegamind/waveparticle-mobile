@@ -172,9 +172,23 @@ export function createModelGateway(options: {
     call: GatewayCall,
     key: PromptKey,
     build: (row: PromptRow) => { prompt: string; accept: (raw: string) => Attempt<T> },
+    startedAt?: number,
   ): Promise<T | GatewayFailure> {
     const started = Date.now();
-    const deadline = started + timeLimitMs;
+    // Calls that make one message together (the two pause calls) share one time limit, counted
+    // from when the message started (TIME-LIMIT, fix round 1 of #386).
+    const deadline = Math.min(started, startedAt ?? started) + timeLimitMs;
+    if (deadline <= started) {
+      log({
+        call,
+        source: "failed",
+        reason: "timeout",
+        rejectedRules: ["timeout"],
+        latencyMs: 0,
+        attempts: 0,
+      });
+      return { source: "failed", reason: "timeout" };
+    }
     // The prompt and the retry hints are read and built before any model call. If either is
     // missing or cannot be used, the call fails here: no model call, no stored line (NO-BACKUP).
     let prompt: string;
@@ -265,10 +279,13 @@ export function createModelGateway(options: {
     writeStepCards: (input): Promise<StepCardsResult> =>
       run("step_cards", "step_cards", (row) => BUILDERS.step_cards(row, input)),
     writeStuckStory: (input): Promise<StuckStoryResult> =>
-      run("stuck_story", "stuck_story", (row) => BUILDERS.stuck_story(row, input)),
+      run("stuck_story", "stuck_story", (row) => BUILDERS.stuck_story(row, input), input.startedAt),
     writePausePredicament: (input): Promise<LineResult> =>
-      run("pause_predicament", "pause_predicament", (row) =>
-        BUILDERS.pause_predicament(row, input),
+      run(
+        "pause_predicament",
+        "pause_predicament",
+        (row) => BUILDERS.pause_predicament(row, input),
+        input.startedAt,
       ),
     writeRestReply: (input): Promise<LineResult> =>
       run("rest_reply", "rest_reply", (row) => BUILDERS.rest_reply(row, input)),
@@ -740,6 +757,13 @@ function acceptPredicament(
   );
   const text = checked.ok ? checked.text : trimmed;
   const rules = [...sceneRules(text, input.scene, input.people)];
+  // AI_03 section A4: the word rules apply to the message he shows too (fix round 1, I1). His own
+  // stuck state in the first person ("I can't find", "I have lost my place") is not an event.
+  if (eventVerbs(text, { firstPerson: true }).length > 0) rules.push("event");
+  if (input.scene) {
+    if (unlistedObjects(text, input.scene, input.companionProps).length > 0) rules.push("object");
+    if (unlistedPlaces(text, input.scene).length > 0) rules.push("place");
+  }
   rules.push(...checkRunList(text, input.earlierLines ?? []));
   const prop = input.prop;
   const nounText = prop ? withoutProp(text, prop) : text;
@@ -753,10 +777,6 @@ function acceptPredicament(
 /** A list for a prompt line; null (the line is left out) when there is nothing in it. */
 const listed = (items: string[] | undefined) =>
   items && items.length > 0 ? items.join(", ") : null;
-
-/** Earlier stuck stories for a prompt line, one sentence after another; null when there are none. */
-const sentencesOf = (items: string[] | undefined) =>
-  items && items.length > 0 ? items.map((item) => item.trim()).join(" ") : null;
 
 /** The row's words for a snag category (`params.categories`). */
 function categoryText(row: PromptRow, category: PauseCategory | undefined): string | null {
@@ -789,7 +809,6 @@ function stuckPrompt(input: StuckStoryInput, row: PromptRow): string {
     props: listed(scene?.props),
     present: listed(scene?.present),
     allowedWords: listed(scene?.allowedWords),
-    earlierStories: sentencesOf(input.earlierStories),
   });
 }
 
@@ -803,7 +822,6 @@ function predicamentPrompt(input: PausePredicamentInput, row: PromptRow): string
     story: input.story,
     present: listed(scene?.present),
     allowedWords: listed(scene?.allowedWords),
-    earlierStories: sentencesOf(input.earlierStories),
   });
 }
 

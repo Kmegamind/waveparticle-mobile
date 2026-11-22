@@ -36,5 +36,4 @@ Pause number: {{pauseNumber}}
 Facts already known: {{facts}}
 People present: {{present}}
 Names you may use (name no one else): {{allowedWords}}
-Earlier setbacks you remember: {{earlierStories}}
 ```
