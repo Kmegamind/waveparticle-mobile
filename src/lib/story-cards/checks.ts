@@ -52,10 +52,7 @@ const POINTER_OPENER = /^[\s"'“‘(]*(he|she|it|this)(?![\p{L}\p{N}'’])/iu;
 const POINTER_WORDS =
   /(?<![\p{L}\p{N}])(again|another|as\s+I\s+said|the\s+same|that\s+one)(?![\p{L}\p{N}])/iu;
 
-/**
- * A card that opens with He, She, It or This, or points at another card (#16). A pointer word
- * inside quoted speech is dialogue, not a pointer at another card (#46, as QUOTED-DIALOGUE).
- */
+/** A card that opens with He, She, It or This, or points at another card (#16). */
 function selfContainedProblems(body: string): string[] {
   const problems: string[] = [];
   const opener = body.match(POINTER_OPENER);
@@ -64,7 +61,7 @@ function selfContainedProblems(body: string): string[] {
       `Opens with "${opener[1]}". Name who or what you mean, so the card reads on its own.`,
     );
   }
-  const pointer = withoutQuotedSpeech(body).match(POINTER_WORDS);
+  const pointer = body.match(POINTER_WORDS);
   if (pointer) {
     const phrase = pointer[1].replace(/\s+/g, " ");
     problems.push(`Uses "${phrase}", which points at another card. The card must read on its own.`);

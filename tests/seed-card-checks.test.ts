@@ -60,9 +60,11 @@ describe("#46 the card checks on the whole seed pool", () => {
     expect(scripts["check:cards"]).toBe("vitest run tests/seed-card-checks.test.ts");
   });
 
-  it("test_46_ac4_a_pointer_word_inside_quoted_speech_is_dialogue", () => {
+  // Owner decision of 2026-11-21 on #375: the pointer-word check also reads quoted speech; only the
+  // introduction check ignores quotes (QUOTED-DIALOGUE, #365).
+  it("test_46_ac4_a_pointer_word_inside_quoted_speech_still_fails", () => {
     const part = (body: string) => ({ kind: "part" as const, part: 1, body });
-    expect(cardProblems(part("I said, “We will try again.” Nobody moved."), [])).toEqual([]);
+    expect(cardProblems(part("I said, “We will try again.” Nobody moved."), [])).toHaveLength(1);
     expect(cardProblems(part("I will try again. Nobody moved."), [])).toHaveLength(1);
   });
 });
