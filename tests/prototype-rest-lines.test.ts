@@ -47,12 +47,30 @@ describe("#66 AC1 his first message on the rest page", () => {
   });
 
   it("asks the gateway with the pause number and shows only a generated line", async () => {
-    const { gateway: g, call } = gateway({ source: "generated", text: "My map is wrong." });
+    // #56: two calls. Call one's stuck story comes back with the message of call two.
+    const stuck = vi.fn(async () => ({
+      source: "generated",
+      prop: "map",
+      story: "His map is torn.",
+    }));
+    const predicament = vi.fn(async () => ({ source: "generated", text: "My map is wrong." }));
+    const g = {
+      writeStuckStory: stuck,
+      writePausePredicament: predicament,
+    } as unknown as ModelGateway;
     const result = await pauseMessageFor(seed, { pauseNumber: 2, stepTitle: "Outline" }, g);
-    expect(result).toEqual({ status: "ok", isTestData: false, text: "My map is wrong." });
-    expect(call).toHaveBeenCalledWith(
-      expect.objectContaining({ pauseNumber: 2, stepTitle: "Outline" }),
+    expect(result).toMatchObject({
+      status: "ok",
+      isTestData: false,
+      text: "My map is wrong.",
+      story: "His map is torn.",
+    });
+    expect(stuck).toHaveBeenCalledWith(expect.objectContaining({ pauseNumber: 2 }));
+    expect(predicament).toHaveBeenCalledWith(
+      expect.objectContaining({ pauseNumber: 2, story: "His map is torn." }),
     );
+    // #216: the Step title is the person's own text and never reaches a prompt.
+    expect(JSON.stringify([stuck.mock.calls, predicament.mock.calls])).not.toContain("Outline");
   });
 
   it("FAIL-SCREEN and NO-BACKUP: anything that is not generated is a failure", async () => {

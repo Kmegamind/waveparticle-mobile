@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent, type MouseEvent } from "react";
 import { gateFreeText } from "@/lib/safety/crisis";
-import type { LineResponse, RestReplyResponse } from "@/lib/prototype/rest-lines";
+import type { PauseResponse, RestReplyResponse } from "@/lib/prototype/rest-lines";
 import {
-  addFirstRestMessage,
+  addPauseMessage,
   addRestMessage,
   backFromRest,
   hasFirstRestMessage,
   leaveRest,
+  pauseHistory,
   saveSession,
   setRestDraft,
   startRest,
@@ -43,7 +44,11 @@ export type RestHost = {
     pauseNumber: number;
     stepTitle: string;
     lastCard?: string;
-  }) => Promise<LineResponse>;
+    recentCategories?: string[];
+    usedProps?: string[];
+    earlierStories?: string[];
+    earlierLines?: string[];
+  }) => Promise<PauseResponse>;
   loadRestReply: (request: {
     storyId?: string;
     message: string;
@@ -84,7 +89,9 @@ export function RestBody({ host }: { host: RestHost }) {
     onProgress?.(session);
   }, [onProgress, session, storageKey]);
 
-  // His first message: written for this Pause, with its number (F1, PAUSE-3).
+  // His first message: written for this Pause, with its number (F1, PAUSE-3), in two calls (#56):
+  // the stuck story, then his words about it. The earlier Pauses go along so the code picks a new
+  // category and prop.
   useEffect(() => {
     if (!rest || hasFirstRestMessage(session) || firstFailed || firstRequested.current) return;
     firstRequested.current = true;
@@ -95,6 +102,7 @@ export function RestBody({ host }: { host: RestHost }) {
         pauseNumber: rest.pauseNumber,
         stepTitle,
         lastCard,
+        ...pauseHistory(session),
       }).catch(() => ({
         status: "failed" as const,
       })),
@@ -103,7 +111,7 @@ export function RestBody({ host }: { host: RestHost }) {
       firstRequested.current = false;
       if (result.status === "ok") {
         setIsTestData(result.isTestData);
-        setSession((current) => addFirstRestMessage(current, result.text));
+        setSession((current) => addPauseMessage(current, result));
       } else {
         setFirstFailed(true);
       }
@@ -203,6 +211,12 @@ export function RestBody({ host }: { host: RestHost }) {
               {retryLabel}
             </button>
           </div>
+        ) : null}
+        {rest?.stuckStory && hasFirstRestMessage(session) ? (
+          <figure className="rest-slip" data-testid="his-stuck-story">
+            <span aria-hidden="true" className="focus-tape" />
+            <p>{rest.stuckStory}</p>
+          </figure>
         ) : null}
         {messages.map((message, position) =>
           message.from === "him" ? (

@@ -93,6 +93,28 @@ export function stubAnswer(prompt) {
       cards: Array.from({ length: stories + 1 }, (_, position) => card(stepNumber, position)),
     });
   }
+  // #56: the pause message is two calls. Call one gives back the offered prop and a stuck story
+  // around it; call two answers in plain text. Both vary with the pause number, so the next Pause
+  // in a run is not a repeat.
+  if (prompt.startsWith('Return JSON only: {"prop"')) {
+    const prop = /chosen for you: (.+)$/m.exec(prompt.split("The one object")[1] ?? "")?.[1] ?? "";
+    const pause = Number(/Pause number: (\d+)/.exec(prompt)?.[1] ?? "1");
+    const stories = [
+      `His ${prop} will not sit still, and the work stops.`,
+      `A dull rattle from the ${prop} keeps scattering his thought.`,
+      `The ${prop} has gone cold and stiff under his hands, so nothing moves.`,
+    ];
+    return JSON.stringify({ prop, story: stories[(pause - 1) % stories.length] });
+  }
+  if (prompt.startsWith("Write plain text only")) {
+    const pause = Number(/Pause number: (\d+)/.exec(prompt)?.[1] ?? "1");
+    const lines = [
+      "I cannot get on with it, and I feel restless.",
+      "My thought keeps slipping away, and it makes me cross.",
+      "Nothing will move tonight, and I am worried I may fail.",
+    ];
+    return lines[(pause - 1) % lines.length];
+  }
   if (prompt.startsWith('Return JSON only: {"story"')) {
     return JSON.stringify({ story: "I am held up by a jammed latch on my case." });
   }

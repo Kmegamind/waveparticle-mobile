@@ -1,4 +1,5 @@
-import { companionPeople } from "@/lib/content/scene";
+import { pickPauseSnag, type PauseCategory } from "@/lib/content/pause-snag";
+import { companionPeople, sceneTableOf } from "@/lib/content/scene";
 import type { StoryContent } from "@/lib/content/types";
 import type { ModelGateway } from "@/lib/model-gateway";
 import { gateFreeText } from "@/lib/safety/crisis";
@@ -19,6 +20,21 @@ import { loadTestStory } from "./test-story";
 export type LineResponse =
   { status: "ok"; isTestData: boolean; text: string } | { status: "failed" };
 export type RestReplyResponse = LineResponse | { status: "crisis" };
+/**
+ * His pause message (#56): `text` is call two's message he shows; `story` is call one's stuck story,
+ * shown on its own slip first; `category` and `prop` are what the code picked, kept by the browser
+ * for the next Pause. Test data has the message only.
+ */
+export type PauseResponse =
+  | {
+      status: "ok";
+      isTestData: boolean;
+      text: string;
+      story?: string;
+      category?: PauseCategory;
+      prop?: string;
+    }
+  | { status: "failed" };
 
 /** Silent safeguards on what is sent to the model (FLOW R1-C); nothing on the page changes. */
 export const MAX_MESSAGE_CHARS = 1_000;
@@ -92,30 +108,88 @@ async function ask(call: () => Promise<unknown>): Promise<LineResponse> {
   }
 }
 
+export type PauseRequest = {
+  storyId?: string;
+  pauseNumber: number;
+  stepTitle?: string;
+  lastCard?: string;
+  /** Categories of the last two Pauses of the run (#56). */
+  recentCategories?: string[];
+  /** Props already used in this Step (#56). */
+  usedProps?: string[];
+  /** This Step's earlier stuck stories (#56). */
+  earlierStories?: string[];
+  /** The run's earlier pause lines, for the repeat check (#56). */
+  earlierLines?: string[];
+};
+
+/**
+ * His pause message, made with two calls (PAUSE-TWO-CALLS, #56). The code picks the category and
+ * the prop; call one writes the stuck story around them, call two his words about it. If either
+ * call fails after its retries, the whole message fails and the page shows the failure screen
+ * with Retry (NO-BACKUP, FAIL-SCREEN). Nothing here writes to his Story: the moment is texture.
+ */
 export async function pauseMessageFor(
   content: StoryContent | null,
-  request: { storyId?: string; pauseNumber: number; stepTitle?: string; lastCard?: string },
+  request: PauseRequest,
   gateway: ModelGateway | null,
-): Promise<LineResponse> {
+): Promise<PauseResponse> {
   const storyId = storyOf(content, request.storyId);
   if (content === null || storyId === null) return { status: "failed" };
   if (!gateway) return { status: "ok", isTestData: true, text: loadTestStory().pauseMessage };
-  const input = {
-    stepTitle: request.stepTitle,
-    pauseNumber: request.pauseNumber,
-    facts: stuckFacts(content, request.pauseNumber, storyId),
-    forbidTerms: generationInputs(content, storyId).forbidTerms,
-    companionName: generationInputs(content, storyId).companionName,
-    lastCard: request.lastCard,
-    // SCENE-PER-STORY (#64, #65): the Story's one scene table is the pause message's input.
-    scene: storyById(content, storyId).inputs.scene ?? undefined,
-    people: companionPeople(
-      content.stories
-        .filter((story) => story.companionId === storyById(content, storyId).companionId)
-        .map((story) => story.inputs.stageZero),
+  const story = storyById(content, storyId);
+  const inputs = generationInputs(content, storyId);
+  // SCENE-PER-STORY (#64, #65): the Story's one scene table is the pause message's input.
+  const scene = story.inputs.scene ?? undefined;
+  const companionStories = content.stories.filter((item) => item.companionId === story.companionId);
+  const people = companionPeople(companionStories.map((item) => item.inputs.stageZero));
+  const companionProps = [
+    ...new Set(
+      companionStories.flatMap((item) => sceneTableOf(item.inputs.stageZero)?.props ?? []),
     ),
+  ];
+  const picked = scene
+    ? pickPauseSnag({
+        scene,
+        recentCategories: request.recentCategories ?? [],
+        usedProps: request.usedProps ?? [],
+      })
+    : null;
+  const facts = stuckFacts(content, request.pauseNumber, storyId);
+  const shared = {
+    pauseNumber: request.pauseNumber,
+    facts,
+    forbidTerms: inputs.forbidTerms,
+    companionName: inputs.companionName,
+    lastCard: request.lastCard,
+    scene,
+    people,
+    earlierStories: request.earlierStories ?? [],
+    earlierLines: request.earlierLines ?? [],
   };
-  return ask(() => gateway.writeStuckStory(input));
+  try {
+    // No user-written text goes in (#216): not the Step title, not the Goal.
+    const first = await gateway.writeStuckStory({
+      ...shared,
+      category: picked?.category,
+      prop: picked?.prop,
+      companionProps,
+    });
+    if (first.source !== "generated" || !first.story.trim()) return { status: "failed" };
+    const second = await ask(() =>
+      gateway.writePausePredicament({ ...shared, story: first.story, prop: first.prop }),
+    );
+    if (second.status !== "ok") return { status: "failed" };
+    return {
+      status: "ok",
+      isTestData: false,
+      text: second.text,
+      story: first.story,
+      ...(picked ? { category: picked.category, prop: picked.prop } : {}),
+    };
+  } catch {
+    return { status: "failed" };
+  }
 }
 
 /**
