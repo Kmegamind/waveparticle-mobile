@@ -90,6 +90,27 @@ describe("#60 AC1 every reply is checked", () => {
     expect(isChatLaterFact("drizzl")).toBe(false);
   });
 
+  it("test_60_ac1_round2_a_dropped_name_comes_back_with_its_capitals", async () => {
+    // bohr-difficulties, Step 1 of 5: Heisenberg is written mid-sentence in the Story's facts.
+    const words = laterStoryWords(seed, STORY, { stepIndex: 0, stepCount: 5 });
+    expect(words.laterWords).toContain("Heisenberg");
+    expect(words.laterWords).not.toContain("Difficulties");
+    expect(words.laterFacts).not.toContain("difficulties");
+    const name = "I keep thinking of Heisenberg.";
+    const ordinary = "I have my difficulties with the bench.";
+    const { gateway, prompts } = scripted([reply(name), reply(ordinary)]);
+    expect(await gateway.writeRestReply({ facts: "f", userMessage: "hi", ...words })).toEqual({
+      source: "generated",
+      text: ordinary,
+    });
+    expect(prompts[1]).toContain('"Heisenberg"');
+  });
+
+  it("test_60_ac1_round2_a_name_reached_already_is_not_a_later_word", () => {
+    const last = laterStoryWords(seed, STORY, { stepIndex: 4, stepCount: 5 });
+    expect(last.laterWords).not.toContain("Heisenberg");
+  });
+
   it("test_60_ac1_without_a_position_only_the_first_part_is_reached", () => {
     expect(laterStoryWords(seed, STORY, undefined)).toEqual(
       laterStoryWords(seed, STORY, { stepIndex: 0, stepCount: 5 }),
@@ -145,6 +166,21 @@ describe("#60 AC1 every reply is checked", () => {
     expect(prompts[1]).toContain(
       'Do not use these words: "Los Alamos", "wave mechanics", "Kapitza Club".',
     );
+  });
+
+  it("test_60_ac1_round2_the_retry_hint_is_cumulative", async () => {
+    const { gateway, prompts } = scripted([
+      reply("I talk of wave mechanics."),
+      reply("I talk of matrix mechanics."),
+      reply("I talk of the bench."),
+    ]);
+    await gateway.writeRestReply({
+      facts: "f",
+      userMessage: "hi",
+      laterFacts: ["wave mechanics", "matrix mechanics"],
+    });
+    expect(prompts[2]).toContain('"wave mechanics"');
+    expect(prompts[2]).toContain('"matrix mechanics"');
   });
 
   it("test_60_ac1_a_later_fact_matches_whole_words_only", async () => {

@@ -196,6 +196,7 @@ export function createModelGateway(options: {
     let reason: GatewayFailureReason = "request";
     let attempts = 0;
     let nextPrompt = prompt;
+    const wordHints: string[] = [];
 
     while (attempts < maxAttempts) {
       const remaining = deadline - Date.now();
@@ -225,7 +226,9 @@ export function createModelGateway(options: {
         rejectedRules = parsed.rejectedRules;
         reason = "checks";
         const retry = retryPrompt(prompt, rejectedRules, hints);
-        nextPrompt = parsed.hint ? `${retry}\n${parsed.hint}` : retry;
+        // The Story words named so far stay in every later retry (cumulative hint).
+        if (parsed.hint && !wordHints.includes(parsed.hint)) wordHints.push(parsed.hint);
+        nextPrompt = wordHints.length > 0 ? `${retry}\n${wordHints.join("\n")}` : retry;
       } catch (error) {
         controller.abort();
         reason = error instanceof TimeLimitError ? "timeout" : "request";
