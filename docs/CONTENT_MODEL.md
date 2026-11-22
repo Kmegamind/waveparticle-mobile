@@ -37,7 +37,7 @@ Content files used as the real data (all in the planning folder under `1_Project
 
 The repository import contains the 26 story goals, ordered facts, forbidden terms, and provenance. Key slices are represented by task-level cut points: content-owner `added_later` markers are preferred, and the first two task cut points are used when a story has fewer than two markers. Each imported key slice is marked `confirmed` in today's file; in the database it is stored as unconfirmed (KEY-UNCONFIRMED). Each key slice records the fact ids it covers. Its `keyLine` is one first-person past-tense sentence of at most 18 words. This selection is data, not a limit on the number of user Steps. Pressing Start calls `startStory` in `src/lib/story/start.ts`, which spreads the story's parts across the plan's steps with plain code and does not call a model (CARDS-PER-PART).
 
-Since issue #284 the story content lives in the database: `public.companions`, `public.stories` and `public.story_inputs` (`supabase/migrations/20261119000000_story_content.sql`, `docs/decisions/0019`). The files above are the seed. Stored cards are issue #293.
+Since issue #284 the story content lives in the database: `public.companions`, `public.stories` and `public.story_inputs` (`supabase/migrations/20261119000000_story_content.sql`, `docs/decisions/0019`). The files above are the seed. Since issue #293 the made-ahead background card and part cards of all 26 Oppenheimer stories are in `public.story_cards`, loaded as version 1, published (`docs/decisions/0020`); nobody has read them yet, and no closing line is stored.
 
 No person has read any of the authored lines for voice. They were written from the story database entries and passed by script only: their state is "checked by script", not "read by a person" (READ-STATUS).
 
@@ -46,11 +46,11 @@ No person has read any of the authored lines for voice. They were written from t
 ```
 Companion ──< Story ──< Story fact (key moments marked)   (content, read-only for users)
                 │
-                ├──< Part ──< Card       (made ahead, read, published, shared; 2 to 5 parts)
+                ├──< Part ──< Card       (made ahead, published, read afterwards, shared; 2 to 5 parts)
                 ├── Background card, Closing line (made ahead with the cards)
                 ├──< Slice ──< Card      (authored reference cards, two stories only)
-                ├──< Snag                (reference samples for the live stuck story, grouped by Scene)
-                └── Scene                (rules that keep cards consistent)
+                ├──< Snag                (reference samples for the live stuck story, grouped by Story)
+                └── Scene table          (one per Story: rules that keep cards consistent)
 
 User ──< Goal ──< Step                   (the user's plan; user text; step has title and description)
             │
@@ -200,7 +200,7 @@ Grouping records in the same file:
 - `ROW`: `{"id": "row.s1.ch1", "type": "ROW", "cards": ["trinity.s1.ch1.sit", "trinity.s1.ch1.wry", "trinity.s1.ch1.doi", "trinity.s1.ch1.ntc"], "first_step": true}`. One row is one chain for one entry state: 21 rows.
 - `RUN`: `{"id": "run.ch1", "type": "RUN", "rows": ["row.s1.ch1", ..., "row.s7.ch1"]}`. Three runs, one per chain number, each walking seven entry states. Used by the checks that compare neighbouring steps.
 
-Shape C, made-ahead card (proposed; stored cards are issue #293 and not built yet):
+Shape C, made-ahead card (stored since #293 in `public.story_cards`; the migration is the source where it differs):
 
 | Field | Type | Notes |
 |---|---|---|
@@ -326,7 +326,7 @@ Length: 1 or 2 sentences, at most 30 words (LEN-RETURN). Proposed checks, kept f
 
 ### 2.10 Snag
 
-A small obstacle in his own world that his message on the rest page is built from when the user pauses (Decided, C1: the AI first generates a stuck story, then the character describes his predicament and how he feels). It must not be an event. The AI generates a new stuck story at every Pause (PAUSE-3). The message is made with two calls, and code chooses the category and the prop (PAUSE-TWO-CALLS). The authored snags below are reference examples and evaluation material only (C1, NO-BACKUP).
+A small obstacle in his own world that his message on the rest page is built from when the user pauses (Decided, C1: the AI first generates a stuck story, then the character describes his predicament and how he feels). It must not be an event. The AI generates a new stuck story at every Pause (PAUSE-3). The message is made with two calls, and code chooses the category and the prop (PAUSE-TWO-CALLS). Call one (the stuck story) returns `{prop, story}`: the offered prop and the stuck story. Call two returns his words about the predicament and his feelings, which are the message he shows. Call two is plain text, not JSON, and there is no `why` or `back` field: he never urges (`docs/ai/AI_03_stuck-story-layer.md` section A4, owner decision 2026-11-21). The authored snags below are reference examples and evaluation material only (C1, NO-BACKUP).
 
 | Field | Type | Example (`s4.p1`) |
 |---|---|---|
@@ -343,7 +343,7 @@ The sample holds 8 snags for Trinity entry state s4. The same file holds 4 quiet
 
 ### 2.11 People (no separate content type)
 
-Decided (M2, refined): there is no person content type, no introduction phrase and no list of people with phrases. The people who are present in a story are named in the scene table (2.12) as `present` and `allowed_names`, and the background card (2.13) introduces them in his own voice. Later cards carry no introduction phrases. Names are not tappable and there is no separate "what you need to know" screen. Every later line (cards, his message on the rest page, the return pop-up, rest chat) may use only names in `allowed_names`.
+Decided (M2, refined): there is no person content type, no introduction phrase and no list of people with phrases. The people who are present in a story are named in the scene table (2.12) as `present` and `allowedWords`, and the background card (2.13) introduces them in his own voice. Later cards carry no introduction phrases. Names are not tappable and there is no separate "what you need to know" screen. Every later line (cards, his message on the rest page, the return pop-up, rest chat) may use only names in `allowedWords`.
 
 ### 2.12 Scene
 
@@ -355,7 +355,7 @@ A table that keeps cards and snags consistent about where he is, who is there, a
  "pauseProp": "notebook", "laterWords": ["Kapitza", "Club"]}
 ```
 
-`present` lists the people present and `allowedWords` the names a line may use (the `allowed_names` of section 2.11); `props` are the objects that exist; `pauseProp` is the one prop offered to the pause message; `laterWords` are words a line may not use yet. The same data is the input the live generator needs (allowed props, allowed names, rules), because no authored pool is ever shown (Decided, C1; NO-BACKUP). The app reads it as `story.inputs.scene` (`src/lib/content/scene.ts`, #64): the admin card check fails a card that names a person who is not in it, and the pause message receives it as an input and is checked against its names and later words (#65).
+`present` lists the people present and `allowedWords` the names a line may use (section 2.11); `props` are the objects that exist; `pauseProp` is the one prop offered to the pause message; `laterWords` are words a line may not use yet. The same data is the input the live generator needs (allowed props, allowed names, rules), because no authored pool is ever shown (Decided, C1; NO-BACKUP). The app reads it as `story.inputs.scene` (`src/lib/content/scene.ts`, #64): the admin card check fails a card that names a person who is not in it, and the pause message receives it as an input and is checked against its names and later words (#65).
 
 The older sample (`_meta.scene` in the Trinity snag file: one scene per entry state, with `one_way_scales` of rain, wind and sky) is reference only. The scene per entry state and the one-way scales are withdrawn (SCENE-PER-STORY).
 
@@ -541,8 +541,8 @@ These apply to one-way lines. Rest chat replies answer the user and are not chec
 
 ### 7.4 Snag and return pop-up rules
 
-- Use only the props listed for the scene, and every declared prop must appear in the obstacle text.
-- No new named person; only names in `allowed_names`.
+- Use only the props in the Story's scene table, and every declared prop must appear in the obstacle text.
+- No new named person; only names in `allowedWords`.
 - ~~No move on a one-way scale (rain, wind, sky). Words like cleared, eased, died down, worse, better are blocked.~~ Withdrawn: there are no weather or light scales (SCENE-PER-STORY).
 - No event verbs (arrives, comes, says, tells, asks, decides, finds, loses, breaks and similar) and no new objects.
 - The resolution restores the situation as it was.
@@ -571,19 +571,19 @@ Since issue #284 the story content is in the database (`supabase/migrations/2026
 - `public.stories`: each story's display fields (`title`, `period`, `goal_short`, `who`, `opening`). Signed-in users may read them.
 - `public.story_inputs`: the model-only inputs (facts, forbidden terms, key moments stored unconfirmed, the other stage 0 inputs) and the writers' `date` and `provenance`. No user reads it; the server reads it through `get_story_content`, which never returns `date` (DATES-ADMIN-ONLY).
 
-Stored made-ahead cards, the background card and the closing line are issue #293 and have no table yet. There are no fallback tables (NO-FALLBACK-TABLES). The tables below are still proposals and not built:
+The made-ahead cards and the background card are stored in `public.story_cards` and the part titles in `public.story_parts` (#293, `supabase/migrations/20261120000000_story_cards.sql`); the closing line has no table yet. There are no fallback tables (NO-FALLBACK-TABLES). The tables below are still proposals and not built:
 
 ```
 leak_terms(story_id text, fact_seq integer, term text)     -- from the leak map; per fact or per part
 
 scenes(                               -- one per story (SCENE-PER-STORY); no entry slices, no scales
   story_id text primary key,
-  present text[], allowed_names text[], props text[],
+  present text[], allowed_words text[], props text[],
   pause_prop text, later_words text[]
 )
 
 snags(                                 -- authored reference samples only; never shown (C1, NO-BACKUP)
-  id text primary key, story_id text, scene_id text,
+  id text primary key, story_id text,  -- grouped by Story, like the scene table
   family text, props text[], valid_from_slice text,
   obstacle text, ret_line text, ret_short text, ret_long text,
   origin text, kind text
@@ -701,7 +701,8 @@ Story cards, the background card and the closing line are made ahead once per st
 |---|---|---|---|---|
 | Story database entry (facts, goal, background) | Yes | Yes | Yes (5 database tasks; date is a placeholder) | Yes, all 26 |
 | Key moments (2 to 4) and key lines | Machine-derived, unconfirmed (KEY-UNCONFIRMED); s4, s6, s8 proposed earlier | Machine-derived, unconfirmed; s4, s6 proposed earlier | Machine-derived, unconfirmed | Machine-derived, unconfirmed |
-| Made-ahead cards, background card and closing line, published (and read afterwards, PUBLISH-FIRST) | None | None | None | None |
+| Made-ahead cards and background card, published (version 1, #293; read afterwards, PUBLISH-FIRST) | Yes, not read | Yes, not read | Yes, not read | Yes, all 23 others, not read |
+| Closing line, published | None | None | None | None |
 | Slices (reference only) | 8 slices | 7 slices | No | No (24 of 26 have none) |
 | Authored reference cards | 41 cards, older shape | 135 cards: 21 rows of chain cards plus 30 return cards, current shape | None | None |
 | Step lines and where-now | Yes, all 8 slices | The older pool has 22 such records (type HIS); not in the new shape | None | None |
@@ -710,7 +711,7 @@ Story cards, the background card and the closing line are made ahead once per st
 | Snags (reference samples) | None | Sample for s4 only (8); the older pool has 15 pause items | None | None |
 | Closing lines (reference) | None (two drafts exist only in the AI specification) | 4 (smooth 2, rough 2) plus a hanging line; the smooth and rough moods are superseded (END-TONE) | None | None |
 | Leak map | No separate file (forbid list and a checking script) | Yes (7 slices) | None | None |
-| Scene table (generator input) | None | One scene (s4) in the sample | None | None |
+| Scene table (generator input, one per Story, SCENE-PER-STORY) | Drafted (`site-search.stage0.json`) | Drafted (`trinity.stage0.json`); the older s4 sample is reference only | Drafted (`bohr-difficulties.stage0.json`) | Drafted, all 23 others (`docs/demo/<story>.stage0.json`) |
 
 Decision M1 (2026-11-05): new users start at chapter 1, with no designated entry story. Chapter 1 needs its made-ahead cards, background card and closing line, published (and read afterwards, PUBLISH-FIRST), its reviewed key moments, and the generator inputs for the live parts (scene table, allowed props, allowed names, rules). The authored reference cards cover chapter 8 and the Trinity night only. Any demo for the first test must say which chapter it uses.
 
@@ -718,7 +719,7 @@ Other missing pieces:
 
 - The real planning prompt (open, P1). The text in `docs/ai/AI_01` is a placeholder. Yue will supply the file (2026-11-21).
 - The review of the key moments and their first-person key lines for every story (KEY-REVIEW).
-- The parts (2 to 5) and the made-ahead cards, background card and closing line of every story, with their read status (STORY-PARTS, READ-STATUS). Stored cards are issue #293.
+- The reading of the published made-ahead cards and background cards of all 26 stories, and the closing line of every story (STORY-PARTS, READ-STATUS, PUBLISH-FIRST). The cards are stored (#293).
 - Generator inputs for all 26 stories: scene tables (drafted, one per story, in `docs/demo/*.stage0.json`, SCENE-PER-STORY; read by the app since #64), allowed props, allowed names and rules, and the leak words per fact.
 - The named periods of each Life Path (PERIOD-NAMES).
 - Moriarty's data and his world record (FICTION-RULES); Yue's reading of the 31 cards of his story 1 (MORIARTY-READ). The other six characters of the older product are out of scope for Release 1 (OTHER-COMPANIONS).
