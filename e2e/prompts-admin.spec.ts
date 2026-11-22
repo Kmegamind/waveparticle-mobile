@@ -34,7 +34,7 @@ async function saveBody(page: Page, change: (body: string) => string) {
   await editor(page).getByRole("button", { name: "Save draft" }).click();
 }
 
-test("test_308_ac1_lists_the_seven_prompts_with_v1_active_and_settings", async ({
+test("test_308_ac1_lists_the_eight_prompts_with_v1_active_and_settings", async ({
   page,
   context,
 }) => {
@@ -46,7 +46,9 @@ test("test_308_ac1_lists_the_seven_prompts_with_v1_active_and_settings", async (
     .click();
   await expect(page).toHaveURL(/\/admin\/prompts$/);
   const list = page.getByRole("list", { name: "Prompts" });
-  await expect(list.getByRole("article")).toHaveCount(7);
+  // #56 added `pause_predicament`, call two of the pause message.
+  await expect(list.getByRole("article")).toHaveCount(8);
+  await expect(list.getByRole("article", { name: "pause_predicament" })).toBeVisible();
   const rest = list.getByRole("article", { name: KEY });
   await expect(rest).toContainText("v1");
   await expect(rest.getByRole("list", { name: `Settings of ${KEY}` })).toContainText(
