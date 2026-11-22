@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { readStoryDecks, storyCardRows } from "../scripts/story-cards/import.mjs";
-import { cardProblems } from "@/lib/story-cards/checks";
+import { companionPeople, sceneCheckOf, sceneTableOf, unseenPeople } from "@/lib/content/scene";
+import { cardProblems, SCENE_UNREADABLE } from "@/lib/story-cards/checks";
 import { storyPoolProblems, type PoolCard } from "@/lib/story-cards/pool-checks";
 import { seedContent } from "./support/seed-content";
 
@@ -40,6 +41,41 @@ describe("#46 the card checks on the whole seed pool", () => {
     const background = cards.find((row) => row.story_id === "bohr-difficulties")!;
     background.body = "I keep thinking of Kapitza and his club.";
     expect(storyPoolProblems(cards, zeros).join("\n")).toMatch(/comes in a later part/);
+  });
+
+  // #381 (finishes #46 AC3): the seed-file check also runs the scene person check (#374).
+  it("test_381_ac1_a_seed_card_naming_an_absent_person_fails_with_key_and_person", () => {
+    const cards = seedCards();
+    const card = cards.find((row) => row.story_id === "trinity" && row.kind === "part")!;
+    const scene = sceneCheckOf(zeros.get("trinity"), companionPeople(zeros.values()))!;
+    const absent = scene.people.find((name) => unseenPeople(name, scene).length > 0)!;
+    card.body = `${absent} stood by the door.`;
+    expect(storyPoolProblems(cards, zeros)).toContain(
+      `${card.key}: Names "${absent}", who is not in this story's scene table.`,
+    );
+  });
+
+  it("test_381_ac3_a_scene_that_passes_leaves_the_result_unchanged", () => {
+    const cards = seedCards();
+    const card = cards.find((row) => row.story_id === "trinity" && row.kind === "part")!;
+    const present = sceneTableOf(zeros.get("trinity"))!.present[0];
+    card.body = `${present} stood by the door.`;
+    expect(storyPoolProblems(cards, zeros).filter((line) => /scene table/.test(line))).toEqual([]);
+  });
+
+  it("test_381_ac1_a_story_without_a_scene_table_blocks_its_cards", () => {
+    const problems = storyPoolProblems(seedCards(), new Map());
+    expect(problems.some((line) => line.includes(SCENE_UNREADABLE))).toBe(true);
+  });
+
+  it("test_381_ac2_the_admin_intro_names_the_scene_check", () => {
+    const page = readFileSync(
+      path.join(root, "src", "app", "admin", "stories", "[id]", "page.tsx"),
+      "utf8",
+    ).replace(/\s+/g, " ");
+    expect(page).toContain(
+      "words from later parts, people who are not in the scene table and banned words",
+    );
   });
 
   it("test_46_ac1_a_story_without_inputs_blocks_its_cards", () => {
