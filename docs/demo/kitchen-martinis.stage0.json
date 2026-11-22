@@ -31,12 +31,6 @@
     "s8": "I'm in the living room with Hoke, Kitty and Barbara, carrying the tray of martinis."
   },
   "people": {
-    "Kitty": {
-      "role": "wife",
-      "inline": "my wife",
-      "line": "Kitty is my wife and the other host of this evening.",
-      "first_card": "kitchen-martinis.s1.c1"
-    },
     "Hoke": {
       "role": "old friend",
       "inline": "an old friend of ours",
@@ -146,7 +140,7 @@
     }
   ],
   "scene": {
-    "present": ["Kitty"],
+    "present": [],
     "allowedWords": ["Kitty", "Hoke", "Haakon", "Barbara", "Chevalier", "Chevaliers", "Berkeley", "George", "Eltenton", "Soviet", "San", "Francisco"],
     "pauseProp": "candle",
     "laterWords": ["French"],

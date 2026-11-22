@@ -38,12 +38,6 @@
       "line": "George is one of the two men travelling with me.",
       "first_card": "truchas-morning.s1.c1"
     },
-    "Roger": {
-      "role": "companion",
-      "inline": "the other man travelling with me",
-      "line": "Roger is the other man travelling with me.",
-      "first_card": "truchas-morning.s1.c1"
-    },
     "Katherine Page": {
       "role": "friend",
       "inline": "a friend of mine",
@@ -174,7 +168,7 @@
     }
   ],
   "scene": {
-    "present": ["George", "Roger"],
+    "present": ["George"],
     "allowedWords": [
       "Lake",
       "Katherine",
@@ -191,7 +185,7 @@
       "Pinos"
     ],
     "pauseProp": "canteen",
-    "laterWords": ["Los", "Pinos"],
+    "laterWords": ["Los Pinos"],
     "props": [
       "boots",
       "coat",

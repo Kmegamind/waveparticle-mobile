@@ -36,12 +36,6 @@
       "inline": "Steve Nelson, Kitty's old friend",
       "line": "Steve Nelson is Kitty's old friend, and he is here tonight.",
       "first_card": "marry-a-friend.s1.c1"
-    },
-    "Kitty": {
-      "role": "the woman he means to marry",
-      "inline": "the woman I mean to marry",
-      "line": "Kitty is the woman I mean to marry, and an old friend of Nelson's.",
-      "first_card": "marry-a-friend.s1.c1"
     }
   },
   "slices": [
@@ -181,7 +175,7 @@
     }
   ],
   "scene": {
-    "present": ["Nelson", "Kitty"],
+    "present": ["Nelson"],
     "allowedWords": [
       "Nelson",
       "Kitty",

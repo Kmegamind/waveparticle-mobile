@@ -1,3 +1,5 @@
+import type { SceneTable } from "@/lib/content/scene";
+
 export type GatewayCall =
   "plan_split" | "step_cards" | "stuck_story" | "rest_reply" | "return_popup" | "closing_line";
 
@@ -91,6 +93,17 @@ export type StuckStoryInput = {
   earlierLines?: string[];
   /** The last card shown in this Step; the stuck story may not reuse its nouns. */
   lastCard?: string;
+  /**
+   * The Story's one scene table (SCENE-PER-STORY, #64, #65): the prompt offers its pause prop and
+   * lists its objects and names; the answer may name no one outside it and use none of its later
+   * words.
+   */
+  scene?: SceneTable;
+  /**
+   * Every person the Companion's Stories name (`companionPeople`). With `scene`, the answer fails
+   * `people` when it names one who is not in this Story's scene table, wherever in the line.
+   */
+  people?: string[];
 };
 
 export type RestReplyInput = {

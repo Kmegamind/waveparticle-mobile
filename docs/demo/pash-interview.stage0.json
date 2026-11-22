@@ -186,7 +186,7 @@
     "present": ["Johnson"],
     "allowedWords": ["Johnson", "Pash", "Groves", "Lomanitz", "Rossi", "Eltenton", "George", "General", "Army", "Berkeley", "Rad", "Lab", "Soviet", "Russians", "Russian", "Commander", "Chief", "Shell", "Development", "Communist", "State", "Department", "Nazis", "Los", "Alamos", "Site"],
     "pauseProp": "ashtray",
-    "laterWords": ["God"],
+    "laterWords": [],
     "props": [
       "desk",
       "chair",

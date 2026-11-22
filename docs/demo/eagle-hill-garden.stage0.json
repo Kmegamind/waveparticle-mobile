@@ -36,12 +36,6 @@
       "inline": "an old friend who has come to the house",
       "line": "Haakon, whom friends call Hoke, is an old friend who has come to the house.",
       "first_card": "eagle-hill-garden.s1.c1"
-    },
-    "Kitty": {
-      "role": "wife",
-      "inline": "my wife",
-      "line": "Kitty is my wife, and she is looking after the house tonight.",
-      "first_card": "eagle-hill-garden.s8.c1"
     }
   },
   "slices": [

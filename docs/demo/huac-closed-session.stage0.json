@@ -61,29 +61,11 @@
       "line": "Lomanitz is one of my former students.",
       "first_card": "huac-closed-session.s3.c1"
     },
-    "Fox": {
-      "role": "former student",
-      "inline": "one of my former students",
-      "line": "Fox is one of my former students.",
-      "first_card": "huac-closed-session.s3.c1"
-    },
-    "May": {
-      "role": "acquaintance from Berkeley",
-      "inline": "someone I knew in the Berkeley years",
-      "line": "May is someone I knew in the Berkeley years.",
-      "first_card": "huac-closed-session.s3.c1"
-    },
     "Haakon": {
       "role": "old friend",
       "inline": "an old friend",
       "line": "Haakon Chevalier is an old friend of mine.",
       "first_card": "huac-closed-session.s4.c1"
-    },
-    "Frank": {
-      "role": "brother",
-      "inline": "my younger brother",
-      "line": "Frank is my younger brother.",
-      "first_card": "huac-closed-session.s6.c1"
     },
     "Nixon": {
       "role": "congressman",
