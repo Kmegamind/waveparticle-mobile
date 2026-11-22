@@ -27,6 +27,8 @@ jobs:
         run: npm run format:check
       - name: Lint
         run: npm run lint
+      - name: Seed card checks
+        run: npm run check:cards
       - name: Unit tests
         run: npm test
       - name: End-to-end tests

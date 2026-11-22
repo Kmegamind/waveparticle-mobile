@@ -14,4 +14,6 @@
 - Write the failing test before the code.
 - Never weaken or delete a test to make CI pass; fix the code or raise it with a human.
 
+- Seed card checks (#46): `npm run check:cards` (a CI step of its own) runs the admin card checks and a repeated-lines check on every card of `src/content/<companion>/story-decks.json`; a failing card fails CI and is listed by key.
+
 - Copy rules (#9): `tests/copy-rules.test.ts` scans the code default of every app text key (`src/content/app-text.json`) for "overdue", "behind", "missed", "owe", "catch up", "abandoned", "partial", any streak, and Mission or Task for the user's work. CI fails on a match and lists each key and text.
