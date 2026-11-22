@@ -57,8 +57,13 @@ describe("#46 the card checks on the whole seed pool", () => {
 
   it("test_381_ac3_a_scene_that_passes_leaves_the_result_unchanged", () => {
     const cards = seedCards();
-    const card = cards.find((row) => row.story_id === "trinity" && row.kind === "part")!;
-    const present = sceneTableOf(zeros.get("trinity"))!.present[0];
+    const storyId = [...zeros.keys()].find(
+      (id) => (sceneTableOf(zeros.get(id))?.present.length ?? 0) > 0,
+    )!;
+    const present = sceneTableOf(zeros.get(storyId))!.present[0];
+    expect(typeof present).toBe("string");
+    expect(present.length).toBeGreaterThan(0);
+    const card = cards.find((row) => row.story_id === storyId && row.kind === "part")!;
     card.body = `${present} stood by the door.`;
     expect(storyPoolProblems(cards, zeros).filter((line) => /scene table/.test(line))).toEqual([]);
   });
