@@ -53,7 +53,11 @@ describe("I1 the word checks run on call two, the message he shows", () => {
       "I can't find the end of the line, and it frightens me a little.",
       "I have lost my place in the notebook, and I feel foolish.",
       "I keep losing the thread, and it makes me restless.",
-      "My pencil is lost somewhere under the papers, and I am cross.",
+      "I keep coming back to the same sum, and it wears me down.",
+      "I don't know what to say about it, and I feel slow.",
+      "I cannot find the end of the line.",
+      "My pencil keeps breaking, and I am cross.",
+      "I can't decide where the sum went wrong.",
       "I cannot say why the sum fails, and I am tired.",
     ]) {
       expect(eventVerbs(line, { firstPerson: true }), line).toEqual([]);
@@ -62,6 +66,13 @@ describe("I1 the word checks run on call two, the message he shows", () => {
       "A courier arrives and says the order is cancelled.",
       "Rutherford tells me to stop.",
       "Someone finds my notebook.",
+      // Fix round 2 (N1): one-off finds, losses, breaks and decisions are events.
+      "I decided to leave the project tonight.",
+      "I found the error at last.",
+      "I broke the news to Kitty.",
+      "I lost the argument with Groves.",
+      // AI_03 section A4: "the map is lost" is a story change.
+      "My pencil is lost somewhere under the papers.",
     ]) {
       expect(eventVerbs(line, { firstPerson: true }), line).not.toEqual([]);
     }
