@@ -1,10 +1,11 @@
+import { companionPeople } from "@/lib/content/scene";
 import type { StoryContent } from "@/lib/content/types";
 import type { ModelGateway } from "@/lib/model-gateway";
 import { gateFreeText } from "@/lib/safety/crisis";
 import type { RestMessage, ReturnTrigger } from "./session";
 import { laterStoryWords } from "./rest-later-words";
 import { DEFAULT_STORY_ID } from "./story-ids";
-import { generationInputs, isStoryId } from "./story-inputs";
+import { generationInputs, isStoryId, storyById } from "./story-inputs";
 import { loadTestStory } from "./test-story";
 
 /**
@@ -107,6 +108,13 @@ export async function pauseMessageFor(
     forbidTerms: generationInputs(content, storyId).forbidTerms,
     companionName: generationInputs(content, storyId).companionName,
     lastCard: request.lastCard,
+    // SCENE-PER-STORY (#64, #65): the Story's one scene table is the pause message's input.
+    scene: storyById(content, storyId).inputs.scene ?? undefined,
+    people: companionPeople(
+      content.stories
+        .filter((story) => story.companionId === storyById(content, storyId).companionId)
+        .map((story) => story.inputs.stageZero),
+    ),
   };
   return ask(() => gateway.writeStuckStory(input));
 }

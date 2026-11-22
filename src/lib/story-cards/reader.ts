@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getStoryContent } from "@/lib/content/repository";
+import { companionPeople, sceneCheckOf, type SceneCheck } from "@/lib/content/scene";
 import type { StoryCardRow, StoryPartRow, StoryRow } from "./admin";
 import { cardProblems, leaksForStory } from "./checks";
 
@@ -17,6 +18,18 @@ export async function readStageZeros(): Promise<Map<string, Record<string, unkno
   } catch {
     return null;
   }
+}
+
+/**
+ * The scene check of one story (#64): its scene table's names and every person the stories name.
+ * Null when the story inputs or the table cannot be read, which blocks its cards.
+ */
+export function sceneCheckFor(
+  zeros: Map<string, Record<string, unknown>> | null,
+  storyId: string,
+): SceneCheck | null {
+  if (!zeros) return null;
+  return sceneCheckOf(zeros.get(storyId), companionPeople(zeros.values()));
 }
 
 /**
@@ -43,7 +56,7 @@ export async function storedCardProblems(
     ]);
     if (!story.ok) return null;
     const leaks = leaksForStory(story.cards, zeros?.get(row.story_id) ?? null);
-    return cardProblems(row, leaks(row.part));
+    return cardProblems(row, leaks(row.part), sceneCheckFor(zeros, row.story_id));
   } catch {
     return null;
   }

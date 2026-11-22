@@ -3,19 +3,22 @@ import type { CompanionKind, GeneratedPlan } from "./types";
 const FAILURE_WORDING = /\b(error|failed|failure|timeout|exception|undefined)\b/i;
 const CJK = /[\u3400-\u9fff]/;
 const DASH = /—|–|--/;
+/** Banned words in any line of his (also used by the admin card checks, #304). */
+export const BANNED = /\b(bro|vibes|no cap|as an ai)\b/i;
 /**
- * Banned words in any line of his (also used by the admin card checks, #304). He never says or
- * hints that he is an AI (A4, #59 AC7), even when the person typed the word.
+ * His live lines (the rest reply and the pause message) never say or hint that he is an AI (A4,
+ * #59 AC7), even when the person typed the word. Pre-made cards keep the admin's banned words only
+ * (SAFETY-PREMADE), so this list is not part of `BANNED`.
  */
-export const BANNED =
-  /\b(bro|vibes|no cap|as an ai|ai|a\.i\.|artificial intelligence|language models?|chat ?bots?)(?![\p{L}\p{N}])/iu;
+const LIVE_AI_WORDS =
+  /\b(ai|a\.i\.|artificial intelligence|language models?|chat ?bots?)(?![\p{L}\p{N}])/iu;
 const CLOCK =
   /\b\d{1,2}:\d{2}\b|\b(?:a\.m\.|p\.m\.)\b|\b\d{1,2}\s*(?:am|pm)\b|\bo'clock\b|\bhalf past\b|\b\d+\s+minutes?\b/i;
 const BACKSTAGE =
   /\b(segment|slice|director|prompt|texture|storyline|plot beat|steps?|sessions?|timer|app|screen|scene|chapter|tasks?|users?)\b/i;
 // Orders, advice, a method or a promise that it will pass (#59 AC3, AI_04 section B).
 const ORDERING =
-  /\b(you should|you could|you need to|you must|you ought to|have you tried|let's|take a break|close your eyes|hang on|it'll pass|it will pass|don't worry|do not worry)\b/i;
+  /\b(you should|(?<!wish )you could|you need to|you must(?! be)|you ought to|have you tried|let's|take a break|close your eyes|hang on|it'll pass|it will pass|(?<!\bI )(?:don't|do not) worry)\b/i;
 const QUESTION = /\?/g;
 const ADDRESSED = /\byou\b/i;
 const HOOK = /\b(more|later|tomorrow|soon|continue|find out|next)\b(?!\s+to\b)/i;
@@ -50,30 +53,30 @@ function ownNamePattern(companionName: string): RegExp | null {
   return words.length === 0 ? null : new RegExp(`\\b(${words.map(escape).join("|")})\\b`, "i");
 }
 
-/**
- * CHAT-USER-WORD: the later words that still fail a rest reply. A word the person typed himself
- * anywhere in the chat (any case) is let through, so he can say he has never heard of it.
- */
-export function allowUserWords(terms: string[], userTexts: string[]): string[] {
-  const typed = userTexts.map((text) => text.replace(/[’‘]/g, "'").toLowerCase());
-  return terms.filter((term) => {
-    const word = term.trim().toLowerCase();
-    return word.length > 0 && !typed.some((text) => text.includes(word));
-  });
-}
-
-const escapeText = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** Curly apostrophes as straight ones, so text typed on a phone still matches. */
+const straight = (text: string) => text.replace(/[’‘]/g, "'");
 
 /**
- * A word or phrase in the text as whole words, with any spaces between its words (#60). Any case
- * unless `exactCase` (the scene table's later words keep their capitals).
+ * A word or phrase in the text as whole words, with any spaces between its words. Any case unless
+ * `exactCase` (later words keep their capitals, as the owner set for the scene table in #374).
  */
 export function mentionsWord(text: string, phrase: string, exactCase = false): boolean {
-  const words = phrase.replace(/[’‘]/g, "'").trim().split(/\s+/).filter(Boolean);
+  const words = straight(phrase).trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) return false;
-  const pattern = words.map(escapeText).join("\\s+");
+  const pattern = words.map(escape).join("\\s+");
   return new RegExp(`(?<![\\p{L}\\p{N}])${pattern}(?![\\p{L}\\p{N}])`, exactCase ? "u" : "iu").test(
-    text.replace(/[’‘]/g, "'"),
+    straight(text),
+  );
+}
+
+/**
+ * CHAT-USER-WORD: the later words that still fail a rest reply. A word the person typed himself
+ * anywhere in the chat is let through, so he can say he has never heard of it. It counts only as
+ * whole words with the same capitals: "opinion" does not let "pion" through, nor "maybe" "May".
+ */
+export function allowUserWords(terms: string[], userTexts: string[]): string[] {
+  return terms.filter(
+    (term) => term.trim().length > 0 && !userTexts.some((text) => mentionsWord(text, term, true)),
   );
 }
 
@@ -177,7 +180,12 @@ export function checkCompanionLine(
   push(rejected, "failure_text", FAILURE_WORDING.test(text));
   push(rejected, "cjk", CJK.test(text));
   push(rejected, "dash", DASH.test(text));
-  push(rejected, "ban", BANNED.test(text));
+  push(
+    rejected,
+    "ban",
+    BANNED.test(text) ||
+      ((kind === "rest_reply" || kind === "stuck_story") && LIVE_AI_WORDS.test(text)),
+  );
   push(rejected, "clock", CLOCK.test(text));
   push(rejected, "back", BACKSTAGE.test(text));
   push(rejected, "cmd", kind === "rest_reply" && ORDERING.test(text));

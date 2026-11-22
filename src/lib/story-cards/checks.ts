@@ -7,6 +7,7 @@ import { cardLengthProblems, type LeaksFor, type StoryCardRow } from "./admin";
 // any problem cannot be published. Server code only.
 
 import { datesProblems } from "@/lib/content/dates";
+import { unseenPeople, type SceneCheck } from "@/lib/content/scene";
 
 // A year, a date or an age in the text (DATES-ADMIN-ONLY): shared with the Companion and story
 // fields (#309) and re-exported here for the card checks.
@@ -137,13 +138,19 @@ function introductionProblems(card: { kind: "background" | "part"; body: string 
 export const LEAKS_UNREADABLE =
   "The spoiler check could not run: the story inputs could not be read.";
 
+export const SCENE_UNREADABLE =
+  "The scene check could not run: this story's scene table could not be read.";
+
 /**
  * Every problem of one card's text, in plain words; empty when it may be published. `laterLeaks`
- * is null when the story inputs could not be read, which blocks the card.
+ * is null when the story inputs could not be read, which blocks the card. `scene` is the Story's
+ * scene table (#64 AC2, SCENE-PER-STORY): a card that names a person who is not in it fails, and
+ * a null table blocks the card; left out, the scene check does not run.
  */
 export function cardProblems(
   card: { kind: "background" | "part"; part: number | null; body: string },
   laterLeaks: string[] | null,
+  scene?: SceneCheck | null,
 ): string[] {
   const problems = [
     ...cardLengthProblems(card.kind, card.body),
@@ -156,6 +163,12 @@ export function cardProblems(
     for (const word of laterLeaks) {
       if (mentions(card.body, word))
         problems.push(`Mentions "${word}", which comes in a later part.`);
+    }
+  }
+  if (scene === null) problems.push(SCENE_UNREADABLE);
+  else if (scene) {
+    for (const person of unseenPeople(card.body, scene)) {
+      problems.push(`Names "${person}", who is not in this story's scene table.`);
     }
   }
   const banned = card.body.match(BANNED);

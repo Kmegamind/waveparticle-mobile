@@ -3,7 +3,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { storyList } from "@/lib/story-cards/admin";
 import { leaksForStory } from "@/lib/story-cards/checks";
-import { readStageZeros, readStoryCardsData } from "@/lib/story-cards/reader";
+import { readStageZeros, readStoryCardsData, sceneCheckFor } from "@/lib/story-cards/reader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PublishFirstNotice } from "./publish-first-notice";
 import { Breadcrumb } from "@/app/admin/admin-ui";
@@ -33,11 +33,16 @@ async function StoryTable() {
   await connection();
   const client = await createSupabaseServerClient();
   const [data, zeros] = await Promise.all([readStoryCardsData(client), readStageZeros()]);
-  const rows = storyList(data.stories, data.parts, data.cards, (storyId) =>
-    leaksForStory(
-      data.cards.filter((card) => card.story_id === storyId),
-      zeros?.get(storyId) ?? null,
-    ),
+  const rows = storyList(
+    data.stories,
+    data.parts,
+    data.cards,
+    (storyId) =>
+      leaksForStory(
+        data.cards.filter((card) => card.story_id === storyId),
+        zeros?.get(storyId) ?? null,
+      ),
+    (storyId) => sceneCheckFor(zeros, storyId),
   );
   return (
     <>

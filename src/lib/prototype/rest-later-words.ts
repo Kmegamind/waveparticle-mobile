@@ -9,9 +9,11 @@ import { storyById } from "./story-inputs";
  * - `laterFacts`: the spoiler words (`leaks`) of the slices in the parts the person has not
  *   reached. A part is a stage 0 step (`steps[].covers`). Which parts a Step reaches follows the
  *   card spread (CARDS-SPREAD, `spreadCards`), with one card per slice standing in for the cards.
- *   Matched in any case, as whole words.
- * - `laterWords`: the scene table's later words (`scene.laterWords`), matched with their exact
- *   capitals, as whole words.
+ *   Only entries with a capital letter or of several words are used (`isChatLaterFact`): a single
+ *   lower-case word ("anyway", "angry") would fail ordinary replies. The data is not changed, and
+ *   the card checks still use every entry. Matched in any case, as whole words.
+ * - `laterWords`: the scene table's later words (`story.inputs.scene`, #374), matched with their
+ *   exact capitals, as whole words.
  *
  * Without a valid position only the first part counts as reached, so nothing later can slip out.
  */
@@ -27,20 +29,25 @@ const strings = (value: unknown): string[] =>
     ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
     : [];
 
+/** A spoiler entry used in the rest reply check: it has a capital letter or several words. */
+export function isChatLaterFact(entry: string): boolean {
+  return /\p{Lu}/u.test(entry) || /\s/.test(entry.trim());
+}
+
 export function laterStoryWords(
   content: StoryContent,
   storyId: string,
   position: StepPosition | undefined,
 ): LaterStoryWords {
-  const stage = storyById(content, storyId).inputs.stageZero;
-  const scene = (stage.scene ?? {}) as { laterWords?: unknown };
-  const laterWords = [...new Set(strings(scene.laterWords))];
+  const story = storyById(content, storyId);
+  const stage = story.inputs.stageZero;
+  const laterWords = [...new Set(story.inputs.scene?.laterWords ?? [])];
 
   const slices = Array.isArray(stage.slices) ? (stage.slices as Slice[]) : [];
   const leaksOf = new Map(
     slices
       .filter((slice) => typeof slice?.id === "string")
-      .map((slice) => [slice.id as string, strings(slice.leaks)]),
+      .map((slice) => [slice.id as string, strings(slice.leaks).filter(isChatLaterFact)]),
   );
   const parts = (Array.isArray(stage.steps) ? (stage.steps as Part[]) : [])
     .map((part) => strings(part?.covers).filter((id) => leaksOf.has(id)))

@@ -3,7 +3,7 @@ import { createModelGateway, type ModelGateway } from "@/lib/model-gateway";
 import { checkCompanionLine, mentionsWord } from "@/lib/model-gateway/checks";
 import type { RestReplyInput } from "@/lib/model-gateway/types";
 import { normaliseRestRequest } from "@/lib/prototype/line-requests";
-import { laterStoryWords } from "@/lib/prototype/rest-later-words";
+import { isChatLaterFact, laterStoryWords } from "@/lib/prototype/rest-later-words";
 import { MAX_MESSAGE_CHARS, restReplyFor } from "@/lib/prototype/rest-lines";
 import type { RestMessage } from "@/lib/prototype/session";
 import { seedContent } from "./support/seed-content";
@@ -56,13 +56,15 @@ describe("#60 AC1 every reply is checked", () => {
   it("test_60_ac1_facts_from_parts_not_reached_are_later_facts", () => {
     // Five parts and five Steps: on Step 1 only part 1 is reached.
     const first = laterStoryWords(seed, STORY, { stepIndex: 0, stepCount: 5 });
-    expect(first.laterFacts).toEqual(expect.arrayContaining(["wave mechanics", "collision"]));
-    expect(first.laterFacts).not.toContain("grantchester");
-    expect(first.laterFacts).not.toContain("beryllium");
+    expect(first.laterFacts).toEqual(
+      expect.arrayContaining(["wave mechanics", "continuous spectrum", "rutherford's office"]),
+    );
+    expect(first.laterFacts).not.toContain("river cam");
+    expect(first.laterFacts).not.toContain("great things");
     // On Step 4 parts 1 to 4 are reached; only part 5 is later.
     const fourth = laterStoryWords(seed, STORY, { stepIndex: 3, stepCount: 5 });
-    expect(fourth.laterFacts).toContain("difficulties");
-    expect(fourth.laterFacts).not.toContain("collision");
+    expect(fourth.laterFacts).toContain("rutherford's office");
+    expect(fourth.laterFacts).not.toContain("continuous spectrum");
     // On the last Step nothing in the Story is later.
     expect(laterStoryWords(seed, STORY, { stepIndex: 4, stepCount: 5 }).laterFacts).toEqual([]);
   });
@@ -71,7 +73,21 @@ describe("#60 AC1 every reply is checked", () => {
     // Two Steps over five parts: Step 1 holds parts 1 to 3 (CARDS-SPREAD).
     const words = laterStoryWords(seed, STORY, { stepIndex: 0, stepCount: 2 });
     expect(words.laterFacts).not.toContain("wave mechanics");
-    expect(words.laterFacts).toEqual(expect.arrayContaining(["collision", "difficulties"]));
+    expect(words.laterFacts).toEqual(
+      expect.arrayContaining(["continuous spectrum", "rutherford's office"]),
+    );
+  });
+
+  it("test_60_ac1_i2b_single_lower_case_spoiler_words_are_left_out_of_the_chat_check", () => {
+    const words = laterStoryWords(seed, STORY, { stepIndex: 0, stepCount: 5 }).laterFacts;
+    for (const dropped of ["collision", "difficulties", "dirac", "beryllium"]) {
+      expect(words, dropped).not.toContain(dropped);
+    }
+    expect(isChatLaterFact("hard work")).toBe(true);
+    expect(isChatLaterFact("Los Alamos")).toBe(true);
+    expect(isChatLaterFact("Kapitza")).toBe(true);
+    expect(isChatLaterFact("anyway")).toBe(false);
+    expect(isChatLaterFact("drizzl")).toBe(false);
   });
 
   it("test_60_ac1_without_a_position_only_the_first_part_is_reached", () => {
@@ -82,7 +98,7 @@ describe("#60 AC1 every reply is checked", () => {
 
   it("test_60_ac1_the_story_scene_later_words_are_later_facts", () => {
     expect(laterStoryWords(seed, STORY, { stepIndex: 4, stepCount: 5 }).laterWords).toEqual(
-      expect.arrayContaining(["Kapitza"]),
+      expect.arrayContaining(["Kapitza Club"]),
     );
   });
 
@@ -97,7 +113,7 @@ describe("#60 AC1 every reply is checked", () => {
     expect(input.laterFacts).toEqual(
       laterStoryWords(seed, STORY, { stepIndex: 0, stepCount: 5 }).laterFacts,
     );
-    expect(input.laterWords).toEqual(expect.arrayContaining(["Kapitza"]));
+    expect(input.laterWords).toEqual(expect.arrayContaining(["Kapitza Club"]));
   });
 
   it("test_60_ac1_a_reply_with_a_later_fact_is_generated_again", async () => {
@@ -112,6 +128,23 @@ describe("#60 AC1 every reply is checked", () => {
       }),
     ).toEqual({ source: "generated", text: good });
     expect(prompts[1]).toMatch(/forbidden words/);
+    // I-2a: the retry names the matched later fact, so the model can avoid it.
+    expect(prompts[1]).toContain('Do not use these words: "wave mechanics".');
+  });
+
+  it("test_60_ac1_i2a_the_retry_names_every_matched_later_word", async () => {
+    const bad = "I hear the Kapitza Club and talk of wave mechanics in Los Alamos.";
+    const { gateway, prompts } = scripted([reply(bad), reply("I hear the rain.")]);
+    await gateway.writeRestReply({
+      facts: "f",
+      userMessage: "hi",
+      forbidTerms: ["Los Alamos"],
+      laterFacts: ["wave mechanics"],
+      laterWords: ["Kapitza Club"],
+    });
+    expect(prompts[1]).toContain(
+      'Do not use these words: "Los Alamos", "wave mechanics", "Kapitza Club".',
+    );
   });
 
   it("test_60_ac1_a_later_fact_matches_whole_words_only", async () => {
@@ -136,14 +169,15 @@ describe("#60 AC1 every reply is checked", () => {
 
   it("test_60_ac1_a_later_word_the_person_typed_is_allowed", async () => {
     const text = "I have never met a Kapitza or seen wave mechanics.";
+    // The typed word counts with the same capitals (CHAT-USER-WORD, review I-1).
     const { gateway } = scripted([reply(text)]);
     expect(
       await gateway.writeRestReply({
         facts: "f",
-        userMessage: "do you know kapitza and wave mechanics",
+        userMessage: "do you know Kapitza and wave mechanics",
         laterFacts: ["wave mechanics"],
         laterWords: ["Kapitza"],
-        userTexts: ["do you know kapitza and wave mechanics"],
+        userTexts: ["do you know Kapitza and wave mechanics"],
       }),
     ).toEqual({ source: "generated", text });
   });

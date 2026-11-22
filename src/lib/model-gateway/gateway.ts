@@ -9,6 +9,7 @@ import {
   readPlanLimits,
   type LineLimits,
 } from "./checks";
+import { laterWordHits, unseenPeople } from "@/lib/content/scene";
 import { checkRunList, reusesCardNouns } from "./run-list";
 import type {
   GatewayCall,
@@ -35,7 +36,8 @@ export const DEFAULT_TIME_LIMIT_MS = 12_000;
 /** Most attempts per call within the time limit, so a provider that fails at once is not hammered. */
 export const DEFAULT_MAX_ATTEMPTS = 3;
 
-type Attempt<T> = { ok: true; value: T } | { ok: false; rejectedRules: string[] };
+/** A failed attempt may carry a hint for the retry: Story words to avoid, never user text. */
+type Attempt<T> = { ok: true; value: T } | { ok: false; rejectedRules: string[]; hint?: string };
 
 /**
  * Thrown while a prompt is built from a row that cannot be used: an unknown placeholder, or a
@@ -222,7 +224,8 @@ export function createModelGateway(options: {
         }
         rejectedRules = parsed.rejectedRules;
         reason = "checks";
-        nextPrompt = retryPrompt(prompt, rejectedRules, hints);
+        const retry = retryPrompt(prompt, rejectedRules, hints);
+        nextPrompt = parsed.hint ? `${retry}\n${parsed.hint}` : retry;
       } catch (error) {
         controller.abort();
         reason = error instanceof TimeLimitError ? "timeout" : "request";
@@ -292,12 +295,19 @@ const BUILDERS = {
     const limits = lineLimits(checks(row), "checks");
     return {
       prompt: stuckPrompt(input, row),
-      accept: (raw) =>
-        acceptLine(raw, "story", "stuck_story", input.forbidTerms ?? [], limits, {
+      accept: (raw) => {
+        const accepted = acceptLine(raw, "story", "stuck_story", input.forbidTerms ?? [], limits, {
           earlierLines: input.earlierLines ?? [],
           lastCard: input.lastCard,
           companionName: input.companionName,
-        }),
+        });
+        // SCENE-PER-STORY (#65 AC1): the live scene adds no later word and no known person who is
+        // not in this Story's scene table. Both run on every answer, so a retry names every fix.
+        const rules = sceneRules(raw, input);
+        if (rules.length === 0) return accepted;
+        const earlier = accepted.ok ? [] : accepted.rejectedRules;
+        return { ok: false, rejectedRules: [...new Set([...earlier, ...rules])] };
+      },
     };
   },
   rest_reply(row: PromptRow, input: RestReplyInput): Built<Generated<LineResult>> {
@@ -352,6 +362,11 @@ const CHECK_CASES: {
   stuck_story: [
     { pauseNumber: 1, facts: "f" },
     { pauseNumber: 1000, facts: "f" },
+    {
+      pauseNumber: 1,
+      facts: "f",
+      scene: { present: ["p"], allowedWords: ["a"], props: ["o"], pauseProp: "o", laterWords: [] },
+    },
   ],
   rest_reply: [{ facts: "f", userMessage: "u" }],
   return_popup: [
@@ -465,23 +480,33 @@ function acceptLine(
 }
 
 /**
- * A rest reply: the line checks with the Story's words from after his date, then the facts from
- * later in the Story (#60). A later word the person typed himself is let through (CHAT-USER-WORD).
+ * A rest reply: the line checks, then the Story's words from after his date (whole words, any
+ * case, #59 AC4) and the facts from later in the Story (#60): the spoiler words of the parts not
+ * reached (any case) and the scene's later words (exact capitals). A word the person typed himself
+ * is let through (CHAT-USER-WORD). A failed answer names the matched words in its retry, so the
+ * next attempt can avoid them (they are Story data, never the person's text).
  */
 function acceptRestReply(
   raw: string,
   input: RestReplyInput,
   limits: LineLimits,
 ): Attempt<{ source: "generated"; text: string }> {
-  const typed = input.userTexts ?? [];
-  const forbid = allowUserWords(input.forbidTerms ?? [], typed);
-  const checked = acceptLine(raw, "reply", "rest_reply", forbid, limits, null, input.companionName);
+  const checked = acceptLine(raw, "reply", "rest_reply", [], limits, null, input.companionName);
   if (!checked.ok) return checked;
   const text = checked.value.text;
-  const later =
-    allowUserWords(input.laterFacts ?? [], typed).some((word) => mentionsWord(text, word)) ||
-    allowUserWords(input.laterWords ?? [], typed).some((word) => mentionsWord(text, word, true));
-  return later ? { ok: false, rejectedRules: ["leak"] } : checked;
+  const typed = input.userTexts ?? [];
+  const anyCase = allowUserWords(
+    [...(input.forbidTerms ?? []), ...(input.laterFacts ?? [])],
+    typed,
+  );
+  const exactCase = allowUserWords(input.laterWords ?? [], typed);
+  const hits = [
+    ...anyCase.filter((word) => mentionsWord(text, word)),
+    ...exactCase.filter((word) => mentionsWord(text, word, true)),
+  ];
+  if (hits.length === 0) return checked;
+  const named = [...new Set(hits)].map((word) => `"${word}"`).join(", ");
+  return { ok: false, rejectedRules: ["leak"], hint: `Do not use these words: ${named}.` };
 }
 
 /** Both lines pass the existing one-way line checks; the carried line may not repeat the closing one. */
@@ -597,13 +622,36 @@ function normalPauseNumber(value: number): number {
   return Number.isInteger(value) && value >= 1 ? value : 1;
 }
 
+/** The scene table rules of a stuck story answer (#65 AC1): `leak` and `people`. */
+function sceneRules(raw: string, input: StuckStoryInput): string[] {
+  const scene = input.scene;
+  if (!scene) return [];
+  const parsed = parseModelJson(raw);
+  const story = isRecord(parsed) ? parsed.story : undefined;
+  if (typeof story !== "string") return [];
+  const rules: string[] = [];
+  if (laterWordHits(story, scene.laterWords).length > 0) rules.push("leak");
+  const check = { allowed: [...scene.present, ...scene.allowedWords], people: input.people ?? [] };
+  if (unseenPeople(story, check, { titled: false }).length > 0) rules.push("people");
+  return rules;
+}
+
+/** A list for a prompt line; null (the line is left out) when there is nothing in it. */
+const listed = (items: string[] | undefined) =>
+  items && items.length > 0 ? items.join(", ") : null;
+
 function stuckPrompt(input: StuckStoryInput, row: PromptRow): string {
+  const scene = input.scene;
   const pauseNumber = normalPauseNumber(input.pauseNumber);
   const harderFrom = count(row.params.harder_from_pause, "harder_from_pause");
   return render(row, {
     situation: text(row, pauseNumber >= harderFrom ? "situation_harder" : "situation_first"),
     pauseNumber,
     facts: input.facts,
+    pauseProp: scene?.pauseProp || null,
+    props: listed(scene?.props),
+    present: listed(scene?.present),
+    allowedWords: listed(scene?.allowedWords),
   });
 }
 

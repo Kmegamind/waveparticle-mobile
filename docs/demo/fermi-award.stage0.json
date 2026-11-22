@@ -36,18 +36,6 @@
       "line": "Johnson is the President of the United States.",
       "first_card": "fermi-award.s1.c1"
     },
-    "Kitty": {
-      "role": "my wife",
-      "inline": "my wife",
-      "line": "Kitty is my wife.",
-      "first_card": "fermi-award.s1.c1"
-    },
-    "Peter": {
-      "role": "my son",
-      "inline": "my son",
-      "line": "Peter is my son.",
-      "first_card": "fermi-award.s2.c1"
-    },
     "Toni": {
       "role": "my daughter",
       "inline": "my daughter",
@@ -241,8 +229,7 @@
   ],
   "scene": {
     "present": [
-      "Johnson",
-      "Kitty"
+      "Johnson"
     ],
     "allowedWords": [
       "Johnson",
@@ -271,9 +258,7 @@
       "Time"
     ],
     "pauseProp": "handkerchief",
-    "laterWords": [
-      "Time"
-    ],
+    "laterWords": [],
     "props": [
       "long table",
       "leather chairs",

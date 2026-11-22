@@ -31,6 +31,7 @@ Edit the prompt or its settings here or in the Supabase table editor; see README
       "name": "Never say his own name.",
       "opening": "Do not start with the same three words as a recent line.",
       "parse": "Return valid JSON in exactly the shape asked for.",
+      "people": "Name no people or places other than the names listed.",
       "praise": "Give no praise.",
       "question": "Ask no question, or at most one where a question is allowed.",
       "repeat": "Do not repeat a line already shown.",

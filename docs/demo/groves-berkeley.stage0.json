@@ -169,7 +169,7 @@
     "present": ["Groves"],
     "allowedWords": ["Groves", "Nichols", "Serber", "Robert", "General", "Colonel", "Army", "Berkeley", "Chicago", "Princeton"],
     "pauseProp": "pencil",
-    "laterWords": ["Twentieth", "Century", "Limited", "New", "York"],
+    "laterWords": ["Twentieth Century Limited", "New York"],
     "props": [
       "coffee cup",
       "napkin",
