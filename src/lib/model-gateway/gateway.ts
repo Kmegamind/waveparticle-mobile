@@ -1,6 +1,7 @@
 import type { PromptKey, PromptRow, PromptSource } from "@/lib/prompts/repository";
 import { placeholderNames, renderPrompt, type PromptValue } from "@/lib/prompts/template";
 import {
+  allowUserWords,
   checkCompanionLine,
   checkPlan,
   readLineLimits,
@@ -303,7 +304,15 @@ const BUILDERS = {
     return {
       prompt: restPrompt(input, row),
       accept: (raw) =>
-        acceptLine(raw, "reply", "rest_reply", [], limits, null, input.companionName),
+        acceptLine(
+          raw,
+          "reply",
+          "rest_reply",
+          allowUserWords(input.forbidTerms ?? [], input.userTexts ?? []),
+          limits,
+          null,
+          input.companionName,
+        ),
     };
   },
   return_popup(row: PromptRow, input: ReturnPopupInput): Built<Generated<LineResult>> {

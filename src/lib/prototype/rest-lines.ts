@@ -137,11 +137,24 @@ export async function restReplyFor(
   const history = request.history
     .filter((message) => message.from === "him" || gateFreeText(message.text).action === "continue")
     .slice(-MAX_HISTORY);
+  const inputs = generationInputs(content, storyId);
+  // CHAT-USER-WORD: everything the person typed in this chat, so a later word he typed may be
+  // repeated. Crisis text is left out, as in the history sent to the model.
+  const userTexts = [
+    ...request.history
+      .filter((message) => message.from === "you")
+      .map((message) => message.text)
+      .filter((text) => gateFreeText(text).action === "continue"),
+    request.message,
+  ];
   return ask(() =>
     gateway.writeRestReply({
       userMessage: request.message.slice(0, MAX_MESSAGE_CHARS),
       facts: restFacts(content, history, storyId),
-      companionName: generationInputs(content, storyId).companionName,
+      companionName: inputs.companionName,
+      // Words from after his date, checked on the reply (#59 AC4, ERA-ANSWER).
+      forbidTerms: inputs.forbidTerms,
+      userTexts,
     }),
   );
 }

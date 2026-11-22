@@ -3,13 +3,19 @@ import type { CompanionKind, GeneratedPlan } from "./types";
 const FAILURE_WORDING = /\b(error|failed|failure|timeout|exception|undefined)\b/i;
 const CJK = /[\u3400-\u9fff]/;
 const DASH = /—|–|--/;
-/** Banned words in any line of his (also used by the admin card checks, #304). */
-export const BANNED = /\b(bro|vibes|no cap|as an ai)\b/i;
+/**
+ * Banned words in any line of his (also used by the admin card checks, #304). He never says or
+ * hints that he is an AI (A4, #59 AC7), even when the person typed the word.
+ */
+export const BANNED =
+  /\b(bro|vibes|no cap|as an ai|ai|a\.i\.|artificial intelligence|language models?|chat ?bots?)(?![\p{L}\p{N}])/iu;
 const CLOCK =
   /\b\d{1,2}:\d{2}\b|\b(?:a\.m\.|p\.m\.)\b|\b\d{1,2}\s*(?:am|pm)\b|\bo'clock\b|\bhalf past\b|\b\d+\s+minutes?\b/i;
 const BACKSTAGE =
   /\b(segment|slice|director|prompt|texture|storyline|plot beat|steps?|sessions?|timer|app|screen|scene|chapter|tasks?|users?)\b/i;
-const ORDERING = /\b(you should|let's|take a break|close your eyes|hang on|it'll pass)\b/i;
+// Orders, advice, a method or a promise that it will pass (#59 AC3, AI_04 section B).
+const ORDERING =
+  /\b(you should|you could|you need to|you must|you ought to|have you tried|let's|take a break|close your eyes|hang on|it'll pass|it will pass|don't worry|do not worry)\b/i;
 const QUESTION = /\?/g;
 const ADDRESSED = /\byou\b/i;
 const HOOK = /\b(more|later|tomorrow|soon|continue|find out|next)\b(?!\s+to\b)/i;
@@ -42,6 +48,18 @@ const escape = (word: string) => word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 function ownNamePattern(companionName: string): RegExp | null {
   const words = ownNameWords(companionName);
   return words.length === 0 ? null : new RegExp(`\\b(${words.map(escape).join("|")})\\b`, "i");
+}
+
+/**
+ * CHAT-USER-WORD: the later words that still fail a rest reply. A word the person typed himself
+ * anywhere in the chat (any case) is let through, so he can say he has never heard of it.
+ */
+export function allowUserWords(terms: string[], userTexts: string[]): string[] {
+  const typed = userTexts.map((text) => text.replace(/[’‘]/g, "'").toLowerCase());
+  return terms.filter((term) => {
+    const word = term.trim().toLowerCase();
+    return word.length > 0 && !typed.some((text) => text.includes(word));
+  });
 }
 
 export function cleanLine(text: string, companionName = DEFAULT_COMPANION_NAME): string {

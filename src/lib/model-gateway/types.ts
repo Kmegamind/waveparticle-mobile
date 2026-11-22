@@ -98,6 +98,13 @@ export type RestReplyInput = {
   companionName?: string;
   userMessage: string;
   facts: string;
+  /** Words from after his date (the Story's forbidden terms); a reply that uses one is generated again. */
+  forbidTerms?: string[];
+  /**
+   * Every message the person typed in this rest chat, the current one included. A later word that
+   * the person typed himself does not fail the reply (CHAT-USER-WORD).
+   */
+  userTexts?: string[];
 };
 
 /** Why the return pop-up opens: Back from the rest conversation, or back after an absence (R1). */
