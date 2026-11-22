@@ -11,6 +11,7 @@ import {
   returnLineFor,
   type ContentSource,
   type LineResponse,
+  type PauseResponse,
   type RestReplyResponse,
 } from "@/lib/prototype/rest-lines";
 import { gateFreeText } from "@/lib/safety/crisis";
@@ -36,7 +37,7 @@ export async function accountPauseMessage(
   content: StoryContent | null,
   raw: unknown,
   gateway: ModelGateway | null,
-): Promise<LineResponse> {
+): Promise<PauseResponse> {
   if (!gateway) return { status: "failed" };
   return pauseMessageFor(content, normalisePauseRequest(raw), gateway);
 }

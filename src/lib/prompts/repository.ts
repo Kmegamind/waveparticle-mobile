@@ -16,6 +16,7 @@ export const PROMPT_KEYS = [
   "plan_split",
   "step_cards",
   "stuck_story",
+  "pause_predicament",
   "rest_reply",
   "return_popup",
   "closing_line",

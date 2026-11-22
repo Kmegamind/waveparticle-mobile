@@ -83,6 +83,20 @@ export type FocusSession = {
   returnPending: ReturnTrigger | null;
   /** His return line once written: stored once and never regenerated (#57 AC3). */
   returnLine: string | null;
+  /**
+   * The pause messages of this run, oldest first (#56): the category and prop the code picked,
+   * the stuck story and his message. The next Pause picks a new category and prop from it and is
+   * checked against it. Never shown; missing in sessions stored before #56.
+   */
+  pauseLog?: PauseLogEntry[];
+};
+
+export type PauseLogEntry = {
+  step: number;
+  category?: string;
+  prop?: string;
+  story?: string;
+  text: string;
 };
 
 /** Why the return pop-up opens: Back to step from rest, or back after 5 minutes or more away. */
@@ -93,6 +107,8 @@ export type RestMessage = { from: "him" | "you"; text: string };
 export type RestState = {
   /** 1-based number of this Pause in the current Step. */
   pauseNumber: number;
+  /** Call one's stuck story, shown on its own slip before his message (#56, R1). */
+  stuckStory?: string;
   messages: RestMessage[];
   /** Unsent text in the composer; kept when the page is reopened. */
   draft: string;
@@ -391,6 +407,60 @@ export function addFirstRestMessage(session: FocusSession, text: string): FocusS
   return { ...session, rest: { ...session.rest, messages } };
 }
 
+/**
+ * His pause message of two calls (#56): the stuck story goes on its own slip before his message,
+ * and the Pause is added to the run's pause log. Nothing else changes: the Step, its cards and
+ * the clock stay as they were, so the moment never moves his Story.
+ */
+export function addPauseMessage(
+  session: FocusSession,
+  pause: { text: string; story?: string; category?: string; prop?: string },
+): FocusSession {
+  if (!session.rest || hasFirstRestMessage(session)) return session;
+  const withMessage = addFirstRestMessage(session, pause.text);
+  const rest = { ...withMessage.rest!, ...(pause.story ? { stuckStory: pause.story } : {}) };
+  const entry: PauseLogEntry = { step: session.current, text: pause.text };
+  if (pause.story) entry.story = pause.story;
+  if (pause.category) entry.category = pause.category;
+  if (pause.prop) entry.prop = pause.prop;
+  return { ...withMessage, rest, pauseLog: [...(session.pauseLog ?? []), entry] };
+}
+
+/** How many earlier lines of the pause log go back to the server with the next Pause. */
+const PAUSE_HISTORY = 8;
+
+/**
+ * What the next Pause needs from the earlier ones (#56): the categories of the last two Pauses of
+ * the run, the props used in this Step, this Step's stuck stories, and the run's pause lines for
+ * the repeat check.
+ */
+export function pauseHistory(session: FocusSession): {
+  recentCategories: string[];
+  usedProps: string[];
+  earlierStories: string[];
+  earlierLines: string[];
+} {
+  const log = session.pauseLog ?? [];
+  const inStep = log.filter((entry) => entry.step === session.current);
+  return {
+    recentCategories: log
+      .slice(-2)
+      .map((entry) => entry.category)
+      .filter((category): category is string => typeof category === "string"),
+    usedProps: inStep
+      .map((entry) => entry.prop)
+      .filter((prop): prop is string => typeof prop === "string"),
+    earlierStories: inStep
+      .map((entry) => entry.story)
+      .filter((story): story is string => typeof story === "string")
+      .slice(-PAUSE_HISTORY),
+    earlierLines: log
+      .flatMap((entry) => [entry.story, entry.text])
+      .filter((line): line is string => typeof line === "string")
+      .slice(-PAUSE_HISTORY),
+  };
+}
+
 export function hasFirstRestMessage(session: FocusSession): boolean {
   return session.rest?.messages[0]?.from === "him";
 }
@@ -457,6 +527,17 @@ function withRestFields(session: FocusSession): FocusSession {
     rest: partial.rest ?? null,
     returnPending: partial.returnPending ?? null,
     returnLine: partial.returnLine ?? null,
+    ...(Array.isArray(partial.pauseLog)
+      ? {
+          pauseLog: partial.pauseLog.filter(
+            (entry) =>
+              typeof entry === "object" &&
+              entry !== null &&
+              typeof entry.step === "number" &&
+              typeof entry.text === "string",
+          ),
+        }
+      : {}),
   };
 }
 

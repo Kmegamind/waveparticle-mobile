@@ -21,7 +21,8 @@ The table editor and the import make a version active without a Publish history 
 |---|---|
 | `plan_split` | The goal split into Steps |
 | `step_cards` | His cards for one Step, with the background card on Step 1 |
-| `stuck_story` | His stuck situation when the person pauses (the harder one from the third Pause) |
+| `stuck_story` | Pause, call one: his stuck story as `{prop, story}`, around the category and prop the code picked (the harder one from the third Pause) |
+| `pause_predicament` | Pause, call two: the message he shows, his own words about the stuck story and how he feels, as plain text (#56) |
 | `rest_reply` | His reply in the rest chat |
 | `return_popup` | His line in the return pop-up, after the rest chat or an absence |
 | `closing_line` | His closing line and the line he carries, on the summary |

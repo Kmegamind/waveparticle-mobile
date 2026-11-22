@@ -31,7 +31,7 @@ One file per component in this folder. To add one, create `docs/architecture/<co
 - [Home page](home-page.md): Signed-in Home from the account only (#268, prototype v4).
 - [Life Path (account)](life-path-account.md): `/companions/oppenheimer` (CPAGE, #258): the 26 stories under six named periods (each story's `period`, #284) (drafts, PERIOD-NAMES) with no dates or ages.
 - [Me area](me-area.md): ME (#81): initials, display name with Edit (`profiles.nickname`), email, first-launch date, the Current goal with #69's Continue, On hold, Appearance (Day, Night, System), Plain text, History…
-- [Model gateway](model-gateway.md): Server-only calls for the plan split, step cards, the stuck story, the rest reply and the return pop-up.
+- [Model gateway](model-gateway.md): Server-only calls for the plan split, step cards, the pause message (two calls since #56: the stuck story, then his words about it), the rest reply and the return pop-up.
 - [Prompts (ADM-08)](prompts-adm-08.md): Every gateway prompt and its check limits, read from `public.prompts` through `getActivePrompt` (#282, `docs/decisions/0015`).
 - [Publish history](publish-history.md): #289 (`docs/decisions/0018`): every publish and roll back writes one `public.publish_history` row in the same transaction (kind, key, version, action, editor, time).
 - [Root layout](root-layout.md): Page shell, install metadata and the phone viewport.
@@ -45,7 +45,7 @@ One file per component in this folder. To add one, create `docs/architecture/<co
 - [Supabase clients](supabase-clients.md): Browser client (public key), server client (reads request cookies), `getCurrentUser`, settings reader
 - [Test focus page](test-focus-page.md): `/try/focus`: Step x of N, the clock from timestamps (holds at 00:00), his cards on a slip one at a time with Earlier and Newer (live cards, #43: the chapter 8 Story divided across the Plan's Steps…
 - [Test path (prototype)](test-path-prototype.md): Sign-in-free `/try` route for test builds only (the goal dialogue, focus and rest pages use the Oppenheimer skin through `src/app/try/try-frame.tsx`), on when `PROTOTYPE_ENABLED` is `1` (the proxy…
-- [Test rest page and return pop-up](test-rest-page-and-return-pop-up.md): `/try/rest` (R1, R1-C): Back to step, "Paused" and Home in the header; his first message for this Pause (the pause number goes to the prompt), then a free conversation with no limit; every message…
+- [Test rest page and return pop-up](test-rest-page-and-return-pop-up.md): `/try/rest` (R1, R1-C): Back to step, "Paused" and Home in the header; his first message for this Pause, made with two calls (#56): the stuck story on the first slip, then his own words about it (the…
 - [Typefaces](typefaces.md): Loads Atkinson Hyperlegible Next and Mono, Bricolage Grotesque and Newsreader with `next/font` (served from this site) and passes them to the `--type-*` tokens
 - [Unit tests](unit-tests.md): Vitest tests and the guardrail hook test
 - [User-data schema](user-data-schema.md): Profiles, account-owned Goals and Steps, and Sessions with row-level security

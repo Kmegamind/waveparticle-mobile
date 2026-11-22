@@ -8,7 +8,7 @@ import { normalisePauseRequest, normaliseRestRequest } from "@/lib/prototype/lin
 import {
   pauseMessageFor,
   restReplyFor,
-  type LineResponse,
+  type PauseResponse,
   type RestReplyResponse,
 } from "@/lib/prototype/rest-lines";
 import type { RestMessage } from "@/lib/prototype/session";
@@ -29,7 +29,11 @@ export async function loadPauseMessage(request: {
   pauseNumber: number;
   stepTitle: string;
   lastCard?: string;
-}): Promise<LineResponse> {
+  recentCategories?: string[];
+  usedProps?: string[];
+  earlierStories?: string[];
+  earlierLines?: string[];
+}): Promise<PauseResponse> {
   if (!isPrototypeEnabled()) return { status: "failed" };
   return pauseMessageFor(await storyContent(), normalisePauseRequest(request), gateway());
 }

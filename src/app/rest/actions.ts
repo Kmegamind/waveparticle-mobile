@@ -4,7 +4,7 @@ import { getStoryContent } from "@/lib/content/repository";
 import { createServerModelGateway } from "@/lib/model-gateway/server";
 import { accountPauseMessage, accountRestReply } from "@/lib/progress/account-lines";
 import { modelIsConfigured } from "@/lib/prototype/focus-cards";
-import type { LineResponse, RestReplyResponse } from "@/lib/prototype/rest-lines";
+import type { PauseResponse, RestReplyResponse } from "@/lib/prototype/rest-lines";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 
@@ -22,7 +22,7 @@ function gateway() {
 const storyContent = () => getStoryContent().catch(() => null);
 
 /** His first message for this Pause. Nothing about the request is logged. */
-export async function loadAccountPauseMessage(request: unknown): Promise<LineResponse> {
+export async function loadAccountPauseMessage(request: unknown): Promise<PauseResponse> {
   if (!(await isSignedIn())) return { status: "failed" };
   return accountPauseMessage(await storyContent(), request, gateway());
 }

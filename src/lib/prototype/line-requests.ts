@@ -37,15 +37,35 @@ export function normaliseReturnRequest(raw: unknown): {
   };
 }
 
+/** A list of short texts from the browser: strings only, at most `count`, each cut to `max`. */
+function texts(value: unknown, count: number, max: number): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    .slice(-count)
+    .map((item) => item.slice(0, max));
+}
+
 export function normalisePauseRequest(raw: unknown): {
   storyId?: string;
   pauseNumber: number;
   stepTitle: string;
   lastCard?: string;
+  recentCategories: string[];
+  usedProps: string[];
+  earlierStories: string[];
+  earlierLines: string[];
 } {
   const request = record(raw);
   const pauseNumber = request?.pauseNumber;
   return {
+    // #56: what the earlier Pauses used. Checked again on the server (`pickPauseSnag`). The
+    // earlier texts come from the browser, so they are only compared against (near repeats) and
+    // never put into a prompt (#216), and they are kept short.
+    recentCategories: texts(request?.recentCategories, 2, 20),
+    usedProps: texts(request?.usedProps, 50, 100),
+    earlierStories: texts(request?.earlierStories, 4, 300),
+    earlierLines: texts(request?.earlierLines, 8, 300),
     storyId: storyIdOf(request?.storyId),
     pauseNumber:
       typeof pauseNumber === "number" && Number.isInteger(pauseNumber) && pauseNumber >= 1

@@ -26,4 +26,6 @@ export type {
   StepCardsInput,
   StepCardsResult,
   StuckStoryInput,
+  StuckStoryResult,
+  PausePredicamentInput,
 } from "./types";

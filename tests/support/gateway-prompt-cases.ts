@@ -3,7 +3,9 @@ import type { ModelGateway, ModelProvider } from "@/lib/model-gateway/types";
 /**
  * Inputs that exercise every branch of every gateway prompt (#282). The golden file
  * `tests/fixtures/gateway-prompts.json` holds the prompts the gateway built for them before the
- * prompts moved to the database; the gateway must keep building exactly these strings.
+ * prompts moved to the database; the gateway must keep building exactly these strings. The pause
+ * cases were recorded again for the two-call pause (#56, `stuck_story` version 3,
+ * `pause_predicament` version 1); every other case is unchanged.
  *
  * Each call is answered three times: invalid JSON (a "parse" retry), an answer that fails several
  * checks (a retry with several fixes), then nothing usable, so every prompt and both retry prompts
@@ -86,6 +88,42 @@ export const GATEWAY_PROMPT_CASES: Case[] = [
     name: "stuck story, invalid pause number",
     answers: [notJson, notJson, notJson],
     call: (g) => g.writeStuckStory({ pauseNumber: 2.5, facts }),
+  },
+  {
+    name: "stuck story, chosen category and prop, scene and earlier snags (#56)",
+    answers: [notJson, JSON.stringify({ prop: "lamp", story: badLine }), notJson],
+    call: (g) =>
+      g.writeStuckStory({
+        pauseNumber: 2,
+        facts,
+        category: "paper",
+        prop: "notebook",
+        earlierStories: ["His pencil has gone blunt."],
+        scene: {
+          present: ["Dudley"],
+          allowedWords: ["Dudley", "Jemez"],
+          props: ["notebook", "pencil", "lamp"],
+          pauseProp: "pencil",
+          laterWords: [],
+        },
+      }),
+  },
+  {
+    name: "pause predicament, first pause (#56)",
+    answers: [notJson, badLine, notJson],
+    call: (g) =>
+      g.writePausePredicament({ pauseNumber: 1, facts, story: "His pencil has gone blunt." }),
+  },
+  {
+    name: "pause predicament, third pause, earlier snags (#56)",
+    answers: [notJson, notJson, notJson],
+    call: (g) =>
+      g.writePausePredicament({
+        pauseNumber: 3,
+        facts,
+        story: "The notebook page has curled.",
+        earlierStories: ["His pencil has gone blunt.", "The lamp smokes."],
+      }),
   },
   {
     name: "rest reply, user text with braces",
