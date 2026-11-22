@@ -49,6 +49,8 @@ export type RestHost = {
     message: string;
     history: RestMessage[];
     replyIndex: number;
+    stepIndex?: number;
+    stepCount?: number;
   }) => Promise<RestReplyResponse>;
   onProgress?: (session: FocusSession) => void;
 };
@@ -121,7 +123,15 @@ export function RestBody({ host }: { host: RestHost }) {
     setWaiting(true);
     setReplyFailed(false);
     const replyIndex = Math.max(0, history.filter((item) => item.from === "him").length - 1);
-    loadRestReply({ storyId: plan.storyId, message, history, replyIndex })
+    // The Step's position only, never its title: it says which parts of his Story are later (#60).
+    loadRestReply({
+      storyId: plan.storyId,
+      message,
+      history,
+      replyIndex,
+      stepIndex: session.current,
+      stepCount: plan.steps.length,
+    })
       .catch(() => ({ status: "failed" as const }))
       .then((result) => {
         setWaiting(false);

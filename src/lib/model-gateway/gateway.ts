@@ -36,7 +36,8 @@ export const DEFAULT_TIME_LIMIT_MS = 12_000;
 /** Most attempts per call within the time limit, so a provider that fails at once is not hammered. */
 export const DEFAULT_MAX_ATTEMPTS = 3;
 
-type Attempt<T> = { ok: true; value: T } | { ok: false; rejectedRules: string[] };
+/** A failed attempt may carry a hint for the retry: Story words to avoid, never user text. */
+type Attempt<T> = { ok: true; value: T } | { ok: false; rejectedRules: string[]; hint?: string };
 
 /**
  * Thrown while a prompt is built from a row that cannot be used: an unknown placeholder, or a
@@ -195,6 +196,7 @@ export function createModelGateway(options: {
     let reason: GatewayFailureReason = "request";
     let attempts = 0;
     let nextPrompt = prompt;
+    const wordHints: string[] = [];
 
     while (attempts < maxAttempts) {
       const remaining = deadline - Date.now();
@@ -223,7 +225,10 @@ export function createModelGateway(options: {
         }
         rejectedRules = parsed.rejectedRules;
         reason = "checks";
-        nextPrompt = retryPrompt(prompt, rejectedRules, hints);
+        const retry = retryPrompt(prompt, rejectedRules, hints);
+        // The Story words named so far stay in every later retry (cumulative hint).
+        if (parsed.hint && !wordHints.includes(parsed.hint)) wordHints.push(parsed.hint);
+        nextPrompt = wordHints.length > 0 ? `${retry}\n${wordHints.join("\n")}` : retry;
       } catch (error) {
         controller.abort();
         reason = error instanceof TimeLimitError ? "timeout" : "request";
@@ -478,9 +483,11 @@ function acceptLine(
 }
 
 /**
- * A rest reply: the line checks, then the Story's words from after his date as whole words in any
- * case (#59 AC4), so "opinion" never fails on "pion". A word the person typed himself is let
- * through (CHAT-USER-WORD).
+ * A rest reply: the line checks, then the Story's words from after his date (whole words, any
+ * case, #59 AC4) and the facts from later in the Story (#60): the spoiler words of the parts not
+ * reached (any case) and the scene's later words (exact capitals). A word the person typed himself
+ * is let through (CHAT-USER-WORD). A failed answer names the matched words in its retry, so the
+ * next attempt can avoid them (they are Story data, never the person's text).
  */
 function acceptRestReply(
   raw: string,
@@ -489,10 +496,20 @@ function acceptRestReply(
 ): Attempt<{ source: "generated"; text: string }> {
   const checked = acceptLine(raw, "reply", "rest_reply", [], limits, null, input.companionName);
   if (!checked.ok) return checked;
-  const forbid = allowUserWords(input.forbidTerms ?? [], input.userTexts ?? []);
-  return forbid.some((word) => mentionsWord(checked.value.text, word))
-    ? { ok: false, rejectedRules: ["leak"] }
-    : checked;
+  const text = checked.value.text;
+  const typed = input.userTexts ?? [];
+  const anyCase = allowUserWords(
+    [...(input.forbidTerms ?? []), ...(input.laterFacts ?? [])],
+    typed,
+  );
+  const exactCase = allowUserWords(input.laterWords ?? [], typed);
+  const hits = [
+    ...anyCase.filter((word) => mentionsWord(text, word)),
+    ...exactCase.filter((word) => mentionsWord(text, word, true)),
+  ];
+  if (hits.length === 0) return checked;
+  const named = [...new Set(hits)].map((word) => `"${word}"`).join(", ");
+  return { ok: false, rejectedRules: ["leak"], hint: `Do not use these words: ${named}.` };
 }
 
 /** Both lines pass the existing one-way line checks; the carried line may not repeat the closing one. */

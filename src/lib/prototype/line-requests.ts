@@ -13,6 +13,9 @@ function storyIdOf(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+/** The most Steps a Plan may have (as for the card requests). */
+const MAX_STEPS = 50;
+
 type Raw = Record<string, unknown> | null | undefined;
 
 const record = (raw: unknown): Raw =>
@@ -58,6 +61,8 @@ export function normaliseRestRequest(raw: unknown): {
   message: string;
   history: RestMessage[];
   replyIndex: number;
+  stepIndex?: number;
+  stepCount?: number;
 } {
   const request = record(raw);
   const history = Array.isArray(request?.history)
@@ -66,6 +71,19 @@ export function normaliseRestRequest(raw: unknown): {
         .map((item) => ({ from: item.from, text: text(item.text, 2_000) }))
     : [];
   const replyIndex = request?.replyIndex;
+  // The Step the person rests from (#60): kept only when both numbers describe a Step of a Plan.
+  const { stepIndex, stepCount } = request ?? {};
+  const position =
+    typeof stepIndex === "number" &&
+    typeof stepCount === "number" &&
+    Number.isInteger(stepIndex) &&
+    Number.isInteger(stepCount) &&
+    stepCount >= 1 &&
+    stepCount <= MAX_STEPS &&
+    stepIndex >= 0 &&
+    stepIndex < stepCount
+      ? { stepIndex, stepCount }
+      : {};
   return {
     storyId: storyIdOf(request?.storyId),
     message: text(request?.message, 10_000),
@@ -74,5 +92,6 @@ export function normaliseRestRequest(raw: unknown): {
       typeof replyIndex === "number" && Number.isInteger(replyIndex) && replyIndex >= 0
         ? replyIndex
         : 0,
+    ...position,
   };
 }
