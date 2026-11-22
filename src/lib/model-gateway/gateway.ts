@@ -1,8 +1,10 @@
 import type { PromptKey, PromptRow, PromptSource } from "@/lib/prompts/repository";
 import { placeholderNames, renderPrompt, type PromptValue } from "@/lib/prompts/template";
 import {
+  allowUserWords,
   checkCompanionLine,
   checkPlan,
+  mentionsWord,
   readLineLimits,
   readPlanLimits,
   type LineLimits,
@@ -310,8 +312,7 @@ const BUILDERS = {
     const limits = lineLimits(checks(row), "checks");
     return {
       prompt: restPrompt(input, row),
-      accept: (raw) =>
-        acceptLine(raw, "reply", "rest_reply", [], limits, null, input.companionName),
+      accept: (raw) => acceptRestReply(raw, input, limits),
     };
   },
   return_popup(row: PromptRow, input: ReturnPopupInput): Built<Generated<LineResult>> {
@@ -474,6 +475,24 @@ function acceptLine(
     if (rules.length > 0) return { ok: false, rejectedRules: rules };
   }
   return { ok: true, value: { source: "generated", text: checked.text } };
+}
+
+/**
+ * A rest reply: the line checks, then the Story's words from after his date as whole words in any
+ * case (#59 AC4), so "opinion" never fails on "pion". A word the person typed himself is let
+ * through (CHAT-USER-WORD).
+ */
+function acceptRestReply(
+  raw: string,
+  input: RestReplyInput,
+  limits: LineLimits,
+): Attempt<{ source: "generated"; text: string }> {
+  const checked = acceptLine(raw, "reply", "rest_reply", [], limits, null, input.companionName);
+  if (!checked.ok) return checked;
+  const forbid = allowUserWords(input.forbidTerms ?? [], input.userTexts ?? []);
+  return forbid.some((word) => mentionsWord(checked.value.text, word))
+    ? { ok: false, rejectedRules: ["leak"] }
+    : checked;
 }
 
 /** Both lines pass the existing one-way line checks; the carried line may not repeat the closing one. */
