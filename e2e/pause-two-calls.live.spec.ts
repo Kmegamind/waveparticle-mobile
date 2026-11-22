@@ -68,6 +68,8 @@ test("#56 AC1 AC2 R1 shows the stuck story, then his words, a new prop on each P
   expect(callTwo.at(-1)).toContain(await story.innerText());
   for (const prompt of [...callOne, ...callTwo]) expect(prompt).not.toContain("Outline");
 
+  const first = await story.innerText();
+
   // The second Pause in the Step gets another prop and another category.
   await page.getByRole("button", { name: "Back to step" }).click();
   await expect(page).toHaveURL(/\/try\/focus/);
@@ -80,5 +82,7 @@ test("#56 AC1 AC2 R1 shows the stuck story, then his words, a new prop on each P
   const after = (await (await request.get(`${STUB}/prompts`)).json()) as string[];
   const lastOne = after.filter((prompt) => prompt.startsWith('Return JSON only: {"prop"')).at(-1)!;
   expect(lastOne).toContain("Pause number: 2");
-  expect(lastOne).toContain("Earlier snags in this Step");
+  // Fix round 1 (I4): the earlier stuck story comes from the browser, so it is only checked
+  // against, never put into the prompt (#216).
+  expect(lastOne).not.toContain(first);
 });
