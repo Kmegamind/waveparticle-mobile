@@ -4,6 +4,7 @@ import {
   allowUserWords,
   checkCompanionLine,
   checkPlan,
+  mentionsWord,
   readLineLimits,
   readPlanLimits,
   type LineLimits,
@@ -303,16 +304,7 @@ const BUILDERS = {
     const limits = lineLimits(checks(row), "checks");
     return {
       prompt: restPrompt(input, row),
-      accept: (raw) =>
-        acceptLine(
-          raw,
-          "reply",
-          "rest_reply",
-          allowUserWords(input.forbidTerms ?? [], input.userTexts ?? []),
-          limits,
-          null,
-          input.companionName,
-        ),
+      accept: (raw) => acceptRestReply(raw, input, limits),
     };
   },
   return_popup(row: PromptRow, input: ReturnPopupInput): Built<Generated<LineResult>> {
@@ -470,6 +462,26 @@ function acceptLine(
     if (rules.length > 0) return { ok: false, rejectedRules: rules };
   }
   return { ok: true, value: { source: "generated", text: checked.text } };
+}
+
+/**
+ * A rest reply: the line checks with the Story's words from after his date, then the facts from
+ * later in the Story (#60). A later word the person typed himself is let through (CHAT-USER-WORD).
+ */
+function acceptRestReply(
+  raw: string,
+  input: RestReplyInput,
+  limits: LineLimits,
+): Attempt<{ source: "generated"; text: string }> {
+  const typed = input.userTexts ?? [];
+  const forbid = allowUserWords(input.forbidTerms ?? [], typed);
+  const checked = acceptLine(raw, "reply", "rest_reply", forbid, limits, null, input.companionName);
+  if (!checked.ok) return checked;
+  const text = checked.value.text;
+  const later =
+    allowUserWords(input.laterFacts ?? [], typed).some((word) => mentionsWord(text, word)) ||
+    allowUserWords(input.laterWords ?? [], typed).some((word) => mentionsWord(text, word, true));
+  return later ? { ok: false, rejectedRules: ["leak"] } : checked;
 }
 
 /** Both lines pass the existing one-way line checks; the carried line may not repeat the closing one. */

@@ -62,6 +62,21 @@ export function allowUserWords(terms: string[], userTexts: string[]): string[] {
   });
 }
 
+const escapeText = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * A word or phrase in the text as whole words, with any spaces between its words (#60). Any case
+ * unless `exactCase` (the scene table's later words keep their capitals).
+ */
+export function mentionsWord(text: string, phrase: string, exactCase = false): boolean {
+  const words = phrase.replace(/[’‘]/g, "'").trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return false;
+  const pattern = words.map(escapeText).join("\\s+");
+  return new RegExp(`(?<![\\p{L}\\p{N}])${pattern}(?![\\p{L}\\p{N}])`, exactCase ? "u" : "iu").test(
+    text.replace(/[’‘]/g, "'"),
+  );
+}
+
 export function cleanLine(text: string, companionName = DEFAULT_COMPANION_NAME): string {
   // A speaker label ("Oppenheimer: ...") is dropped; any word of his name counts as the label.
   const label = ownNamePattern(companionName);

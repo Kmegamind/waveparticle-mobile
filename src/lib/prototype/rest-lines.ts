@@ -2,6 +2,7 @@ import type { StoryContent } from "@/lib/content/types";
 import type { ModelGateway } from "@/lib/model-gateway";
 import { gateFreeText } from "@/lib/safety/crisis";
 import type { RestMessage, ReturnTrigger } from "./session";
+import { laterStoryWords } from "./rest-later-words";
 import { DEFAULT_STORY_ID } from "./story-ids";
 import { generationInputs, isStoryId } from "./story-inputs";
 import { loadTestStory } from "./test-story";
@@ -121,7 +122,15 @@ const contentOf = async (source: ContentSource) =>
 
 export async function restReplyFor(
   source: ContentSource,
-  request: { storyId?: string; message: string; history: RestMessage[]; replyIndex: number },
+  request: {
+    storyId?: string;
+    message: string;
+    history: RestMessage[];
+    replyIndex: number;
+    /** Where the person is in the Plan, for the facts from later in the Story (#60). */
+    stepIndex?: number;
+    stepCount?: number;
+  },
   gateway: ModelGateway | null,
 ): Promise<RestReplyResponse> {
   // The safety gate runs first: a crisis message is never sent to the model (US-SAF-1).
@@ -155,8 +164,15 @@ export async function restReplyFor(
       // Words from after his date, checked on the reply (#59 AC4, ERA-ANSWER).
       forbidTerms: inputs.forbidTerms,
       userTexts,
+      // Facts from later in the Story: the parts not reached yet and the scene's later words (#60).
+      ...laterStoryWords(content, storyId, positionOf(request)),
     }),
   );
+}
+
+function positionOf(request: { stepIndex?: number; stepCount?: number }) {
+  const { stepIndex, stepCount } = request;
+  return stepIndex === undefined || stepCount === undefined ? undefined : { stepIndex, stepCount };
 }
 
 /** Exact clock numbers stay out of the return pop-up until CLOCK-NUMBERS is decided. */
