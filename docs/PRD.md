@@ -331,9 +331,9 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 |---|---|---|---|
 | FR-SAFETY-1 | The first demo ships two safety tiers: crisis, with a classifier and real help lines by region, and everyday stress. The low-mood tier is deferred. | Must | A5, A5b |
 | FR-SAFETY-2 | Every free-text field passes the input check before any model or storage for model use: goal input, Step and Goal rename, Add a Step, rest chat, and the nickname. | Must | A5 |
-| FR-SAFETY-3 | Tier 3 (crisis) shows a system-voice page outside the story, discards the text, never sends it to a model, offers regional resources and always allows going back. | Must | A5 |
+| FR-SAFETY-3 | Tier 3 (crisis) shows a system-voice page outside the story, discards the text, never sends it to the reply model, offers regional resources and always allows going back. Text the keyword layer flags is sent to no model at all; other free text goes to the provider for the safety classifier only (owner decision of 2026-11-22). | Must | A5, SAFETY-PROVIDER |
 | FR-SAFETY-5 | Tier 1 (everyday stress) passes and he answers in character without advice. | Must | A5 |
-| FR-SAFETY-6 | A keyword layer runs in code in every case; a classifier call sees the last two messages in the same field; the higher tier wins; if the classifier fails or takes over 1.5 seconds the keyword layer decides alone. | Must | A5 |
+| FR-SAFETY-6 | A keyword layer runs in code in every case; a classifier call, before the reply call or any save, sees the message and the last two messages in the same field; the higher tier wins and an unsure answer is a crisis; if the classifier fails or takes over 1.5 seconds the keyword layer decides alone and a webhook alarm is sent at most once a day. | Must | A5, SAFETY-CHECK-FIRST, SAFETY-TIERS-2, SAFETY-ALARM |
 | FR-SAFETY-7 | Targets (guesses to be set with compliance): crisis recall at least 99%, crisis false positives at most 2%. | Should | A5 |
 | FR-SAFETY-8 | English test sets exist before release, written with a clinical adviser, and are re-run on every model or keyword change. | Must | A5, L1 |
 | FR-SAFETY-9 | Legal and clinical review approves the wording of every safety message and the hotline list; the log rule for what is stored is settled. | Must | A5 |
@@ -419,7 +419,7 @@ Only the goal dialogue calls, the pause message, the return pop-up and the rest 
 | Return pop-up | What he did during the time and how he felt (1 or 2 sentences, at most 30 words, LEN-RETURN), in any words for how the time felt (TIME-WORDS), ending with a start button | Entry state, return case (Back to step, or away 5 minutes or more) | Back to step; return after 5 minutes or more | Failure message with Retry; the clock does not start |
 | Rest chat | His reply | Obstacle, entry state, last turns | Each user message | Generated again within the time limit, then the failure message with Retry |
 | Closing line (made ahead) | One to three sentences, at most 45 words, in his voice: what happened to him that day and how he feels (END-TONE) | The story's facts | Once per story, with its cards | Cannot be published |
-| Safety classifier | Tier label | Message plus last two messages | Every free-text submission | Keyword layer alone |
+| Safety classifier | Tier label: crisis, stress, none or unsure (SAFETY-TIERS-2) | Message plus last two messages in the same field | Every free-text submission with a server-side check, before the reply call (SAFETY-CHECK-FIRST, SAFETY-FIELDS) | Keyword layer alone, error log line and the once-a-day webhook alarm (SAFETY-ALARM) |
 
 There are no status lines on the focus page (HOME-LINE).
 
