@@ -1,4 +1,5 @@
 import { checkRunList } from "@/lib/model-gateway/run-list";
+import { companionPeople, sceneCheckOf } from "@/lib/content/scene";
 import { cardProblems, leaksForStory } from "./checks";
 import type { StoryCardRow } from "./admin";
 
@@ -25,21 +26,24 @@ const storyOrder = (left: PoolCard, right: PoolCard) =>
 
 /**
  * Every problem of a pool, as "<card key>: <problem>"; empty when every card passes. A story
- * whose stage 0 inputs are missing cannot run the spoiler check, so its cards fail.
+ * whose stage 0 inputs are missing cannot run the spoiler check or the scene person check (#381:
+ * people named who are not in its scene table), so its cards fail.
  */
 export function storyPoolProblems(
   cards: PoolCard[],
   stageZeros: Map<string, Record<string, unknown>>,
 ): string[] {
   const problems: string[] = [];
+  const people = companionPeople(stageZeros.values());
   const stories = [...new Set(cards.map((card) => card.story_id))];
   for (const storyId of stories) {
     const own = cards.filter((card) => card.story_id === storyId).sort(storyOrder);
     const rows = own.map((card) => ({ ...card, version: 1, published: true, published_at: null }));
     const leaks = leaksForStory(rows, stageZeros.get(storyId) ?? null);
+    const scene = sceneCheckOf(stageZeros.get(storyId), people);
     const earlier: string[] = [];
     for (const card of own) {
-      for (const problem of cardProblems(card, leaks(card.part))) {
+      for (const problem of cardProblems(card, leaks(card.part), scene)) {
         problems.push(`${card.key}: ${problem}`);
       }
       for (const rule of checkRunList(card.body, earlier)) {

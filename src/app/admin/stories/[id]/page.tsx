@@ -47,8 +47,8 @@ export default async function AdminStory({ params }: PageProps<"/admin/stories/[
       <p className="admin-lede">
         Saving a card makes a new draft; phones keep the published version. Every save checks the
         length (a part card: 1 to 3 sentences, at most 45 words; the background card: at most 70
-        words), years, dates and ages, words from later parts and banned words. An admin publishes a
-        draft that passes every check.
+        words), years, dates and ages, words from later parts, people who are not in the scene table
+        and banned words. An admin publishes a draft that passes every check.
       </p>
       {zeros === null ? (
         <p className="admin-notice" role="alert">
