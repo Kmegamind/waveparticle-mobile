@@ -44,6 +44,8 @@ export async function loadRestReply(request: {
   message: string;
   history: RestMessage[];
   replyIndex: number;
+  stepIndex?: number;
+  stepCount?: number;
 }): Promise<RestReplyResponse> {
   if (!isPrototypeEnabled()) return { status: "failed" };
   return restReplyFor(storyContent, normaliseRestRequest(request), gateway());

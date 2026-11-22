@@ -167,6 +167,13 @@ export type RestReplyInput = {
    * the person typed himself does not fail the reply (CHAT-USER-WORD).
    */
   userTexts?: string[];
+  /**
+   * Facts from later in the Story: the spoiler words of the parts the person has not reached
+   * (CHAT-SPOILER-CHECK, #60). Whole words, any case.
+   */
+  laterFacts?: string[];
+  /** The Story's scene table later words (#60). Whole words with their exact capitals. */
+  laterWords?: string[];
 };
 
 /** Why the return pop-up opens: Back from the rest conversation, or back after an absence (R1). */
