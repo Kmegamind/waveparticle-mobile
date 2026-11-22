@@ -41,7 +41,7 @@ Canvas rules are the ten in `DEFAULT_RULES`; NF5 rules are R01 to R22. They over
 | Too long | `len` | R17, R18 | Decided limits: step story card 1 to 3 sentences and at most 45 words; background card at most 70 words; closing line 1 to 3 sentences and at most 45 words (LEN-CARD); pause message 1 or 2 sentences and at most 30 words (LEN-PAUSE). Older canvas and NF5 limits are replaced | ✔ | ✔ | ✔ | ✔ | name ≤ 80 chars |
 | Non-English | `cjk` | (language auto-detect) | Any Chinese character in an English line. English only (L1) | ✔ | ✔ | ✔ | ✔ | — |
 | Dash | `dash` | R11 | `—`, `–`, `--` | ✔ | ✔ | ✔ | ✔ | — |
-| Banned words | `ban` | — (NF3 taboo list) | bro, vibes, no cap, "as an AI". Per character list | ✔ | ✔ | ✔ | ✔ | — |
+| Banned words | `ban` | — (NF3 taboo list) | bro, vibes, no cap, "as an AI". Live lines only (rest reply and pause message): also AI, A.I., artificial intelligence, language model, chatbot (A4, #59); pre-made cards keep the list above (SAFETY-PREMADE). Per character list | ✔ | ✔ | ✔ | ✔ | — |
 | Clock time, duration | `clock` | R02, R03 | Digits with ":", a.m./p.m., o'clock, "half past", "(ten) minutes". Canvas exempts "5:30" for Trinity; **the Canyon has no exemption** | ✔ | ✔ | ✔ | ✔ | — |
 | Backstage words | `back` | R10 (R09 for source labels) | segment, slice, director, prompt, texture, storyline, plot beat, "next/previous/last/this part/stage". NF5 adds step, session, timer, app, screen, scene, chapter, task, user | ✔ | ✔ | ✔ | ✔ | — |
 | Ordering or advising | `cmd` | R16 (WARN), NF3 G07 | "you should", "let's", "take a break", "close your eyes", "hang on", "it'll pass". **Easiest to over-block** | — (no "you") | ✔ | ✔ | ✔ | — |

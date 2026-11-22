@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createModelGateway, type ModelGateway } from "@/lib/model-gateway";
-import { allowUserWords, checkCompanionLine } from "@/lib/model-gateway/checks";
+import { allowUserWords, BANNED, checkCompanionLine } from "@/lib/model-gateway/checks";
 import type { RestReplyInput } from "@/lib/model-gateway/types";
 import { accountRestReply } from "@/lib/progress/account-lines";
 import { generationInputs } from "@/lib/prototype/story-inputs";
@@ -114,6 +114,16 @@ describe("#59 AC3 how the person feels: one line of his own, no advice", () => {
     }
   });
 
+  it("test_59_ac3_his_own_lines_and_plain_empathy_are_not_advice", () => {
+    for (const text of [
+      "I don't worry about the rain.",
+      "You must be tired. I am tired as well.",
+      "I wish you could see the mesa.",
+    ]) {
+      expect(checkReply(text), text).toEqual({ ok: true, text });
+    }
+  });
+
   it("test_59_ac3_a_plain_line_of_his_own_passes", () => {
     const text = "I am tired as well. My hand aches from the pencil.";
     expect(checkReply(text)).toEqual({ ok: true, text });
@@ -155,9 +165,9 @@ describe("#59 AC4 no fact from after his date; a later word the person typed may
     expect(
       await gateway.writeRestReply({
         facts: "f",
-        userMessage: "do you use a Computer",
+        userMessage: "do you use a computer",
         forbidTerms: ["computer"],
-        userTexts: ["do you use a Computer"],
+        userTexts: ["do you use a computer"],
       }),
     ).toEqual({ source: "generated", text });
   });
@@ -186,10 +196,28 @@ describe("#59 AC4 no fact from after his date; a later word the person typed may
     expect(
       allowUserWords(
         ["Los Alamos", "atomic bomb", "computer"],
-        ["what is a COMPUTER", "los alamos"],
+        ["what is a computer", "Los Alamos?"],
       ),
     ).toEqual(["atomic bomb"]);
     expect(allowUserWords(["Los Alamos"], [])).toEqual(["Los Alamos"]);
+  });
+
+  it("test_59_ac4_i1_a_typed_word_counts_only_as_whole_words_with_its_capitals", () => {
+    // Parts of words never let a later word through (review I-1).
+    expect(allowUserWords(["pion"], ["In my opinion it is late"])).toEqual(["pion"]);
+    expect(allowUserWords(["May"], ["maybe tomorrow"])).toEqual(["May"]);
+    expect(allowUserWords(["Los"], ["I feel lost"])).toEqual(["Los"]);
+    expect(allowUserWords(["New"], ["any news?"])).toEqual(["New"]);
+    // A real later word the person typed is still allowed.
+    expect(allowUserWords(["Los Alamos", "pion"], ["What about Los Alamos?"])).toEqual(["pion"]);
+  });
+
+  it("test_59_ac4_i1_a_later_word_inside_another_word_does_not_fail_the_reply", async () => {
+    const text = "In my opinion the bench is a poor place.";
+    const { gateway } = scripted([reply(text)]);
+    expect(
+      await gateway.writeRestReply({ facts: "f", userMessage: "hi", forbidTerms: ["pion"] }),
+    ).toEqual({ source: "generated", text });
   });
 
   it("test_59_ac4_the_prompt_allows_repeating_a_word_the_person_typed", async () => {
@@ -241,6 +269,19 @@ describe("#59 AC7 the conversation never mentions that he is an AI (A4)", () => 
       expect(checked.ok, text).toBe(false);
       if (!checked.ok) expect(checked.rejectedRules, text).toContain("ban");
     }
+  });
+
+  it("test_59_ac7_the_ai_words_apply_to_live_lines_only_not_premade_cards", () => {
+    const pause = checkCompanionLine(
+      "I am an AI at my desk.",
+      "stuck_story",
+      [],
+      seedLineLimits("stuck_story"),
+    );
+    expect(pause.ok).toBe(false);
+    const card = "I read about AI in no paper at all.";
+    expect(checkCompanionLine(card, "step_card", [], seedLineLimits("step_card")).ok).toBe(true);
+    expect(BANNED.test("I am an AI.")).toBe(false);
   });
 
   it("test_59_ac7_the_prompt_says_he_never_says_he_is_an_ai", async () => {
