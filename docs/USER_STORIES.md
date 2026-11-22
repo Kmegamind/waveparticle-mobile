@@ -1368,7 +1368,7 @@ These rules come from the product principles and from decisions. They are repeat
 - Given any AI reply, then it passes the shared check (US-AI-8), including the style checks.
 - ~~Given any AI reply, then it passes a denylist of method and instruction words owned by compliance.~~ Withdrawn (NO-DENYLIST): there is no such word list.
 - Given a reply fails, then it is not shown; the failure message with Retry appears and no stored text stands in (FAIL-SCREEN, NO-BACKUP).
-- Given made-ahead story content (SHARED-STORY), then the output safety check also runs on it before publishing (SAFETY-PREMADE).
+- Given made-ahead story content (SHARED-STORY), then only the banned style words are checked on it before publishing, the same as the admin save check, with no further AI-6 line rules (SAFETY-PREMADE).
 
 **Priority:** Must · **Area:** Safety · **Screens:** R1-C, R1 · **Depends on:** US-AI-8 · **Size:** S · **Source:** AI05v2 sections 3 and 7 (item 9); DEC NO-DENYLIST
 
