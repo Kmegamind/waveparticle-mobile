@@ -1,5 +1,5 @@
 # 0028: Whole-Story card checks on admin Publish, and the fix for the published cards
-- Status: accepted
+- Status: proposed (two choices wait for the owner: problems between two other cards do not block, and the fix publishes as the `--by` account)
 - Date: 2026-11-22
 - Issue: #377 (follow-up to #46 and pull request #375)
 
@@ -17,7 +17,7 @@ could be published. Version 1 of every card was loaded as published without the 
 | Where the problems show | Only on Publish; on the draft and on Publish | Both: every saved draft and every shown version runs the same function as Publish (`publishProblems`, `storyRepeatProblems` in `src/lib/story-cards/pool-checks.ts`) |
 | The pool | Every version; the published versions | The Story's published versions, with the new version in the place of its card's published one. Drafts are not live |
 | Fixing the published cards | An admin edits 25 cards by hand; a SQL script | A script that prints SQL (`scripts/story-cards/fix-published.mjs`), run by the owner |
-| How the script publishes | Update the rows; add a version and publish it | Add the seed text as a new version and publish it through `private.set_published_story_card`, as the admin account named with `--by`, so Publish history has the row and the old version can be rolled back to |
+| How the script publishes | Update the rows; add a version and publish it | Add the seed text as a new version and publish it through `private.set_published_story_card`, as the admin account named with `--by`, so Publish history has the row and the old version can be rolled back to. `--dry-run` rehearses it on the real database and undoes everything |
 
 ## Decision
 - **Publish and drafts.** A card version fails when, read in story order among the Story's

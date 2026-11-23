@@ -5,6 +5,7 @@
 // nothing: paste it into the Supabase SQL editor, or pipe it to psql.
 //
 //   node scripts/story-cards/fix-published.mjs --by you@example.com > story-cards-fix.sql  (the fix)
+//   node scripts/story-cards/fix-published.mjs --by you@example.com --dry-run > story-cards-dry-run.sql
 //   node scripts/story-cards/fix-published.mjs --check > story-cards-check.sql            (read only)
 //   psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f story-cards-fix.sql
 //
@@ -17,7 +18,8 @@
 //   version, or no row: it is left alone and reported, never overwritten.
 // `--by` names the admin account the fix publishes as: Publish history shows that account, as if it
 // had pressed Publish. The account must have the admin role, or nothing changes.
-// The report is printed after the commit. `--check` prints a query that only reads: what the fix
+// The report is printed after the commit. `--dry-run` runs the same SQL and prints the same report,
+// then stops with "Dry run: nothing was changed." and undoes everything. `--check` prints a query that only reads: what the fix
 // would do to each card now, and afterwards whether every card carries the seed text.
 
 import path from "node:path";
@@ -38,15 +40,17 @@ function seedValues(rows) {
 }
 
 /** An email address as the sign-in stores it; nothing else goes into the SQL. */
-const EMAIL = /^[^\s@']+@[^\s@']+\.[^\s@']+$/;
+const EMAIL = /^[^\s@'$\\]+@[^\s@'$\\]+\.[^\s@'$\\]+$/;
 
 /**
  * The fix: one transaction that publishes the seed text of each card whose published text
  * differs, as the admin account `by`, then the report.
  * @param {{ cards: { key: string, body: string }[] }} rows
- * @param {{ by: string, companionId?: string }} options
+ * With `dryRun`, the same work runs, the report is shown, and the run stops and undoes everything:
+ * a rehearsal on the real database that changes nothing.
+ * @param {{ by: string, companionId?: string, dryRun?: boolean }} options
  */
-export function fixPublishedSql(rows, { by, companionId = DEFAULT_COMPANION }) {
+export function fixPublishedSql(rows, { by, companionId = DEFAULT_COMPANION, dryRun = false }) {
   if (typeof by !== "string" || !EMAIL.test(by)) {
     throw new Error("--by needs the email address of an admin account");
   }
@@ -141,12 +145,33 @@ begin
 end
 $fix$;
 
-commit;
+${dryRun ? DRY_RUN_END : FIX_END}`;
+}
+
+const FIX_END = `commit;
 
 select key, outcome, detail from story_card_fix_report
 order by outcome, key;
 `;
-}
+
+// The dry run reads the report inside the transaction, then stops with an error whose message is
+// the report, so the SQL editor shows it too, and every change is undone.
+const DRY_RUN_END = `select key, outcome, detail from story_card_fix_report
+order by outcome, key;
+
+do $dry$
+declare
+  summary text;
+begin
+  select coalesce(string_agg(r.key || ': ' || r.outcome || ' (' || r.detail || ')', E'\\n' order by r.outcome, r.key), 'no card to publish and none skipped')
+  into summary
+  from story_card_fix_report r;
+  raise exception 'Dry run: nothing was changed. %', E'\\n' || summary;
+end
+$dry$;
+
+rollback;
+`;
 
 /**
  * A query that only reads: for each card of the seed, what the fix does (before it runs) or
@@ -177,7 +202,8 @@ select
     when p.body = s.body then 'done: the seed text is published'
     when v.version_count > 1 or p.version <> 1 then 'skipped: edited in the admin'
     else 'to publish: the seed text as v' || (v.newest + 1)
-  end as outcome
+  end as outcome,
+  p.body as published_now
 from seed s
 left join versions v on v.key = s.key
 left join public.story_cards p on p.key = s.key and p.published
@@ -188,14 +214,16 @@ order by outcome, s.key;
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const args = process.argv.slice(2);
   const check = args.includes("--check");
+  const dryRun = args.includes("--dry-run");
   const byAt = args.indexOf("--by");
   const by = byAt >= 0 ? args[byAt + 1] : undefined;
   const rest = args.filter(
-    (arg, index) => arg !== "--check" && index !== byAt && index !== byAt + 1,
+    (arg, index) =>
+      arg !== "--check" && arg !== "--dry-run" && index !== byAt && index !== byAt + 1,
   );
   const companionId = rest[0] ?? DEFAULT_COMPANION;
   const usage =
-    "Usage: node scripts/story-cards/fix-published.mjs --by <admin email> [companion-id]\n" +
+    "Usage: node scripts/story-cards/fix-published.mjs --by <admin email> [--dry-run] [companion-id]\n" +
     "       node scripts/story-cards/fix-published.mjs --check [companion-id]";
   if (rest.length > 1 || !/^[a-z][a-z0-9-]*$/.test(companionId) || (!check && !by)) {
     console.error(usage);
@@ -210,6 +238,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
   process.stdout.write(
     check
       ? fixPublishedCheckSql(rows, { companionId })
-      : fixPublishedSql(rows, { by, companionId }),
+      : fixPublishedSql(rows, { by, companionId, dryRun }),
   );
 }

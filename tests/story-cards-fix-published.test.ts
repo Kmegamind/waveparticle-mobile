@@ -112,6 +112,30 @@ describe("#377 AC3 the fix for the published cards", () => {
     expect(() => fixPublishedSql(rows(), { by: "x'); drop table t; --@a.b" })).toThrow(/--by/);
   });
 
+  it("test_377_ac3_a_dry_run_reports_the_same_work_and_changes_nothing", () => {
+    const dry = statements(fixPublishedSql(rows(), { by: ADMIN, dryRun: true }));
+    const real = statements(sql());
+    // The same work up to the end of the transaction.
+    expect(dry.slice(0, dry.indexOf("$fix$;"))).toBe(real.slice(0, real.indexOf("$fix$;")));
+    expect(dry).not.toMatch(/^commit;$/m);
+    expect(dry.match(/^rollback;$/gm)).toHaveLength(1);
+    // The report is read inside the transaction, then the run stops with a message that lists it,
+    // so every tool shows it and nothing is kept.
+    expect(dry.indexOf("select key, outcome, detail from story_card_fix_report")).toBeLessThan(
+      dry.indexOf("$dry$;"),
+    );
+    expect(dry).toMatch(/raise exception 'Dry run: nothing was changed\. %'/);
+    expect(dry.indexOf("$dry$;")).toBeLessThan(dry.indexOf("rollback;"));
+  });
+
+  it("test_377_ac3_an_email_with_a_dollar_sign_is_refused", () => {
+    expect(() => fixPublishedSql(rows(), { by: "a$who$@x.y" })).toThrow(/--by/);
+  });
+
+  it("test_377_ac3_the_check_shows_the_published_text_the_fix_would_replace", () => {
+    expect(fixPublishedCheckSql(rows())).toContain("p.body as published_now");
+  });
+
   it("test_377_ac3_the_same_deck_prints_the_same_sql", () => {
     expect(sql()).toBe(sql());
   });
