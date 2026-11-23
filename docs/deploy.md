@@ -120,9 +120,10 @@ published cards of its story (a repeat, the same first three words as one of the
 before it, a near repeat). This needs no migration and no setting.
 
 ### Fixing the published cards that fail the checks (#377)
-Version 1 of every card was loaded as published without the card checks. Issue #375 fixed 25
-cards in the seed file `src/content/oppenheimer/story-decks.json`, but the import leaves cards that
-already exist alone, so phones still show the old text of those cards. The script
+Version 1 of every card was loaded as published without the card checks. An earlier change
+(pull request #375) corrected the 25 cards that fail the checks in the seed file
+`src/content/oppenheimer/story-decks.json`, but the import leaves cards that already exist alone,
+so phones still show the old text of those cards. The script
 `scripts/story-cards/fix-published.mjs` prints SQL (the database query language) that publishes
 the seed text in their place. It connects to nothing; you run the SQL. Words used below: the
 **SQL editor** is the page in the Supabase dashboard where you paste and run SQL (Supabase
@@ -145,16 +146,28 @@ Nothing else changes: no part title, no other table, no phone setting.
 
 **Steps**
 
-1. Check the prerequisites. Every migration up to and including
-   `20261123000000_story_card_editing.sql` must already have run (the card import too). If that
+1. Check the prerequisites. Every migration (the database change files in
+   `supabase/migrations/`) up to and including `20261123000000_story_card_editing.sql` must
+   already have run, and the cards must already be imported. If that
    migration is missing, the SQL stops with "Run
    supabase/migrations/20261123000000_story_card_editing.sql first" and changes nothing. Your
-   account must have the `admin` role (see "Admin roles" above).
-2. Deploy first. Merge and deploy the pull request of #377 before you run the fix, so that the
-   Stories page counts repeated cards as failing and you can check the result in step 8. The SQL
-   itself does not need the new app; only the check in step 8 does.
+   account must have the `admin` role. To give it that role, run this in the SQL editor with your
+   own email address (the account must have signed in to the app once):
+
+   ```sql
+   insert into public.content_roles (user_id, role)
+   select id, 'admin' from auth.users where email = 'you@example.com'
+   on conflict (user_id) do update set role = excluded.role;
+   ```
+
+2. Deploy first if you can. Merge and deploy the pull request that adds this script (pull
+   request #394) before you run the fix, so that the Stories page counts repeated cards as
+   failing and you can check the result in step 7. The SQL itself does not need the new app; only
+   the check in step 7 does.
 3. Rehearse with a dry run. In a terminal, in the repository on an up-to-date `main`, print it
-   with the email address of your admin account:
+   with the email address of your admin account. If you run this before the pull request is
+   merged, first run `git fetch origin && git checkout feat/377-publish-pool-checks`; after
+   merging, use `main`.
 
    ```sh
    node scripts/story-cards/fix-published.mjs --by you@example.com --dry-run > story-cards-dry-run.sql
@@ -170,7 +183,7 @@ Nothing else changes: no part title, no other table, no phone setting.
    changed."**, followed by one line per card: "published: the seed text (v2)" means the real
    run will publish that card; "skipped: ..." means the real run will leave it alone. Every change
    is undone, so the database is exactly as before. Read the list: expect 25 cards to publish
-   (the cards #375 fixed in the seed file) and no skipped card. If you see an error other than
+   (the cards that were corrected in the seed file) and no skipped card. If you see an error other than
    "Dry run: nothing was changed.", nothing was changed either; read it (a missing migration, or
    "No admin account with the email ...": give that account the admin role or use the right
    email) and stop here.
@@ -186,10 +199,10 @@ Nothing else changes: no part title, no other table, no phone setting.
    Run `story-cards-fix.sql` the same way as in step 3. The last result is the report: one row per
    card it published ("published: the seed text", with the new version) and one per card it
    skipped. It should match the dry run. If an error appears instead, nothing was changed.
-6. Run the check of step 4. Every card should now say "done: the seed text is published", except
-   the cards that were skipped. Running the fix a second time prints an empty or skipped-only
+6. Run the check of step 4 again. Every card should now say "done: the seed text is published",
+   except the cards that were skipped. Running the fix a second time prints an empty or skipped-only
    report and changes nothing.
-8. Check in the admin:
+7. Check in the admin, on the live site:
    - `/admin/stories`: no story shows "Failing". If one does, open it: the problems name the card
      and the rule.
    - `/admin/publish-history`: one "Published" row per fixed card, by your account, at the time
@@ -203,7 +216,7 @@ Nothing else changes: no part title, no other table, no phone setting.
      order by item_key;
      ```
 
-9. If the dry run or the report lists skipped cards:
+8. If the dry run or the report lists skipped cards:
    - "skipped: edited in the admin": someone saved or published a new version of that card after
      the import. Open `/admin/stories/<story>` (the story is the middle part of the key, for
      example `cross-examination` in `crd.opp.cross-examination.p4.c2`), find the card by its key,
@@ -212,11 +225,12 @@ Nothing else changes: no part title, no other table, no phone setting.
      **Save draft**, then **Publish**.
    - "skipped: no published version": publish the version you want on the story page.
    - "skipped: not in the database": run the card import
-     (`node scripts/story-cards/import.mjs`, above) and then this fix again.
-10. To undo the fix for one card: open `/admin/stories/<story>`, open the card's **Versions**,
-    and press **Roll back to v1**. Or press **Roll back** on its row in `/admin/publish-history`.
-    Roll back is not checked, so version 1 comes back with the problem the fix removed; the card
-    then shows as failing again. There is no undo for all cards at once: one roll back per card.
+     (`node scripts/story-cards/import.mjs > story-cards-import.sql`, then run that file the same
+     way as in step 3) and then this fix again, starting with the dry run.
+9. To undo the fix for one card: open `/admin/stories/<story>`, open the card's **Versions**, and
+   press **Roll back to v1**. Or press **Roll back** on its row in `/admin/publish-history`. Roll
+   back is not checked, so version 1 comes back with the problem the fix removed; the card then
+   shows as failing again. There is no undo for all cards at once: one roll back per card.
 
 ## Companion and story fields
 Editing a Companion's and a story's fields in the admin (#309, `docs/decisions/0024`): run
