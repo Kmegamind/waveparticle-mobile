@@ -14,7 +14,7 @@ import {
   type PauseResponse,
   type RestReplyResponse,
 } from "@/lib/prototype/rest-lines";
-import { gateFreeText } from "@/lib/safety/crisis";
+import { keywordOnlySafetyCheck, type SafetyCheck } from "@/lib/safety/check";
 
 /**
  * His lines on the signed-in focus and rest pages (#257). Unlike /try there is no test data:
@@ -46,10 +46,14 @@ export async function accountRestReply(
   content: ContentSource,
   raw: unknown,
   gateway: ModelGateway | null,
+  safety: SafetyCheck = keywordOnlySafetyCheck,
 ): Promise<RestReplyResponse> {
   const request = normaliseRestRequest(raw);
-  // The safety gate runs first, model or not (US-SAF-1).
-  if (gateFreeText(request.message).action === "crisis-page") return { status: "crisis" };
-  if (!gateway) return { status: "failed" };
-  return restReplyFor(content, request, gateway);
+  // The safety check runs first, model or not (US-SAF-1, #117). Without a model there is no
+  // reply to protect, so only the keyword layer runs.
+  if (!gateway) {
+    const gate = await keywordOnlySafetyCheck(request.message, { position: "rest_chat" });
+    return gate.action === "crisis-page" ? { status: "crisis" } : { status: "failed" };
+  }
+  return restReplyFor(content, request, gateway, safety);
 }

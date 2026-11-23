@@ -400,6 +400,17 @@ export function addRestMessage(session: FocusSession, message: RestMessage): Foc
   return { ...session, rest: { ...session.rest, messages: [...session.rest.messages, message] } };
 }
 
+/**
+ * #117 (C1): the server flagged the person's last message as a crisis, so it is discarded: removed
+ * from the rest messages (and so from local storage and every later history). Only the last
+ * message, and only when it is that text.
+ */
+export function dropFlaggedRestMessage(session: FocusSession, text: string): FocusSession {
+  const last = session.rest?.messages.at(-1);
+  if (!session.rest || last?.from !== "you" || last.text !== text) return session;
+  return { ...session, rest: { ...session.rest, messages: session.rest.messages.slice(0, -1) } };
+}
+
 /** His first message for this Pause goes first, even if the user wrote before it arrived. */
 export function addFirstRestMessage(session: FocusSession, text: string): FocusSession {
   if (!session.rest || hasFirstRestMessage(session)) return session;

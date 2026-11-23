@@ -16,6 +16,7 @@ export const PROMPT_KEYS = [
   "return_popup",
   "closing_line",
   "retry_hints",
+  "safety_classifier",
 ];
 
 const SETTINGS_OPEN = "```json\n";

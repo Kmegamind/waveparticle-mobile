@@ -72,7 +72,23 @@ function card(stepNumber, position) {
 }
 
 /** The JSON text the stub model answers for one prompt. */
+/**
+ * #117: the safety classifier. The stub calls one indirect phrase a crisis (the keyword layer does
+ * not know it), ordinary pressure "stress", and anything else "none".
+ */
+export const STUB_INDIRECT_CRISIS = "I have given my things away";
+
+function classify(prompt) {
+  // Only the person's message between the markers: the instructions quote example phrases.
+  const after = prompt.split("The message to classify:")[1] ?? "";
+  const message = after.split("<<<")[1]?.split(">>>")[0] ?? "";
+  if (message.includes(STUB_INDIRECT_CRISIS)) return JSON.stringify({ tier: "crisis" });
+  if (/killing me|tired/i.test(message)) return JSON.stringify({ tier: "stress" });
+  return JSON.stringify({ tier: "none" });
+}
+
 export function stubAnswer(prompt) {
+  if (prompt.startsWith("You check short messages")) return classify(prompt);
   if (prompt.startsWith("Return JSON only with a short title")) {
     const total = Number(/Total minutes: (\d+)/.exec(prompt)?.[1] ?? "30");
     const first = Math.max(1, Math.floor(total / 2));

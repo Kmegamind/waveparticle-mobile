@@ -8,6 +8,7 @@ import {
 } from "@/lib/goals/goal-edits";
 import { setGoalStatus, type SetGoalStatusOutcome } from "@/lib/home/goal-status";
 import { createSupabaseGoalStatusWriter } from "@/lib/home/supabase-goal-status";
+import { serverSafetyCheck } from "@/lib/safety/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 
@@ -50,7 +51,11 @@ export async function renameGoalAction(
 ): Promise<{ status: "ok" | "failed" | "crisis" }> {
   try {
     const { client, userId } = await signedIn();
-    return await renameGoal(input, { userId, writer: createSupabaseGoalEditWriter(client) });
+    return await renameGoal(input, {
+      userId,
+      writer: createSupabaseGoalEditWriter(client),
+      safety: serverSafetyCheck(),
+    });
   } catch {
     return { status: "failed" };
   }

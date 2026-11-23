@@ -2,6 +2,7 @@ import { pickPauseSnag, type PauseCategory } from "@/lib/content/pause-snag";
 import { companionPeople, sceneTableOf } from "@/lib/content/scene";
 import type { StoryContent } from "@/lib/content/types";
 import type { ModelGateway } from "@/lib/model-gateway";
+import { keywordOnlySafetyCheck, type SafetyCheck } from "@/lib/safety/check";
 import { gateFreeText } from "@/lib/safety/crisis";
 import type { RestMessage, ReturnTrigger } from "./session";
 import { laterStoryWords } from "./rest-later-words";
@@ -209,6 +210,43 @@ export type ContentSource = StoryContent | null | (() => Promise<StoryContent | 
 const contentOf = async (source: ContentSource) =>
   typeof source === "function" ? source() : source;
 
+/** How many unanswered messages of the person are checked again; older ones are dropped. */
+export const MAX_UNANSWERED_RECHECKS = 3;
+
+/**
+ * #117 fix rounds 1 and 2 (C1, N1): a message the server's check flagged as a crisis got no reply
+ * (the safety page came instead), so it is a "you" message not followed directly by his reply. The
+ * browser removes it, but the server does not rely on that: every unanswered message of the person
+ * is checked again with the same check, with its own earlier messages of the person as context (as
+ * on its own turn), side by side with the new message and within the same 1.5 s. It is dropped
+ * from what the reply model sees when it is flagged, and also when its re-check failed or timed
+ * out (fail closed: an unanswered message adds little, so the keyword layer alone does not admit
+ * it). Older unanswered messages are dropped unchecked. Usually there is none, so no extra call.
+ */
+async function withoutFlagged(history: RestMessage[], safety: SafetyCheck) {
+  const unanswered = history
+    .map((message, index) => ({ message, index }))
+    .filter(({ message, index }) => message.from === "you" && history[index + 1]?.from !== "him");
+  const recheck = unanswered.slice(-MAX_UNANSWERED_RECHECKS);
+  const dropped = new Set(unanswered.slice(0, -MAX_UNANSWERED_RECHECKS).map(({ index }) => index));
+  const gates = await Promise.all(
+    recheck.map(({ message, index }) =>
+      safety(message.text, {
+        position: "rest_chat",
+        previous: history
+          .slice(0, index)
+          .filter((earlier) => earlier.from === "you")
+          .map((earlier) => earlier.text),
+      }),
+    ),
+  );
+  recheck.forEach(({ index }, position) => {
+    const gate = gates[position];
+    if (gate.action === "crisis-page" || gate.classifierFailed) dropped.add(index);
+  });
+  return history.filter((_, index) => !dropped.has(index));
+}
+
 export async function restReplyFor(
   source: ContentSource,
   request: {
@@ -221,9 +259,18 @@ export async function restReplyFor(
     stepCount?: number;
   },
   gateway: ModelGateway | null,
+  /** The server's check (#117): the keyword layer and the classifier. Keyword only if omitted. */
+  safety: SafetyCheck = keywordOnlySafetyCheck,
 ): Promise<RestReplyResponse> {
-  // The safety gate runs first: a crisis message is never sent to the model (US-SAF-1).
-  if (gateFreeText(request.message).action === "crisis-page") return { status: "crisis" };
+  // The safety check runs first: a crisis message is never sent to the reply model (US-SAF-1,
+  // #117). The classifier sees the message and the last two earlier messages of this chat.
+  const keptPromise = withoutFlagged(request.history, safety);
+  const previous = request.history
+    .filter((message) => message.from === "you")
+    .map((message) => message.text);
+  const gate = await safety(request.message, { position: "rest_chat", previous });
+  const kept = await keptPromise;
+  if (gate.action === "crisis-page") return { status: "crisis" };
   const content = await contentOf(source);
   const storyId = storyOf(content, request.storyId);
   if (content === null || storyId === null) return { status: "failed" };
@@ -232,14 +279,14 @@ export async function restReplyFor(
     const text = replies[Math.abs(request.replyIndex) % replies.length];
     return { status: "ok", isTestData: true, text };
   }
-  const history = request.history
+  const history = kept
     .filter((message) => message.from === "him" || gateFreeText(message.text).action === "continue")
     .slice(-MAX_HISTORY);
   const inputs = generationInputs(content, storyId);
   // CHAT-USER-WORD: everything the person typed in this chat, so a later word he typed may be
   // repeated. Crisis text is left out, as in the history sent to the model.
   const userTexts = [
-    ...request.history
+    ...kept
       .filter((message) => message.from === "you")
       .map((message) => message.text)
       .filter((text) => gateFreeText(text).action === "continue"),

@@ -27,6 +27,7 @@ The table editor and the import make a version active without a Publish history 
 | `return_popup` | His line in the return pop-up, after the rest chat or an absence |
 | `closing_line` | His closing line and the line he carries, on the summary |
 | `retry_hints` | The fix added to a prompt after a rejected answer, one per failed check |
+| `safety_classifier` | The safety classifier (#117, US-SAF-4): `crisis`, `stress`, `none` or `unsure` for one free-text message and up to two earlier messages in the same field. Not a line he says |
 
 ## A prompt file
 

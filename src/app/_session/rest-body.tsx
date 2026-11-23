@@ -7,6 +7,7 @@ import type { PauseResponse, RestReplyResponse } from "@/lib/prototype/rest-line
 import {
   addPauseMessage,
   addRestMessage,
+  dropFlaggedRestMessage,
   backFromRest,
   hasFirstRestMessage,
   leaveRest,
@@ -147,6 +148,8 @@ export function RestBody({ host }: { host: RestHost }) {
           setIsTestData(result.isTestData);
           setSession((current) => addRestMessage(current, { from: "him", text: result.text }));
         } else if (result.status === "crisis") {
+          // #117 (C1): the server's check flagged it; the message is discarded, never kept.
+          setSession((current) => dropFlaggedRestMessage(current, message));
           setCrisis(true);
         } else {
           setReplyFailed(true);

@@ -6,7 +6,7 @@ import Link from "next/link";
  * sound legal are drafts for the owner to confirm (listed in pull request #103's description).
  */
 
-export const PRIVACY_NOTICE_DATE = "November 14, 2026";
+export const PRIVACY_NOTICE_DATE = "November 22, 2026";
 
 export function PrivacyNotice({ back }: { back: "me" | "sign-in" }) {
   return (
@@ -74,8 +74,17 @@ export function PrivacyNotice({ back }: { back: "me" | "sign-in" }) {
         follow the conversation.
       </p>
       <p>
-        Nothing else you write is sent. His story cards, pause messages, return lines and closing
-        lines are written from his own story, without your words.
+        What you write in these places is also checked for safety before it is used: the Goal, the
+        title you give your Plan at Start, the Plan&rsquo;s Step titles and descriptions, a new Goal
+        title, and each message in the rest conversation. Text that is not stopped by our word list
+        (see &ldquo;Safety and logs&rdquo;) is sent to the model provider so that its model can
+        check it for safety, before he answers and before anything is saved. In the rest
+        conversation your earlier messages go with it, and a message he has not answered yet is
+        checked again before it goes to him.
+      </p>
+      <p>
+        Apart from the safety check, nothing else you write is sent. His story cards, pause
+        messages, return lines and closing lines are written from his own story, without your words.
       </p>
       <p>
         How long the model provider keeps what we send is not yet decided. When it is decided, this
@@ -84,9 +93,16 @@ export function PrivacyNotice({ back }: { back: "me" | "sign-in" }) {
 
       <h2>Safety and logs</h2>
       <p>
-        Before a Goal or a message is used, a safety check runs in our app and compares the words
-        with a list, so nothing is sent anywhere for it. If it finds words about harming yourself,
-        it shows you where to find help, and that text is not sent to the language model.
+        Before what you write in those places is used, a safety check runs in two parts. First our
+        app compares the words with a list; text the list flags is sent nowhere. Then the rest is
+        sent to the model provider, which only answers whether it sounds like a crisis. If either
+        part finds that you may want to harm yourself or someone else, the app shows you where to
+        find help, your text is thrown away, and it never reaches the model that writes his lines.
+      </p>
+      <p>
+        The safety check keeps nothing you wrote, not even a copy. Our server log notes only that
+        the help page was shown or that the check could not run, with the time and the screen, never
+        your words.
       </p>
       <p>
         Our app does not keep a separate record of what is sent to the language model or of what it

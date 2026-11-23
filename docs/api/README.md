@@ -38,6 +38,7 @@ The public code interfaces today are listed below, one file per interface in thi
 - [src/lib/prototype/store.ts](prototype-store.md): browser-only test-path state `{ version, goal, steps, currentStep, storyId?
 - [Publish history](publish-history.md): Publish history (#289, `docs/decisions/0018`, `supabase/migrations/20261118000000_publish_history.sql`): `private.set_published_app_text` now inserts one `public.publish_history` row (`kind`…
 - [src/lib/prototype/rest-lines.ts](rest-lines.md): server-only `pauseMessageFor({ storyId?, pauseNumber, stepTitle, lastCard }, gateway)`, `restReplyFor({ storyId?, message, history, replyIndex }, gateway)` and `returnLineFor({ storyId?, trigger,…
+- [src/lib/safety/ (classifier, check, alarm, server)](safety-classifier.md): `src/lib/safety/check.ts`: `createSafetyCheck({ classifier, onEvent })` returns a `SafetyCheck`, `(text, { position, previous?
 - [src/lib/safety/crisis.ts](safety-crisis.md): `gateFreeText(text)` returns `{ action: "crisis-page", modelRequest: null }` when the keyword layer reports `crisis`, and `{ action: "continue" }` otherwise.
 - [src/lib/safety/keyword.ts](safety-keyword.md): `checkSafetyText(text)` returns `{ tier, flagged }` and does not return the text.
 - [src/app/_session/paths.ts](session-paths.md): `accountPathsFor(sessionId)` is `ACCOUNT_PATHS` with `end` set to `/end?session=<id>`.

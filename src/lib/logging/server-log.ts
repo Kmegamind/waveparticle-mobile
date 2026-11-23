@@ -15,7 +15,13 @@
  */
 
 export type LogFeature =
-  "app_text" | "prompts" | "story-content" | "story-cards" | "model-gateway" | "goal-dialogue";
+  | "app_text"
+  | "prompts"
+  | "story-content"
+  | "story-cards"
+  | "model-gateway"
+  | "goal-dialogue"
+  | "safety";
 
 export type LogLevel = "warn" | "error";
 

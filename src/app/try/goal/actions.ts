@@ -7,6 +7,7 @@ import { createServerModelGateway } from "@/lib/model-gateway/server";
 import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { COST_CAP_COOKIE } from "@/lib/prototype/cost-cap";
 import { splitGoal } from "@/lib/prototype/split-goal";
+import { serverSafetyCheck } from "@/lib/safety/server";
 
 /**
  * One turn of the goal dialogue on /try (#31; issues #33, #36, #38). The server counts the turns
@@ -30,6 +31,7 @@ export async function goalTurnAction(request: TurnRequest): Promise<TurnOutcome>
           maxAge: 60 * 60 * 24,
         }),
       createGateway: () => createServerModelGateway(),
+      safety: serverSafetyCheck(),
     });
   return takeTurn(request, serverTurnDeps(split));
 }

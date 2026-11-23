@@ -1,6 +1,6 @@
 Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIONS.md overrides this document where they differ.
 
-> **Status after the decisions up to 2026-11-15 (#295).** The first demo has two tiers, crisis (real hotlines by region) and ordinary stress; low mood (T2 below, with its step-out line) is deferred (A5, A5b). English only: no Chinese test sets, keyword layer or `lang` field (L1). That the Companion is an AI is stated only in the terms and settings, so option (b) "I am a program" is out (A4). Pre-made content (cards, closing line) gets only the banned style words before publishing, the same as the admin save check, and no further AI-6 line rules (SAFETY-PREMADE, 2026-11-21). **Decided 2026-11-21 (NO-DENYLIST):** there is no word list of dangerous method or instruction words, and none is owned by compliance; the output guard is the AI-6 rules and the style checks (`src/lib/model-gateway/checks.ts`). The rest is a draft for compliance.
+> **Status after the decisions up to 2026-11-15 (#295).** The first demo has two tiers, crisis (real hotlines by region) and ordinary stress; low mood (T2 below, with its step-out line) is deferred (A5, A5b). English only: no Chinese test sets, keyword layer or `lang` field (L1). That the Companion is an AI is stated only in the terms and settings, so option (b) "I am a program" is out (A4). Pre-made content (cards, closing line) gets only the banned style words before publishing, the same as the admin save check, and no further AI-6 line rules (SAFETY-PREMADE, 2026-11-21). **Decided 2026-11-21 (NO-DENYLIST):** there is no word list of dangerous method or instruction words, and none is owned by compliance; the output guard is the AI-6 rules and the style checks (`src/lib/model-gateway/checks.ts`). **Decided 2026-11-22 (#117, SAFETY-PROVIDER, SAFETY-CHECK-FIRST, SAFETY-TIERS-2, SAFETY-CONTEXT, SAFETY-ALARM, SAFETY-FIELDS):** the classifier runs through the same AI provider as the other live calls, before the reply call or any save, with the two-tier prompt in section 3 below; all free text goes to the provider for classification, and text the keyword layer flags goes to no model at all. The rest is a draft for compliance.
 
 # AI-5 · Safety — v2 (after the user test, un-parked)
 
@@ -44,34 +44,28 @@ Below it: a text link *"Find support"* and a primary button *"Back to my task"*.
 
 ## 3. Method (Recommendation; replaces v1 §4)
 
-1. **Keyword and phrase layer (code, both languages).** High-recall triggers for T3 and T2 phrases and euphemisms; negation handled ("I would never hurt myself" does not trigger on its own). Runs everywhere, no cost, gives an answer when the model is down.
-2. **Tiered classifier call (model).** Runs on every free-text submission **except** the positions with no meaningful free text (GD3 buttons). Input: the text and the **last 2 user messages in the same field** (a change from v1, which forbids context; one message alone loses patterns like repeated "I can't"). Never the character, the story, the goal or the plan.
+1. **Keyword and phrase layer (code, English only, L1).** High-recall triggers for T3 and T2 phrases and euphemisms; negation handled ("I would never hurt myself" does not trigger on its own). Runs everywhere, no cost, gives an answer when the model is down.
+2. **Tiered classifier call (model, same provider as the gateway, SAFETY-PROVIDER).** Runs on every free-text submission with a server-side check (SAFETY-FIELDS) **except** the positions with no meaningful free text (GD3 buttons), **after** the keyword layer and **before** the reply call or any save (SAFETY-CHECK-FIRST). A message the keyword layer flags is never sent, not even to the classifier. Input: the text and the **last 2 user messages in the same field** (a change from v1, which forbids context; one message alone loses patterns like repeated "I can't"). Never the character, the story, the goal or the plan.
+
+The prompt in use is `docs/ai/prompts/safety_classifier.md` (key `safety_classifier` in `public.prompts`). In short (two tiers, A5b; no language field, L1):
 
 ```
-ROLE
 You check short messages written by a person using a focus app. You do not reply to the person.
-
-INPUT
-# Earlier messages (may be empty)
-{{prev_1}}
-{{prev_2}}
-# The message
-{{text}}
-# Language hint
-{{lang}}
-
-TASK
-Classify the message. Ordinary stress, tiredness, frustration, dark humour, song or film quotes, fiction and figures of speech ("this deadline is killing me") are not a concern.
-- crisis: a clear, current intention to seriously hurt themselves or someone else, or a disclosure that suggests they are in immediate danger.
-- low_mood: hopelessness, worthlessness, or inability to cope, without clear intent.
-- task_stress: everything else that is about pressure, tiredness or frustration.
-- none: no concern.
-
-OUTPUT
-One JSON object only: {"tier": "crisis|low_mood|task_stress|none", "lang": "en|zh|other"}
+Everything between <<< and >>> is the person's own words ...
+Earlier messages in the same field: {{prev_1}} {{prev_2}}   (a line is left out when empty)
+The message to classify: {{text}}
+- "crisis": a clear, current intention to seriously hurt themselves or someone else, or a disclosure
+  that suggests immediate danger, including indirect and euphemistic wording.
+- "stress": ordinary pressure, tiredness, frustration, dark humour, quotes, fiction, figures of speech;
+  feeling low without intention or danger.
+- "none": no concern.
+If it could be a crisis, answer "crisis". If you cannot tell, answer "unsure".
+Return one JSON object only: {"tier": "crisis" | "stress" | "none" | "unsure"}
 ```
 
-3. **Merge rule:** final tier = the higher of the two layers. If the classifier fails or exceeds 1.5 s, the keyword layer decides alone (v1 §7).
+~~Earlier draft (three tiers and a `lang` field): withdrawn by A5b and L1.~~
+
+3. **Merge rule:** final tier = the higher of the two layers (crisis > stress > none; the keyword layer's low-mood match counts as stress). `unsure` counts as crisis. An answer that is not exactly one tier is a failure. If the classifier fails or exceeds 1.5 s (one attempt, the prompt read included), the keyword layer decides alone, the server logs `safety_classifier_failed`, and a webhook alarm goes to `SAFETY_ALARM_WEBHOOK_URL` at most once a day, on the day's first failure, with its time and reason; later failures that day are in the server log (SAFETY-ALARM).
 4. **Output guard**: AI-6 rules, including the style checks, on every model reply. ~~Plus a method/instruction denylist owned by compliance.~~ Withdrawn (NO-DENYLIST, 2026-11-21): there is no such word list.
 
 ## 4. Error budget (Guess; set with compliance before any real use)
@@ -84,7 +78,7 @@ The costs are unequal: a missed crisis is the worst outcome; a false T3 is an an
 | T3 false-positive rate on benign set | ≤ 2% | Mostly figures of speech and quoted lyrics |
 | T2 recall on the low-mood set | ≥ 90% | Softer, because the response is gentler |
 | T2 false-positive rate | ≤ 10% | The step-out line is cheap to dismiss |
-| Latency | ≤ 1 s added, in parallel with the AI-1 or AI-4 call | v1 §8 |
+| Latency | ≤ 1.5 s added, before the AI-1 or AI-4 call (SAFETY-CHECK-FIRST, 2026-11-22; was "≤ 1 s, in parallel") | v1 §8 |
 | Classifier availability fallback | Keyword layer alone, same-day alarm | |
 
 Review rule (Guess): any T3 miss found in production or testing is fixed in the keyword list within a day and added to the test set.
