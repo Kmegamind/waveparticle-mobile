@@ -210,6 +210,32 @@ export type ContentSource = StoryContent | null | (() => Promise<StoryContent | 
 const contentOf = async (source: ContentSource) =>
   typeof source === "function" ? source() : source;
 
+/** How many unanswered messages of the person are checked again; older ones are dropped. */
+export const MAX_UNANSWERED_RECHECKS = 3;
+
+/**
+ * #117 fix round 1 (C1): a message the server's check flagged as a crisis got no reply (the safety
+ * page came instead), so it is a "you" message not followed directly by his reply. The browser
+ * removes it, but the server does not rely on that: every unanswered message of the person is
+ * checked again with the same check (side by side with the new message, the same 1.5 s), and one
+ * flagged is never passed on. The keyword filter alone is not enough, because the classifier flags
+ * text the keyword layer does not know. Usually there is no unanswered message, so no extra call.
+ */
+async function withoutFlagged(history: RestMessage[], safety: SafetyCheck) {
+  const unanswered = history
+    .map((message, index) => ({ message, index }))
+    .filter(({ message, index }) => message.from === "you" && history[index + 1]?.from !== "him");
+  const recheck = unanswered.slice(-MAX_UNANSWERED_RECHECKS);
+  const dropped = new Set(unanswered.slice(0, -MAX_UNANSWERED_RECHECKS).map(({ index }) => index));
+  const gates = await Promise.all(
+    recheck.map(({ message }) => safety(message.text, { position: "rest_chat" })),
+  );
+  recheck.forEach(({ index }, position) => {
+    if (gates[position].action === "crisis-page") dropped.add(index);
+  });
+  return history.filter((_, index) => !dropped.has(index));
+}
+
 export async function restReplyFor(
   source: ContentSource,
   request: {
@@ -227,10 +253,12 @@ export async function restReplyFor(
 ): Promise<RestReplyResponse> {
   // The safety check runs first: a crisis message is never sent to the reply model (US-SAF-1,
   // #117). The classifier sees the message and the last two earlier messages of this chat.
+  const keptPromise = withoutFlagged(request.history, safety);
   const previous = request.history
     .filter((message) => message.from === "you")
     .map((message) => message.text);
   const gate = await safety(request.message, { position: "rest_chat", previous });
+  const kept = await keptPromise;
   if (gate.action === "crisis-page") return { status: "crisis" };
   const content = await contentOf(source);
   const storyId = storyOf(content, request.storyId);
@@ -240,14 +268,14 @@ export async function restReplyFor(
     const text = replies[Math.abs(request.replyIndex) % replies.length];
     return { status: "ok", isTestData: true, text };
   }
-  const history = request.history
+  const history = kept
     .filter((message) => message.from === "him" || gateFreeText(message.text).action === "continue")
     .slice(-MAX_HISTORY);
   const inputs = generationInputs(content, storyId);
   // CHAT-USER-WORD: everything the person typed in this chat, so a later word he typed may be
   // repeated. Crisis text is left out, as in the history sent to the model.
   const userTexts = [
-    ...request.history
+    ...kept
       .filter((message) => message.from === "you")
       .map((message) => message.text)
       .filter((text) => gateFreeText(text).action === "continue"),

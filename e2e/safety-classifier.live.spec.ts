@@ -94,9 +94,23 @@ test("#117 the rest chat: tiredness gets his reply, an indirect crisis gets the 
   await page.getByRole("button", { name: "Send" }).click();
   await expect(page.getByRole("heading", { name: "This is outside the story." })).toBeVisible();
 
+  // C1 (fix round 1): Back, then the next message gets his reply, and the flagged text is gone
+  // from the page, from local storage and from every reply prompt.
+  await page.getByRole("button", { name: "Back to my Goal" }).click();
+  await expect(page.getByLabel("Message")).toHaveValue("");
+  await expect(page.getByText(STUB_INDIRECT_CRISIS)).toHaveCount(0);
+  const stored = await page.evaluate(() => JSON.stringify({ ...window.localStorage }));
+  expect(stored).not.toContain(STUB_INDIRECT_CRISIS);
+  const shown = await replies.count();
+  await page.getByLabel("Message").fill("ok, back to it");
+  await page.getByRole("button", { name: "Send" }).click();
+  await expect(replies).toHaveCount(shown + 1, { timeout: 15_000 });
+
   const prompts = await stubPrompts(page);
   const asked = prompts.filter(
-    (prompt) => prompt.startsWith(CLASSIFIER) && prompt.includes(STUB_INDIRECT_CRISIS),
+    (prompt) =>
+      prompt.startsWith(CLASSIFIER) &&
+      (prompt.split("The message to classify:")[1] ?? "").includes(STUB_INDIRECT_CRISIS),
   );
   expect(asked.length).toBeGreaterThan(0);
   // AC1: the earlier message of the same field went with it as context, his words did not.

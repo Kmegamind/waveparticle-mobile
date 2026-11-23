@@ -8,6 +8,14 @@ import { startGoal, type GoalWriter } from "@/lib/goals/start-goal";
 import { accountRestReply } from "@/lib/progress/account-lines";
 import { restReplyFor } from "@/lib/prototype/rest-lines";
 import { splitGoal } from "@/lib/prototype/split-goal";
+import {
+  addFirstRestMessage,
+  addRestMessage,
+  dropFlaggedRestMessage,
+  setStepCards,
+  startRest,
+  syncSession,
+} from "@/lib/prototype/session";
 import type { SafetyCheck, SafetyContext, SafetyGate } from "@/lib/safety/check";
 import { seedContent } from "./support/seed-content";
 
@@ -78,7 +86,7 @@ describe("#117 the rest chat (R1-C)", () => {
       gateway,
       check,
     );
-    expect(calls[0]).toEqual({
+    expect(calls.find((call) => call.text === "now")).toEqual({
       text: "now",
       context: { position: "rest_chat", previous: ["first", "second", "third"] },
     });
@@ -107,6 +115,80 @@ describe("#117 the rest chat (R1-C)", () => {
     check.mockClear();
     expect(await accountRestReply(seed, ok, gateway, check)).toMatchObject({ status: "ok" });
     expect(check).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("#117 fix round 1 C1: a flagged rest message never reaches the reply model later", () => {
+  it("test_117_c1_after_a_classifier_crisis_and_back_the_next_reply_prompt_lacks_the_text", async () => {
+    const { check } = safety();
+    const { gateway, writeRestReply } = restGateway();
+    // Turn 1: the classifier (not the keyword layer) flags the message.
+    const first = await restReplyFor(
+      seed,
+      { message: INDIRECT, history: [{ from: "him", text: "His pause message." }], replyIndex: 0 },
+      gateway,
+      check,
+    );
+    expect(first).toEqual({ status: "crisis" });
+    // Turn 2 after Back: an old browser still sends the flagged message in its history.
+    const second = await restReplyFor(
+      seed,
+      {
+        message: "ok, back to it",
+        history: [
+          { from: "him", text: "His pause message." },
+          { from: "you", text: INDIRECT },
+        ],
+        replyIndex: 0,
+      },
+      gateway,
+      check,
+    );
+    expect(second).toMatchObject({ status: "ok" });
+    expect(JSON.stringify(writeRestReply.mock.calls)).not.toContain(INDIRECT);
+  });
+
+  it("test_117_c1_an_answered_message_stays_in_the_reply_history", async () => {
+    const { check } = safety();
+    const { gateway, writeRestReply } = restGateway();
+    await restReplyFor(
+      seed,
+      {
+        message: "and now",
+        history: [
+          { from: "him", text: "His pause message." },
+          { from: "you", text: "I am stuck on chapter two" },
+          { from: "him", text: "I know that feeling too well." },
+        ],
+        replyIndex: 1,
+      },
+      gateway,
+      check,
+    );
+    expect(JSON.stringify(writeRestReply.mock.calls)).toContain("I am stuck on chapter two");
+  });
+
+  it("test_117_c1_the_browser_drops_the_flagged_message_from_the_session", () => {
+    const plan = {
+      goal: { text: "Write the report", minutes: 30 },
+      steps: [{ title: "Outline", description: "", minutes: 30 }],
+    };
+    const started = setStepCards(
+      syncSession(null, plan, 1),
+      0,
+      { opening: "opening", story: ["story 1"] },
+      0,
+    );
+    const session = addRestMessage(addFirstRestMessage(startRest(started, 0), "h"), {
+      from: "you",
+      text: INDIRECT,
+    });
+    const after = dropFlaggedRestMessage(session, INDIRECT);
+    expect(after.rest?.messages).toEqual([{ from: "him", text: "h" }]);
+    // Only the last message, and only if it is that same text.
+    expect(dropFlaggedRestMessage(after, INDIRECT).rest?.messages).toEqual([
+      { from: "him", text: "h" },
+    ]);
   });
 });
 
