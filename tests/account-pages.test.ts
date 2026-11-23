@@ -28,8 +28,9 @@ describe("#102 AC1 AC3 #8 AC3 the privacy notice", () => {
   const words = text(html);
 
   it("is a real notice with a date, not a placeholder", () => {
-    expect(PRIVACY_NOTICE_DATE).toBe("November 14, 2026");
-    expect(words).toContain("Last changed: November 14, 2026");
+    // Changed on 2026-11-22 for the safety classifier (#117, SAFETY-PROVIDER).
+    expect(PRIVACY_NOTICE_DATE).toBe("November 22, 2026");
+    expect(words).toContain("Last changed: November 22, 2026");
     expect(words).not.toMatch(/placeholder|not written yet/i);
   });
 
@@ -43,11 +44,26 @@ describe("#102 AC1 AC3 #8 AC3 the privacy notice", () => {
   it("says exactly what text is sent to the language model", () => {
     expect(words).toMatch(/Goal you write[^.]*sent to the language model/i);
     expect(words).toMatch(/each message you write in the rest conversation/i);
-    expect(words).toMatch(/Nothing else you write is sent/i);
+    // #117: the safety check also sends text, so "nothing else" now names that exception.
+    expect(words).toMatch(/Apart from the safety check, nothing else you write is sent/i);
   });
 
-  it("says the safety check sends nothing, and claims no model records that do not exist", () => {
-    expect(words).toMatch(/safety check runs in our app[^.]*nothing is sent/i);
+  it("says what the safety check sends, when, and that it keeps nothing (#117)", () => {
+    // SAFETY-PROVIDER (owner decision of 2026-11-22): free text goes to the provider for the
+    // safety check, before he answers; text the word list flags goes nowhere.
+    expect(words).not.toMatch(/nothing is sent anywhere for it/i);
+    for (const field of [
+      "Goal",
+      "Step titles and descriptions",
+      "Goal title",
+      "rest conversation",
+    ]) {
+      expect(words, field).toMatch(new RegExp(`checked for safety[^.]*${field}`, "i"));
+    }
+    expect(words).toMatch(/flags is sent nowhere/i);
+    expect(words).toMatch(/sent to the model provider[^.]*check it for safety/i);
+    expect(words).toMatch(/before he answers/i);
+    expect(words).toMatch(/safety check keeps nothing/i);
     expect(words).not.toMatch(/records about the language model|which checks a line did not pass/i);
     expect(words).toMatch(/does not keep a separate record of what is sent to the language model/i);
   });
