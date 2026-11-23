@@ -74,7 +74,7 @@ export function PrivacyNotice({ back }: { back: "me" | "sign-in" }) {
         follow the conversation.
       </p>
       <p>
-        What you write in these places is also checked for safety before it is used: the Goal, the
+        These fields are checked for safety before what you write in them is used: the Goal, the
         title you give your Plan at Start, the Plan&rsquo;s Step titles and descriptions, a new Goal
         title, each message in the rest conversation, and the display name you set under Me. Text
         that is not stopped by our word list (see &ldquo;Safety and logs&rdquo;) is sent to the

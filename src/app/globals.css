@@ -126,10 +126,15 @@ a {
   outline-offset: 3px;
 }
 
+/* aria-disabled: an inactive button that keeps focus (issue 400: the pending Save on Me). */
 .button-filled:disabled,
+.button-filled[aria-disabled="true"],
 .button-tinted:disabled,
+.button-tinted[aria-disabled="true"],
 .button-gray:disabled,
-.button-plain:disabled {
+.button-gray[aria-disabled="true"],
+.button-plain:disabled,
+.button-plain[aria-disabled="true"] {
   cursor: not-allowed;
   opacity: 0.35;
 }

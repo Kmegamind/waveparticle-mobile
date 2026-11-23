@@ -84,7 +84,9 @@ describe("#398 AC3 Save shows a pending state and cannot be pressed twice", () =
   });
 
   it("test_398_ac3_an_old_answer_does_not_touch_a_newer_save", () => {
-    const after = run(
+    // Fix round 1 (I1): a late "ok" was written by the server, so it updates the saved name, but
+    // the field being typed in and the newer pending Save are left alone.
+    const late = run(
       [
         { type: "save" },
         { type: "cancel" },
@@ -95,9 +97,78 @@ describe("#398 AC3 Save shows a pending state and cannot be pressed twice", () =
       ],
       editing,
     );
-    expect(after.pending).toBe(2);
-    expect(after.name).toBe("Ada");
-    expect(after.draft).toBe("Lise");
+    expect(late).toMatchObject({ pending: 2, name: "Grace", draft: "Lise", editing: true });
+    const newer = displayNameReducer(late, {
+      type: "answer",
+      request: 2,
+      outcome: { status: "ok", name: "Lise" },
+    });
+    expect(newer.name).toBe("Lise");
+    // The older answer arriving again, or after the newer one, never replaces the newer name.
+    expect(
+      displayNameReducer(newer, {
+        type: "answer",
+        request: 1,
+        outcome: { status: "ok", name: "Grace" },
+      }).name,
+    ).toBe("Lise");
+  });
+
+  it("test_398_ac3_an_older_ok_after_a_newer_ok_changes_nothing", () => {
+    const after = run(
+      [
+        { type: "save" },
+        { type: "cancel" },
+        { type: "edit" },
+        { type: "type", text: "Lise" },
+        { type: "save" },
+        { type: "answer", request: 2, outcome: { status: "ok", name: "Lise" } },
+        { type: "answer", request: 1, outcome: { status: "ok", name: "Grace" } },
+      ],
+      editing,
+    );
+    expect(after).toMatchObject({ name: "Lise", draft: "Lise", editing: false });
+  });
+
+  it("test_398_ac3_cancel_then_a_late_ok_shows_the_saved_name", () => {
+    const after = run(
+      [
+        { type: "save" },
+        { type: "cancel" },
+        { type: "answer", request: 1, outcome: { status: "ok", name: "Grace" } },
+      ],
+      editing,
+    );
+    // Out of edit mode, the saved name shown, and announced as saved (US-GM-7).
+    expect(after).toMatchObject({
+      name: "Grace",
+      draft: "Grace",
+      editing: false,
+      pending: null,
+      crisisShown: 0,
+      announce: SAVED_ANNOUNCEMENT,
+    });
+  });
+
+  it("test_398_ac3_a_late_invalid_or_failed_answer_after_cancel_changes_nothing", () => {
+    for (const status of ["invalid", "failed"] as const) {
+      const cancelled = run([{ type: "save" }, { type: "cancel" }], editing);
+      expect(
+        displayNameReducer(cancelled, { type: "answer", request: 1, outcome: { status } }),
+        status,
+      ).toBe(cancelled);
+    }
+  });
+
+  it("test_398_m1_an_invalid_or_failed_answer_asks_for_focus_back_once", () => {
+    for (const status of ["invalid", "failed"] as const) {
+      const after = run(
+        [{ type: "save" }, { type: "answer", request: 1, outcome: { status } }],
+        editing,
+      );
+      expect(after.errorShown, status).toBe(1);
+      expect(after.pending).toBeNull();
+    }
   });
 
   it("test_398_ac3_a_crisis_answer_empties_the_field_keeps_edit_mode_and_opens_s1_once", () => {
@@ -156,6 +227,12 @@ describe("#398 AC4 no stale announcement", () => {
       );
       expect(after).toMatchObject({ announce: "", error: message, draft: "Lise", editing: true });
     }
+  });
+
+  it("test_398_m3_edit_and_cancel_clear_a_saved_announcement", () => {
+    const edited = displayNameReducer(saved, { type: "edit" });
+    expect(edited.announce).toBe("");
+    expect(displayNameReducer(edited, { type: "cancel" }).announce).toBe("");
   });
 
   it("test_398_ac4_a_second_successful_save_announces_again", () => {
