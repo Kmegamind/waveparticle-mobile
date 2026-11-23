@@ -1,5 +1,6 @@
 import type { SceneCheck } from "@/lib/content/scene";
 import { cardProblems } from "./checks";
+import { storyRepeatProblems } from "./pool-checks";
 
 // The Stories admin page (ADM-06, #293): the story list with its part and card counts, one story's
 // background card and cards grouped by part, each card's versions and newer draft (#304), and the
@@ -143,15 +144,22 @@ function shownVersions(cards: StoryCardRow[]): StoryCardRow[] {
 
 const noLeaks: LeaksFor = () => [];
 
-/** One card: its shown version, a newer draft and every version (#304). */
+/**
+ * One card: its shown version, a newer draft and every version (#304). Each text's problems are
+ * the card checks and the whole-Story checks against the Story's published cards (#377), the
+ * same problems that block Publish.
+ */
 function view(
   row: StoryCardRow,
   all: StoryCardRow[],
   leaksFor: LeaksFor,
   scene: SceneCheck | null | undefined,
 ): StoryCardView {
-  const problemsOf = (body: string) =>
-    cardProblems({ kind: row.kind, part: row.part, body }, leaksFor(row.part), scene);
+  const published = all.filter((entry) => entry.published);
+  const problemsOf = (body: string) => [
+    ...cardProblems({ kind: row.kind, part: row.part, body }, leaksFor(row.part), scene),
+    ...storyRepeatProblems({ ...row, body }, published),
+  ];
   const versions = all
     .filter((entry) => entry.key === row.key)
     .sort((left, right) => right.version - left.version);

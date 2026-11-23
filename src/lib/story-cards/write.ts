@@ -4,7 +4,9 @@ import type { ContentRole } from "@/lib/admin/roles";
 // (admin or writer), publish and roll back a card (admin only). Each is refused here before any
 // database call when the account, the role or the input is wrong; the database functions check the
 // role again. Publish re-runs the card checks on the stored version first: a failing card is never
-// published. Roll back restores a version that was live before, so it is not checked. Server only.
+// published. Roll back restores a version that was live before, so it is never refused for a
+// check: the admin's buttons show its problems and ask to confirm first (#377,
+// roll-back-warning.ts). Server only.
 
 export type StoryCardWrite =
   | { kind: "save"; key: string; body: string }

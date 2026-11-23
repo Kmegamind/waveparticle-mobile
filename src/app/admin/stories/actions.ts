@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { readContentRole } from "@/lib/admin/roles";
 import { storedCardProblems } from "@/lib/story-cards/reader";
+import { rollBackWarnings } from "@/lib/story-cards/roll-back-warning";
 import {
   writeStoryCard,
   type StoryCardWrite,
@@ -56,6 +57,25 @@ export async function publishStoryCardAction(key: string, version: number) {
 /** Publishes a version that was published before again. Admin only. */
 export async function rollBackStoryCardAction(key: string, version: number) {
   return run({ kind: "roll_back", key, version });
+}
+
+/**
+ * The problems of a version a roll back would make live, as Publish checks them (#377). Read only:
+ * the two roll back buttons show them and ask the admin to confirm. The roll back itself is never
+ * refused for them (decision 0023, 0028).
+ */
+export async function storyCardRollBackWarningsAction(key: string, version: number) {
+  const client = await createSupabaseServerClient();
+  const user = await getCurrentUser(client);
+  const role = user ? await readContentRole(client) : null;
+  return rollBackWarnings(
+    { key, version },
+    {
+      userId: user?.id ?? null,
+      role,
+      checkCard: (cardKey, cardVersion) => storedCardProblems(client, cardKey, cardVersion),
+    },
+  );
 }
 
 /** Renames a part of a story. */

@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getStoryContent } from "@/lib/content/repository";
 import { companionPeople, sceneCheckOf, type SceneCheck } from "@/lib/content/scene";
 import type { StoryCardRow, StoryPartRow, StoryRow } from "./admin";
-import { cardProblems, leaksForStory } from "./checks";
+import { publishProblems } from "./pool-checks";
 
 const CARD_COLUMNS =
   "key, version, story_id, kind, part, slice, position, body, published, published_at";
@@ -34,7 +34,8 @@ export function sceneCheckFor(
 
 /**
  * The check problems of one stored card version (#304: the server re-runs the checks before
- * Publish), or null when that version cannot be read.
+ * Publish; #377: with the whole-Story checks against the Story's published cards), or null when
+ * that version cannot be read.
  */
 export async function storedCardProblems(
   client: SupabaseClient,
@@ -55,8 +56,7 @@ export async function storedCardProblems(
       readStageZeros(),
     ]);
     if (!story.ok) return null;
-    const leaks = leaksForStory(story.cards, zeros?.get(row.story_id) ?? null);
-    return cardProblems(row, leaks(row.part), sceneCheckFor(zeros, row.story_id));
+    return publishProblems(row, story.cards, zeros);
   } catch {
     return null;
   }

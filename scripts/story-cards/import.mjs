@@ -118,7 +118,7 @@ export function storyCardRows(decks, storyIds = readStoryIds(), keyCode = readCo
  * backslashes are literal, so no value can end the string early. NUL cannot be stored and is
  * refused.
  */
-function quote(text) {
+export function quote(text) {
   if (typeof text !== "string") throw new Error("a text is missing");
   if (text.includes("\0")) throw new Error("a text contains a NUL character");
   return `'${text.replaceAll("'", "''")}'`;
