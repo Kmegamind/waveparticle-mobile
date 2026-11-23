@@ -214,12 +214,14 @@ const contentOf = async (source: ContentSource) =>
 export const MAX_UNANSWERED_RECHECKS = 3;
 
 /**
- * #117 fix round 1 (C1): a message the server's check flagged as a crisis got no reply (the safety
- * page came instead), so it is a "you" message not followed directly by his reply. The browser
- * removes it, but the server does not rely on that: every unanswered message of the person is
- * checked again with the same check (side by side with the new message, the same 1.5 s), and one
- * flagged is never passed on. The keyword filter alone is not enough, because the classifier flags
- * text the keyword layer does not know. Usually there is no unanswered message, so no extra call.
+ * #117 fix rounds 1 and 2 (C1, N1): a message the server's check flagged as a crisis got no reply
+ * (the safety page came instead), so it is a "you" message not followed directly by his reply. The
+ * browser removes it, but the server does not rely on that: every unanswered message of the person
+ * is checked again with the same check, with its own earlier messages of the person as context (as
+ * on its own turn), side by side with the new message and within the same 1.5 s. It is dropped
+ * from what the reply model sees when it is flagged, and also when its re-check failed or timed
+ * out (fail closed: an unanswered message adds little, so the keyword layer alone does not admit
+ * it). Older unanswered messages are dropped unchecked. Usually there is none, so no extra call.
  */
 async function withoutFlagged(history: RestMessage[], safety: SafetyCheck) {
   const unanswered = history
@@ -228,10 +230,19 @@ async function withoutFlagged(history: RestMessage[], safety: SafetyCheck) {
   const recheck = unanswered.slice(-MAX_UNANSWERED_RECHECKS);
   const dropped = new Set(unanswered.slice(0, -MAX_UNANSWERED_RECHECKS).map(({ index }) => index));
   const gates = await Promise.all(
-    recheck.map(({ message }) => safety(message.text, { position: "rest_chat" })),
+    recheck.map(({ message, index }) =>
+      safety(message.text, {
+        position: "rest_chat",
+        previous: history
+          .slice(0, index)
+          .filter((earlier) => earlier.from === "you")
+          .map((earlier) => earlier.text),
+      }),
+    ),
   );
   recheck.forEach(({ index }, position) => {
-    if (gates[position].action === "crisis-page") dropped.add(index);
+    const gate = gates[position];
+    if (gate.action === "crisis-page" || gate.classifierFailed) dropped.add(index);
   });
   return history.filter((_, index) => !dropped.has(index));
 }

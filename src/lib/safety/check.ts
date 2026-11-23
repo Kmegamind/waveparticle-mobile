@@ -33,6 +33,11 @@ export type SafetyGate = {
   action: "crisis-page" | "continue";
   tier: ClassifierTier;
   layer: SafetyLayer;
+  /**
+   * True when the classifier was asked and failed or timed out (the keyword layer decided alone).
+   * Absent when there is no classifier. Lets a caller fail closed (#117 fix round 2, N1).
+   */
+  classifierFailed?: true;
 };
 
 export type SafetyContext = { position: SafetyPosition; previous?: readonly string[] };
@@ -108,7 +113,7 @@ export function createSafetyCheck(options: {
         position,
         latencyMs: outcome.latencyMs,
       });
-      return gate(keyword, "keyword_alone");
+      return { ...gate(keyword, "keyword_alone"), classifierFailed: true };
     }
 
     const classifierWins = RANK[outcome.tier] > RANK[keyword];

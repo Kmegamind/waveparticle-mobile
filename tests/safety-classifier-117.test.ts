@@ -182,6 +182,10 @@ describe("#117 AC3 a failed or slow classifier leaves the keyword layer to decid
         action: "crisis-page",
       });
       expect(events[0]).toMatchObject({ kind: "classifier_failed", reason, position: "rest_chat" });
+      // Fix round 2 (N1): the gate says the classifier failed, so a caller can fail closed.
+      expect(await check("fine", { position: "rest_chat" })).toMatchObject({
+        classifierFailed: true,
+      });
     });
   }
 
@@ -230,6 +234,8 @@ describe("#117 AC3 a failed or slow classifier leaves the keyword layer to decid
       layer: "keyword_alone",
     });
     expect(events.filter((e) => e.kind === "classifier_failed")).toEqual([]);
+    // No classifier is not a failure.
+    expect((await check("fine", { position: "rest_chat" })).classifierFailed).toBeUndefined();
     expect(await keywordOnlySafetyCheck("fine", { position: "rest_chat" })).toMatchObject({
       action: "continue",
     });
