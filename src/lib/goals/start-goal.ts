@@ -102,18 +102,21 @@ export async function startGoal(
   if (!deps.userId) return { status: "signed-out" };
   if (!isWellFormed(input)) return { status: "invalid" };
 
-  // The keyword layer on every field first, then the classifier on the goal, the title and the
-  // whole Plan as one text (three calls side by side, so the wait is at most 1.5 s, #117).
+  // The keyword layer on every field first, then the classifier on the goal, the title and each
+  // Step on its own (#117 I1: each piece stays under the classifier's 2,000-character cut). All
+  // calls run side by side, each with its own 1.5 s limit, so the wait is still at most 1.5 s. Any
+  // crisis wins; a piece whose call fails is decided by the keyword layer alone (and alarms).
   if (isCrisis(input.goalText) || isCrisis(input.title)) return { status: "crisis" };
   if (input.steps.some((step) => isCrisis(`${step.title}\n${step.description}`))) {
     return { status: "crisis" };
   }
   const safety = deps.safety ?? keywordOnlySafetyCheck;
-  const plan = input.steps.map((step) => `${step.title}\n${step.description}`).join("\n");
   const gates = await Promise.all([
     safety(input.goalText, { position: "goal_input" }),
     safety(input.title, { position: "goal_title" }),
-    safety(plan, { position: "plan_edit" }),
+    ...input.steps.map((step) =>
+      safety(`${step.title}\n${step.description}`, { position: "plan_edit" }),
+    ),
   ]);
   if (gates.some((gate) => gate.action === "crisis-page")) return { status: "crisis" };
 

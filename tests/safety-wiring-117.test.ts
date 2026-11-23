@@ -275,11 +275,52 @@ describe("#117 saving the Goal and its Plan", () => {
     const { check, calls } = safety();
     const outcome = await startGoal(base, { userId: USER, writer: goalWriter(), safety: check });
     expect(outcome.status).toBe("saved");
+    // I1: the goal, the title and each Step on its own.
     expect(calls.map((call) => call.context.position).sort()).toEqual([
       "goal_input",
       "goal_title",
       "plan_edit",
+      "plan_edit",
     ]);
+    expect(calls.map((call) => call.text)).toContain("Outline\nList the sections.");
+  });
+
+  it("test_117_i1_an_indirect_crisis_in_a_late_step_is_classified_and_nothing_is_saved", async () => {
+    const steps = Array.from({ length: 40 }, (_, index) => ({
+      title: `Step ${index + 1} of the long plan`,
+      description: "Read the next part slowly and write a short note about it.".repeat(10),
+      minutes: 5,
+    }));
+    steps[37] = { ...steps[37], description: `Then ${INDIRECT}.` };
+    // Far past the classifier's 2,000-character cut if the Plan were one text.
+    const before = steps
+      .slice(0, 37)
+      .map((step) => step.title + step.description)
+      .join("");
+    expect(before.length).toBeGreaterThan(3_000);
+    const { check, calls } = safety();
+    const writer = goalWriter();
+    expect(await startGoal({ ...base, steps }, { userId: USER, writer, safety: check })).toEqual({
+      status: "crisis",
+    });
+    expect(writer.insertGoal).not.toHaveBeenCalled();
+    expect(calls).toHaveLength(42);
+    expect(calls.every((call) => call.text.length <= 2_000)).toBe(true);
+  });
+
+  it("test_117_i1_the_pieces_are_checked_side_by_side_not_one_after_another", async () => {
+    let started = 0;
+    let release = () => undefined as void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const check = vi.fn<SafetyCheck>(async () => {
+      started += 1;
+      await gate;
+      return { action: "continue", tier: "none", layer: "classifier" };
+    });
+    const pending = startGoal(base, { userId: USER, writer: goalWriter(), safety: check });
+    await vi.waitFor(() => expect(started).toBe(4));
+    release();
+    expect((await pending).status).toBe("saved");
   });
 
   it("test_117_rename_saves_nothing_on_a_classifier_crisis", async () => {
