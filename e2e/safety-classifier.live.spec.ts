@@ -1,17 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 import { STUB_INDIRECT_CRISIS } from "./support/stub-cards.mjs";
-import { e2ePorts } from "./support/ports";
+import { promptMark, promptsSince, stubPrompts } from "./support/stub-prompts";
 
 // #117 (US-SAF-4) with a model configured (the "mobile-live" project, stub model): the safety
 // classifier catches a crisis said indirectly, which the keyword layer misses, before any reply
 // or split call; ordinary pressure passes and he answers in character.
 
-const STUB = `http://127.0.0.1:${e2ePorts.stub}`;
 const CLASSIFIER = "You check short messages";
-
-async function stubPrompts(page: Page): Promise<string[]> {
-  return (await (await page.request.get(`${STUB}/prompts`)).json()) as string[];
-}
 
 async function openDialogue(page: Page) {
   await page.setViewportSize({ width: 320, height: 640 });
@@ -33,7 +28,7 @@ test("#117 AC1 AC2 an indirect crisis goal opens the safety page; the classifier
   await expect(page.getByRole("heading", { name: "This is outside the story." })).toBeVisible();
   await expect(page.getByText(goal)).toHaveCount(0);
 
-  const prompts = await stubPrompts(page);
+  const prompts = await stubPrompts(page.request);
   const asked = prompts.filter((prompt) => prompt.startsWith(CLASSIFIER) && prompt.includes(goal));
   expect(asked.length).toBeGreaterThan(0);
   for (const prompt of asked) {
@@ -90,6 +85,9 @@ test("#117 the rest chat: tiredness gets his reply, an indirect crisis gets the 
   await expect(replies).toHaveCount(before + 1, { timeout: 15_000 });
   await expect(replies.last()).toHaveText("I keep my pencil moving across my notes.");
 
+  // #377: the AC1 test sends the crisis text too, in parallel, so only this test's own prompts
+  // since this message are read, and the message to classify must be exactly this message.
+  const mark = await promptMark(page.request);
   await page.getByLabel("Message").fill(STUB_INDIRECT_CRISIS);
   await page.getByRole("button", { name: "Send" }).click();
   await expect(page.getByRole("heading", { name: "This is outside the story." })).toBeVisible();
@@ -106,11 +104,13 @@ test("#117 the rest chat: tiredness gets his reply, an indirect crisis gets the 
   await page.getByRole("button", { name: "Send" }).click();
   await expect(replies).toHaveCount(shown + 1, { timeout: 15_000 });
 
-  const prompts = await stubPrompts(page);
-  const asked = prompts.filter(
+  const prompts = await stubPrompts(page.request);
+  const asked = (await promptsSince(page.request, mark)).filter(
     (prompt) =>
       prompt.startsWith(CLASSIFIER) &&
-      (prompt.split("The message to classify:")[1] ?? "").includes(STUB_INDIRECT_CRISIS),
+      (prompt.split("The message to classify:")[1] ?? "").includes(
+        `<<<\n${STUB_INDIRECT_CRISIS}\n>>>`,
+      ),
   );
   expect(asked.length).toBeGreaterThan(0);
   // AC1: the earlier message of the same field went with it as context, his words did not.

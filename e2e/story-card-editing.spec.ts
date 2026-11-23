@@ -294,7 +294,8 @@ test("test_377_rollback_in_publish_history_warns_and_rolls_back_after_confirm", 
   await cardOf(page).getByRole("button", { name: "Publish v2" }).click();
   await expect(cardOf(page).getByRole("status")).toHaveText("Published v2.");
   await page.reload();
-  await saveDraft(page, "Haakon waited by the stove and said nothing at all.");
+  const third = "Haakon waited by the stove and said nothing at all.";
+  await saveDraft(page, third);
   await cardOf(page).getByRole("button", { name: "Publish v3" }).click();
   await expect(cardOf(page).getByRole("status")).toHaveText("Published v3.");
 
@@ -305,6 +306,22 @@ test("test_377_rollback_in_publish_history_warns_and_rolls_back_after_confirm", 
   await row.getByRole("button", { name: "Roll back to v2" }).click();
   const warning = row.getByRole("region", { name: "Roll back to v2: warning" });
   await expect(warning.getByRole("list", { name: "Problems of v2" })).toHaveText(LATER_REPEAT);
+
+  // Cancel: nothing is rolled back; v3 stays published and no new history row is written.
+  const rows = page.getByRole("row", { name: new RegExp(`^${KEY.replaceAll(".", "\\.")} v`) });
+  const rowCount = await rows.count();
+  await warning.getByRole("button", { name: "Cancel" }).click();
+  await expect(warning).toBeHidden();
+  await expect(row.getByRole("status")).toHaveText("");
+  expect(await phoneCard(null)).toBe(third);
+  await page.reload();
+  await expect(rows).toHaveCount(rowCount);
+  await expect(page.getByRole("row", { name: `${KEY} v3, Published` }).first()).toContainText(
+    "Published now",
+  );
+
+  // Confirm: the roll back runs as before.
+  await row.getByRole("button", { name: "Roll back to v2" }).click();
   await warning.getByRole("button", { name: "Roll back anyway" }).click();
   await expect(row.getByRole("status")).toHaveText("Rolled back to v2.");
   expect(await phoneCard(null)).toBe(second);
