@@ -94,4 +94,34 @@ test("#398 Save shows a pending state and sends once; a crisis that arrives afte
   await expect(page.getByRole("heading", { name: "Me", level: 1 })).toBeVisible();
   await expect(page.getByText("Grace", { exact: true })).toBeVisible();
   expect(await nickname(account)).toBe("Grace");
+
+  // Fix round 1: a Save that the server finishes after Cancel did write the name, so Me shows it.
+  await page.getByRole("button", { name: "Edit" }).click();
+  await page.getByRole("textbox", { name: "Display name" }).fill("Lise");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("button", { name: "Saving…" })).toBeDisabled();
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByText("Grace", { exact: true })).toBeVisible();
+  await expect(page.getByText("Lise", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit" })).toBeVisible();
+  await expect.poll(() => nickname(account)).toBe("Lise");
+});
+
+test("#398 after an invalid save from the keyboard, focus returns to the name field", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await signIn(context, baseURL!, (userId) => ({
+    profiles: [{ user_id: userId, nickname: "Ada", keep_clock_running: false }],
+  }));
+  await page.goto("/me");
+  await page.getByRole("button", { name: "Edit" }).click();
+  const field = page.getByRole("textbox", { name: "Display name" });
+  await field.fill("x".repeat(61));
+  await page.getByRole("button", { name: "Save changes" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("alert").filter({ hasText: "Use 1 to 60" })).toBeVisible();
+  await expect(field).toBeFocused();
+  await expect(field).toHaveValue("x".repeat(61));
 });

@@ -57,7 +57,7 @@ function DisplayName({ initial }: { initial: string }) {
   // The edit state is a pure reducer (#398): one Save at a time, Cancel drops a pending answer,
   // and each Save clears the last announcement.
   const [state, dispatch] = useReducer(displayNameReducer, initial, initialDisplayName);
-  const { name, draft, editing, pending, error, announce, crisisShown } = state;
+  const { name, draft, editing, pending, error, announce, crisisShown, errorShown } = state;
   const editButton = useRef<HTMLButtonElement>(null);
   const field = useRef<HTMLInputElement>(null);
   const wasEditing = useRef(false);
@@ -79,6 +79,14 @@ function DisplayName({ initial }: { initial: string }) {
     crisisHandled.current = crisisShown;
     showCrisis(() => field.current?.focus());
   }, [crisisShown, showCrisis]);
+
+  useEffect(() => {
+    // #398 fix round 1: Save is disabled while pending, and a disabled button loses focus. After
+    // an invalid or failed save, focus returns to the field, unless the person moved it elsewhere.
+    if (errorShown === 0) return;
+    const active = document.activeElement;
+    if (!active || active === document.body) field.current?.focus();
+  }, [errorShown]);
 
   async function save() {
     if (inFlight.current !== null || pending !== null) return;
@@ -123,7 +131,8 @@ function DisplayName({ initial }: { initial: string }) {
             <button
               className="button-gray button-small"
               onClick={() => {
-                // A pending answer is dropped: a late crisis no longer opens S1 (#398).
+                // The server may still finish this Save: a late "ok" updates the saved name, any
+                // other late answer is ignored, so a crisis no longer opens S1 (#398).
                 inFlight.current = null;
                 dispatch({ type: "cancel" });
               }}

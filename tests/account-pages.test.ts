@@ -68,6 +68,9 @@ describe("#102 AC1 AC3 #8 AC3 the privacy notice", () => {
     // Fix round 2: only the fields that are checked are named, and the Plan's title given at Start
     // is named. #398: the display name is checked too since #392 (SAFETY-FIELDS-NAME).
     expect(words).toMatch(/checked for safety[^.]*display name/i);
+    // Fix round 1 (#398): the sentence introduces its own list, not "these places" from before.
+    expect(words).toMatch(/These fields are checked for safety before what you write in them/);
+    expect(words).not.toMatch(/in these places is also checked/i);
     expect(words).not.toMatch(/Everything you write/i);
     expect(words).not.toMatch(/Before anything you write/i);
     expect(words).toMatch(/checked for safety[^.]*title you give your Plan at Start/i);
