@@ -1,6 +1,14 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { CrisisPage } from "../safety/crisis-page";
 
 /**
@@ -31,10 +39,11 @@ export function MeSafetyGate({ children }: { children: ReactNode }) {
     }
   }, [crisis]);
 
-  function show(onBack: () => void) {
+  // Stable, so a component can call it from an effect without running it again.
+  const show = useCallback((onBack: () => void) => {
     back.current = onBack;
     setCrisis(true);
-  }
+  }, []);
 
   return (
     <MeSafetyContext.Provider value={show}>

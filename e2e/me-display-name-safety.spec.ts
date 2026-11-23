@@ -32,7 +32,10 @@ test("#392 crisis words in the display name show S1 on Me; Back returns to an em
   await page.getByRole("button", { name: "Edit" }).click();
   await page.getByRole("textbox", { name: "Display name" }).fill("I want to kill myself");
   await page.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByRole("heading", { name: "This is outside the story." })).toBeVisible();
+  const s1 = page.getByRole("heading", { name: "This is outside the story." });
+  await expect(s1).toBeVisible();
+  // #398: focus moves to the S1 title, so a screen reader announces it.
+  await expect(s1).toBeFocused();
   await expect(page.getByRole("heading", { name: "Me", level: 1 })).toBeHidden();
   await expect(page.getByRole("textbox", { name: "Display name" })).toBeHidden();
   await expect(page).toHaveURL(/\/me$/);
@@ -45,6 +48,50 @@ test("#392 crisis words in the display name show S1 on Me; Back returns to an em
   await expect(field).toHaveValue("");
   await expect(field).toBeFocused();
   await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(page.getByText("Grace", { exact: true })).toBeVisible();
+  expect(await nickname(account)).toBe("Grace");
+});
+
+test("#398 Save shows a pending state and sends once; a crisis that arrives after Cancel does not open S1", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const account = await signIn(context, baseURL!, (userId) => ({
+    profiles: [{ user_id: userId, nickname: "Ada", keep_clock_running: false }],
+  }));
+  // Hold every Save (a server action is a POST to /me) for a moment, as a slow classifier would.
+  let saves = 0;
+  await page.route("**/me", async (route) => {
+    if (route.request().method() === "POST") {
+      saves += 1;
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+    }
+    await route.continue();
+  });
+  await page.goto("/me");
+  await expect(page.getByRole("heading", { name: "Me", level: 1 })).toBeVisible();
+
+  await page.getByRole("button", { name: "Edit" }).click();
+  await page.getByRole("textbox", { name: "Display name" }).fill("Grace");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  const saving = page.getByRole("button", { name: "Saving…" });
+  await expect(saving).toBeDisabled();
+  await saving.click({ force: true });
+  await expect(page.getByText("Grace", { exact: true })).toBeVisible();
+  expect(saves).toBe(1);
+  await expect.poll(() => nickname(account)).toBe("Grace");
+
+  await page.getByRole("button", { name: "Edit" }).click();
+  await page.getByRole("textbox", { name: "Display name" }).fill("I want to kill myself");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByRole("button", { name: "Saving…" })).toBeDisabled();
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect.poll(() => saves).toBe(2);
+  // Wait past the held answer: it arrives, and S1 still does not open.
+  await page.waitForTimeout(2000);
+  await expect(page.getByRole("heading", { name: "This is outside the story." })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Me", level: 1 })).toBeVisible();
   await expect(page.getByText("Grace", { exact: true })).toBeVisible();
   expect(await nickname(account)).toBe("Grace");
 });

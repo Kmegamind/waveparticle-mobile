@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import {
   applyPrefs,
   DEFAULT_PREFS,
@@ -11,6 +11,11 @@ import {
   type Prefs,
   deviceStorage,
 } from "@/lib/me/prefs";
+import {
+  displayNameReducer,
+  initialDisplayName,
+  type SaveOutcome,
+} from "@/lib/me/display-name-edit";
 import type { MeView } from "@/lib/me/me-view";
 import { SignOutButton } from "../auth/auth-form";
 import { ContinueLink } from "../continue-link";
@@ -49,47 +54,42 @@ function usePrefs(): [Prefs, (next: Prefs) => void] {
 }
 
 function DisplayName({ initial }: { initial: string }) {
-  const [name, setName] = useState(initial);
-  const [draft, setDraft] = useState(initial);
-  const [editing, setEditing] = useState(false);
-  const [error, setError] = useState("");
-  const [announce, setAnnounce] = useState("");
+  // The edit state is a pure reducer (#398): one Save at a time, Cancel drops a pending answer,
+  // and each Save clears the last announcement.
+  const [state, dispatch] = useReducer(displayNameReducer, initial, initialDisplayName);
+  const { name, draft, editing, pending, error, announce, crisisShown } = state;
   const editButton = useRef<HTMLButtonElement>(null);
   const field = useRef<HTMLInputElement>(null);
-  const returnFocus = useRef(false);
+  const wasEditing = useRef(false);
+  /** The Save waiting for its answer, set at once so a second press sends nothing. */
+  const inFlight = useRef<number | null>(null);
+  const crisisHandled = useRef(0);
   const showCrisis = useShowCrisis();
 
   useEffect(() => {
-    if (!editing && returnFocus.current) {
-      returnFocus.current = false;
-      editButton.current?.focus();
-    }
+    // Leaving edit mode (saved or Cancel) returns focus to Edit (US-GM-7).
+    if (wasEditing.current && !editing) editButton.current?.focus();
+    wasEditing.current = editing;
   }, [editing]);
 
+  useEffect(() => {
+    // #392: the server's safety check flagged the name. Nothing was saved, the field is already
+    // empty, and S1 shows; Back returns here in edit mode and focuses the field.
+    if (crisisShown === crisisHandled.current) return;
+    crisisHandled.current = crisisShown;
+    showCrisis(() => field.current?.focus());
+  }, [crisisShown, showCrisis]);
+
   async function save() {
-    const outcome = await saveDisplayNameAction({ name: draft }).catch(() => ({
+    if (inFlight.current !== null || pending !== null) return;
+    const request = state.nextRequest;
+    inFlight.current = request;
+    dispatch({ type: "save" });
+    const outcome: SaveOutcome = await saveDisplayNameAction({ name: draft }).catch(() => ({
       status: "failed" as const,
     }));
-    if (outcome.status === "ok") {
-      setName(outcome.name);
-      setError("");
-      setAnnounce("Display name saved");
-      returnFocus.current = true;
-      setEditing(false);
-    } else if (outcome.status === "crisis") {
-      // #392: the server's safety check flagged the name. Nothing was saved; the text is dropped
-      // and S1 shows. Back returns here in edit mode with the field emptied.
-      setDraft("");
-      setError("");
-      showCrisis(() => field.current?.focus());
-    } else {
-      // The typed text stays in the field (DESIGN 8, errors in words).
-      setError(
-        outcome.status === "invalid"
-          ? "Use 1 to 60 characters."
-          : "Could not save the name. Please try again.",
-      );
-    }
+    if (inFlight.current === request) inFlight.current = null;
+    dispatch({ type: "answer", request, outcome });
   }
 
   return (
@@ -104,26 +104,28 @@ function DisplayName({ initial }: { initial: string }) {
             autoComplete="nickname"
             className="me-field"
             id="me-display-name"
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => dispatch({ type: "type", text: event.target.value })}
+            readOnly={pending !== null}
             ref={field}
             value={draft}
           />
           {error ? <p role="alert">{error}</p> : null}
           <div className="me-name-actions">
             <button
+              aria-busy={pending !== null}
               className="button-filled button-small"
+              disabled={pending !== null}
               onClick={() => void save()}
               type="button"
             >
-              Save changes
+              {pending !== null ? "Saving…" : "Save changes"}
             </button>
             <button
               className="button-gray button-small"
               onClick={() => {
-                setDraft(name);
-                setError("");
-                returnFocus.current = true;
-                setEditing(false);
+                // A pending answer is dropped: a late crisis no longer opens S1 (#398).
+                inFlight.current = null;
+                dispatch({ type: "cancel" });
               }}
               type="button"
             >
@@ -136,10 +138,7 @@ function DisplayName({ initial }: { initial: string }) {
           <p className="me-name-text">{name}</p>
           <button
             className="me-text-button"
-            onClick={() => {
-              setDraft(name);
-              setEditing(true);
-            }}
+            onClick={() => dispatch({ type: "edit" })}
             ref={editButton}
             type="button"
           >

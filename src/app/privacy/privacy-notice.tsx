@@ -6,7 +6,7 @@ import Link from "next/link";
  * sound legal are drafts for the owner to confirm (listed in pull request #103's description).
  */
 
-export const PRIVACY_NOTICE_DATE = "November 22, 2026";
+export const PRIVACY_NOTICE_DATE = "November 23, 2026";
 
 export function PrivacyNotice({ back }: { back: "me" | "sign-in" }) {
   return (
@@ -76,11 +76,11 @@ export function PrivacyNotice({ back }: { back: "me" | "sign-in" }) {
       <p>
         What you write in these places is also checked for safety before it is used: the Goal, the
         title you give your Plan at Start, the Plan&rsquo;s Step titles and descriptions, a new Goal
-        title, and each message in the rest conversation. Text that is not stopped by our word list
-        (see &ldquo;Safety and logs&rdquo;) is sent to the model provider so that its model can
-        check it for safety, before he answers and before anything is saved. In the rest
-        conversation your earlier messages go with it, and a message he has not answered yet is
-        checked again before it goes to him.
+        title, each message in the rest conversation, and the display name you set under Me. Text
+        that is not stopped by our word list (see &ldquo;Safety and logs&rdquo;) is sent to the
+        model provider so that its model can check it for safety, before he answers and before
+        anything is saved. In the rest conversation your earlier messages go with it, and a message
+        he has not answered yet is checked again before it goes to him.
       </p>
       <p>
         Apart from the safety check, nothing else you write is sent. His story cards, pause

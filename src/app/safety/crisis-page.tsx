@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useAppText } from "@/lib/app-text/provider";
 import { crisisPlaceholder } from "@/lib/safety/crisis";
 
@@ -10,10 +11,18 @@ export function CrisisPage({ onBack }: { onBack: () => void }) {
   const title = useAppText("ui.S1.title");
   const support = useAppText("ui.S1.support");
   const back = useAppText("ui.S1.back");
+  const heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    // #398: S1 replaces the screen in place, so focus moves to its title. A screen reader then
+    // reads it, and Tab continues to the support button (every place that shows S1 inline).
+    heading.current?.focus();
+  }, []);
   return (
-    <main className="crisis-page">
+    <main aria-labelledby="crisis-title" className="crisis-page">
       <div className="crisis-card">
-        <h1>{title}</h1>
+        <h1 id="crisis-title" ref={heading} tabIndex={-1}>
+          {title}
+        </h1>
         <p className="crisis-lead">
           If you are thinking about hurting yourself or someone else, please reach out to people who
           can help right now.
