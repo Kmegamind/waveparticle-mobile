@@ -8,8 +8,11 @@ import {
   publishStoryCardAction,
   rollBackStoryCardAction,
   saveStoryCardDraftAction,
+  storyCardRollBackWarningsAction,
   type SaveDraftResult,
 } from "../actions";
+import { RollBackWarning } from "../roll-back-warning";
+import { startRollBack } from "@/lib/story-cards/roll-back-warning";
 import { StatePill } from "@/app/admin/admin-ui";
 
 const PROBLEMS: Record<StoryCardWriteError, string> = {
@@ -34,6 +37,8 @@ export function CardEditor({ card, role }: { card: StoryCardView; role: ContentR
   const [status, setStatus] = useState("");
   // #377: the problems the server found on Publish, named by card and rule.
   const [refused, setRefused] = useState<string[]>([]);
+  // #377: a roll back whose version fails a check waits here for the admin to confirm.
+  const [warning, setWarning] = useState<{ version: number; problems: string[] } | null>(null);
   const [pending, startTransition] = useTransition();
   // False in the server HTML and until React has hydrated, so nothing typed is lost and a click
   // never submits the form natively.
@@ -53,15 +58,37 @@ export function CardEditor({ card, role }: { card: StoryCardView; role: ContentR
         ? `Publish is off: this draft fails ${checks(draft.problems.length)}. Fix the text and save again.`
         : null;
 
+  function show(result: SaveDraftResult, done: (result: SaveDraftResult) => string) {
+    setStatus(result.ok ? done(result) : PROBLEMS[result.error]);
+    if (!result.ok && result.error === "checks-failed") setRefused(result.problems ?? []);
+  }
+
+  const attempt = (action: () => Promise<SaveDraftResult>) => () =>
+    action().catch(() => ({ ok: false, error: "failed" }) as const);
+
   function run(action: () => Promise<SaveDraftResult>, done: (result: SaveDraftResult) => string) {
     setStatus("");
     setRefused([]);
+    setWarning(null);
     startTransition(async () => {
-      const result: SaveDraftResult = await action().catch(
-        () => ({ ok: false, error: "failed" }) as const,
+      show(await attempt(action)(), done);
+    });
+  }
+
+  const rolledBack = (version: number) => () => `Rolled back to v${version}.`;
+
+  /** Roll back (#377): the version's problems first; with any, the admin confirms. */
+  function askRollBack(version: number) {
+    setStatus("");
+    setRefused([]);
+    setWarning(null);
+    startTransition(async () => {
+      const start = await startRollBack(
+        () => storyCardRollBackWarningsAction(card.key, version),
+        attempt(() => rollBackStoryCardAction(card.key, version)),
       );
-      setStatus(result.ok ? done(result) : PROBLEMS[result.error]);
-      if (!result.ok && result.error === "checks-failed") setRefused(result.problems ?? []);
+      if (start.kind === "warn") setWarning({ version, problems: start.problems });
+      else show(start.result, rolledBack(version));
     });
   }
 
@@ -192,12 +219,7 @@ export function CardEditor({ card, role }: { card: StoryCardView; role: ContentR
                   <button
                     className="button-gray button-small"
                     disabled={busy}
-                    onClick={() =>
-                      run(
-                        () => rollBackStoryCardAction(card.key, version.version),
-                        () => `Rolled back to v${version.version}.`,
-                      )
-                    }
+                    onClick={() => askRollBack(version.version)}
                     type="button"
                   >
                     Roll back to v{version.version}
@@ -207,6 +229,21 @@ export function CardEditor({ card, role }: { card: StoryCardView; role: ContentR
             ))}
           </ol>
         </details>
+      ) : null}
+
+      {warning ? (
+        <RollBackWarning
+          busy={busy}
+          onCancel={() => setWarning(null)}
+          onConfirm={() =>
+            run(
+              () => rollBackStoryCardAction(card.key, warning.version),
+              rolledBack(warning.version),
+            )
+          }
+          problems={warning.problems}
+          version={warning.version}
+        />
       ) : null}
 
       <div aria-live="polite" className="admin-text-status" role="status">

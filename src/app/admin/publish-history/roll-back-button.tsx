@@ -3,8 +3,15 @@
 import { useState, useSyncExternalStore, useTransition } from "react";
 
 import { rollBackMessage } from "@/lib/admin/roll-back-message";
+import type { RollBackResult } from "@/lib/publish-history/admin";
+import { startRollBack } from "@/lib/story-cards/roll-back-warning";
 
+import { storyCardRollBackWarningsAction } from "../stories/actions";
+import { RollBackWarning } from "../stories/roll-back-warning";
 import { rollBackFromHistoryAction } from "./actions";
+
+/** Only story cards warn before a roll back (#377, decision 0028); other kinds roll back at once. */
+const noWarnings = async () => [] as string[];
 
 const noSubscription = () => () => {};
 
@@ -24,6 +31,7 @@ export function HistoryRowAction({
 }) {
   const [status, setStatus] = useState("");
   const [problems, setProblems] = useState<string[]>([]);
+  const [warning, setWarning] = useState<string[] | null>(null);
   const [pending, startTransition] = useTransition();
   // False in the server HTML and until React has hydrated, so a click never goes unanswered.
   const ready = useSyncExternalStore(
@@ -32,22 +40,43 @@ export function HistoryRowAction({
     () => false,
   );
 
+  const rollBack = () =>
+    rollBackFromHistoryAction(kind, itemKey, version).catch((): RollBackResult => ({
+      ok: false,
+      error: "failed",
+    }));
+
+  function show(result: RollBackResult) {
+    // A refused version lists its reasons (#308, #317).
+    setProblems(!result.ok && "problems" in result ? (result.problems ?? []) : []);
+    setStatus(result.ok ? `Rolled back to v${version}.` : rollBackMessage(kind, result));
+  }
+
+  function reset() {
+    setStatus("");
+    setProblems([]);
+    setWarning(null);
+  }
+
+  const busy = pending || !ready;
+
   return (
     <div className="admin-history-action">
       {canRollBack ? (
         <button
           className="button-gray button-small"
-          disabled={pending || !ready}
+          disabled={busy}
           onClick={() => {
-            setStatus("");
-            setProblems([]);
+            reset();
             startTransition(async () => {
-              const result = await rollBackFromHistoryAction(kind, itemKey, version).catch(
-                () => ({ ok: false, error: "failed" }) as const,
+              const start = await startRollBack(
+                kind === "story_card"
+                  ? () => storyCardRollBackWarningsAction(itemKey, version)
+                  : noWarnings,
+                rollBack,
               );
-              // A refused version lists its reasons (#308, #317).
-              setProblems(!result.ok && "problems" in result ? (result.problems ?? []) : []);
-              setStatus(result.ok ? `Rolled back to v${version}.` : rollBackMessage(kind, result));
+              if (start.kind === "warn") setWarning(start.problems);
+              else show(start.result);
             });
           }}
           type="button"
@@ -56,6 +85,18 @@ export function HistoryRowAction({
         </button>
       ) : isCurrent ? (
         <p className="admin-history-note">Published now</p>
+      ) : null}
+      {warning ? (
+        <RollBackWarning
+          busy={busy}
+          onCancel={() => setWarning(null)}
+          onConfirm={() => {
+            reset();
+            startTransition(async () => show(await rollBack()));
+          }}
+          problems={warning}
+          version={version}
+        />
       ) : null}
       <div aria-live="polite" className="admin-text-status" role="status">
         {status}

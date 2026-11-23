@@ -117,7 +117,9 @@ the cards, but saving says the change could not be saved. No new setting is need
 
 Since #377 (`docs/decisions/0028`) Save draft and Publish also check a card against the other
 published cards of its story (a repeat, the same first three words as one of the four cards
-before it, a near repeat). This needs no migration and no setting.
+before it, a near repeat). Roll back runs the same checks on the version it would make live and,
+when that version has problems, shows a warning to confirm; it is never refused. This needs no
+migration and no setting.
 
 ### Fixing the published cards that fail the checks (#377)
 Version 1 of every card was loaded as published without the card checks. An earlier change
@@ -228,9 +230,12 @@ Nothing else changes: no part title, no other table, no phone setting.
      (`node scripts/story-cards/import.mjs > story-cards-import.sql`, then run that file the same
      way as in step 3) and then this fix again, starting with the dry run.
 9. To undo the fix for one card: open `/admin/stories/<story>`, open the card's **Versions**, and
-   press **Roll back to v1**. Or press **Roll back** on its row in `/admin/publish-history`. Roll
-   back is not checked, so version 1 comes back with the problem the fix removed; the card then
-   shows as failing again. There is no undo for all cards at once: one roll back per card.
+   press **Roll back to v1**. (`/admin/publish-history` has no row for version 1, because the import
+   loaded it without one; its **Roll back** works on versions published in the admin and warns in
+   the same way.) A warning appears first: version 1 fails the checks the fix was for, so the page lists its
+   problems and asks you to confirm. Press **Roll back anyway** to roll back (or **Cancel**). Roll
+   back is never refused, so version 1 comes back with that problem and the card shows as failing
+   again. There is no undo for all cards at once: one roll back per card.
 
 ## Companion and story fields
 Editing a Companion's and a story's fields in the admin (#309, `docs/decisions/0024`): run

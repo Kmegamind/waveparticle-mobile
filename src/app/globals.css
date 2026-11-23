@@ -3956,6 +3956,21 @@ input.admin-text-field {
   padding-left: var(--adm-gap);
 }
 
+/* Issue 377: the warning before a story card roll back whose version fails a check. */
+.admin-roll-back-warning {
+  background: var(--adm-warn-soft);
+  border: 1px solid var(--adm-warn);
+  border-radius: var(--adm-r-chip);
+  display: grid;
+  gap: var(--adm-gap-tiny);
+  font-size: var(--adm-note-size);
+  padding: var(--adm-gap-small);
+}
+
+.admin-roll-back-warning p {
+  margin: 0;
+}
+
 /* ADM-08 Prompts (issue 308): settings lines, the prompt text and the line diff. */
 .admin-prompt-settings {
   font-family: var(--adm-font-mono);

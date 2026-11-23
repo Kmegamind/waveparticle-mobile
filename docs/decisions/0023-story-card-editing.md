@@ -32,6 +32,8 @@ LEAK-BY-PART before phones see them.
   - Both go through `private.set_published_story_card`, which writes a `publish_history` row of
     kind `story_card` in the same transaction.
   - Roll back is not blocked by the checks, because it restores a version that was live before.
+    Since #377 the admin sees the version's problems and confirms first (a warning, not a block;
+    `docs/decisions/0028`, ROLLBACK-WARN).
 - **Existing cards.** Two published cards of "The Cross-Examination" mention 1939 and 1943. They
   stay live and show as failing in the editor.
 

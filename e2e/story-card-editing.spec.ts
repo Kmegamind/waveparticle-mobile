@@ -230,3 +230,82 @@ test("test_377_ac1_publish_is_refused_when_the_story_changed_and_the_draft_now_r
   );
   await expect(reloaded.getByRole("button", { name: "Publish v2" })).toBeDisabled();
 });
+
+// #377, owner decision 2026-11-23 (decision 0028): Roll back warns, never blocks. Both roll back
+// buttons check the version that would become live; with problems the admin confirms first.
+async function publishCardBody(key: string, body: string) {
+  const answer = await fetch(`${STUB_SUPABASE}/__story_cards`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ published: { key, body } }),
+  });
+  expect(answer.ok).toBe(true);
+}
+
+const LATER_REPEAT = `Part 1, card 2 (${SECOND}), a later card of this story, repeats this card.`;
+
+test("test_377_rollback_on_the_story_page_warns_and_rolls_back_after_confirm", async ({
+  page,
+  context,
+}) => {
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto(`/admin/stories/${STORY}`);
+  const text = "Haakon stood by the kitchen door with his hat in his hands.";
+  await saveDraft(page, text);
+  const card = cardOf(page);
+  await expect(card.getByRole("status")).toHaveText("Draft v2 saved. It passes every check.");
+  await card.getByRole("button", { name: "Publish v2" }).click();
+  await expect(card.getByRole("status")).toHaveText("Published v2.");
+
+  // Meanwhile card 2 is published with v1's text, so rolling back to v1 would repeat it.
+  await publishCardBody(SECOND, ORIGINAL);
+  await page.reload();
+  await cardOf(page)
+    .getByText(/^Versions \(/)
+    .click();
+  await cardOf(page).getByRole("button", { name: "Roll back to v1" }).click();
+  const warning = cardOf(page).getByRole("region", { name: "Roll back to v1: warning" });
+  await expect(warning).toContainText(
+    "v1 fails 1 check. Rolling back puts it live on phones anyway. Roll back anyway?",
+  );
+  await expect(warning.getByRole("list", { name: "Problems of v1" })).toHaveText(LATER_REPEAT);
+
+  // Cancel: nothing changes.
+  await warning.getByRole("button", { name: "Cancel" }).click();
+  await expect(warning).toBeHidden();
+  expect(await phoneCard(null)).toBe(text);
+
+  // Confirm: the roll back runs as before; the server accepts it.
+  await cardOf(page).getByRole("button", { name: "Roll back to v1" }).click();
+  await warning.getByRole("button", { name: "Roll back anyway" }).click();
+  await expect(cardOf(page).getByRole("status")).toHaveText("Rolled back to v1.");
+  await expect(warning).toBeHidden();
+  expect(await phoneCard(null)).toBe(ORIGINAL);
+});
+
+test("test_377_rollback_in_publish_history_warns_and_rolls_back_after_confirm", async ({
+  page,
+  context,
+}) => {
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto(`/admin/stories/${STORY}`);
+  const second = "Haakon stood by the kitchen door with his hat in his hands.";
+  await saveDraft(page, second);
+  await cardOf(page).getByRole("button", { name: "Publish v2" }).click();
+  await expect(cardOf(page).getByRole("status")).toHaveText("Published v2.");
+  await page.reload();
+  await saveDraft(page, "Haakon waited by the stove and said nothing at all.");
+  await cardOf(page).getByRole("button", { name: "Publish v3" }).click();
+  await expect(cardOf(page).getByRole("status")).toHaveText("Published v3.");
+
+  // Card 2 now holds v2's text, so rolling back to v2 would repeat it.
+  await publishCardBody(SECOND, second);
+  await page.goto("/admin/publish-history");
+  const row = page.getByRole("row", { name: `${KEY} v2, Published` }).first();
+  await row.getByRole("button", { name: "Roll back to v2" }).click();
+  const warning = row.getByRole("region", { name: "Roll back to v2: warning" });
+  await expect(warning.getByRole("list", { name: "Problems of v2" })).toHaveText(LATER_REPEAT);
+  await warning.getByRole("button", { name: "Roll back anyway" }).click();
+  await expect(row.getByRole("status")).toHaveText("Rolled back to v2.");
+  expect(await phoneCard(null)).toBe(second);
+});
