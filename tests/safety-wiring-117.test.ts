@@ -4,7 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { ModelGateway } from "@/lib/model-gateway";
 import { takeTurn } from "@/lib/goal-dialogue/turns";
 import { renameGoal, type GoalEditWriter } from "@/lib/goals/goal-edits";
-import { startGoal, type GoalWriter } from "@/lib/goals/start-goal";
+import { LIMITS, planPieces, startGoal, type GoalWriter } from "@/lib/goals/start-goal";
+import { SAFETY_TEXT_MAX } from "@/lib/safety/classifier";
 import { accountRestReply } from "@/lib/progress/account-lines";
 import { restReplyFor } from "@/lib/prototype/rest-lines";
 import { splitGoal } from "@/lib/prototype/split-goal";
@@ -148,6 +149,85 @@ describe("#117 fix round 1 C1: a flagged rest message never reaches the reply mo
     expect(JSON.stringify(writeRestReply.mock.calls)).not.toContain(INDIRECT);
   });
 
+  it("test_117_n1_the_recheck_gives_an_earlier_message_its_own_earlier_messages", async () => {
+    // The reviewer's reproduction: a message that reads as a crisis only in its context.
+    const CONTEXT = "there is no point anymore";
+    const LATE = "tonight is the night, it is all arranged";
+    const calls: { text: string; previous: readonly string[] }[] = [];
+    const check = vi.fn<SafetyCheck>(async (text, context) => {
+      calls.push({ text, previous: context.previous ?? [] });
+      const crisis = text === LATE && (context.previous ?? []).includes(CONTEXT);
+      return {
+        action: crisis ? "crisis-page" : "continue",
+        tier: crisis ? "crisis" : "none",
+        layer: "classifier",
+      };
+    });
+    const { gateway, writeRestReply } = restGateway();
+    const him = { from: "him" as const, text: "His words." };
+    // Turn 1 is a crisis in context.
+    expect(
+      await restReplyFor(
+        seed,
+        { message: LATE, history: [him, { from: "you", text: CONTEXT }, him], replyIndex: 0 },
+        gateway,
+        check,
+      ),
+    ).toEqual({ status: "crisis" });
+    // Turn 2: an old browser kept it; the server re-check must see the same context.
+    const result = await restReplyFor(
+      seed,
+      {
+        message: "anyway",
+        history: [him, { from: "you", text: CONTEXT }, him, { from: "you", text: LATE }],
+        replyIndex: 1,
+      },
+      gateway,
+      check,
+    );
+    expect(result).toMatchObject({ status: "ok" });
+    expect(calls.find((call) => call.text === LATE && call.previous.length > 0)?.previous).toEqual([
+      CONTEXT,
+    ]);
+    expect(JSON.stringify(writeRestReply.mock.calls)).not.toContain(LATE);
+  });
+
+  it("test_117_n1_an_earlier_message_whose_recheck_fails_is_dropped_fail_closed", async () => {
+    const LATE = "see you on the other side";
+    const check = vi.fn<SafetyCheck>(async (text) =>
+      text === LATE
+        ? { action: "continue", tier: "none", layer: "keyword_alone", classifierFailed: true }
+        : { action: "continue", tier: "none", layer: "classifier" },
+    );
+    const { gateway, writeRestReply } = restGateway();
+    const him = { from: "him" as const, text: "His words." };
+    const result = await restReplyFor(
+      seed,
+      { message: "next", history: [him, { from: "you", text: LATE }], replyIndex: 0 },
+      gateway,
+      check,
+    );
+    expect(result).toMatchObject({ status: "ok" });
+    expect(JSON.stringify(writeRestReply.mock.calls)).not.toContain(LATE);
+  });
+
+  it("test_117_n1_without_a_classifier_an_unanswered_message_is_kept_by_the_keyword_rule", async () => {
+    const { gateway, writeRestReply } = restGateway();
+    await restReplyFor(
+      seed,
+      {
+        message: "next",
+        history: [
+          { from: "him", text: "His words." },
+          { from: "you", text: "a plain note" },
+        ],
+        replyIndex: 0,
+      },
+      gateway,
+    );
+    expect(JSON.stringify(writeRestReply.mock.calls)).toContain("a plain note");
+  });
+
   it("test_117_c1_an_answered_message_stays_in_the_reply_history", async () => {
     const { check } = safety();
     const { gateway, writeRestReply } = restGateway();
@@ -275,14 +355,14 @@ describe("#117 saving the Goal and its Plan", () => {
     const { check, calls } = safety();
     const outcome = await startGoal(base, { userId: USER, writer: goalWriter(), safety: check });
     expect(outcome.status).toBe("saved");
-    // I1: the goal, the title and each Step on its own.
+    // I1 and fix round 2 (N2): the goal, the title, and the Steps in pieces of at most 2,000
+    // characters, whole Steps only. Two short Steps fit in one piece.
     expect(calls.map((call) => call.context.position).sort()).toEqual([
       "goal_input",
       "goal_title",
       "plan_edit",
-      "plan_edit",
     ]);
-    expect(calls.map((call) => call.text)).toContain("Outline\nList the sections.");
+    expect(calls.map((call) => call.text)).toContain("Outline\nList the sections.\nDraft\n");
   });
 
   it("test_117_i1_an_indirect_crisis_in_a_late_step_is_classified_and_nothing_is_saved", async () => {
@@ -304,8 +384,27 @@ describe("#117 saving the Goal and its Plan", () => {
       status: "crisis",
     });
     expect(writer.insertGoal).not.toHaveBeenCalled();
-    expect(calls).toHaveLength(42);
     expect(calls.every((call) => call.text.length <= 2_000)).toBe(true);
+    // Fewer calls than one per Step, and the flagged Step's piece was sent whole.
+    expect(calls.length).toBeLessThan(42);
+    expect(calls.some((call) => call.text.includes(`Then ${INDIRECT}.`))).toBe(true);
+    // Every Step went to the classifier exactly once.
+    for (const step of steps) {
+      const piece = `${step.title}\n${step.description}`;
+      expect(calls.filter((call) => call.text.includes(piece))).toHaveLength(1);
+    }
+  });
+
+  it("test_117_n2_a_step_always_fits_one_piece_under_the_classifier_cut", () => {
+    expect(LIMITS.stepTitle + 1 + LIMITS.description).toBeLessThanOrEqual(SAFETY_TEXT_MAX);
+    const long = {
+      title: "t".repeat(LIMITS.stepTitle),
+      description: "d".repeat(LIMITS.description),
+      minutes: 1,
+    };
+    const pieces = planPieces([long, long, long]);
+    expect(pieces).toHaveLength(3);
+    expect(pieces.every((piece) => piece.length <= SAFETY_TEXT_MAX)).toBe(true);
   });
 
   it("test_117_i1_the_pieces_are_checked_side_by_side_not_one_after_another", async () => {
@@ -318,7 +417,7 @@ describe("#117 saving the Goal and its Plan", () => {
       return { action: "continue", tier: "none", layer: "classifier" };
     });
     const pending = startGoal(base, { userId: USER, writer: goalWriter(), safety: check });
-    await vi.waitFor(() => expect(started).toBe(4));
+    await vi.waitFor(() => expect(started).toBe(3));
     release();
     expect((await pending).status).toBe("saved");
   });

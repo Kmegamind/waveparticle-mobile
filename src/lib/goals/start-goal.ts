@@ -1,6 +1,7 @@
 import { classifyGoalShape, type GoalShape } from "@/lib/prototype/goal-lines";
 import { STEP_DESCRIPTION_MAX, STEP_TITLE_MAX } from "@/lib/prototype/plan-edit";
 import { keywordOnlySafetyCheck, type SafetyCheck } from "@/lib/safety/check";
+import { SAFETY_TEXT_MAX } from "@/lib/safety/classifier";
 import { gateFreeText } from "@/lib/safety/crisis";
 
 /**
@@ -86,6 +87,25 @@ function isWellFormed(value: unknown): value is StartGoalInput {
   });
 }
 
+/**
+ * The Plan's Steps as texts of at most `SAFETY_TEXT_MAX` characters, whole Steps only (a Step is
+ * at most 1,201 characters, so it always fits). Worst case one piece per Step.
+ */
+export function planPieces(steps: StartStep[]): string[] {
+  const pieces: string[] = [];
+  let current = "";
+  for (const step of steps) {
+    const text = `${step.title}\n${step.description}`;
+    if (current && current.length + 1 + text.length > SAFETY_TEXT_MAX) {
+      pieces.push(current);
+      current = "";
+    }
+    current = current ? `${current}\n${text}` : text;
+  }
+  if (current) pieces.push(current);
+  return pieces;
+}
+
 function isCrisis(text: string): boolean {
   return gateFreeText(text).action === "crisis-page";
 }
@@ -102,10 +122,11 @@ export async function startGoal(
   if (!deps.userId) return { status: "signed-out" };
   if (!isWellFormed(input)) return { status: "invalid" };
 
-  // The keyword layer on every field first, then the classifier on the goal, the title and each
-  // Step on its own (#117 I1: each piece stays under the classifier's 2,000-character cut). All
-  // calls run side by side, each with its own 1.5 s limit, so the wait is still at most 1.5 s. Any
-  // crisis wins; a piece whose call fails is decided by the keyword layer alone (and alarms).
+  // The keyword layer on every field first, then the classifier on the goal, the title and the
+  // Steps in pieces (#117 I1, fix round 2 N2): whole Steps joined up to the classifier's
+  // 2,000-character cut, so nothing is cut off and a usual Plan needs one or two calls. All calls
+  // run side by side, each with its own 1.5 s limit, so the wait is still at most 1.5 s. Any crisis
+  // wins; a piece whose call fails is decided by the keyword layer alone (and alarms).
   if (isCrisis(input.goalText) || isCrisis(input.title)) return { status: "crisis" };
   if (input.steps.some((step) => isCrisis(`${step.title}\n${step.description}`))) {
     return { status: "crisis" };
@@ -114,9 +135,7 @@ export async function startGoal(
   const gates = await Promise.all([
     safety(input.goalText, { position: "goal_input" }),
     safety(input.title, { position: "goal_title" }),
-    ...input.steps.map((step) =>
-      safety(`${step.title}\n${step.description}`, { position: "plan_edit" }),
-    ),
+    ...planPieces(input.steps).map((piece) => safety(piece, { position: "plan_edit" })),
   ]);
   if (gates.some((gate) => gate.action === "crisis-page")) return { status: "crisis" };
 
