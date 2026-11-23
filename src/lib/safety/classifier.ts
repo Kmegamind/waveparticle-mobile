@@ -66,7 +66,12 @@ export function parseClassifierAnswer(raw: string): ClassifierTier | null {
   return typeof tier === "string" && Object.hasOwn(ANSWERS, tier) ? ANSWERS[tier] : null;
 }
 
-const cut = (text: string) => text.slice(0, SAFETY_TEXT_MAX);
+/**
+ * Cut to the limit, and turn the prompt's own `<<<` and `>>>` markers into look-alikes, so a
+ * message cannot close its block and add text the model would read as instructions (review M2).
+ */
+const cut = (text: string) =>
+  text.slice(0, SAFETY_TEXT_MAX).replaceAll("<<<", "‹‹‹").replaceAll(">>>", "›››");
 
 /** The prompt for one message: the last two earlier messages (oldest first) and the message. */
 export function safetyClassifierPrompt(row: PromptRow, input: ClassifierInput): string {

@@ -61,6 +61,12 @@ describe("#117 the server's settings", () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
+  it("test_117_m3_without_a_model_the_server_says_once_that_the_classifier_is_off", () => {
+    const lines: Record<string, unknown>[] = [];
+    serverSafetyCheckFrom({ env: {}, log: (_level, fields) => lines.push(fields) });
+    expect(lines).toEqual([{ event: "safety_classifier_off" }]);
+  });
+
   it("test_117_a_failing_provider_logs_an_error_line_without_text_and_raises_the_alarm", async () => {
     const lines: { level: string; fields: Record<string, unknown> }[] = [];
     const posts: string[] = [];

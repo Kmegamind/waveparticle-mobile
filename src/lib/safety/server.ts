@@ -89,7 +89,11 @@ export function serverSafetyCheckFrom(options: {
   const log = options.log ?? serverLog;
   const schedule = options.schedule ?? afterResponse;
   const settings = safetyClassifierSettings(options.env);
-  if (!settings) return createSafetyCheck({ classifier: null, onEvent: logOnly(log) });
+  if (!settings) {
+    // Review M3: say once per server instance that only the keyword layer runs.
+    log("warn", { event: "safety_classifier_off" });
+    return createSafetyCheck({ classifier: null, onEvent: logOnly(log) });
+  }
 
   const classifier = createSafetyClassifier({
     provider: createHttpModelProvider({
