@@ -419,7 +419,7 @@ Only the goal dialogue calls, the pause message, the return pop-up and the rest 
 | Return pop-up | What he did during the time and how he felt (1 or 2 sentences, at most 30 words, LEN-RETURN), in any words for how the time felt (TIME-WORDS), ending with a start button | Entry state, return case (Back to step, or away 5 minutes or more) | Back to step; return after 5 minutes or more | Failure message with Retry; the clock does not start |
 | Rest chat | His reply | Obstacle, entry state, last turns | Each user message | Generated again within the time limit, then the failure message with Retry |
 | Closing line (made ahead) | One to three sentences, at most 45 words, in his voice: what happened to him that day and how he feels (END-TONE) | The story's facts | Once per story, with its cards | Cannot be published |
-| Safety classifier | Tier label: crisis, stress, none or unsure (SAFETY-TIERS-2) | Message plus last two messages in the same field | Every free-text submission with a server-side check, before the reply call (SAFETY-CHECK-FIRST, SAFETY-FIELDS) | Keyword layer alone, error log line and the once-a-day webhook alarm (SAFETY-ALARM) |
+| Safety classifier | Tier label: crisis, stress, none or unsure (SAFETY-TIERS-2) | Message plus last two messages in the same field | Every free-text submission with a server-side check, including the display name, before the reply call or the save (SAFETY-CHECK-FIRST, SAFETY-FIELDS, SAFETY-FIELDS-NAME) | Keyword layer alone, error log line and the once-a-day webhook alarm (SAFETY-ALARM) |
 
 There are no status lines on the focus page (HOME-LINE).
 

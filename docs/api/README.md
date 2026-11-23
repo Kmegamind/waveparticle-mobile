@@ -25,7 +25,7 @@ The public code interfaces today are listed below, one file per interface in thi
 - [src/app/goals/actions.ts](goals-actions.md): server actions, each returning `{ status: "ok" }` or `{ status: "failed" }` with no Goal text.
 - [src/app/home-actions.ts](home-actions.md): server action `setGoalStatusAction({ goalId, status, sessionId?
 - [src/lib/summary/life-path.ts](life-path.md): `lifePath(progress, startId = chapter 1)` gives `{ periods: [{ name, rows }], currentId }`.
-- [src/app/me/actions.ts](me-actions.md): `saveDisplayNameAction({ name })` returns `{ status: "ok", name }` (trimmed, 1 to 60 characters) or `{ status: "invalid" | "failed" }`; `setKeepClockRunningAction({ on })` (a boolean) returns `{…
+- [src/app/me/actions.ts](me-actions.md): `saveDisplayNameAction({ name })` returns `{ status: "ok", name }` (trimmed, 1 to 60 characters), `{ status: "crisis" }` (the server's safety check, `serverSafetyCheck()` at position `display_name`,…
 - [writeClosingLine](model-gateway-closing-line.md): `writeClosingLine({ facts, lastMoment, forbidTerms?, earlierLines?
 - [src/lib/model-gateway/](model-gateway.md): server-only `createModelGateway` and `createServerModelGateway`.
 - [src/lib/prototype/opening-memory.ts](opening-memory.md): `loadLastOpening` and `saveLastOpening(storage, index)` for the returning opening; never throws.

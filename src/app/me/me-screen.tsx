@@ -16,6 +16,7 @@ import { SignOutButton } from "../auth/auth-form";
 import { ContinueLink } from "../continue-link";
 import { saveDisplayNameAction } from "./actions";
 import { HistoryPanel } from "./history-panel";
+import { useShowCrisis } from "./me-safety-gate";
 
 /**
  * ME (#81, #83, #74) as in prototype v4: the account, the Goal in progress, on-hold Goals,
@@ -54,7 +55,9 @@ function DisplayName({ initial }: { initial: string }) {
   const [error, setError] = useState("");
   const [announce, setAnnounce] = useState("");
   const editButton = useRef<HTMLButtonElement>(null);
+  const field = useRef<HTMLInputElement>(null);
   const returnFocus = useRef(false);
+  const showCrisis = useShowCrisis();
 
   useEffect(() => {
     if (!editing && returnFocus.current) {
@@ -73,6 +76,12 @@ function DisplayName({ initial }: { initial: string }) {
       setAnnounce("Display name saved");
       returnFocus.current = true;
       setEditing(false);
+    } else if (outcome.status === "crisis") {
+      // #392: the server's safety check flagged the name. Nothing was saved; the text is dropped
+      // and S1 shows. Back returns here in edit mode with the field emptied.
+      setDraft("");
+      setError("");
+      showCrisis(() => field.current?.focus());
     } else {
       // The typed text stays in the field (DESIGN 8, errors in words).
       setError(
@@ -96,6 +105,7 @@ function DisplayName({ initial }: { initial: string }) {
             className="me-field"
             id="me-display-name"
             onChange={(event) => setDraft(event.target.value)}
+            ref={field}
             value={draft}
           />
           {error ? <p role="alert">{error}</p> : null}

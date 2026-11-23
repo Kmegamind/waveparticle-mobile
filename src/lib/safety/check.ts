@@ -20,7 +20,13 @@ import { checkSafetyText } from "./keyword";
 
 /** Where the text was written (screen and field), for the log; never the text itself. */
 export type SafetyPosition =
-  "goal_input" | "goal_title" | "goal_rename" | "plan_split" | "plan_edit" | "rest_chat";
+  | "goal_input"
+  | "goal_title"
+  | "goal_rename"
+  | "plan_split"
+  | "plan_edit"
+  | "rest_chat"
+  | "display_name";
 
 /**
  * Which layer decided: `keyword` (its tier was the higher one, or the keyword crisis skipped the

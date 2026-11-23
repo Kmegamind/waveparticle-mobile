@@ -7,6 +7,7 @@ import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { continueHref } from "../continue-link";
+import { MeSafetyGate } from "./me-safety-gate";
 import { MeScreen } from "./me-screen";
 
 export const instant = false;
@@ -32,15 +33,18 @@ async function MeContent() {
     ? continueHref({ id: view.current.goalId, status: "in_progress" })
     : null;
   return (
-    <main className="app-screen me-page">
-      <h1>Me</h1>
-      <MeScreen
-        continueHref={href}
-        email={email}
-        name={profile.nickname ?? (email.split("@")[0] || "You")}
-        since={user.created_at}
-        view={view}
-      />
-    </main>
+    // #392: S1 shows in place of Me when the display name is flagged (MeSafetyGate).
+    <MeSafetyGate>
+      <main className="app-screen me-page">
+        <h1>Me</h1>
+        <MeScreen
+          continueHref={href}
+          email={email}
+          name={profile.nickname ?? (email.split("@")[0] || "You")}
+          since={user.created_at}
+          view={view}
+        />
+      </main>
+    </MeSafetyGate>
   );
 }
