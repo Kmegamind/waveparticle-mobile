@@ -31,21 +31,24 @@ test.beforeEach(resetCards);
 test.afterEach(resetCards);
 
 /** The phone's read of the card (#300): published, or pinned to the given versions. */
-async function phoneCard(versions: Record<string, number> | null): Promise<string | undefined> {
+async function phoneCard(
+  versions: Record<string, number> | null,
+  key = KEY,
+): Promise<string | undefined> {
   const answer = await fetch(`${STUB_SUPABASE}/rest/v1/rpc/get_story_cards`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ reader_key: READER_KEY, story: STORY, versions }),
   });
   const document = (await answer.json()) as { cards: { key: string; body: string }[] };
-  return document.cards.find((card) => card.key === KEY)?.body;
+  return document.cards.find((card) => card.key === key)?.body;
 }
 
 const cardOf = (page: Page, key = KEY) => page.getByRole("article", { name: key });
 
-async function saveDraft(page: Page, text: string) {
-  const card = cardOf(page);
-  await card.getByLabel(`Text for ${KEY}`).fill(text);
+async function saveDraft(page: Page, text: string, key = KEY) {
+  const card = cardOf(page, key);
+  await card.getByLabel(`Text for ${key}`).fill(text);
   await card.getByRole("button", { name: "Save draft" }).click();
 }
 
@@ -165,4 +168,65 @@ test("test_304_ac3_published_cards_with_years_show_as_failing", async ({ page, c
   await expect(failing.getByRole("list", { name: "Problems" })).toContainText(
     'Mentions a year ("1943").',
   );
+});
+
+// #377: the whole-Story checks (repeated lines in story order) on a saved draft and on Publish.
+const SECOND = `crd.opp.${STORY}.p1.c2`;
+const SECOND_ORIGINAL =
+  "Haakon told me about his visit from the FBI, and I felt my face go dark. The house has thin doors and too many ears. I did not want one person near enough to hear.";
+
+test("test_377_ac2_a_saved_draft_that_repeats_an_earlier_card_shows_the_problem", async ({
+  page,
+  context,
+}) => {
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto(`/admin/stories/${STORY}`);
+  await saveDraft(page, ORIGINAL, SECOND);
+  const card = cardOf(page, SECOND);
+  await expect(card.getByRole("status")).toHaveText(
+    "Draft v2 saved. It fails 1 check; see the problems above.",
+  );
+  await expect(card.getByRole("list", { name: "Problems of the draft" })).toHaveText(
+    `Repeats part 1, card 1 (${KEY}), an earlier card of this story.`,
+  );
+  await expect(card.getByRole("button", { name: "Publish v2" })).toBeDisabled();
+  await expect(card).toContainText("Publish is off: this draft fails 1 check.");
+});
+
+test("test_377_ac1_publish_is_refused_when_the_story_changed_and_the_draft_now_repeats_a_card", async ({
+  page,
+  context,
+}) => {
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto(`/admin/stories/${STORY}`);
+  const text = "Haakon stood by the kitchen door with his hat in his hands.";
+  await saveDraft(page, text, SECOND);
+  const card = cardOf(page, SECOND);
+  await expect(card.getByRole("status")).toHaveText("Draft v2 saved. It passes every check.");
+
+  // Meanwhile card 1 of part 1 is published with the same text (as by another admin).
+  const answer = await fetch(`${STUB_SUPABASE}/__story_cards`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ published: { key: KEY, body: text } }),
+  });
+  expect(answer.ok).toBe(true);
+
+  await card.getByRole("button", { name: "Publish v2" }).click();
+  await expect(card.getByRole("status")).toContainText(
+    "This draft fails a check, so it was not published.",
+  );
+  await expect(card.getByRole("list", { name: "Problems that stopped Publish" })).toHaveText(
+    `Repeats part 1, card 1 (${KEY}), an earlier card of this story.`,
+  );
+  // Phones still read the published version.
+  expect(await phoneCard(null, SECOND)).toBe(SECOND_ORIGINAL);
+
+  // The reloaded page shows the problem on the draft, and Publish is off.
+  await page.reload();
+  const reloaded = cardOf(page, SECOND);
+  await expect(reloaded.getByRole("list", { name: "Problems of the draft" })).toHaveText(
+    `Repeats part 1, card 1 (${KEY}), an earlier card of this story.`,
+  );
+  await expect(reloaded.getByRole("button", { name: "Publish v2" })).toBeDisabled();
 });

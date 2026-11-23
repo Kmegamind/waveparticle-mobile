@@ -17,7 +17,8 @@ const PROBLEMS: Record<StoryCardWriteError, string> = {
   invalid: "This card or version is not known.",
   blank: "Write a text first. An empty card is not saved.",
   "too-long": "Keep the card under 2000 characters.",
-  "checks-failed": "This draft fails a check, so it was not published. Fix it and save again.",
+  "checks-failed":
+    "This draft fails a check, so it was not published. Fix it and save again. The problems:",
   failed: "Could not save the change. Please try again.",
 };
 
@@ -31,6 +32,8 @@ const checks = (count: number) => (count === 1 ? "1 check" : `${count} checks`);
 export function CardEditor({ card, role }: { card: StoryCardView; role: ContentRole }) {
   const id = useId();
   const [status, setStatus] = useState("");
+  // #377: the problems the server found on Publish, named by card and rule.
+  const [refused, setRefused] = useState<string[]>([]);
   const [pending, startTransition] = useTransition();
   // False in the server HTML and until React has hydrated, so nothing typed is lost and a click
   // never submits the form natively.
@@ -52,9 +55,13 @@ export function CardEditor({ card, role }: { card: StoryCardView; role: ContentR
 
   function run(action: () => Promise<SaveDraftResult>, done: (result: SaveDraftResult) => string) {
     setStatus("");
+    setRefused([]);
     startTransition(async () => {
-      const result = await action().catch(() => ({ ok: false, error: "failed" }) as const);
+      const result: SaveDraftResult = await action().catch(
+        () => ({ ok: false, error: "failed" }) as const,
+      );
       setStatus(result.ok ? done(result) : PROBLEMS[result.error]);
+      if (!result.ok && result.error === "checks-failed") setRefused(result.problems ?? []);
     });
   }
 
@@ -202,9 +209,16 @@ export function CardEditor({ card, role }: { card: StoryCardView; role: ContentR
         </details>
       ) : null}
 
-      <p aria-live="polite" className="admin-text-status" role="status">
-        {status}
-      </p>
+      <div aria-live="polite" className="admin-text-status" role="status">
+        <p>{status}</p>
+        {refused.length > 0 ? (
+          <ul aria-label="Problems that stopped Publish" className="admin-card-problems">
+            {refused.map((problem) => (
+              <li key={problem}>{problem}</li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
     </article>
   );
 }
