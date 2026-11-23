@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import path from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -19,6 +17,8 @@ import { seedRows } from "./support/seed-prompts";
 
 // #392: the display name on Me passes the server's safety check before it is saved
 // (US-SAF-1, FR-SAFETY-2, SAFETY-FIELDS-NAME). Fakes only: the real model is never called.
+// The action wiring and the Me edit state are tested by behaviour in me-display-name-398.test.ts
+// (#398); the page itself in e2e/me-display-name-safety.spec.ts.
 
 const USER = "11111111-1111-4111-8111-111111111111";
 const row = seedRows().find((seed) => seed.key === "safety_classifier") as PromptRow;
@@ -134,14 +134,6 @@ describe("#392 AC1 the server checks the display name before the save", () => {
     );
     expect(writer.upsert).not.toHaveBeenCalled();
   });
-
-  it("test_392_ac1_the_action_passes_serverSafetyCheck", () => {
-    const source = readFileSync(
-      path.join(import.meta.dirname, "..", "src", "app", "me", "actions.ts"),
-      "utf8",
-    );
-    expect(source).toMatch(/saveDisplayName\(input, \{[^}]*safety: serverSafetyCheck\(\)/);
-  });
 });
 
 describe("#392 AC3 ordinary text is saved as today", () => {
@@ -178,15 +170,5 @@ describe("#392 AC2 the Me page shows S1 in place of Me", () => {
     expect(html).toContain("Me content");
     expect(html).not.toContain("hidden");
     expect(html).not.toContain("crisis-page");
-  });
-
-  it("test_392_ac2_the_page_wraps_me_in_the_gate_and_the_name_field_uses_it", () => {
-    const read = (file: string) =>
-      readFileSync(path.join(import.meta.dirname, "..", "src", "app", "me", file), "utf8");
-    expect(read("page.tsx")).toMatch(/<MeSafetyGate>\s*<main className="app-screen me-page">/);
-    const screen = read("me-screen.tsx");
-    expect(screen).toMatch(/outcome\.status === "crisis"/);
-    expect(screen).toMatch(/setDraft\(""\)/);
-    expect(screen).toMatch(/showCrisis\(/);
   });
 });

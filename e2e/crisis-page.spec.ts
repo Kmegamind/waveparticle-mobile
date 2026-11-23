@@ -22,6 +22,8 @@ test("a crisis message opens the system page and back clears the field", async (
 
   const crisis = page.locator("main.crisis-page");
   await expect(crisis.getByRole("heading", { name: "This is outside the story." })).toBeVisible();
+  // #398: focus moves to the S1 title, so a screen reader announces it.
+  await expect(crisis.getByRole("heading", { name: "This is outside the story." })).toBeFocused();
   await expect(
     crisis.getByText("PLACEHOLDER: legal body text is not available yet."),
   ).toBeVisible();

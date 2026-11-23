@@ -28,9 +28,10 @@ describe("#102 AC1 AC3 #8 AC3 the privacy notice", () => {
   const words = text(html);
 
   it("is a real notice with a date, not a placeholder", () => {
-    // Changed on 2026-11-22 for the safety classifier (#117, SAFETY-PROVIDER).
-    expect(PRIVACY_NOTICE_DATE).toBe("November 22, 2026");
-    expect(words).toContain("Last changed: November 22, 2026");
+    // Changed on 2026-11-22 for the safety classifier (#117, SAFETY-PROVIDER), and on 2026-11-23
+    // for the display name's safety check (#398, SAFETY-FIELDS-NAME).
+    expect(PRIVACY_NOTICE_DATE).toBe("November 23, 2026");
+    expect(words).toContain("Last changed: November 23, 2026");
     expect(words).not.toMatch(/placeholder|not written yet/i);
   });
 
@@ -64,8 +65,9 @@ describe("#102 AC1 AC3 #8 AC3 the privacy notice", () => {
     expect(words).toMatch(/sent to the model provider[^.]*check it for safety/i);
     expect(words).toMatch(/before he answers/i);
     expect(words).toMatch(/safety check keeps nothing/i);
-    // Fix round 2: only the fields that are checked are named (not the display name, #392), and
-    // the Plan's title given at Start is named.
+    // Fix round 2: only the fields that are checked are named, and the Plan's title given at Start
+    // is named. #398: the display name is checked too since #392 (SAFETY-FIELDS-NAME).
+    expect(words).toMatch(/checked for safety[^.]*display name/i);
     expect(words).not.toMatch(/Everything you write/i);
     expect(words).not.toMatch(/Before anything you write/i);
     expect(words).toMatch(/checked for safety[^.]*title you give your Plan at Start/i);
