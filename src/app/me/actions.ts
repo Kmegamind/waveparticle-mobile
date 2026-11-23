@@ -2,6 +2,7 @@
 
 import { saveDisplayName, setKeepClockRunning } from "@/lib/me/profile";
 import { createSupabaseProfileWriter } from "@/lib/me/supabase-profile";
+import { serverSafetyCheck } from "@/lib/safety/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 
@@ -16,7 +17,8 @@ async function deps() {
 
 export async function saveDisplayNameAction(input: unknown) {
   try {
-    return await saveDisplayName(input, await deps());
+    // The display name passes the server's safety check before it is saved (#392).
+    return await saveDisplayName(input, { ...(await deps()), safety: serverSafetyCheck() });
   } catch {
     return { status: "failed" as const };
   }
