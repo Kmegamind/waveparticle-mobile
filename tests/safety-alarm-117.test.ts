@@ -30,13 +30,14 @@ function sharedCounter(): FailureCounter {
 }
 
 describe("#117 AC3 the same-day alarm", () => {
-  it("test_117_the_first_failure_of_the_day_posts_one_webhook_with_the_count", async () => {
+  it("test_117_i2_the_first_failure_of_the_day_posts_one_honest_webhook", async () => {
     const { posts, fetchImpl } = webhook();
     const alarm = createSafetyAlarm({
       webhookUrl: URL,
       fetchImpl,
       counter: sharedCounter(),
       today: () => "2026-11-22",
+      now: () => new Date("2026-11-22T09:05:30Z"),
     });
     await alarm.classifierFailed("timeout");
     await alarm.classifierFailed("request");
@@ -44,9 +45,14 @@ describe("#117 AC3 the same-day alarm", () => {
     expect(posts).toHaveLength(1);
     expect(posts[0].url).toBe(URL);
     const text = String(posts[0].body.text);
-    expect(text).toContain("2026-11-22");
-    expect(text).toContain("1");
-    expect(text).toContain("timeout");
+    // Fix round 1 (I2): sent on the day's first failure, so it gives no count; it says where the
+    // later failures of the day are.
+    expect(text).toBe(
+      "WaveParticle safety alarm: the first safety classifier failure today, 2026-11-22 at " +
+        "09:05 UTC (reason: timeout). The keyword layer decided alone. Later failures today " +
+        'are not sent here; they are in the server log as "safety_classifier_failed".',
+    );
+    expect(text).not.toMatch(/time\(s\)|so far/);
     expect(posts[0].body.content).toBe(text);
   });
 
@@ -89,7 +95,7 @@ describe("#117 AC3 the same-day alarm", () => {
     await alarm.classifierFailed("timeout");
     await alarm.classifierFailed("timeout");
     expect(posts).toHaveLength(1);
-    expect(String(posts[0].body.text)).toContain("1");
+    expect(String(posts[0].body.text)).toContain("first safety classifier failure today");
   });
 
   it("test_117_without_the_setting_it_only_logs_and_never_throws", async () => {

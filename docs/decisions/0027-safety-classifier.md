@@ -37,6 +37,12 @@ the function only counts and answers "first today or not".
 - A free-text submission can take up to 1.5 s longer.
 - One extra model call per submission (accepted, SESSION-PAGES-OPEN); not counted toward `/try`'s
   daily limit.
+- The webhook is posted on the day's first failure, so it says "first failure today" with the time
+  and reason, not a day's total; later failures are in the server log and the day counter (fix
+  round 1, I2). A daily digest is an open question for the owner.
+- Anyone holding `PROMPTS_READ_TOKEN` can now also call the counter, and could call it early each
+  UTC day to mark the day as alarmed and so suppress that day's webhook (review M1). The token is a
+  server-only secret; a separate token would remove this, at the cost of one more secret.
 - If the webhook post fails after the counter marked the day, that day's alarm is lost; the error
   log lines remain. A slow provider can make the classifier time out often; the latency is logged
   and the alarm is at most daily.

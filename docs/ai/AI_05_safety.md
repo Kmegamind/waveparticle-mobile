@@ -65,7 +65,7 @@ Return one JSON object only: {"tier": "crisis" | "stress" | "none" | "unsure"}
 
 ~~Earlier draft (three tiers and a `lang` field): withdrawn by A5b and L1.~~
 
-3. **Merge rule:** final tier = the higher of the two layers (crisis > stress > none; the keyword layer's low-mood match counts as stress). `unsure` counts as crisis. An answer that is not exactly one tier is a failure. If the classifier fails or exceeds 1.5 s (one attempt, the prompt read included), the keyword layer decides alone, the server logs `safety_classifier_failed`, and a webhook alarm goes to `SAFETY_ALARM_WEBHOOK_URL` at most once a day with the day's count (SAFETY-ALARM).
+3. **Merge rule:** final tier = the higher of the two layers (crisis > stress > none; the keyword layer's low-mood match counts as stress). `unsure` counts as crisis. An answer that is not exactly one tier is a failure. If the classifier fails or exceeds 1.5 s (one attempt, the prompt read included), the keyword layer decides alone, the server logs `safety_classifier_failed`, and a webhook alarm goes to `SAFETY_ALARM_WEBHOOK_URL` at most once a day, on the day's first failure, with its time and reason; later failures that day are in the server log (SAFETY-ALARM).
 4. **Output guard**: AI-6 rules, including the style checks, on every model reply. ~~Plus a method/instruction denylist owned by compliance.~~ Withdrawn (NO-DENYLIST, 2026-11-21): there is no such word list.
 
 ## 4. Error budget (Guess; set with compliance before any real use)

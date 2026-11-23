@@ -3,10 +3,13 @@ import type { ClassifierFailureReason } from "./classifier";
 /**
  * The same-day alarm when the safety classifier fails or times out (US-SAF-4 #117 AC3; owner
  * decision of 2026-11-22, SAFETY-ALARM). A POST to the server-only `SAFETY_ALARM_WEBHOOK_URL`, at
- * most once a day (UTC), carrying the day and the day's count of classifier failures so far.
+ * most once a day (UTC): on the day's first failure, with its date, time (UTC) and reason. Later
+ * failures of the same day are not posted; they are in the server log (`safety_classifier_failed`)
+ * and counted in `private.safety_alarm_days` (fix round 1, I2: the post cannot carry the day's
+ * total, because it is sent on the first failure).
  *
- * The payload is built only from the date, a count and a fixed reason identifier: never any text a
- * person wrote. Without the setting, nothing is posted and nothing throws.
+ * The payload is built only from the date, the time and a fixed reason identifier: never any text
+ * a person wrote. Without the setting, nothing is posted and nothing throws.
  *
  * "Once a day" is shared by every server instance through `counter` (a database row per day). If
  * the counter cannot be reached, this instance decides on its own, so the alarm is still sent
@@ -27,11 +30,12 @@ export const ALARM_TIMEOUT_MS = 5_000;
 
 const utcDay = () => new Date().toISOString().slice(0, 10);
 
-export function alarmText(day: string, failures: number, reason: ClassifierFailureReason): string {
+export function alarmText(day: string, at: Date, reason: ClassifierFailureReason): string {
+  const time = at.toISOString().slice(11, 16);
   return (
-    `WaveParticle safety alarm, ${day} (UTC): the safety classifier failed or timed out ` +
-    `${failures} time(s) today so far, so the keyword layer decided alone. ` +
-    `Latest reason: ${reason}. Check the server log for "safety_classifier_failed".`
+    `WaveParticle safety alarm: the first safety classifier failure today, ${day} at ${time} UTC ` +
+    `(reason: ${reason}). The keyword layer decided alone. Later failures today are not sent ` +
+    `here; they are in the server log as "safety_classifier_failed".`
   );
 }
 
@@ -40,11 +44,13 @@ export function createSafetyAlarm(options: {
   fetchImpl?: typeof fetch;
   counter?: FailureCounter | null;
   today?: () => string;
+  now?: () => Date;
   log?: AlarmLog;
 }): SafetyAlarm {
   const url = options.webhookUrl?.trim() ?? "";
   const fetchImpl = options.fetchImpl ?? fetch;
   const today = options.today ?? utcDay;
+  const now = options.now ?? (() => new Date());
   const log = options.log ?? (() => undefined);
   // This instance's own count, used when the shared counter cannot be reached.
   const local = { day: "", failures: 0, sent: false };
@@ -74,9 +80,9 @@ export function createSafetyAlarm(options: {
       }
       try {
         const day = today();
-        const { failures, sendAlarm } = await count(day);
+        const { sendAlarm } = await count(day);
         if (!sendAlarm) return;
-        const text = alarmText(day, failures, reason);
+        const text = alarmText(day, now(), reason);
         const response = await fetchImpl(url, {
           method: "POST",
           headers: { "content-type": "application/json" },
