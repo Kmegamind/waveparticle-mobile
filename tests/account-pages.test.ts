@@ -64,6 +64,11 @@ describe("#102 AC1 AC3 #8 AC3 the privacy notice", () => {
     expect(words).toMatch(/sent to the model provider[^.]*check it for safety/i);
     expect(words).toMatch(/before he answers/i);
     expect(words).toMatch(/safety check keeps nothing/i);
+    // Fix round 2: only the fields that are checked are named (not the display name, #392), and
+    // the Plan's title given at Start is named.
+    expect(words).not.toMatch(/Everything you write/i);
+    expect(words).not.toMatch(/Before anything you write/i);
+    expect(words).toMatch(/checked for safety[^.]*title you give your Plan at Start/i);
     expect(words).not.toMatch(/records about the language model|which checks a line did not pass/i);
     expect(words).toMatch(/does not keep a separate record of what is sent to the language model/i);
   });

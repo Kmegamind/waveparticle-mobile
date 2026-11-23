@@ -35,8 +35,13 @@ the function only counts and answers "first today or not".
 ## Consequences
 - All free text goes to the provider for classification; the privacy notice and A7b must say so.
 - A free-text submission can take up to 1.5 s longer.
-- One extra model call per submission (accepted, SESSION-PAGES-OPEN); not counted toward `/try`'s
-  daily limit.
+- Extra model calls (not counted toward `/try`'s daily limit; the owner confirms the cost, #393):
+  one per goal line, split or rename; one per rest message plus one per earlier unanswered message
+  of the person (at most 3, usually none); at Start one for the goal, one for the title and one per
+  piece of whole Steps up to 2,000 characters (usually one or two; worst case 50, so 52 at once).
+  The calls of one submission run at the same time, within the same 1.5 s. A burst that hits the
+  provider's rate limit is safe but noisy: failed pieces fall back to the keyword layer and raise
+  the alarm, and a rest message's earlier message whose re-check fails is left out of his history.
 - The webhook is posted on the day's first failure, so it says "first failure today" with the time
   and reason, not a day's total; later failures are in the server log and the day counter (fix
   round 1, I2). A daily digest is an open question for the owner.
