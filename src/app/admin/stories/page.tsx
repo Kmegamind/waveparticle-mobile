@@ -19,7 +19,8 @@ export default function AdminStories() {
       <p className="admin-lede">
         Oppenheimer&apos;s stories in story order. Open a story to read and edit its background
         card, its cards and its part titles. A card that fails a check (its length, a year, date or
-        age, a word from a later part, or a banned word) is counted as failing.
+        age, a word from a later part, a person not in the scene table, a banned word, or a repeat
+        of another card of its story) is counted as failing.
       </p>
       <PublishFirstNotice />
       <Suspense fallback={null}>
