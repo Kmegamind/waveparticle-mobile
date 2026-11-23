@@ -107,7 +107,7 @@ test("#398 Save shows a pending state and sends once; a crisis that arrives afte
   await expect.poll(() => nickname(account)).toBe("Lise");
 });
 
-test("#398 after an invalid save from the keyboard, focus returns to the name field", async ({
+test("#398 after an invalid save from the keyboard, focus stays on Save", async ({
   page,
   context,
   baseURL,
@@ -119,9 +119,11 @@ test("#398 after an invalid save from the keyboard, focus returns to the name fi
   await page.getByRole("button", { name: "Edit" }).click();
   const field = page.getByRole("textbox", { name: "Display name" });
   await field.fill("x".repeat(61));
-  await page.getByRole("button", { name: "Save changes" }).focus();
+  const save = page.getByRole("button", { name: "Save changes" });
+  await save.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("alert").filter({ hasText: "Use 1 to 60" })).toBeVisible();
-  await expect(field).toBeFocused();
+  // #400: the pending Save is aria-disabled, not disabled, so focus never leaves it.
+  await expect(save).toBeFocused();
   await expect(field).toHaveValue("x".repeat(61));
 });

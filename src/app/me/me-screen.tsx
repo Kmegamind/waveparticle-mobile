@@ -81,8 +81,8 @@ function DisplayName({ initial }: { initial: string }) {
   }, [crisisShown, showCrisis]);
 
   useEffect(() => {
-    // #398 fix round 1: Save is disabled while pending, and a disabled button loses focus. After
-    // an invalid or failed save, focus returns to the field, unless the person moved it elsewhere.
+    // #400: Save keeps focus while pending (aria-disabled). If focus was lost anyway, after an
+    // invalid or failed save it returns to the field, unless the person moved it elsewhere.
     if (errorShown === 0) return;
     const active = document.activeElement;
     if (!active || active === document.body) field.current?.focus();
@@ -121,8 +121,10 @@ function DisplayName({ initial }: { initial: string }) {
           <div className="me-name-actions">
             <button
               aria-busy={pending !== null}
+              // aria-disabled, not disabled: a disabled button drops keyboard focus (#400). A press
+              // while pending does nothing (the guard in save()).
+              aria-disabled={pending !== null}
               className="button-filled button-small"
-              disabled={pending !== null}
               onClick={() => void save()}
               type="button"
             >
