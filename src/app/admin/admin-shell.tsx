@@ -14,6 +14,7 @@ const GROUPS = [
       { href: "/admin/companions", id: "ADM-03", label: "Companions" },
       { href: "/admin/stories", id: "ADM-06", label: "Stories" },
       { href: "/admin/app-text", id: "ADM-07", label: "App text" },
+      { href: "/admin/hotlines", id: "ADM-14", label: "Hotlines" },
     ],
   },
   {

@@ -6,7 +6,7 @@ import Link from "next/link";
  * sound legal are drafts for the owner to confirm (listed in pull request #103's description).
  */
 
-export const PRIVACY_NOTICE_DATE = "November 23, 2026";
+export const PRIVACY_NOTICE_DATE = "November 24, 2026";
 
 export function PrivacyNotice({ back }: { back: "me" | "sign-in" }) {
   return (
@@ -34,7 +34,10 @@ export function PrivacyNotice({ back }: { back: "me" | "sign-in" }) {
         We keep your email address, and your password in a protected form, so that you can sign in.
       </p>
       <p>
-        We keep your display name and whether you want the clock to keep running when you leave.
+        We keep your display name, whether you want the clock to keep running when you leave, and
+        the country you choose under Me for help lines. We use that country only to show help lines
+        on the safety page, and a copy of it stays on your device so that the page works without a
+        connection. We never read your location to set it.
       </p>
       <p>
         For each Goal you write, we keep its title, the text you wrote, the time you chose, whether

@@ -46,10 +46,17 @@
 //                                     publish and roll back also write a publish history row (#289)
 //   POST /rest/v1/rpc/list_publish_history   the history, newest first, with the editor's email
 //                                     and is_current, for content editors only (403 otherwise)
+//   GET  /rest/v1/hotlines            the hotline list (#118), seeded from src/content/hotlines.json
+//                                     as version 1, published: signed-in accounts read published
+//                                     rows, content editors every row
+//   POST /rest/v1/rpc/save_hotline_draft | publish_hotline | roll_back_hotline   admin only, as
+//                                     20261128000000; publish and roll back write a history row
+//   POST /__hotlines  { reset: true }  puts the list and its history rows back
 //   POST /__app_text  { failReads?: boolean, reset?: true | "<key>" }   published reads without a
 //                                     user session answer 503 while failReads is on (database
 //                                     down); reset puts every key (true) or one key back to the
 //                                     seed and removes the matching history rows
+import { readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import { readPromptDirectory } from "../../scripts/prompts/prompt-files.mjs";
@@ -248,6 +255,53 @@ function setPublishedField(target, key, version, action, user) {
     acted_by: user.id,
     acted_by_email: user.email ?? null,
     acted_at: chosen.published_at,
+  });
+  return null;
+}
+
+/** The hotline list (#118) as after the migration: the seed entries as version 1, published. */
+const seededHotlines = () =>
+  JSON.parse(
+    readFileSync(new URL("../../src/content/hotlines.json", import.meta.url), "utf8"),
+  ).entries.map((entry) => ({
+    country: entry.country,
+    version: 1,
+    service_name: entry.serviceName,
+    primary_kind: entry.primary.kind,
+    primary_value: entry.primary.value,
+    secondary_kind: entry.secondary?.kind ?? null,
+    secondary_value: entry.secondary?.value ?? null,
+    note: entry.note,
+    checked_on: entry.checkedOn,
+    checked_by: entry.checkedBy,
+    published: true,
+    created_at: "2026-11-23T00:00:00Z",
+    published_at: "2026-11-23T00:00:00Z",
+  }));
+let hotlines = seededHotlines();
+
+/** The same checks and history insert as private.set_published_hotline (20261128000000). */
+function setPublishedHotline(country, version, action, user) {
+  const rows = hotlines.filter((row) => row.country === country);
+  const target = rows.find((row) => row.version === version);
+  if (!target) return `no hotline ${country} version ${version}`;
+  if (target.published) return "already published";
+  const current = rows.find((row) => row.published);
+  if (action === "roll_back" && (!current || target.published_at === null)) {
+    return "roll back needs a version that was published before";
+  }
+  if (current) current.published = false;
+  target.published = true;
+  target.published_at = new Date().toISOString();
+  publishHistory.push({
+    id: nextHistoryId++,
+    kind: "hotline",
+    item_key: country,
+    version,
+    action,
+    acted_by: user.id,
+    acted_by_email: user.email ?? null,
+    acted_at: target.published_at,
   });
   return null;
 }
@@ -705,6 +759,68 @@ createServer(async (request, response) => {
     return json(response, 200, ordered(found, url.searchParams.get("order")));
   }
 
+  if (path === "/__hotlines" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    if (body.reset === true) {
+      hotlines = seededHotlines();
+      publishHistory = publishHistory.filter((row) => row.kind !== "hotline");
+    }
+    return json(response, 200, { ok: true });
+  }
+
+  if (path === "/rest/v1/hotlines" && request.method === "GET") {
+    const user = dataset && !dataset.deleted ? dataset : null;
+    if (!user) return json(response, 401, { code: "42501", message: "permission denied" });
+    const editor = ["admin", "writer"].includes(user.contentRole);
+    const params = [...url.searchParams.entries()];
+    const found = hotlines.filter((row) => (editor || row.published) && matches(row, params));
+    let rows = ordered(found, url.searchParams.get("order"));
+    const limit = url.searchParams.get("limit");
+    if (limit) rows = rows.slice(0, Number(limit));
+    return json(response, 200, rows);
+  }
+
+  const hotlineRpc = path.match(
+    /^\/rest\/v1\/rpc\/(save_hotline_draft|publish_hotline|roll_back_hotline)$/,
+  );
+  if (hotlineRpc && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    if (!dataset || dataset.deleted || dataset.contentRole !== "admin") {
+      return json(response, 403, { code: "42501", message: "only an admin may change a hotline" });
+    }
+    if (hotlineRpc[1] === "save_hotline_draft") {
+      const version =
+        Math.max(
+          0,
+          ...hotlines.filter((row) => row.country === body.entry_country).map((row) => row.version),
+        ) + 1;
+      hotlines.push({
+        country: body.entry_country,
+        version,
+        service_name: body.entry_service_name || null,
+        primary_kind: body.entry_primary_kind,
+        primary_value: body.entry_primary_value,
+        secondary_kind: body.entry_secondary_kind ?? null,
+        secondary_value: body.entry_secondary_value ?? null,
+        note: body.entry_note || null,
+        checked_on: body.entry_checked_on,
+        checked_by: body.entry_checked_by,
+        published: false,
+        created_at: new Date().toISOString(),
+        published_at: null,
+      });
+      return json(response, 200, version);
+    }
+    const action = hotlineRpc[1] === "publish_hotline" ? "publish" : "roll_back";
+    const problem = setPublishedHotline(
+      body.entry_country,
+      body.entry_version,
+      action,
+      dataset.user,
+    );
+    return problem ? json(response, 400, { code: "P0001", message: problem }) : json(response, 204);
+  }
+
   if (path === "/rest/v1/app_text" && request.method === "GET") {
     const user = dataset && !dataset.deleted ? dataset : null;
     if (!user && appTextFailReads) return json(response, 503, { message: "database unavailable" });
@@ -761,20 +877,25 @@ createServer(async (request, response) => {
       .map((row) => ({
         ...row,
         is_current:
-          row.kind === "prompt"
-            ? promptVersions.some(
-                (prompt) =>
-                  prompt.key === row.item_key && prompt.version === row.version && prompt.active,
+          row.kind === "hotline"
+            ? hotlines.some(
+                (line) =>
+                  line.country === row.item_key && line.version === row.version && line.published,
               )
-            : (row.kind === "story_card"
-                ? cardVersions
-                : row.kind === "companion_field" || row.kind === "story_field"
-                  ? contentFields
-                  : appText
-              ).some(
-                (text) =>
-                  text.key === row.item_key && text.version === row.version && text.published,
-              ),
+            : row.kind === "prompt"
+              ? promptVersions.some(
+                  (prompt) =>
+                    prompt.key === row.item_key && prompt.version === row.version && prompt.active,
+                )
+              : (row.kind === "story_card"
+                  ? cardVersions
+                  : row.kind === "companion_field" || row.kind === "story_field"
+                    ? contentFields
+                    : appText
+                ).some(
+                  (text) =>
+                    text.key === row.item_key && text.version === row.version && text.published,
+                ),
       }));
     return json(response, 200, rows);
   }

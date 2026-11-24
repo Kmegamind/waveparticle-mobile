@@ -265,6 +265,17 @@ that fills `prompts.activated_at` when the import or the table editor makes a ve
 (never changing a value already set), and fills it for the version active now. Without it, such a
 version shows as "Draft" once replaced and cannot be rolled back to. It only reads Publish history.
 
+## Help lines by region
+The country on Me and the hotline list (#118, `docs/decisions/0029`): run
+`supabase/migrations/20261128000000_hotlines.sql` in the SQL editor **before** deploying, after
+`20261125000000_prompt_editing.sql` (it widens the same Publish history kind check and replaces the
+same list). It adds `profiles.help_country`, the `public.hotlines` table with the admin-only
+functions behind ADM-14 and ADM-15, the `hotline` history kind, and the seed: the United States
+entry "call or text 988" (`src/content/hotlines.json`), version 1, published. There is no separate
+seed step. Running it a second time stops with an error and changes nothing. No new setting is
+needed. Until it runs, Me still shows but choosing a country fails, ADM-14 says the list could not
+be read, and S1 shows the directory and the labelled US line (S1-0).
+
 ## Server logs
 The server writes log lines only through `logEvent` in `src/lib/logging/server-log.ts` (#135). Each
 line is one JSON object: `level`, `feature` (`app_text`, `prompts`, `story-content`, `story-cards`,

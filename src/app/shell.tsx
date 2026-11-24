@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { HelpLineSync } from "./help-line-sync";
 import { showsHeader, showsTabBar } from "./shell-rules";
 
 // Order and icons from prototype version 4 (#240 C8; docs/FLOW.md 3.2 gives the same order).
@@ -33,6 +34,9 @@ const tabs = [
   },
 ] as const;
 
+const within = (pathname: string, base: string) =>
+  pathname === base || pathname.startsWith(`${base}/`);
+
 const isCurrent = (pathname: string, href: string) =>
   href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 
@@ -44,6 +48,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="app-shell">
+      {/* #118: keeps the account's help line on the phone, so S1 works offline. */}
+      {within(pathname, "/auth") ? null : <HelpLineSync />}
       {showsHeader(pathname) ? (
         <header className="app-header">
           <Link aria-label="WaveParticle" href="/">

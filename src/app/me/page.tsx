@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { getStoryContent } from "@/lib/content/repository";
+import { readPublishedEntry } from "@/lib/hotlines/repository";
 import { meView } from "@/lib/me/me-view";
 import { readProfile } from "@/lib/me/supabase-profile";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
@@ -28,6 +29,11 @@ async function MeContent() {
     getStoryContent(),
   ]);
   const view = meView(progress, content.companions);
+  // #118: the chosen country and its published entry, for the Country row and the phone copy.
+  const entry = profile.helpCountry
+    ? await readPublishedEntry(client, profile.helpCountry)
+    : { ok: true, entry: null };
+  const helpLine = { ok: entry.ok, copy: { country: profile.helpCountry, entry: entry.entry } };
   const email = user.email ?? "";
   const href = view.current
     ? continueHref({ id: view.current.goalId, status: "in_progress" })
@@ -40,6 +46,7 @@ async function MeContent() {
         <MeScreen
           continueHref={href}
           email={email}
+          helpLine={helpLine}
           name={profile.nickname ?? (email.split("@")[0] || "You")}
           since={user.created_at}
           view={view}

@@ -53,6 +53,7 @@ const signedInPages = [
   `/goals/${GOAL.methods}`,
   "/me",
   "/me/signals",
+  "/me/country",
   `/me/history/${SESSION.methods}`,
   "/me/about",
   "/me/data",

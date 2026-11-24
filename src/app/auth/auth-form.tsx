@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { helpLineStorage, removeHelpLineCopy } from "@/lib/safety/help-lines";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type AuthMode = "sign-in" | "sign-up" | "forgot-password" | "update-password";
@@ -176,6 +177,8 @@ export function SignOutButton({ className = "button-filled" }: { className?: str
   const router = useRouter();
 
   async function signOut() {
+    // #118 (SAFETY-REGION-STORE): the help line copy goes at sign out.
+    removeHelpLineCopy(helpLineStorage());
     await supabase.auth.signOut();
     router.push("/auth/sign-in");
   }
