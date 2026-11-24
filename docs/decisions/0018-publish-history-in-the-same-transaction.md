@@ -39,3 +39,13 @@ Option A.
 - A later kind adds its value to the check, its own insert in its publish function, a branch for
   `is_current` in `list_publish_history`, and a roll back handler in
   `src/lib/publish-history/admin.ts`.
+
+## Addition (2026-11-23, #402 for #118): the `hotline` kind
+- Decision HOTLINES: the hotline list is edited in the admin and every publish and roll back of an
+  entry writes one `public.publish_history` row in the same transaction, as above.
+- The new kind is `hotline`. `item_key` is the entry's country code (ISO 3166-1 alpha-2, upper case,
+  for example `US`). A later migration widens the `kind` check for it, as the consequences above
+  describe.
+- Only the admin role may publish or roll back a `hotline` row (`content_role() = 'admin'`, 0016).
+  Writers may read the rows, as for every kind.
+- ADM-12 names the kind "Hotline" and shows the country name beside the code.

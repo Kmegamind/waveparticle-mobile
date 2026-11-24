@@ -299,8 +299,8 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 
 | ID | Requirement | Priority | Decision |
 |---|---|---|---|
-| FR-ME-1 | Me shows account basics (name, email, sign out), Appearance (Day, Night, System), an About page, Your data (including account deletion) and History. | Must | S1, S3 |
-| FR-ME-2 | A setting exists only when people differ by context in a way the product cannot infer and a wrong default is annoying, not harmful; a setting that changes what the product is does not belong in Me. | Should | G3 (proposal) |
+| FR-ME-1 | Me shows account basics (name, email, sign out), Appearance (Day, Night, System), Country (for help lines, ME-REGION), an About page, Your data (including account deletion) and History. | Must | S1, S3, SAFETY-REGION |
+| FR-ME-2 | A setting exists only when people differ by context in a way the product does not infer and a wrong default is annoying, not harmful. Where a wrong default could harm, the setting has no default: the product shows what is safe without it and asks the user to choose (the Country for help lines, SAFETY-REGION). A setting that changes what the product is does not belong in Me. | Should | G3 (proposal), SAFETY-REGION |
 | FR-ME-3 | Signals live behind one row, "Signals ›", with four rows: time-up signal, new-card signal, lock-screen notification (opt-in) and keep the clock running when I leave. | Must | F5, F2, G3 |
 | FR-ME-4 | All notification settings are off by default and one plain sentence reads "Nothing is sent unless you turn it on". The old caption "the only notification we will ever send" is dropped. | Should | G3 (proposal) |
 | FR-ME-6 | Me has at most five visible settings. | Should | G3 (proposal) |
@@ -340,6 +340,8 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | FR-SAFETY-10 | The Companion never mentions, knows about or reacts to the safety layer. | Must | |
 | FR-SAFETY-11 | The app never claims to be a therapist, tutor or coach, and never infers mood for adapting content. | Must | H3 |
 | FR-SAFETY-12 | Model output also passes the output guard: the shared checks (FR-AI-1), including the style checks. There is no word list of method or instruction words. Pre-made content gets only the banned style words before publishing, the same as the admin save check (no further AI-6 line rules). | Must | SAFETY-PREMADE, NO-DENYLIST |
+| FR-SAFETY-13 | S1 offers help for the country the user chose under Me, Country; the app never reads a location and has no default country. With no country chosen, S1 shows the international directory link (Find A Helpline), the labelled line "If you are in the United States: call or text 988" and a "Choose your country" link to Me; with a chosen country that has an entry, that entry; with one that has none, the directory. The directory link is always shown, as a text link. The country is stored on the account with a copy on the phone, and is in the data export. | Must | SAFETY-REGION, SAFETY-REGION-STORE, SAFETY-DIRECTORY |
+| FR-SAFETY-14 | The hotline list is edited in the admin (draft, Publish, restore, Publish history) by the admin role and owned by the product owner; each entry records when it was last checked and by whom, and every entry is checked at least every 6 months and before each release. The only starting entry is the United States (988). If the database cannot answer, a copy of the US entry and the directory link in the code is shown. | Must | HOTLINES |
 
 ### 4.13 Accounts and data (FR-DATA)
 
@@ -450,7 +452,7 @@ Story cards, the background card and the closing line add no call per session, b
 3. **Analytics.** Events record shapes, buckets and counts, never titles, Step text or messages.
 4. **Safety logs.** The proposal is to log position, tier, which layer fired and the user's action, and not the raw text, with 90-day retention (a guess). Open: whether sampled text is kept with consent.
 5. **Account deletion.** Required, with a clear privacy notice (S3).
-6. **Region.** Real help lines depend on region. Where the region comes from (locale, IP or a setting) and what is stored is open.
+6. **Region.** Real help lines depend on region. Decided 2026-11-23 (SAFETY-REGION, SAFETY-REGION-STORE): the user chooses a country under Me; the app never reads a location and has no default country. The country is stored on the account, with a copy on the phone, and is included in the data export.
 7. **Disclosure of AI.** Only the terms and settings state that the Companion is an AI; the conversation never does (A4). **Legal risk, to check with a lawyer before release:** some regions require a clear answer when a user directly asks whether they are speaking to a program. If that check fails, a one-sentence system-voice answer is the fallback.
 8. **Historical content.** One unified statement in About replaces per-line source labels, with "Report a mistake" as the correction channel. It needs legal review because it carries the compliance burden of removing the labels.
 9. **Mood detection.** The low-mood tier is deferred (A5b). Before it is built, counsel must confirm that detecting mood from text is acceptable, because some state laws restrict AI detecting mental state without a practitioner.

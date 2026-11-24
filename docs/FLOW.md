@@ -41,10 +41,14 @@ Some screen names below name a state of a page rather than a separate page. For 
 | R1-C | Rest, you answered (chatting) | Session (state of R1) |
 | R-OFF | Rest, no network | Session (state of R1) |
 | S1 | Safety | System |
+| S1-0 | Safety, no country chosen | System (state of S1) |
+| S1-E | Safety, an entry for the chosen country | System (state of S1) |
+| S1-N | Safety, no entry for the chosen country | System (state of S1) |
 | END | Summary | Session |
 | ME | Me | Me (tab) |
 | ME-CAL | Me, history open | Me (state of ME) |
 | ME-REC | Session record | Me (child page) |
+| ME-REGION | Country for help lines | Me (child page) |
 | G1 | Goals, in progress | Goals (tab) |
 | G2b | Goal menu | Goals (sheet) |
 | G3 | New goal | Goals (sheet) |
@@ -54,6 +58,8 @@ Some screen names below name a state of a page rather than a separate page. For 
 | G5 | Goals, on hold | Goals (tab) |
 | G5-D | Goals, done | Goals (tab) |
 | G6 | Goals, history | Goals (tab) |
+| ADM-14 | Hotlines, the list | Content admin (desktop, ADMIN-DESKTOP) |
+| ADM-15 | Hotline entry | Content admin (desktop, ADMIN-DESKTOP) |
 
 ## 3. Global rules
 
@@ -187,7 +193,7 @@ Every free-text field passes through the safety check before anything is sent to
 
 Safety has two tiers in the first demo.
 
-- **Crisis:** a clear and current intent to seriously hurt oneself or others. The text is discarded and never sent to a model. The user sees S1, with real hotlines for the user's region.
+- **Crisis:** a clear and current intent to seriously hurt oneself or others. The text is discarded and never sent to a model. The user sees S1, with real help for the country the user chose under Me, or the international directory (SAFETY-REGION).
 - **Ordinary stress:** normal pressure, tiredness or frustration. It passes, and he answers in character.
 
 A low-mood tier (hopelessness or heavy distress without clear intent) is deferred and not part of the first demo.
@@ -493,10 +499,28 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 
 - **Frame:** full page, outside the story: system voice, no serif type, no tape.
 - **Purpose:** respond to a crisis in plain human words.
-- **Shows:** "This is outside the story.", a short body supplied after legal and clinical review, real support resources for the user's region, and two buttons.
-- **Can do and leads to:** **Get support now** opens an outside resource. **Back to my Goal** returns to the screen that triggered it with the text field emptied.
+- **Shows:** "This is outside the story.", a short body supplied after legal and clinical review, the support resource for the country the user chose under Me (SAFETY-REGION), and two buttons. The app never reads a location and has no default country. Below the resource, always, the international directory as a text link: Find A Helpline (findahelpline.com, SAFETY-DIRECTORY). It is never a third button. What the resource area shows depends on the state below.
+- **Can do and leads to:** **Get support now** opens an outside resource: the entry's main contact in S1-E (for example a `tel:` link on a phone), the directory in S1-0 and S1-N. The directory link opens Find A Helpline. **Choose your country** (S1-0 only) opens ME-REGION. **Back to my Goal** returns to the screen that triggered it with the text field emptied.
 - **System back:** same as Back to my Goal.
-- **States:** it never blocks Back or Home. Offline and loading: not yet specified.
+- **States:** it never blocks Back or Home. S1 needs no network: it reads the copy of the chosen country and its published entry kept on the phone (SAFETY-REGION-STORE). If neither the phone copy nor the database answers, it uses the US entry and the directory link written in the code (HOTLINES). Loading: none, because nothing waits on the network.
+
+#### S1-0 · Safety, no country chosen
+
+- **Frame:** state of S1.
+- **Shows:** the directory link; a clearly labelled line "If you are in the United States: call or text 988"; a **Choose your country** text link to ME-REGION. Signed out (the `/try` test build only, US-ACC-1), the Choose your country link is not shown.
+- **Can do and leads to:** **Get support now** opens the directory. Choose your country opens ME-REGION; its back returns to Me, not to S1.
+
+#### S1-E · Safety, an entry for the chosen country
+
+- **Frame:** state of S1.
+- **Shows:** the country's name in plain text ("Help in <country>"), the entry's service name, its main contact and, when there is one, a second contact as a text link (for example "Text 988"), and the directory link.
+- **Can do and leads to:** **Get support now** opens the main contact.
+
+#### S1-N · Safety, no entry for the chosen country
+
+- **Frame:** state of S1.
+- **Shows:** one plain line that no line is listed for the chosen country yet, a line to contact local emergency services in immediate danger, and the directory link. No US line. The wording of both lines is app text and waits for the legal review (US-SAF-8).
+- **Can do and leads to:** **Get support now** opens the directory.
 
 #### END · Summary
 
@@ -513,8 +537,8 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 
 - **Frame:** top-level page with the tab bar.
 - **Purpose:** hold account basics and settings.
-- **Shows:** name, email and a sign-out link; Appearance; Signals; History as one row until opened; About the stories; Data. A **Signals** row opens a sub-page with the time-up signal (default: one light vibration at 00:00), the new-card signal (default off), the lock-screen notification (default off; may show the Step name once the user turns it on), and "Keep the clock running when I leave" (default off). English only, with no language switch and no reading-level setting. Reminders stay hidden until the start-time feature exists. No streaks, totals or badges.
-- **Can do and leads to:** **History** opens ME-CAL. **About** opens a page that explains where the stories come from in one unified statement and holds the disclosure that the Companion is an AI program. **Data** offers export and deletion of the user's data and account, with a privacy notice. **Sign out** signs out. The user's Goal and Step text are stored on the server and tied to the account.
+- **Shows:** name, email and a sign-out link; Appearance; Signals; Country (for help lines; shows the chosen country or "Not chosen", SAFETY-REGION); History as one row until opened; About the stories; Data. A **Signals** row opens a sub-page with the time-up signal (default: one light vibration at 00:00), the new-card signal (default off), the lock-screen notification (default off; may show the Step name once the user turns it on), and "Keep the clock running when I leave" (default off). English only, with no language switch and no reading-level setting. Reminders stay hidden until the start-time feature exists. No streaks, totals or badges.
+- **Can do and leads to:** **History** opens ME-CAL. **Country** opens ME-REGION. **About** opens a page that explains where the stories come from in one unified statement and holds the disclosure that the Companion is an AI program. **Data** offers export and deletion of the user's data and account, with a privacy notice. **Sign out** signs out. The user's Goal and Step text are stored on the server and tied to the account.
 - **System back:** not specified.
 - **States:** the Signals sub-page has no drawn screen yet (Open questions, item 12). Loading, error and offline: not yet specified.
 
@@ -535,6 +559,15 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 - **Can do and leads to:** **‹** returns to the screen that opened it.
 - **System back:** same as ‹.
 - **States:** not yet specified.
+
+#### ME-REGION · Country for help lines
+
+- **Frame:** child page of Me with ‹ "Me", like the Signals page; with the tab bar.
+- **Purpose:** let the user choose the country whose help lines S1 shows (SAFETY-REGION).
+- **Shows:** one sentence saying that the country is used only to show help lines on the safety page; a search box; "No country" at the top; then every country by its English name, sorted (ISO 3166-1). The chosen one is marked. The app never suggests a country from the location, the network or the browser language.
+- **Can do and leads to:** tap a country to choose it; it is saved to the account and copied to the phone, and the page returns to Me with the row showing it. "No country" clears the choice (S1 then shows S1-0).
+- **System back:** same as ‹.
+- **States:** a failed save shows the toast "Couldn't save. Try again." with **Retry**, and the choice rolls back. Offline: not yet specified (open question 17).
 
 ### 4.6 Goals
 
@@ -623,6 +656,21 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 - **System back:** not specified.
 - **States:** empty reads "Your sessions will show up here."
 
+### 4.7 Content admin: hotlines
+
+The content admin is a desktop tool (ADMIN, ADMIN-DESKTOP); these two screens are listed here because S1 depends on them (HOTLINES). The admin role edits and publishes; writers may read.
+
+#### ADM-14 · Hotlines, the list
+
+- **Shows:** one row per entry: country, service name, main contact, state (draft or published), last checked date and who checked it. An entry not checked in the last 6 months is marked.
+- **Can do and leads to:** open a row (ADM-15); add an entry for a country that has none (ADM-15, empty).
+
+#### ADM-15 · Hotline entry
+
+- **Shows:** the country (ISO 3166-1 alpha-2 code and English name, fixed once saved), the service name, the main contact (kind: phone, text or web; and its value), an optional second contact, a short note, the last checked date and who checked it, and the versions.
+- **Can do and leads to:** Save draft; **Publish** (admin role only), which writes a Publish history row of kind `hotline` (`docs/decisions/0018`); restore an older version.
+- **States:** a contact that is not a valid phone number or `https` address cannot be saved.
+
 ## 5. Removed screens
 
 | Id | Why it is removed |
@@ -694,7 +742,7 @@ Each item names the files that disagree or leave the point open. File names are 
 11. **Session record.** Decided: a record page opened from Me, History. This document also opens it from G6 and G4 rows. Not decided: whether those entries are wanted, and whether the record is kept at the Step and shown at the day. Files: `PRDs_MomTest/NF1_v2_research-and-changes`, `GOALS_03_ux-functional-spec`.
 12. **Signals sub-page.** Decided as a sub-page of Me, but no screen is drawn. Whether vibration and lock-screen notifications work on iPhone is for engineering to check. File: `NF6_v7_research-and-changes` (section 9).
 13. **Sign-in, sign-up and account deletion.** An account is required from the first open. Decided (ACCOUNT-SCREENS): the sign-in, sign-up, email confirmation, forgot-password, new-password and account-deletion screens are added to the screen list; their entries are not yet written here. Files: `PRODUCT_doc-map-and-open-decisions` (S3), `Goals_Feature_Docs/GOALS_03_ux-functional-spec` (ME row "Keep your progress").
-14. **Safety details.** What is logged, the exact wording of S1, and the hotline list. The low-mood tier is deferred; when it returns, the rule for how often its sentence may appear is open. Files: `PRODUCT_doc-map-and-open-decisions` (A5), `AI_Specs/AI_05_safety_2026-11-04_v2_draft`.
+14. **Safety details.** What is logged and the exact wording of S1. The hotline list, the region source and the directory are decided (SAFETY-REGION, SAFETY-REGION-STORE, SAFETY-DIRECTORY, HOTLINES, 2026-11-23); the entries and the directory wait for the legal review (#121). The low-mood tier is deferred; when it returns, the rule for how often its sentence may appear is open. Files: `PRODUCT_doc-map-and-open-decisions` (A5), `AI_Specs/AI_05_safety_2026-11-04_v2_draft`.
 15. **Waiting dots on the rest page.** They override the earlier rule of no typing indicator and need a decision. File: `PRDs_MomTest/wireframes_NF6_v5_rest-conversation_EN_2026-10-29.html`.
 16. **System back on Home, Goals, Me, F-RET, and the root of Companions, and on F1.** Nothing states these for the current flow. System back on F1 as Pause comes from `FLOW_jump-rules-and-screen-registry_2026-10-29_v1_draft` and has not been re-confirmed.
 17. **Loading, error and offline states** are not specified for most screens outside Goals, the focus page and the rest page: Home, Companions, the goal dialogue, END, Me, S1 and the sheets.
