@@ -58,3 +58,24 @@ jobs:
             echo "::error::PR body needs 'Closes #N' for the issue it ships."
             exit 1
           fi
+
+  # #189: every pull request says what a human must do after it ("None" or numbered steps), a new
+  # migration is listed as "Apply to dev, then prod", migration file names stay unique and in
+  # timestamp order, and a new environment variable is named in .env.example, docs/deploy.md and
+  # the Human steps. Same trigger and Dependabot exemption as pr-closes-issue.
+  pr-human-steps:
+    timeout-minutes: 5
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: PR body must list its human steps
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+          BASE_REF: origin/${{ github.base_ref }}
+        run: npm run check:pr

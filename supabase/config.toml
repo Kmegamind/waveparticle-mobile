@@ -1,0 +1,5 @@
+# Supabase CLI settings (#189). Only what `supabase link` and `supabase db push` need: the CLI
+# reads the migrations from supabase/migrations/. The project ref is chosen with
+# `supabase link --project-ref <ref>` and is not stored here; no key, token or password belongs
+# in this file. How to apply migrations: docs/HUMAN_STEPS.md, Apply migrations.
+project_id = "waveparticle-mobile"

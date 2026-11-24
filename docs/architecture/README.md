@@ -30,6 +30,7 @@ One file per component in this folder. To add one, create `docs/architecture/<co
 - [Goals area](goals-area.md): `/goals` (#73, #77, #79, #80, #112): four tabs (In progress grouped Ongoing and One-time, On hold, Done, History), search, History filters by Goal and time range (All time, This week from Monday,…
 - [Help lines by region](help-lines.md): #118 (US-SAF-5; DECISIONS SAFETY-REGION, SAFETY-REGION-STORE, SAFETY-DIRECTORY, HOTLINES; `docs/decisions/0029`): the country the user chooses on Me (ME-REGION `/me/country`), stored in…
 - [Home page](home-page.md): Signed-in Home from the account only (#268, prototype v4).
+- [Human steps checks](human-steps-checks.md): `npm run check:pr` (the CI job `pr-human-steps`) and `npm run check:deploy` (#189): the pull request must list its human steps, and a deployment is checked for 5xx, the signed-out redirect and the…
 - [Life Path (account)](life-path-account.md): `/companions/oppenheimer` (CPAGE, #258): the 26 stories under six named periods (each story's `period`, #284) (drafts, PERIOD-NAMES) with no dates or ages.
 - [Me area](me-area.md): ME (#81): initials, display name with Edit (`profiles.nickname`; the server's safety check runs before the save, and a crisis shows S1 in place of Me, #392), email, first-launch date, the Current…
 - [Model gateway](model-gateway.md): Server-only calls for the plan split, step cards, the pause message (two calls since #56: the stuck story, then his words about it), the rest reply and the return pop-up.
@@ -129,5 +130,6 @@ See `docs/api/`.
 |---|---|---|
 | Lint, format, unit, e2e | CI on every PR | Merge (with branch protection) |
 | PR closes an issue | CI | Merge |
+| PR lists its human steps, migration names, new variables documented (#189) | CI (`pr-human-steps`) | Merge (once required) |
 | Commits/pushes to main, agent merges, secret reads, rule edits | Claude Code hook | The agent's command |
 | Deploy commands | Claude Code hook (asks a human) | The agent's command |

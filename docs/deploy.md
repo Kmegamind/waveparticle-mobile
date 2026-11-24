@@ -25,6 +25,41 @@ verified. Moving to Node 26 is a later, separate change (`docs/decisions/0003`).
 4. After the first production deployment, replace the pending URL in
    `README.md` with the HTTPS URL.
 
+## Environment variables
+Every setting the deployed app reads. A pull request that adds or changes one names it here, in
+`.env.example` (name only, no value) and in its "Human steps" with the Vercel scopes (#189; how to
+add one: `docs/HUMAN_STEPS.md`, Add or change an environment variable). Only a name with the
+`NEXT_PUBLIC_` prefix reaches the browser; "Public" says whether the name may carry it. Real values
+never go in the repository.
+
+| Name | Vercel scopes | Public (`NEXT_PUBLIC_`) | What it is for |
+|---|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Production, Preview | yes | The Supabase project address |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Production, Preview | yes | The Supabase public (anon) key |
+| `PROMPTS_READ_TOKEN` | Production, Preview | no | Reads the prompts table (Secrets, below) |
+| `CONTENT_READ_KEY` | Production, Preview | no | Reads the story content (Secrets, below) |
+| `GOAL_DIALOGUE_SECRET` | Production, Preview | no | Signs the goal dialogue's turns (Secrets, below) |
+| `MODEL_API_KEY` | Production, Preview | no | The model gateway's key |
+| `MODEL_API_URL` | Production, Preview | no | The model gateway's address |
+| `MODEL_NAME` | Production, Preview | no | The model the gateway asks |
+| `SAFETY_MODEL_API_KEY` | Production, Preview (optional) | no | The safety classifier's own key |
+| `SAFETY_MODEL_API_URL` | Production, Preview (optional) | no | The safety classifier's own address |
+| `SAFETY_MODEL_NAME` | Production, Preview (optional) | no | The safety classifier's own model |
+| `SAFETY_ALARM_WEBHOOK_URL` | Production, Preview | no | The same-day safety alarm (Secrets, below) |
+| `MODEL_CALL_LIMIT_ENABLED` | Production (`0` in the test stage), Preview | no | Switches the per-browser daily limit off (Test path flag, below) |
+| `PROTOTYPE_ENABLED` | Preview only, never Production | no | Turns on the test path `/try` (Test path flag, below) |
+
+Not Vercel settings: `SUPABASE_DB_URL` (psql connection, your own shell), and
+`SUPABASE_PROJECT_REF`, `SUPABASE_ACCESS_TOKEN` and `E2E_BASE_URL` for `npm run check:deploy`
+(your own shell; After each deploy, below).
+
+## Database migrations
+Each file in `supabase/migrations/` is applied by a human, to dev first and then to prod, with
+`supabase db push` (`docs/HUMAN_STEPS.md`, Apply migrations, which also covers the one-time
+`supabase migration repair` for the migrations pasted by hand so far). A pull request that adds a
+migration lists it in "Human steps" as "Apply to dev, then prod". Agents never run the prod
+command. CI does not apply migrations (#189, out of scope: prod stays a human decision).
+
 ## Test path flag
 `PROTOTYPE_ENABLED=1` turns on the sign-in-free test path `/try` (`docs/decisions/0011`). Only `/try`
 depends on it: the signed-in session pages (`/goal`, `/focus`, `/rest`, `/end`) and every link to them
@@ -296,6 +331,11 @@ Plus on Pro keeps them for 30 days (Vercel documentation, checked on 2026-11-20)
 retention, set up a Vercel log drain; none is configured.
 
 ## After each deploy
+- Post-deploy check (#189): `E2E_BASE_URL=https://<the address> SUPABASE_PROJECT_REF=<ref>
+  SUPABASE_ACCESS_TOKEN=<your token> npm run check:deploy`. It fails with one plain sentence per
+  problem when the site answers 5xx, a signed-out home page does not redirect to sign-in, or the
+  database is missing a table or its row-level security compared with the migration files. See
+  `docs/HUMAN_STEPS.md`, Run the post-deploy check.
 - Smoke test: open the deployed home page and confirm the product name is
   visible. To run the end-to-end test against a deployed address instead of a local
   build: `E2E_BASE_URL=https://<the address> npm run test:e2e`.
