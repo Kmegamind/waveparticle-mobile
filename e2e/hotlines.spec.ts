@@ -404,3 +404,51 @@ test("#118 M-1 a corrupt entry in the copy is S1-0, never S1-N", async ({
   await expect(crisis).not.toContainText("No help line is listed");
   await context.setOffline(false);
 });
+
+// Coordinator ruling on the refresh: only { signedIn: false }, a redirect to sign-in or another
+// user clears the copy; a 5xx, a timeout, a network failure or a 200 that is not JSON keeps it.
+
+async function copyOwner(page: Page) {
+  return page.evaluate((key) => window.localStorage.getItem(key), KEY);
+}
+
+for (const [name, answer] of [
+  ["a 5xx HTML page", { status: 503, contentType: "text/html", body: "<h1>Down</h1>" }],
+  ["a 500 JSON error", { status: 500, contentType: "application/json", body: '{"error":"x"}' }],
+  ["a 200 that is not JSON", { status: 200, contentType: "text/html", body: "<p>portal</p>" }],
+] as const) {
+  test(`#118 the refresh keeps the copy on ${name}`, async ({ page, context, baseURL }) => {
+    await signIn(context, baseURL!, profile("US"));
+    await page.goto("/me");
+    await waitForCopy(page, "US");
+    const before = await copyOwner(page);
+    let answered = false;
+    await page.route("**/me/help-line", async (route) => {
+      answered = true;
+      await route.fulfill(answer);
+    });
+    await page.reload();
+    await expect.poll(() => answered).toBe(true);
+    await page.waitForLoadState("networkidle");
+    expect(await copyOwner(page)).toBe(before);
+  });
+}
+
+test("#118 a redirect to the sign-in page clears the copy", async ({ page, context, baseURL }) => {
+  await signIn(context, baseURL!, profile("US"));
+  await page.goto("/safety");
+  await waitForCopy(page, "US");
+  // The session ends, and the refresh is sent to a signed-in page instead, which the app answers
+  // with its real redirect to /auth/sign-in (Playwright cannot fulfil a redirect itself).
+  await context.clearCookies();
+  let rerouted = false;
+  await page.route("**/me/help-line", async (route) => {
+    rerouted = true;
+    await route.continue({ url: new URL("/me/signals", baseURL!).toString() });
+  });
+  await page.reload();
+  await expect.poll(() => rerouted).toBe(true);
+  await waitForCopy(page, "none");
+  const crisis = await openS1(page);
+  await expect(crisis).toHaveAttribute("data-s1", "none");
+});
