@@ -8,7 +8,8 @@ What a human must do after this pull request, in order, or the single word None.
 pull request if this section is missing or empty (the pr-human-steps job). Exact click paths are
 in docs/HUMAN_STEPS.md: link to them and never guess a manual step.
 One numbered line per step: where it applies ([dev], [prod], [dev, prod], or [repo] for GitHub or
-this repository), what to do, and where. For example:
+this repository), what to do, and where, in at least 4 words (no "TBD", "TODO" or "..."; the
+examples below do not count as steps). For example:
 1. [dev, prod] Apply to dev, then prod: 20261201000000_my_change.sql (docs/HUMAN_STEPS.md, Apply migrations).
 2. [prod] Add MY_SETTING in Vercel, scopes Production and Preview, server only (no NEXT_PUBLIC_ prefix), then redeploy.
 A new file in supabase/migrations/ needs a step with its file name and "Apply to dev, then prod".

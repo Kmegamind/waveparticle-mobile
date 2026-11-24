@@ -8,21 +8,53 @@ const MIGRATION_NAME = /^(\d{14})_[a-z0-9_]+\.sql$/;
 const MIGRATION_DIR = "supabase/migrations/";
 
 const EXAMPLE_STEP = "1. [dev, prod] What to do. Where to do it.";
+const MIN_STEP_WORDS = 4;
+// The sample steps of the error messages and of .github/pull_request_template.md. Copying one
+// unchanged is not a step.
+const EXAMPLE_STEP_TEXTS = [
+  "What to do. Where to do it.",
+  "Apply to dev, then prod: 20261201000000_my_change.sql (docs/HUMAN_STEPS.md, Apply migrations).",
+  "Add MY_SETTING in Vercel, scopes Production and Preview, server only (no NEXT_PUBLIC_ prefix), then redeploy.",
+];
+const EXAMPLE_MARKERS = ["20261201000000_my_change.sql", "MY_SETTING"];
+const PLACEHOLDER_WORDS = /\b(tbd|tba|todo|fixme|n\/a)\b|\?\?\?|\.\.\.|…/i;
+
+/**
+ * The body as GitHub shows it, for finding headings: HTML comments removed (an unclosed one runs
+ * to the end) and fenced code blocks emptied, so a heading inside either does not count.
+ */
+function visibleLines(body) {
+  const lines = String(body ?? "")
+    .replace(/\r\n?/g, "\n")
+    .replace(/<!--[\s\S]*?(-->|$)/g, "")
+    .split("\n");
+  let fence = null;
+  return lines.map((line) => {
+    const marker = line.trim().match(/^(`{3,}|~{3,})/);
+    if (fence) {
+      if (marker && marker[1][0] === fence[0] && marker[1].length >= fence.length) fence = null;
+      return "";
+    }
+    if (marker) {
+      fence = marker[1];
+      return "";
+    }
+    return line;
+  });
+}
 
 /**
  * The text under the "## Human steps" heading, up to the next heading of level 1 or 2, with HTML
- * comments removed and trimmed. `null` when the heading is missing.
+ * comments and fenced code blocks removed, trimmed. `null` when the heading is missing (also when
+ * it is only inside a comment or a code block).
  */
 export function humanStepsSection(body) {
-  const lines = String(body ?? "")
-    .replace(/\r\n?/g, "\n")
-    .split("\n");
+  const lines = visibleLines(body);
   const start = lines.findIndex((line) => /^##\s+human steps\s*$/i.test(line.trim()));
   if (start === -1) return null;
   const rest = lines.slice(start + 1);
   const end = rest.findIndex((line) => /^#{1,2}\s/.test(line));
-  const text = (end === -1 ? rest : rest.slice(0, end)).join("\n");
-  return text.replace(/<!--[\s\S]*?(-->|$)/g, "").trim();
+  return (end === -1 ? rest : rest.slice(0, end)).join("\n").trim();
 }
 
 /** The numbered steps of a section: one entry per line that starts with "1." or "1)". */
@@ -43,6 +75,35 @@ function stepTags(line) {
 }
 
 const isNone = (section) => /^none\.?$/i.test(section.trim());
+
+/** The words of a step after its number and tag. */
+function stepText(line) {
+  return line.replace(/^\d+[.)]\s+(\[[^\]]*\])?/, "").trim();
+}
+
+const normalise = (text) => text.replace(/[`*_]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+
+/** Why a step is a placeholder rather than a real step, or null. */
+function placeholderReason(line) {
+  const text = stepText(line);
+  if (/^none\.?$/i.test(text)) {
+    return `"None" cannot be a step in a list. Write "None" alone in the section, or replace it with the step`;
+  }
+  if (
+    EXAMPLE_STEP_TEXTS.some((example) => normalise(example) === normalise(text)) ||
+    EXAMPLE_MARKERS.some((marker) => text.includes(marker))
+  ) {
+    return "it is the example from the template or the error message, not a real step";
+  }
+  if (PLACEHOLDER_WORDS.test(text)) {
+    return 'it holds a placeholder ("TBD", "TODO", "N/A", "..." or similar)';
+  }
+  const words = text.match(/[\p{L}\p{N}][\p{L}\p{N}'._/-]*/gu) ?? [];
+  if (words.length < MIN_STEP_WORDS) {
+    return `it has fewer than ${MIN_STEP_WORDS} words after the tag; say what to do and where`;
+  }
+  return null;
+}
 
 /**
  * Checks the "Human steps" section of a pull request body.
@@ -91,16 +152,29 @@ export function checkHumanSteps({ body, addedMigrations = [], newEnvNames = [] }
     const bad = tags?.filter((tag) => !STEP_TAGS.includes(tag)) ?? [];
     if (!tags || tags.length === 0 || bad.length > 0) {
       errors.push(
-        `This human step does not say where it applies: "${line.slice(0, 80)}". Start it with [dev], [prod], [dev, prod] or [repo] (GitHub or the repository, no environment), for example "${EXAMPLE_STEP}".`,
+        `This human step does not say where it applies: "${line.slice(0, 80)}". Start it with [dev], [prod], [dev, prod] or [repo] (GitHub or the repository, no environment), then say what to do and where.`,
       );
+      continue;
+    }
+    const reason = placeholderReason(line);
+    if (reason) {
+      errors.push(`This human step is not a real step: "${line.slice(0, 80)}": ${reason}.`);
     }
   }
 
   for (const name of addedMigrations) {
-    const listed = steps.some(
+    const named = steps.filter(
       (line) => line.includes(name) && line.toLowerCase().includes(APPLY_PHRASE.toLowerCase()),
     );
-    if (!listed) {
+    const tagged = named.some((line) => {
+      const tags = stepTags(line) ?? [];
+      return tags.includes("dev") && tags.includes("prod");
+    });
+    if (named.length > 0 && !tagged) {
+      errors.push(
+        `The human step for the migration ${name} must be tagged [dev, prod]: a migration is applied to the dev database and then to the prod database, never only to the repository.`,
+      );
+    } else if (named.length === 0) {
       errors.push(
         `This pull request adds the migration ${name}, but no human step names it with "${APPLY_PHRASE}". Add a step such as "1. [dev, prod] ${APPLY_PHRASE}: ${name} (docs/HUMAN_STEPS.md, Apply migrations)."`,
       );

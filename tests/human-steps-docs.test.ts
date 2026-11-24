@@ -25,7 +25,10 @@ describe("#189 AC1: the template and the CI job", () => {
     );
     expect(job).toMatch(/fetch-depth: 0/);
     expect(job).toMatch(/BODY: \$\{\{ github\.event\.pull_request\.body \}\}/);
-    expect(job).toMatch(/BASE_REF: origin\/\$\{\{ github\.base_ref \}\}/);
+    expect(job).toContain("BASE_REF: HEAD^1");
+    expect(job).toMatch(
+      /if: \$\{\{ failure\(\) \}\}\n\s+run: echo "::error::The pull request could not be checked out[^"]*merge conflicts/,
+    );
     expect(job).toContain("run: npm run check:pr");
     expect(ci).toMatch(/types: \[opened, edited, synchronize, reopened\]/);
   });
@@ -48,7 +51,34 @@ describe("#189 AC3: documented migration commands", () => {
       expect(part).toContain("supabase db push");
     }
     expect(prod).toMatch(/product owner only/);
-    expect(prod).toMatch(/Agents never run these commands/);
+    expect(prod).toMatch(/Agents never run `supabase link` or `supabase db push`, for dev or prod/);
+    for (const part of [dev, prod]) expect(part).toContain("cat supabase/.temp/project-ref");
+  });
+
+  it("links right before every push and checks the link (review I3)", () => {
+    const before = steps.slice(steps.indexOf("### Before every push"), steps.indexOf("### Dev:"));
+    expect(before).toMatch(/Never rely on the last link/);
+    expect(before).toContain("supabase link --project-ref <ref>");
+    expect(before).toContain("cat supabase/.temp/project-ref");
+    expect(steps).not.toMatch(/link back to dev/);
+  });
+
+  it("confirms each migration with SQL before the repair (review I4)", () => {
+    const repair = steps.slice(
+      steps.indexOf("### One-time setup (per project)"),
+      steps.indexOf("### Before every push"),
+    );
+    for (const catalog of [
+      "pg_tables",
+      "pg_proc",
+      "pg_trigger",
+      "pg_policies",
+      "supabase_migrations.schema_migrations",
+    ]) {
+      expect(repair).toContain(catalog);
+    }
+    expect(repair).toMatch(/A tables-only check such as `npm run check:deploy` is not enough/);
+    expect(repair).not.toMatch(/`npm run check:deploy` against that environment/);
   });
 
   it("covers the migrations applied by hand before the first push", () => {
@@ -111,6 +141,9 @@ describe("#189 AC5: the post-deploy check is documented", () => {
       "E2E_BASE_URL",
       "SUPABASE_PROJECT_REF",
       "SUPABASE_ACCESS_TOKEN",
+      "VERCEL_AUTOMATION_BYPASS_SECRET",
+      "x-vercel-protection-bypass",
+      "**Deployment Protection** → **Protection Bypass",
       "--skip-db",
     ]) {
       expect(steps).toContain(word);

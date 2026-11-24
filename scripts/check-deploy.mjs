@@ -7,6 +7,8 @@
 //   SUPABASE_PROJECT_REF   the Supabase project the deployment uses (dev or prod)
 //   SUPABASE_ACCESS_TOKEN  the personal access token of the human who runs the check
 //   SUPABASE_API_URL       only for tests: a local stand-in for https://api.supabase.com
+//   VERCEL_AUTOMATION_BYPASS_SECRET  optional: lets the check through Vercel Deployment
+//                          Protection on a Preview (sent as x-vercel-protection-bypass, never printed)
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -26,7 +28,8 @@ const baseUrl = env.E2E_BASE_URL;
 if (!baseUrl) {
   fail("E2E_BASE_URL is not set. Run: E2E_BASE_URL=https://<the address> npm run check:deploy");
 } else {
-  for (const result of await checkSite(baseUrl)) {
+  const bypassSecret = env.VERCEL_AUTOMATION_BYPASS_SECRET || undefined;
+  for (const result of await checkSite(baseUrl, fetch, { bypassSecret })) {
     if (result.ok) ok(result.message);
     else fail(result.message);
   }

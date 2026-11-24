@@ -50,7 +50,8 @@ never go in the repository.
 | `PROTOTYPE_ENABLED` | Preview only, never Production | no | Turns on the test path `/try` (Test path flag, below) |
 
 Not Vercel settings: `SUPABASE_DB_URL` (psql connection, your own shell), and
-`SUPABASE_PROJECT_REF`, `SUPABASE_ACCESS_TOKEN` and `E2E_BASE_URL` for `npm run check:deploy`
+`SUPABASE_PROJECT_REF`, `SUPABASE_ACCESS_TOKEN`, `E2E_BASE_URL` and the optional
+`VERCEL_AUTOMATION_BYPASS_SECRET` (for a protected Preview) for `npm run check:deploy`
 (your own shell; After each deploy, below).
 
 ## Database migrations
@@ -201,14 +202,12 @@ Nothing else changes: no part title, no other table, no phone setting.
    on conflict (user_id) do update set role = excluded.role;
    ```
 
-2. Deploy first if you can. Merge and deploy the pull request that adds this script (pull
-   request #394) before you run the fix, so that the Stories page counts repeated cards as
-   failing and you can check the result in step 7. The SQL itself does not need the new app; only
-   the check in step 7 does.
-3. Rehearse with a dry run. In a terminal, in the repository on an up-to-date `main`, print it
-   with the email address of your admin account. If you run this before the pull request is
-   merged, first run `git fetch origin && git checkout feat/377-publish-pool-checks`; after
-   merging, use `main`.
+2. The pull request that adds this script (pull request #394) is merged and deployed
+   (2026-11-23), so the Stories page already counts repeated cards as failing and you can check
+   the result in step 7.
+3. Rehearse with a dry run. In a terminal, in the repository on an up-to-date `main`
+   (`git fetch origin && git checkout main && git pull`), print it with the email address of your
+   admin account.
 
    ```sh
    node scripts/story-cards/fix-published.mjs --by you@example.com --dry-run > story-cards-dry-run.sql

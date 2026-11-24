@@ -141,6 +141,52 @@ describe("#189 AC5: website checks", () => {
   });
 });
 
+describe("#189 review I5: Vercel Deployment Protection", () => {
+  const base = "http://127.0.0.1:9";
+
+  it("says the deployment is protected, not insecure, on a 401 without the bypass", async () => {
+    const { impl } = fakeFetch({ "/": { status: 401 }, "/auth/sign-in": { status: 401 } });
+    const results = await checkSite(base, impl);
+    expect(results).toHaveLength(1);
+    expect(results[0].ok).toBe(false);
+    expect(results[0].message).toMatch(/behind Vercel Deployment Protection \(status 401\)/);
+    expect(results[0].message).toMatch(/not a security failure/);
+    expect(results[0].message).toMatch(/VERCEL_AUTOMATION_BYPASS_SECRET/);
+    expect(results[0].message).toMatch(/Deployment Protection → Protection Bypass for Automation/);
+    expect(results[0].message).not.toMatch(/may see pages they should not/);
+  });
+
+  it("treats a redirect to Vercel's sign-in as protection", async () => {
+    const { impl } = fakeFetch({
+      "/": { status: 307, location: "https://vercel.com/sso-api?url=x" },
+    });
+    const [result] = await checkSite(base, impl);
+    expect(result.message).toMatch(
+      /behind Vercel Deployment Protection \(a redirect to vercel\.com\)/,
+    );
+  });
+
+  it("sends the bypass secret as a header and then checks the app", async () => {
+    const { impl, calls } = fakeFetch({
+      "/": { status: 307, location: "/auth/sign-in" },
+      "/auth/sign-in": { status: 200 },
+    });
+    const results = await checkSite(base, impl, { bypassSecret: "bypass-123" });
+    expect(results.every((r) => r.ok)).toBe(true);
+    for (const call of calls) {
+      expect(call.init?.headers).toEqual({ "x-vercel-protection-bypass": "bypass-123" });
+    }
+    expect(JSON.stringify(results)).not.toContain("bypass-123");
+  });
+
+  it("says the secret was refused when the protection still answers 401", async () => {
+    const { impl } = fakeFetch({ "/": { status: 401 } });
+    const [result] = await checkSite(base, impl, { bypassSecret: "bypass-123" });
+    expect(result.message).toMatch(/was not accepted/);
+    expect(result.message).not.toContain("bypass-123");
+  });
+});
+
 describe("#189 AC5: reading the live tables", () => {
   it("posts the read query with the token and returns the rows", async () => {
     let seen: { url: string; init: RequestInit } | null = null;
@@ -261,6 +307,28 @@ describe("#189 AC5: npm run check:deploy against local stand-ins", () => {
     const skipped = await run({ E2E_BASE_URL: siteUrl }, ["--skip-db"]);
     expect(skipped.out).toContain("SKIPPED: database (--skip-db).");
     expect(skipped.code).toBe(0);
+  });
+
+  it("passes the bypass secret to a protected local site and never prints it", async () => {
+    const seen: (string | undefined)[] = [];
+    const siteUrl = await serve((req, res) => {
+      const header = req.headers["x-vercel-protection-bypass"];
+      seen.push(Array.isArray(header) ? header[0] : header);
+      if (header !== "bypass-xyz-789") res.writeHead(401).end("protected");
+      else if (req.url === "/") res.writeHead(307, { location: "/auth/sign-in" }).end();
+      else res.writeHead(200).end("page");
+    });
+    const blocked = await run({ E2E_BASE_URL: siteUrl }, ["--skip-db"]);
+    expect(blocked.out).toMatch(/FAIL: This deployment is behind Vercel Deployment Protection/);
+    expect(blocked.code).toBe(1);
+    const through = await run(
+      { E2E_BASE_URL: siteUrl, VERCEL_AUTOMATION_BYPASS_SECRET: "bypass-xyz-789" },
+      ["--skip-db"],
+    );
+    expect(through.out).toMatch(/OK: a signed-out visit to the home page goes to \/auth\/sign-in/);
+    expect(through.out).not.toContain("bypass-xyz-789");
+    expect(through.code).toBe(0);
+    expect(seen).toContain("bypass-xyz-789");
   });
 
   it("fails without E2E_BASE_URL and never sends the token to a stand-in off this machine", async () => {

@@ -39,13 +39,19 @@ is one run; write the two project refs into the table below once they are known.
 Steps that are waiting today. Tick them off by deleting the line in a pull request once done.
 
 1. **[dev, prod] Apply to dev, then prod: `supabase/migrations/20261128000000_hotlines.sql`**
-   (#118, `docs/deploy.md`, Help lines by region). Apply it **before** deploying #118, after
+   (#118, `docs/deploy.md`, Help lines by region). #118 is already merged and deployed, so this is
+   due now: until it runs, choosing a country on Me fails. It goes after
    `20261125000000_prompt_editing.sql`. Running it a second time stops with an error and changes
    nothing. Check: `select count(*) from public.hotlines;` in the SQL editor returns 1 (the US
-   entry), and `npm run check:deploy` no longer says "no table public.hotlines".
+   entry), and `npm run check:deploy` no longer says "no table public.hotlines". Also confirm
+   (with the queries in "Confirm that a migration ran", below) that the two migrations before it
+   ran: `20261126000000_prompt_activated_at.sql` (#317, a trigger on `public.prompts`) and
+   `20261127000000_safety_alarm_days.sql` (#117, the table `private.safety_alarm_days`). Their
+   state is not recorded anywhere.
 2. **[prod] Fix the published story cards that fail the checks** (#377, #46): follow
    `docs/deploy.md`, Story cards, "Fixing the published cards that fail the checks (#377)", steps 1
-   to 9: give your account the `admin` role, deploy pull request #394, run the dry run, read the
+   to 9: give your account the `admin` role (pull request #394 with the script is already merged,
+   so use an up-to-date `main`), run the dry run, read the
    list (expect 25 cards to publish and none skipped), run the fix, run the check again, then look
    at `/admin/stories` (no story "Failing") and `/admin/publish-history`. Run it on dev first if dev
    is a separate project.
@@ -54,7 +60,7 @@ Steps that are waiting today. Tick them off by deleting the line in a pull reque
    existing row → **Edit**), key `MODEL_CALL_LIMIT_ENABLED`, value `0` (no quotes), environment
    **Production** only, server only (no `NEXT_PUBLIC_` prefix) → **Save**. Then redeploy (below).
    Before public release, set it back to `1` or remove it.
-4. **[prod] Publish `plan_split` version 2** (PLAN-PROMPT, #40, pull request #409). Either way
+4. **[prod] Publish `plan_split` version 2** (PLAN-PROMPT, issue #40, commit 2edcbb4). Either way
    below; run it on dev first if dev is a separate project.
    - Admin (records who published): sign in on the live site with an `admin` account →
      `/admin/prompts` → **plan_split** → paste the settings and the prompt of
@@ -81,25 +87,86 @@ CI checks that the file names are unique and that a new one sorts after every fi
 
 ### One-time setup (per project): tell the CLI what already ran
 
-Every migration up to now was pasted by hand into the SQL editor, so the CLI's history table does
-not know they ran, and a first `supabase db push` would try to run them again and fail with
-"already exists". Do this once per project, in the repository on an up-to-date `main`:
+Every migration up to now was pasted by hand into the SQL editor, so the CLI's history table
+(`supabase_migrations.schema_migrations`) does not know they ran, and a first `supabase db push`
+would try to run them again and fail with "already exists". Marking a migration as applied that
+never ran is worse: `db push` then skips it for ever, without a word. So confirm each one with
+SQL first. Do this once per project, in the repository on an up-to-date `main`:
 
-1. `supabase link --project-ref <ref>` (dev ref first; it asks for the database password).
-2. `npm run check:deploy` against that environment (below) or the Table editor: confirm which
-   migrations are really applied. Do not mark one as applied that is not.
-3. `supabase migration list`: the left column is the repository, the right column what the CLI
+1. Link to the project and check the link (see "Before every push", below).
+2. `supabase migration list`: the left column is the repository, the right column what the CLI
    thinks ran.
-4. Mark each migration that you confirmed in step 2 as applied, for example
-   `supabase migration repair --status applied 20261106000000 20261106120000` (list every
-   confirmed version, separated by spaces).
-5. `supabase migration list` again: every applied migration now shows in both columns.
+3. For each migration in the left column that has no right column, confirm in the SQL editor that
+   it ran: open the file, note every object it creates or changes (tables, functions, triggers,
+   policies, check constraints), and find each one with the queries in "Confirm that a migration
+   ran", below. A tables-only check such as `npm run check:deploy` is not enough: many migrations
+   only add a function, a trigger or a policy.
+4. Mark only the confirmed versions as applied, for example
+   `supabase migration repair --status applied 20261106000000 20261106120000` (every confirmed
+   version, separated by spaces). A migration with any object missing did not run fully: do not
+   mark it; leave it for `supabase db push`, or ask before running it if it is not safe to run
+   twice.
+5. Check that the history now lists them:
+
+   ```sql
+   select version, name from supabase_migrations.schema_migrations order by version;
+   ```
+
+   and `supabase migration list` shows each confirmed migration in both columns.
+
+### Confirm that a migration ran
+
+Run these in the SQL editor (Supabase dashboard → the project → **SQL Editor** → **New query**).
+They only read the catalog. Look for each object the migration file creates.
+
+```sql
+-- Tables
+select schemaname, tablename, rowsecurity from pg_tables
+where schemaname in ('public', 'private') order by 1, 2;
+
+-- Functions
+select n.nspname as schema, p.proname as name, pg_get_function_identity_arguments(p.oid) as args
+from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+where n.nspname in ('public', 'private') order by 1, 2;
+
+-- Triggers
+select tgrelid::regclass as on_table, tgname as name from pg_trigger
+where not tgisinternal order by 1, 2;
+
+-- Policies
+select schemaname, tablename, policyname, cmd from pg_policies
+where schemaname in ('public', 'private') order by 1, 2, 3;
+
+-- Check constraints (a migration that widens a list of allowed values changes one of these)
+select conrelid::regclass as on_table, conname, pg_get_constraintdef(oid) as definition
+from pg_constraint where contype = 'c' and connamespace in ('public'::regnamespace, 'private'::regnamespace)
+order by 1, 2;
+
+-- What the CLI has recorded (empty or missing until the first repair or push)
+select version, name from supabase_migrations.schema_migrations order by version;
+```
+
+For a function that a later migration replaced, compare its body with the newest file that
+defines it: `select pg_get_functiondef('public.<name>'::regproc);`.
+
+### Before every push: link, then check the link
+
+The link is stored in `supabase/.temp/` and stays until you change it, so a "dev" push after a
+forgotten prod link goes to prod. Never rely on the last link: run `supabase link` right before
+each push, then check which project is linked.
+
+```sh
+supabase link --project-ref <ref>     # the project you mean to change, every time
+cat supabase/.temp/project-ref        # prints the linked project ref; it must be <ref>
+supabase projects list                # the linked project is marked in the LINKED column
+```
 
 ### Dev: apply every unapplied migration
 
 ```sh
 supabase link --project-ref <dev ref>
-supabase db push --dry-run   # lists what would run, changes nothing
+cat supabase/.temp/project-ref   # must print <dev ref>
+supabase db push --dry-run       # lists what would run, changes nothing
 supabase db push
 ```
 
@@ -107,16 +174,18 @@ Then run `npm run check:deploy` against a Preview deployment (below).
 
 ### Prod: the product owner only
 
-Agents never run these commands, not even with `--dry-run`.
+Agents never run `supabase link` or `supabase db push`, for dev or prod, not even with
+`--dry-run`.
 
 ```sh
 supabase link --project-ref <prod ref>
+cat supabase/.temp/project-ref   # must print <prod ref>
 supabase db push --dry-run
 supabase db push
 ```
 
-Then run `npm run check:deploy` against production. After a prod push, link back to dev
-(`supabase link --project-ref <dev ref>`) so the next push does not go to prod by accident.
+Then run `npm run check:deploy` against production. The next push, to any project, starts with
+its own `supabase link` again.
 
 Without the CLI, the old way still works: Supabase dashboard → the project → **SQL Editor** →
 **New query**, paste the whole migration file, **Run**. The CLI then does not know it ran: mark it
@@ -190,15 +259,26 @@ each a plain sentence; it exits 1 on any FAIL. It never prints a token or a resp
 - The home page and the sign-in page do not answer 5xx.
 - A signed-out visit to the home page redirects to `/auth/sign-in`.
 - Every table the migrations create exists, and row-level security is on wherever a migration
-  turns it on (read with one select through the Supabase Management API).
+  turns it on (read with one select through the Supabase Management API). It does not see
+  functions, triggers or policies: to confirm a migration, use "Confirm that a migration ran".
+
+On a Preview, Vercel Deployment Protection answers before the app. The check then says the
+deployment is protected (not a security failure). To check a Preview, the owner makes a bypass
+secret once: Vercel → the project → **Settings** → **Deployment Protection** → **Protection Bypass
+for Automation** → **Add Secret** (or copy the existing one). Pass it inline as
+`VERCEL_AUTOMATION_BYPASS_SECRET`; the check sends it as the `x-vercel-protection-bypass` header
+and never prints it.
 
 ```sh
 E2E_BASE_URL=https://waveparticle-mobile.vercel.app \
 SUPABASE_PROJECT_REF=<prod ref> SUPABASE_ACCESS_TOKEN=<your token> npm run check:deploy
 ```
 
-Set the token in your own shell (or type it on the line as above), never in a file in the
-repository. Without `SUPABASE_PROJECT_REF` and `SUPABASE_ACCESS_TOKEN` the command fails, so a
+Type the token and the bypass secret on the command line as above, for that one command. Do not
+`export` them in a shell where you also start an AI agent: the agent would inherit them, and the
+Supabase CLI reads `SUPABASE_ACCESS_TOKEN` too. Never put them in a file in the repository. Give
+the personal access token a short expiry when you make it: it works for every project of your
+account. Without `SUPABASE_PROJECT_REF` and `SUPABASE_ACCESS_TOKEN` the command fails, so a
 skipped database check never looks like a pass; add `-- --skip-db` to check the website alone
 (`npm run check:deploy -- --skip-db`). Agents run it only against a local server, never against
 production or a live database.
@@ -208,6 +288,8 @@ production or a live database.
 The `pr-human-steps` and `pr-closes-issue` jobs block a merge only when they are required:
 GitHub → the repository → **Settings** → **Branches** → the rule for `main` (**Edit**, or **Add
 branch protection rule** with pattern `main`) → **Require status checks to pass before merging**
-→ search and add `pr-human-steps` (and `pr-closes-issue`, `check`) → **Save changes**. If the
+→ search and add `pr-human-steps` (and `pr-closes-issue`, `check`) → tick **Require branches to
+be up to date before merging** (otherwise the "later than the newest migration on `main`" check
+can be out of date when another pull request with a migration merged first) → **Save changes**. If the
 repository uses rulesets instead: **Settings** → **Rules** → **Rulesets** → the rule for `main` →
 **Require status checks to pass** → **Add checks**.

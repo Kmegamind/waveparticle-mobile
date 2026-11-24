@@ -24,9 +24,23 @@ const gitOrEmpty = (...args) => {
   }
 };
 const lines = (text) => text.split("\n").filter(Boolean);
+const prefix = process.env.GITHUB_ACTIONS ? "::error::" : "FAIL: ";
+
+// Without a merge base (unrelated or conflicting history, or a base that was not fetched) git
+// cannot list the change: say so in one sentence instead of a stack trace.
+try {
+  git("merge-base", base, "HEAD");
+} catch {
+  console.log(
+    `${prefix}This pull request's change could not be compared with ${base}. If it has merge conflicts, merge origin/main into the branch, fix the conflicts and push; the check then runs again.`,
+  );
+  process.exit(1);
+}
 const readOrEmpty = (file) => (existsSync(file) ? readFileSync(file, "utf8") : "");
 
-const addedPaths = lines(git("diff", "--name-only", "--diff-filter=A", `${base}...HEAD`));
+const addedPaths = lines(
+  git("diff", "--name-only", "--no-renames", "--diff-filter=A", `${base}...HEAD`),
+);
 const addedMigrations = addedMigrationNames(addedPaths);
 const headMigrations = existsSync("supabase/migrations")
   ? readdirSync("supabase/migrations").filter((name) => name.endsWith(".sql"))
@@ -50,7 +64,6 @@ const errors = [
   ...checkEnvNamesDocumented(envNames, { headExample, deployDoc: readOrEmpty("docs/deploy.md") }),
 ];
 
-const prefix = process.env.GITHUB_ACTIONS ? "::error::" : "FAIL: ";
 for (const error of errors) console.log(`${prefix}${error}`);
 if (errors.length === 0) {
   console.log(

@@ -52,7 +52,11 @@ describe("#189 AC1: the Human steps section", () => {
 
   it("passes with numbered steps that each name an environment", () => {
     expect(
-      checkHumanSteps({ body: body("1. [dev] A.\n2. [prod] B.\n3. [dev, prod] C.\n4. [repo] D.") }),
+      checkHumanSteps({
+        body: body(
+          "1. [dev] Run the import in the SQL editor.\n2. [prod] Redeploy Production in Vercel.\n3. [dev, prod] Add the redirect URL in Supabase.\n4. [repo] Make the check required in GitHub.",
+        ),
+      }),
     ).toEqual([]);
   });
 
@@ -101,7 +105,7 @@ describe("#189 AC2: a new migration is listed as Apply to dev, then prod", () =>
   it("fails when no step names the file with the phrase", () => {
     expect(
       checkHumanSteps({
-        body: body(`1. [dev] Run ${migration}.`),
+        body: body(`1. [dev, prod] Run ${migration} in the SQL editor.`),
         addedMigrations: [migration],
       })[0],
     ).toMatch(/no human step names it with "Apply to dev, then prod"/);
@@ -205,11 +209,14 @@ describe("#189 AC4: a new environment variable is named everywhere", () => {
       /adds the environment variable NEW_ONE/,
     );
     expect(
-      checkHumanSteps({ body: body("1. [prod] Redeploy."), newEnvNames: ["NEW_ONE"] })[0],
+      checkHumanSteps({
+        body: body("1. [prod] Redeploy Production in Vercel."),
+        newEnvNames: ["NEW_ONE"],
+      })[0],
     ).toMatch(/no human step names it/);
     expect(
       checkHumanSteps({
-        body: body("1. [prod] Add NEW_ONE in Vercel."),
+        body: body("1. [prod] Add NEW_ONE in Vercel settings."),
         newEnvNames: ["NEW_ONE"],
       })[0],
     ).toMatch(/does not name its Vercel scopes/);
@@ -219,6 +226,77 @@ describe("#189 AC4: a new environment variable is named everywhere", () => {
         newEnvNames: ["NEW_ONE"],
       }),
     ).toEqual([]);
+  });
+});
+
+describe("#189 review I1: placeholder steps fail", () => {
+  it.each([
+    ["1. [dev] x", /fewer than 4 words/],
+    ["1. [repo] TBD", /placeholder/],
+    ["1. [repo] TODO", /placeholder/],
+    ["1. [dev] TODO: write the real steps later", /placeholder/],
+    ["1. [prod] ...", /placeholder/],
+    ["1. [dev, prod] N/A for this change really", /placeholder/],
+    ["1. [repo] None", /"None" cannot be a step in a list/],
+    ["1. [dev, prod] What to do. Where to do it.", /is the example/],
+    [
+      "1. [dev, prod] Apply to dev, then prod: 20261201000000_my_change.sql (docs/HUMAN_STEPS.md, Apply migrations).",
+      /is the example/,
+    ],
+    [
+      "2. [prod] Add MY_SETTING in Vercel, scopes Production and Preview, server only (no NEXT_PUBLIC_ prefix), then redeploy.",
+      /is the example/,
+    ],
+    ["1. [dev] Do it now", /fewer than 4 words/],
+  ])("rejects %j", (step, reason) => {
+    const errors = checkHumanSteps({ body: body(step) });
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toMatch(/is not a real step/);
+    expect(errors[0]).toMatch(reason);
+  });
+
+  it("rejects the example the error message itself suggests", () => {
+    const [missing] = checkHumanSteps({ body: "Closes #1" });
+    const example = missing.match(/for example "([^"]+)"/)![1];
+    expect(checkHumanSteps({ body: body(example) })[0]).toMatch(/is the example/);
+  });
+
+  it("accepts a short real step of four words", () => {
+    expect(checkHumanSteps({ body: body("1. [prod] Redeploy Production in Vercel.") })).toEqual([]);
+  });
+});
+
+describe("#189 review I2: a section the reader cannot see does not count", () => {
+  it("ignores a Human steps heading inside an HTML comment", () => {
+    const hidden =
+      "Closes #1\n\n<!--\n## Human steps\n1. [repo] Paste the text into AGENTS.md now.\n-->\n";
+    expect(humanStepsSection(hidden)).toBeNull();
+    expect(checkHumanSteps({ body: hidden })[0]).toMatch(/no "## Human steps" section/);
+  });
+
+  it("ignores a Human steps heading inside a code fence", () => {
+    const fenced = "Closes #1\n\n```md\n## Human steps\nNone\n```\n";
+    expect(humanStepsSection(fenced)).toBeNull();
+    expect(checkHumanSteps({ body: fenced })[0]).toMatch(/no "## Human steps" section/);
+  });
+
+  it("ignores steps written only inside a comment under the heading", () => {
+    expect(
+      checkHumanSteps({
+        body: body("<!--\n1. [dev] Apply the migration in the SQL editor.\n-->"),
+      })[0],
+    ).toMatch(/is empty/);
+  });
+});
+
+describe("#189 review M4: a migration step is tagged [dev, prod]", () => {
+  const migration = "20261201000000_example_table.sql";
+  it.each(["[repo]", "[dev]", "[prod]"])("rejects a migration step tagged %s", (tag) => {
+    const [error] = checkHumanSteps({
+      body: body(`1. ${tag} Apply to dev, then prod: ${migration}.`),
+      addedMigrations: [migration],
+    });
+    expect(error).toMatch(/must be tagged \[dev, prod\]/);
   });
 });
 
@@ -295,6 +373,36 @@ describe("#189 the check-pr command in a scratch git repository", () => {
     const result = checkPr(dir, fixtureBody);
     expect(result.stdout).toMatch(/^OK: .*1 new migration\(s\), 1 new environment variable\(s\)/);
     expect(result.status).toBe(0);
+  });
+
+  it("counts a renamed migration as a new one (review M5)", () => {
+    const { dir, run } = repo();
+    run(
+      "mv",
+      "supabase/migrations/20261106000000_first.sql",
+      "supabase/migrations/20261201000000_first.sql",
+    );
+    run("commit", "-q", "-m", "rename");
+    const result = checkPr(dir, body("None"));
+    expect(result.status).toBe(1);
+    expect(result.stdout).toMatch(/adds the migration 20261201000000_first\.sql/);
+  });
+
+  it("says in one sentence when the change cannot be compared with the base", () => {
+    const { dir } = repo();
+    const result = spawnSync(process.execPath, [path.join(root, "scripts/check-pr.mjs")], {
+      cwd: dir,
+      env: {
+        PATH: process.env.PATH,
+        BASE_REF: "no-such-branch",
+        BODY: body("None"),
+      } as unknown as NodeJS.ProcessEnv,
+      encoding: "utf8",
+    });
+    expect(result.status).toBe(1);
+    expect(result.stdout).toMatch(
+      /^FAIL: This pull request's change could not be compared with no-such-branch\. If it has merge conflicts, merge origin\/main/,
+    );
   });
 
   it("fails a migration that sorts before the newest one on the base branch", () => {

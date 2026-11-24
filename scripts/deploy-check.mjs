@@ -85,21 +85,60 @@ function siteUrl(base, path) {
 }
 
 /**
+ * How Vercel Deployment Protection answered, or null: a 401 (the protection page) or a redirect
+ * to Vercel's own sign-in on vercel.com.
+ */
+function vercelProtection(response, baseUrl) {
+  if (response.status === 401) return "status 401";
+  if (!REDIRECTS.has(response.status)) return null;
+  try {
+    const host = new URL(response.headers.get("location") ?? "", siteUrl(baseUrl, "/")).hostname;
+    if (host === "vercel.com" || host.endsWith(".vercel.com")) {
+      return `a redirect to ${host}`;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+/**
  * Website checks against a deployment: the home page and the sign-in page do not answer 5xx,
  * and a signed-out visit to the home page redirects to /auth/sign-in.
+ * `bypassSecret` (VERCEL_AUTOMATION_BYPASS_SECRET) is sent as the x-vercel-protection-bypass
+ * header so a protected Preview answers; it is never part of a result.
  * Returns [{ name, ok, message }].
+ * @param {string} baseUrl
+ * @param {typeof fetch} [fetchImpl]
+ * @param {{ bypassSecret?: string }} [options]
  */
-export async function checkSite(baseUrl, fetchImpl = fetch) {
+export async function checkSite(baseUrl, fetchImpl = fetch, { bypassSecret } = {}) {
   const results = [];
+  const init = {
+    redirect: /** @type {const} */ ("manual"),
+    headers: bypassSecret ? { "x-vercel-protection-bypass": bypassSecret } : {},
+  };
   let home;
   try {
-    home = await fetchImpl(siteUrl(baseUrl, "/"), { redirect: "manual" });
+    home = await fetchImpl(siteUrl(baseUrl, "/"), init);
   } catch {
     return [
       {
         name: "home page",
         ok: false,
         message: `The site at ${baseUrl} could not be reached. Check the address in E2E_BASE_URL and that the deployment finished.`,
+      },
+    ];
+  }
+  const protectedBy = vercelProtection(home, baseUrl);
+  if (protectedBy) {
+    return [
+      {
+        name: "deployment protection",
+        ok: false,
+        message: bypassSecret
+          ? `Vercel Deployment Protection still blocks the check (${protectedBy}): the value in VERCEL_AUTOMATION_BYPASS_SECRET was not accepted. Copy it again from Vercel → the project → Settings → Deployment Protection → Protection Bypass for Automation (docs/HUMAN_STEPS.md, Run the post-deploy check).`
+          : `This deployment is behind Vercel Deployment Protection (${protectedBy}), so the check cannot see the app; this is not a security failure. Run it again with VERCEL_AUTOMATION_BYPASS_SECRET set to the secret from Vercel → the project → Settings → Deployment Protection → Protection Bypass for Automation (docs/HUMAN_STEPS.md, Run the post-deploy check).`,
       },
     ];
   }
@@ -135,7 +174,7 @@ export async function checkSite(baseUrl, fetchImpl = fetch) {
   }
 
   try {
-    const signIn = await fetchImpl(siteUrl(baseUrl, "/auth/sign-in"), { redirect: "manual" });
+    const signIn = await fetchImpl(siteUrl(baseUrl, "/auth/sign-in"), init);
     results.push(
       signIn.status >= 500
         ? {
