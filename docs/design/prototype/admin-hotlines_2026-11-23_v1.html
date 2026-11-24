@@ -1,0 +1,142 @@
+<!-- ADM-14 Hotlines and ADM-15 Hotline entry (#118, issue #404), drawn in the look of the owner's admin prototype
+     content-admin/admin-prototype_2026-11-14_v1.html (outside the repository), which stays the reference for every
+     other admin page. Only the shared CSS and shell these pages need are copied, plus the one hotline row of ADM-12. -->
+<title>WaveParticle Content Admin</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap">
+<style>
+/* Shared CSS from the owner's admin prototype, cut to what these pages use. */
+:root{
+  --bg:#f5f6f4; --panel:#ffffff; --ink:#1d2421; --muted:#5f6b66; --line:#dde2df; --soft:#eef1ef;
+  --accent:#1f6f5c; --accent-soft:#e2f0eb; --ok:#2f7d4f; --ok-soft:#e3f2e8; --warn:#9a6a10; --warn-soft:#fbf0d9;
+  --bad:#b23b3b; --bad-soft:#f8e3e3; --info:#3a5ea8; --info-soft:#e4ebf8; --phone:#16191c; --phone-ink:#ece7dc;
+  --f-display:"Fraunces",Georgia,serif; --f-body:"IBM Plex Sans",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121615; --panel:#1a1f1e; --ink:#e4e9e6; --muted:#9aa6a1; --line:#2c3432; --soft:#212826;
+  --accent:#5fc0a3; --accent-soft:#1d3530; --ok:#6cc58f; --ok-soft:#1c3226; --warn:#e0b55a; --warn-soft:#3a2f17;
+  --bad:#ec8585; --bad-soft:#3d2121; --info:#8fb0f0; --info-soft:#1f2a40; --phone:#0b0d0e; --phone-ink:#ece7dc; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121615; --panel:#1a1f1e; --ink:#e4e9e6; --muted:#9aa6a1; --line:#2c3432; --soft:#212826;
+  --accent:#5fc0a3; --accent-soft:#1d3530; --ok:#6cc58f; --ok-soft:#1c3226; --warn:#e0b55a; --warn-soft:#3a2f17;
+  --bad:#ec8585; --bad-soft:#3d2121; --info:#8fb0f0; --info-soft:#1f2a40; --phone:#0b0d0e; --phone-ink:#ece7dc; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5}
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100%}
+.rail{background:var(--panel);border-right:1px solid var(--line);padding:18px 12px;position:sticky;top:env(safe-area-inset-top,0px);height:100vh;overflow:auto}
+.brand{font-family:var(--f-display);font-size:19px;font-weight:600;padding:0 8px 2px}
+.brand small{display:block;font-family:var(--f-body);font-size:11px;color:var(--muted);font-weight:400;letter-spacing:.04em;text-transform:uppercase;margin-top:2px}
+.proto{margin:12px 8px 14px;font-size:11.5px;background:var(--warn-soft);color:var(--warn);padding:6px 8px;border-radius:6px}
+.navgroup{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:12px 8px 4px}
+.rail a{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 8px;border-radius:6px;color:var(--ink);text-decoration:none}
+.rail a:hover{background:var(--soft)}
+.rail a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.rail a .k{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);font-weight:400}
+main{padding-block:22px 60px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));min-width:0}
+.crumb{font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.crumb a{color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:600;font-size:26px;margin:4px 0 4px;text-wrap:balance}
+h2{font-size:15px;margin:0 0 10px;font-weight:600}
+.lede{color:var(--muted);max-width:68ch;margin:0 0 18px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+button,.btn{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 12px;border-radius:7px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--panel);font-weight:600}
+button.small{font-size:12px;padding:3px 9px}
+button:focus-visible,a:focus-visible,[contenteditable]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.key{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);background:var(--soft);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:500;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.s-draft{background:var(--soft);color:var(--muted)}
+.s-pub{background:var(--ok-soft);color:var(--ok)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.note{font-size:12.5px;color:var(--muted)}
+.form{display:grid;gap:12px}
+.form label{display:grid;gap:4px;font-size:12.5px;color:var(--muted);font-weight:600}
+select,input[type=text],textarea{font:inherit;font-size:13.5px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:7px 9px;min-width:0;width:100%}
+textarea{min-height:64px;resize:vertical}
+select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.est{background:var(--soft);border-radius:8px;padding:10px 12px;font-size:13px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:13px;z-index:20}
+@media (max-width:900px){.app{grid-template-columns:1fr}
+.rail{position:sticky;top:env(safe-area-inset-top,0px);height:auto;z-index:5;display:flex;gap:4px;overflow-x:auto;padding:8px max(12px,env(safe-area-inset-left,0px));border-right:0;border-bottom:1px solid var(--line)}
+.rail .brand,.rail .proto,.navgroup{display:none}
+.rail a{white-space:nowrap}
+.rail a .k{display:none}
+.grid2,.grid3,.cmp{grid-template-columns:1fr}
+main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}}
+@media (prefers-reduced-motion:no-preference){.toast{animation:up .2s ease-out}
+@keyframes up{from{transform:translate(-50%,8px);opacity:0}}}
+</style>
+
+<div class="app">
+  <nav class="rail" id="rail" aria-label="Admin pages"></nav>
+  <main id="main"></main>
+</div>
+
+<script>
+const PAGES=[
+ {g:"Content"},
+ {id:"hotlines",k:"ADM-14",t:"Hotlines"},
+ {id:"hotline",k:"ADM-15",t:"Hotline entry"},
+ {g:"Review and logs"},
+ {id:"history",k:"ADM-12",t:"Publish history"}
+];
+const STATE={draft:["s-draft","Draft"],pub:["s-pub","Published"]};
+const pill=s=>`<span class="pill ${STATE[s][0]}">${STATE[s][1]}</span>`;
+const key=k=>`<span class="key">${k}</span>`;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let toastT;
+function toast(m){document.querySelector(".toast")?.remove();const d=document.createElement("div");d.className="toast";d.setAttribute("role","status");d.textContent=m;document.body.appendChild(d);clearTimeout(toastT);toastT=setTimeout(()=>d.remove(),2400)}
+function head(crumbs,title,lede,btns=""){
+  return `<div class="crumb">${crumbs}</div><div class="head"><div><h1>${title}</h1>${lede?`<p class="lede">${lede}</p>`:""}</div><div class="btns">${btns}</div></div>`;
+}
+const V={};
+/* #118 (issue #404): the hotline list (HOTLINES, SAFETY-DIRECTORY). The US 988 entry is the only entry; its service name is optional and empty here (pending the owner). */
+const HL=[{c:"US",n:"United States",name:"",main:["Phone","988"],second:["Text","988"],note:"",checked:"2026-11-23",by:"Product owner",state:"pub",v:"v1"}];
+const ROLE={now:"admin"};
+V.hotlines=()=>head("Content","Hotlines","The help line the safety page (S1) shows for each country. A country with no entry gets the international directory, Find A Helpline (findahelpline.com), which is always shown as a link and is not an entry. Only the admin role edits and publishes; writers may only read. Owner: the product owner.",
+  `<button class="primary" onclick="location.hash='hotline'">Add an entry</button>`)+
+ `<div class="panel scroll"><table><thead><tr><th>Country</th><th>Service name</th><th>Main contact</th><th>State</th><th>Last checked</th><th>Checked by</th></tr></thead><tbody>${HL.map(h=>`<tr><td><a href="#hotline">${esc(h.n)}</a> ${key(h.c)}</td><td>${h.name?esc(h.name):'<span class="note">None (optional)</span>'}</td><td>${esc(h.main[0])} ${esc(h.main[1])}</td><td>${pill(h.state)}</td><td class="note">${h.checked}</td><td>${esc(h.by)}</td></tr>`).join("")}</tbody></table>
+ <p class="note" style="margin:12px 0 0">An entry not checked in the last 6 months is marked "Check due". Every entry is checked at least every 6 months and before each release. Sample data: the one entry is the only real entry.</p></div>`;
+V.hotline=()=>{const h=HL[0];
+ const sel=(id,v)=>`<select id="${id}">${["Phone","Text","Web"].map(o=>`<option${o===v?" selected":""}>${o}</option>`).join("")}</select>`;
+ return head(`<a href="#hotlines">Hotlines</a> › ${esc(h.n)}`,`Hotline entry ${key("hotline."+h.c)}`,"What S1 shows for this country. An entry with no service name shows only its contact line, so this one reads \"Call or text 988\".",
+  `<button onclick="toast('Draft saved')">Save draft</button><button class="primary" onclick="toast('Published v2: a Publish history row of kind hotline was written')">Publish</button>`)+
+ `<div class="est" role="note" style="margin-bottom:14px">A new or changed entry should be checked against the legal review (#121) before Publish. This is a note, not a block.</div>
+ <div class="grid2" style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px">
+ <div class="panel"><h2>Entry</h2><div class="form">
+  <label>Country<input type="text" value="${esc(h.n)} (${h.c})" readonly aria-describedby="cn"><span class="note" id="cn">Fixed once saved. ISO 3166-1 alpha-2.</span></label>
+  <label>Service name (optional)<input type="text" value="${esc(h.name)}" placeholder="None"></label>
+  <label>Main contact: what Get support now opens${sel("mk",h.main[0])}<input type="text" value="${esc(h.main[1])}" aria-label="Main contact value"></label>
+  <label>Second contact (optional), shown as a text link${sel("sk",h.second[0])}<input type="text" value="${esc(h.second[1])}" aria-label="Second contact value"></label>
+  <label>Note (optional): hours or languages, one short line<input type="text" value="${esc(h.note)}" placeholder="None"></label>
+  <label>Last checked<input type="text" value="${h.checked}"></label>
+  <label>Checked by<input type="text" value="${esc(h.by)}"></label>
+  <p class="note" style="margin:0">A contact that is not a valid phone number or https address cannot be saved.</p>
+ </div></div>
+ <div class="panel"><h2>Preview on S1</h2><p class="note">S1-E, as the phone shows it.</p><p style="margin:8px 0 2px" class="note">Help in ${esc(h.n)}</p><p style="margin:0;font-weight:600">Call or text 988</p><p style="margin:6px 0"><a href="#hotline" onclick="toast('Would open sms:988');return false">Text 988</a></p><p style="margin:6px 0"><a href="#hotline" onclick="toast('Would open findahelpline.com');return false">Find A Helpline: findahelpline.com</a></p>
+ <h2 style="margin-top:18px">Versions</h2><table><thead><tr><th>Version</th><th>State</th><th>When</th><th></th></tr></thead><tbody><tr><td>${key("v1")}</td><td>${pill("pub")}</td><td class="note">11-23</td><td></td></tr></tbody></table>
+ <p class="note">Publish and restore are for the admin role only. Writers see this page read-only.</p></div></div>`;};
+
+/* ADM-12 shows only the hotline row here; the other kinds' rows are in the owner's admin prototype. */
+V.history=()=>head("Review and logs","Publish history","Who published what, and when. Any entry can be rolled back.","")+
+ `<div class="panel scroll"><table><thead><tr><th>When</th><th>Who</th><th>What</th><th>Version</th><th></th></tr></thead><tbody>
+ <tr><td class="note">11-23 18:00</td><td>Product owner</td><td>Hotline · United States ${key("hotline.US")}</td><td>${key("v1")}</td><td><button class="small" onclick="toast('Nothing to roll back to: v1 is the first version')">Roll back</button></td></tr>
+ </tbody></table></div>`;
+function render(){
+  const id=(location.hash||"#hotlines").slice(1);const cur=V[id]?id:"hotlines";
+  document.getElementById("rail").innerHTML=`<div class="brand">WaveParticle<small>Content admin</small></div><div class="proto">Prototype · sample data · nothing is saved</div>`+
+   PAGES.map(p=>p.g?`<div class="navgroup">${p.g}</div>`:`<a href="#${p.id}" class="${p.id===cur?"on":""}">${p.t}<span class="k">${p.k}</span></a>`).join("");
+  document.getElementById("main").innerHTML=V[cur]();
+}
+window.addEventListener("hashchange",()=>{render();window.scrollTo(0,0)});
+render();
+</script>

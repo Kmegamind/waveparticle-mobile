@@ -78,3 +78,11 @@ Not verified: the real fonts were loaded in the test, but only with the stand-in
 - R1-C: no category label and no per-message label; the chat reply prompt no longer asks for a scope field (CHAT-NO-LABEL).
 - GD2 carries a demo note that the goal shape uses the local rule with no model call (GOAL-SHAPE-LOCAL).
 - CPAGE, CPAGE-M and END carry a demo note that their lines wait for the owner's inner-thoughts framework (STORY-LINES-LATER, END-LINE-PENDING). These screens are not redrawn. S6 and the long-term chat are not drawn.
+
+## Help lines by region (2026-11-23, issue #404 for #118)
+
+- S1 has three states (SAFETY-REGION). S1-0 (no country chosen) shows the labelled line "If you are in the United States: call or text 988" (plain text) and a Choose your country link. S1-E (United States) shows "Help in United States", "Call or text 988" and a "Text 988" link. S1-N (shown for France, which has no entry) shows the placeholder lines from the spec. All three show the Find A Helpline text link, and none adds a third button.
+- The US entry has no service name: the name is optional until the owner rules on it (review of #403, I-2), so the entry shows only its contact line.
+- Me has a Country row that shows the chosen country or "Not chosen". It opens ME-REGION: one sentence, a search box, "No country", and every country by its English name (from the browser's `Intl.DisplayNames`). Nothing is suggested.
+- The admin screens ADM-14 (list) and ADM-15 (entry editor, with the legal-review note) are in `admin-hotlines_2026-11-23_v1.html`. It holds only these two pages, the one hotline row of ADM-12, and the shared CSS and shell they need, in the look of the owner's admin prototype (`content-admin/admin-prototype_2026-11-14_v1.html`, outside the repository), which stays the reference for every other admin page.
+- Nothing is linked: Get support now, Text 988 and the directory link show a toast that names their target.
