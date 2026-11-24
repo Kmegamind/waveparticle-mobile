@@ -1,4 +1,11 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 import type { StoryContent } from "@/lib/content/types";
 import type { PromptRow, PromptSource } from "@/lib/prompts/repository";
@@ -29,6 +36,9 @@ import { unitGatewayFactory } from "./unit";
  */
 
 export const SUITES = ["split", "rest", "pause"] as const;
+
+/** What the launcher watch writes into the stop file when the launcher's pipe closes. */
+export const LAUNCHER_GONE = "launcher gone";
 export type Suite = (typeof SUITES)[number];
 
 export const PROMPT_SOURCE = "the seed files in docs/ai/prompts, not the database's active rows";
@@ -89,6 +99,7 @@ export async function runOffline(options: RunOptions): Promise<RunResults> {
     maxCalls: options.maxCalls,
     maxCostUsd: options.maxCostUsd,
     prices: options.prices,
+    beforeRequest: () => checkForStop(),
   });
   const prompts: PromptSource = async (key) =>
     options.promptRows.find((row) => row.key === key) ?? null;
@@ -124,7 +135,32 @@ export async function runOffline(options: RunOptions): Promise<RunResults> {
     "retry_hints",
   ]);
   let incomplete: string | null = null;
-  let haltReason = "the run was interrupted (Ctrl-C); the units in flight finished";
+  let haltReason =
+    "the run was interrupted (Ctrl-C, SIGTERM or a closed terminal); the units in flight finished";
+  const launcherGone =
+    "the launcher went away (a closed terminal or a killed process); the units in flight finished";
+  /**
+   * A stop asked for from outside: the stop file (Ctrl-C, or the launcher's pipe closing, see
+   * scripts/offline-runs/launcher-watch.mjs) or the launcher's pid gone. Checked before every
+   * request and every 200 ms. Synchronous and cheap.
+   */
+  function checkForStop(): void {
+    if (budget.stopped) return;
+    const { stopFile, parentPid } = options;
+    if (stopFile && existsSync(stopFile)) {
+      let why = "";
+      try {
+        why = readFileSync(stopFile, "utf8");
+      } catch {
+        why = "";
+      }
+      if (why.startsWith(LAUNCHER_GONE)) haltReason = launcherGone;
+      budget.halt();
+    } else if (parentPid && !processAlive(parentPid)) {
+      haltReason = launcherGone;
+      budget.halt();
+    }
+  }
   let written = false;
   const finish = (): RunResults => {
     if (!incomplete && budget.stopped === "interrupted") {
@@ -158,19 +194,8 @@ export async function runOffline(options: RunOptions): Promise<RunResults> {
     }
     return results;
   };
-  const { stopFile, parentPid } = options;
   const watch =
-    stopFile || parentPid
-      ? setInterval(() => {
-          if (budget.stopped) return;
-          if (stopFile && existsSync(stopFile)) budget.halt();
-          else if (parentPid && !processAlive(parentPid)) {
-            haltReason =
-              "the launcher went away (a closed terminal or a killed process); the units in flight finished";
-            budget.halt();
-          }
-        }, 200)
-      : null;
+    options.stopFile || options.parentPid ? setInterval(() => checkForStop(), 200) : null;
   try {
     if (has("split")) await runSplitSuite(options.inputs.split, { ...deps, env: options.env });
     if (has("rest")) await runRestSuite(options.inputs.rest, deps);
@@ -183,6 +208,8 @@ export async function runOffline(options: RunOptions): Promise<RunResults> {
     throw error;
   } finally {
     if (watch) clearInterval(watch);
+    // A launcher that was killed cannot remove the stop file its pipe watch wrote; the run does.
+    if (options.stopFile) rmSync(options.stopFile, { force: true });
     finish();
   }
   return finish();

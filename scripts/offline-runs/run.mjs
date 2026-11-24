@@ -79,7 +79,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.met
     ],
     {
       cwd: root,
-      stdio: "inherit",
+      // File descriptor 3 is a pipe this process holds open; it closes when this process ends in any
+      // way, and the runner's launcher watch then asks for a stop (#420).
+      stdio: ["inherit", "inherit", "inherit", "pipe"],
       detached: true,
       env: childEnv(process.env, {
         ...parsed.settings,
@@ -87,6 +89,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.met
         OFFLINE_RUN_STOP_FILE: stopFile,
         // If this launcher goes away without a signal it can handle, the runner sees it and stops.
         OFFLINE_RUN_PARENT_PID: String(process.pid),
+        OFFLINE_RUN_LAUNCHER_FD: "3",
       }),
     },
   );
