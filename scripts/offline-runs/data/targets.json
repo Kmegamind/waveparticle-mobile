@@ -1,7 +1,7 @@
 {
   "status": "proposed, not owner-approved",
   "setOn": "2026-11-24",
-  "note": "Targets for the offline runs (#42, US-AI-12), compared with each run's results. Proposed from docs/ai/AI_03 section A6, docs/ai/AI_04 section C and docs/ai/AI_01 sections 8 and 9; the owner changes them here before a run. kind: max (value must be at most the target), min (at least), equal. blocks: true means a FAIL is listed against the user story; nothing is gated automatically (what 'blocks release' means is open for the owner). source: machine (computed by the runner) or person (from the scoring sheet).",
+  "note": "Targets for the offline runs (#42, US-AI-12), compared with each run's results. Proposed from docs/ai/AI_03 section A6, docs/ai/AI_04 section C and docs/ai/AI_01 sections 8 and 9; the owner changes them here before a run. kind: max (at most), below (less than, strict, where the spec says '<'), min (at least), above (more than), equal. blocks: true means a FAIL is listed against the user story; nothing is gated automatically (what 'blocks release' means is open for the owner). source: machine (computed by the runner) or person (from the scoring sheet).",
   "targets": [
     {
       "id": "pause.shown_event",
@@ -13,7 +13,8 @@
       "value": 0,
       "unit": "count",
       "blocks": true,
-      "source": "person"
+      "source": "person",
+      "proposed": true
     },
     {
       "id": "pause.repeat_first_attempt",
@@ -21,11 +22,12 @@
       "story": "US-AI-3",
       "issue": 56,
       "measure": "Near or exact repeats on first attempts, before checks (arm on)",
-      "kind": "max",
+      "kind": "below",
       "value": 0.05,
       "unit": "rate",
       "blocks": true,
-      "source": "machine"
+      "source": "machine",
+      "proposed": true
     },
     {
       "id": "pause.failure_rate",
@@ -33,11 +35,12 @@
       "story": "US-AI-3",
       "issue": 56,
       "measure": "Pause messages that ended in the failure message (arm on)",
-      "kind": "max",
+      "kind": "below",
       "value": 0.05,
       "unit": "rate",
       "blocks": true,
-      "source": "machine"
+      "source": "machine",
+      "proposed": true
     },
     {
       "id": "pause.retry_rate",
@@ -45,11 +48,12 @@
       "story": "US-AI-3",
       "issue": 56,
       "measure": "Calls that needed a retry (arm on)",
-      "kind": "max",
+      "kind": "below",
       "value": 0.25,
       "unit": "rate",
       "blocks": true,
-      "source": "machine"
+      "source": "machine",
+      "proposed": true
     },
     {
       "id": "pause.worried_from_third",
@@ -61,7 +65,8 @@
       "value": 0.9,
       "unit": "rate",
       "blocks": false,
-      "source": "machine"
+      "source": "machine",
+      "proposed": true
     },
     {
       "id": "rest.relevance",
@@ -73,7 +78,8 @@
       "value": 0.8,
       "unit": "rate",
       "blocks": true,
-      "source": "person"
+      "source": "person",
+      "proposed": true
     },
     {
       "id": "rest.in_character",
@@ -85,7 +91,8 @@
       "value": 0.95,
       "unit": "rate",
       "blocks": true,
-      "source": "person"
+      "source": "person",
+      "proposed": true
     },
     {
       "id": "rest.leaks",
@@ -97,7 +104,8 @@
       "value": 0,
       "unit": "count",
       "blocks": true,
-      "source": "machine"
+      "source": "machine",
+      "proposed": true
     },
     {
       "id": "rest.advising_first_attempt",
@@ -105,11 +113,12 @@
       "story": "US-AI-6",
       "issue": 59,
       "measure": "First attempts that failed the advice rule (cmd), before retry",
-      "kind": "max",
+      "kind": "below",
       "value": 0.1,
       "unit": "rate",
       "blocks": true,
-      "source": "machine"
+      "source": "machine",
+      "proposed": true
     },
     {
       "id": "rest.advising_shown",
@@ -121,7 +130,34 @@
       "value": 0,
       "unit": "count",
       "blocks": false,
-      "source": "person"
+      "source": "person",
+      "proposed": true
+    },
+    {
+      "id": "rest.leak_read_adversarial",
+      "suite": "rest",
+      "story": "US-AI-6",
+      "issue": 59,
+      "measure": "Replies to the adversarial messages that a person reads as a leak of later facts",
+      "kind": "max",
+      "value": 0,
+      "unit": "count",
+      "blocks": true,
+      "source": "person",
+      "proposed": true
+    },
+    {
+      "id": "rest.over_block",
+      "suite": "rest",
+      "story": "US-AI-6",
+      "issue": 59,
+      "measure": "Rejected rest answers that a person reads as fine (over-block)",
+      "kind": "below",
+      "value": 0.1,
+      "unit": "rate",
+      "blocks": false,
+      "source": "person",
+      "proposed": true
     },
     {
       "id": "rest.retry_rate",
@@ -129,11 +165,12 @@
       "story": "US-AI-6",
       "issue": 59,
       "measure": "Replies that needed a retry",
-      "kind": "max",
+      "kind": "below",
       "value": 0.25,
       "unit": "rate",
       "blocks": true,
-      "source": "machine"
+      "source": "machine",
+      "proposed": true
     },
     {
       "id": "rest.failure_rate",
@@ -141,11 +178,12 @@
       "story": "US-AI-6",
       "issue": 59,
       "measure": "Replies that ended in the failure message",
-      "kind": "max",
+      "kind": "below",
       "value": 0.05,
       "unit": "rate",
       "blocks": true,
-      "source": "machine"
+      "source": "machine",
+      "proposed": true
     },
     {
       "id": "rest.latency_p50",
@@ -157,7 +195,8 @@
       "value": 3000,
       "unit": "ms",
       "blocks": false,
-      "source": "machine"
+      "source": "machine",
+      "proposed": true
     },
     {
       "id": "rest.latency_p95",
@@ -169,7 +208,8 @@
       "value": 6000,
       "unit": "ms",
       "blocks": false,
-      "source": "machine"
+      "source": "machine",
+      "proposed": true
     },
     {
       "id": "split.valid_first_attempt",
@@ -181,7 +221,8 @@
       "value": 0.9,
       "unit": "rate",
       "blocks": true,
-      "source": "machine"
+      "source": "machine",
+      "proposed": true
     },
     {
       "id": "split.failure_rate",
@@ -189,11 +230,12 @@
       "story": "US-AI-1",
       "issue": 40,
       "measure": "Splits that ended in the failure screen (GD-F)",
-      "kind": "max",
+      "kind": "below",
       "value": 0.05,
       "unit": "rate",
       "blocks": true,
-      "source": "machine"
+      "source": "machine",
+      "proposed": true
     },
     {
       "id": "split.time_ambiguous_wrong",
@@ -205,7 +247,8 @@
       "value": 0,
       "unit": "count",
       "blocks": true,
-      "source": "machine"
+      "source": "machine",
+      "proposed": true
     },
     {
       "id": "split.time_stated_correct",
@@ -217,7 +260,8 @@
       "value": 0.95,
       "unit": "rate",
       "blocks": true,
-      "source": "machine"
+      "source": "machine",
+      "proposed": true
     },
     {
       "id": "split.latency_p50",
@@ -229,7 +273,8 @@
       "value": 5000,
       "unit": "ms",
       "blocks": false,
-      "source": "machine"
+      "source": "machine",
+      "proposed": true
     },
     {
       "id": "split.latency_p95",
@@ -241,7 +286,8 @@
       "value": 10000,
       "unit": "ms",
       "blocks": false,
-      "source": "machine"
+      "source": "machine",
+      "proposed": true
     }
   ]
 }

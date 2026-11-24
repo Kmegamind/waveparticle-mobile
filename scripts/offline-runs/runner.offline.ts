@@ -8,11 +8,13 @@ import { choosePrices } from "@/lib/offline-runs/prices";
 import { rescore, runOffline, SUITES, type RunInputs, type Suite } from "@/lib/offline-runs/run";
 import { appDocument, readContentRows } from "../content/content-files.mjs";
 import { readPromptDirectory } from "../prompts/prompt-files.mjs";
+import { confirmationGiven } from "./confirm.mjs";
 import { STUB_ENV, stubFetch } from "./stub-fetch.mjs";
 
 // The offline runs (#42, US-AI-12). Started only by `node scripts/offline-runs/run.mjs`, which
 // turns its flags into the OFFLINE_RUN_* settings below. The real model is called only with
-// OFFLINE_RUN_MODE=real and OFFLINE_RUN_CONFIRM=1; anything else uses the stub, with no network.
+// --real and the literal flag --confirm (a one-time token from run.mjs, never a value in the
+// environment or .env); anything else uses the stub, with no network.
 
 const root = path.join(import.meta.dirname, "..", "..");
 const env = process.env;
@@ -36,8 +38,8 @@ it("offline run", async () => {
   }
   const mode = env.OFFLINE_RUN_MODE === "real" ? "real" : "stub";
   if (mode === "real") {
-    if (env.OFFLINE_RUN_CONFIRM !== "1") {
-      throw new Error("A real run needs --confirm (OFFLINE_RUN_CONFIRM=1).");
+    if (!confirmationGiven(env)) {
+      throw new Error("A real run needs the flag --confirm on the command line of run.mjs.");
     }
     const missing = ["MODEL_API_KEY", "MODEL_API_URL", "MODEL_NAME"].filter(
       (name) => !env[name]?.trim(),
@@ -50,8 +52,19 @@ it("offline run", async () => {
   if (unknown.length > 0) throw new Error(`Unknown suite: ${unknown.join(", ")}`);
 
   const modelEnv: Record<string, string | undefined> = mode === "real" ? env : { ...STUB_ENV };
+  // The last focus card before a Pause: the first card of each Story's first part (M1).
+  const decks = json("src/content/oppenheimer/story-decks.json") as Record<
+    string,
+    { parts?: { cards?: { text?: string }[] }[] }
+  >;
+  const lastCards = Object.fromEntries(
+    Object.entries(decks).flatMap(([id, deck]) => {
+      const text = deck.parts?.[0]?.cards?.[0]?.text;
+      return typeof text === "string" ? [[id, text]] : [];
+    }),
+  );
   const inputs: RunInputs = {
-    pause: json("scripts/offline-runs/data/pause-runs.json"),
+    pause: { ...json("scripts/offline-runs/data/pause-runs.json"), lastCards },
     rest: json("scripts/offline-runs/data/rest-messages.json"),
     split: json("scripts/offline-runs/data/goal-lines.json"),
     targets: json("scripts/offline-runs/data/targets.json"),
@@ -77,11 +90,12 @@ it("offline run", async () => {
     ),
     concurrency: numberSetting("OFFLINE_RUN_CONCURRENCY", 4),
     outDir,
+    stopFile: env.OFFLINE_RUN_STOP_FILE,
   });
   const { budget } = results;
   console.log(
     `Offline run (${mode}) written to ${outDir}: ${budget.calls} calls, $${budget.costUsd.toFixed(4)} estimated${
-      budget.stopped ? `, stopped by the ${budget.stopped} limit` : ""
+      results.meta.incomplete ? `, INCOMPLETE: ${results.meta.incomplete}` : ""
     }.`,
   );
 });

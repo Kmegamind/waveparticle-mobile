@@ -20,11 +20,12 @@ scripts.
 ## Decision
 Option A:
 - `scripts/offline-runs/run.mjs` turns its flags into settings and starts `scripts/offline-runs/runner.offline.ts` through `scripts/offline-runs/vitest.config.mts`. The main config includes `tests/**` only.
-- A real call needs `--real --confirm`. Otherwise the runner uses the stub.
-- The budget stop is required: 2,600 calls and $5 by default, both set by flags.
+- A real call needs `--real` and the literal flag `--confirm`, never a value in the environment or `.env` (a one-time token file, `scripts/offline-runs/confirm.mjs`). Otherwise the runner uses the stub.
+- The budget stop is required: 3,100 calls and $5 by default, both set by flags.
 - The gateway gets an optional `onAttempt` callback, so the runner can count what the checks caught before a retry. The callback carries rule ids only. The app does not pass it.
 - The targets are one file, `scripts/offline-runs/data/targets.json`, marked "proposed, not owner-approved". It is copied into each run's folder, so the targets used are the ones set before the run.
 - A FAIL names the user story and issue. Nothing is gated automatically.
+- Records are appended to `results.jsonl` as they finish, and the report is written in a `finally`, also after Ctrl-C (a stop file the runner watches). A run that did not finish is INCOMPLETE and gets no verdict.
 
 ## Consequences
 - The safety classifier is not called in the rest and split suites (keyword layer only). It is measured in #117.

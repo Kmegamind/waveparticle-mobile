@@ -14,12 +14,12 @@ const ESCALATION = /\b(worse|again|still|more and more|even)\b/i;
 
 export type Measure = { value: number | null; count?: number; of?: number };
 
-const rate = (count: number, of: number): Measure => ({
+export const rate = (count: number, of: number): Measure => ({
   value: of === 0 ? null : count / of,
   count,
   of,
 });
-const countOf = (count: number): Measure => ({ value: count, count });
+export const countOf = (count: number): Measure => ({ value: count, count });
 
 export function percentile(values: number[], p: number): number | null {
   if (values.length === 0) return null;
@@ -180,27 +180,3 @@ export function splitByKind(records: SplitRecord[]): Record<string, Measure> {
 }
 
 export type ScoreRow = Record<string, string>;
-
-const blank = (value: string | undefined) => (value ?? "").trim() === "";
-const yes = (value: string | undefined) => /^(y|yes|1|true)$/i.test((value ?? "").trim());
-
-/** Person measures from the scoring sheets; null while any row is unscored. */
-export function personMeasures(sheets: { pause: ScoreRow[]; rest: ScoreRow[] }) {
-  const { pause, rest } = sheets;
-  const done = (rows: ScoreRow[], column: string) =>
-    rows.length > 0 && rows.every((row) => !blank(row[column]));
-  return {
-    "pause.shown_event": done(pause, "event")
-      ? countOf(pause.filter((row) => yes(row.event)).length)
-      : null,
-    "rest.relevance": done(rest, "relevance")
-      ? rate(rest.filter((row) => Number(row.relevance) >= 4).length, rest.length)
-      : null,
-    "rest.in_character": done(rest, "in_character")
-      ? rate(rest.filter((row) => yes(row.in_character)).length, rest.length)
-      : null,
-    "rest.advising_shown": done(rest, "advising")
-      ? countOf(rest.filter((row) => yes(row.advising)).length)
-      : null,
-  } as Record<string, Measure | null>;
-}

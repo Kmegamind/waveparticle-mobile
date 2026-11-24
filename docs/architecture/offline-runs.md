@@ -6,7 +6,7 @@ Path: `src/lib/offline-runs/`, `scripts/offline-runs/`
 
 ## What runs
 
-The runner calls the app's own code paths: `pauseMessageFor` and `restReplyFor` (`src/lib/prototype/rest-lines.ts`, with the keyword layer only, so no safety classifier call) and the gateway's `splitPlan`. The gateway is `createServerModelGateway`, behind a fetch that applies the budget and records token use. The prompts are the files in `docs/ai/prompts` (the seed of the prompts table), and the report lists each key and version. The Story content is the seed in `src/content` and `docs/demo`.
+The runner calls the app's own code paths: `pauseMessageFor` with the app's `pauseHistory` (`src/lib/prototype/session.ts`: the run's stuck stories and messages, the last 8, and the last focus card, here the first card of the Story's first part), `restReplyFor` (`src/lib/prototype/rest-lines.ts`), and `splitGoal` (`src/lib/prototype/split-goal.ts`: the keyword gate, the gateway and the final Plan check). All use the keyword layer only, so no safety classifier call is made. The gateway is `createServerModelGateway`, behind a fetch that applies the budget and records token use. The prompts are the files in `docs/ai/prompts` (the seed of the prompts table), and the report lists each key and version. The Story content is the seed in `src/content` and `docs/demo`.
 
 The inputs are test data, not product content, in `scripts/offline-runs/data/`. They follow the acceptance criteria as reworded by the decisions:
 
@@ -26,19 +26,28 @@ node scripts/offline-runs/run.mjs --stub                    # the stub model: no
 node --env-file=.env scripts/offline-runs/run.mjs --real --confirm
 ```
 
-A real run needs `--real` and `--confirm`, as well as `MODEL_API_KEY`, `MODEL_API_URL` and `MODEL_NAME`. Flags:
+A real run needs `--real` and the literal flag `--confirm` on the command line, as well as `MODEL_API_KEY`, `MODEL_API_URL` and `MODEL_NAME` (these may come from `.env`). Confirmation never comes from the environment or `.env`: `run.mjs` drops every inherited `OFFLINE_RUN_*` setting, and for `--confirm` it writes a one-time token to a private temporary file that the runner must find and match (`scripts/offline-runs/confirm.mjs`). Flags:
 
 - `--suite split,rest,pause` (default `all`).
-- `--max-calls` (default 2,600) and `--max-cost` in dollars (default 5): the budget stop. A call that could pass either limit is not made, and the report says the run stopped early.
+- `--max-calls` (default 3,100, room for a 50% retry rate) and `--max-cost` in dollars (default 5): the budget stop. A call that could pass either limit is not made, and the report says the run stopped early.
 - `--input-price` and `--output-price` in dollars per million tokens. Without them, the prices come from `scripts/live-generation-benchmark.config.json` for the provider that `MODEL_NAME` names. If it names none, the highest prices in that file are used.
 - `--concurrency` (default 4) and `--out` (default `offline-runs/<time>-<mode>`, ignored by git).
+
+Every record is appended to `results.jsonl` as soon as it exists. Whatever ends the run (the last unit, the budget stop, an error, or Ctrl-C), the rest of the folder is written from what finished. Ctrl-C makes `run.mjs` write a stop file: the runner, in its own process group, makes no new request, lets the units in flight finish and writes the partial report. A second Ctrl-C stops it at once; `results.jsonl` still holds what finished. A run that did not finish says INCOMPLETE and why at the top of the report, and no target gets PASS or FAIL. A failed or timed-out call counts its output at the most (`max_tokens`), the worst case.
 
 The output folder holds:
 
 - `results.json`, every record;
 - `targets.json`, the targets as they were at run time;
 - `report.md`, which starts with a summary table: PASS, FAIL, PENDING SCORING or NO DATA per target, with the story and issue;
-- the scoring sheets `scoring-rest.csv` (blank `relevance` 1 to 5, `in_character` yes/no, `advising` yes/no) and `scoring-pause.csv` (blank `event` yes/no).
+- the scoring sheets, to fill in with `yes` or `no` (and 1 to 5 for relevance):
+  - `scoring-rest.csv`: `relevance`, `in_character`, `advising`, and `leak`, which is required on the `unclear_adversarial` rows;
+  - `scoring-pause.csv`: `event`;
+  - `scoring-overblock.csv`: every rest answer the checks rejected, with its rules and its text (test data), and a blank `over_block`.
+
+`--score` checks every row id against the run and every value. It lists problems at the top of the report, and a measure with a problem shows INVALID SCORING. A measure that cannot be scored in a run (for example over-block when no answer was rejected) is named in the report header.
+
+Targets use the spec's own comparison: `below` is a strict "less than" (the seven "< x%" targets), `max` is "at most". Every target is marked proposed. The prompts are the seed files, not the database's active rows; the report says so, and the owner compares the versions with `/admin/prompts` before a run.
 
 After filling in the sheets, `node scripts/offline-runs/run.mjs --score offline-runs/<name>` writes the report again, with no model call. Nothing is gated automatically. A FAIL names the user story and issue. What "blocks release" means is the owner's decision (#42).
 

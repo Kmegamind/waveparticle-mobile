@@ -9,15 +9,19 @@
 export const CHARS_PER_TOKEN = 4;
 /** The gateway's output cap per call (`createHttpModelProvider`). */
 export const MAX_OUTPUT_TOKENS = 1024;
-export const DEFAULT_MAX_CALLS = 2_600;
+/** About 1,990 first attempts per full run; 3,100 leaves room for a 50% retry rate. */
+export const DEFAULT_MAX_CALLS = 3_100;
 export const DEFAULT_MAX_COST_USD = 5;
 
 export type Prices = { inputPerMillion: number; outputPerMillion: number; source: string };
 
 export type Usage = { inputTokens: number; outputTokens: number; estimated: boolean };
 
+/** Why the run stopped early: a budget limit, or an interrupt (Ctrl-C) asked for a stop. */
+export type StopReason = "calls" | "cost" | "interrupted";
+
 export class BudgetStop extends Error {
-  constructor(readonly limit: "calls" | "cost") {
+  constructor(readonly limit: StopReason) {
     super(`budget stop: ${limit}`);
   }
 }
@@ -38,7 +42,7 @@ export type BudgetSnapshot = {
   inputTokens: number;
   outputTokens: number;
   estimatedUsageCalls: number;
-  stopped: "calls" | "cost" | null;
+  stopped: StopReason | null;
   prices: Prices;
 };
 
@@ -47,7 +51,9 @@ export type Budget = {
   reserve(promptChars: number): number;
   /** Replaces a reservation with the real usage of the call. */
   settle(ticket: number, usage: Usage): void;
-  readonly stopped: "calls" | "cost" | null;
+  readonly stopped: StopReason | null;
+  /** Stops the run after the requests in flight: no new request is made (Ctrl-C). */
+  halt(): void;
   snapshot(): BudgetSnapshot;
 };
 
@@ -61,7 +67,7 @@ export function createBudget(options: {
   let inputTokens = 0;
   let outputTokens = 0;
   let estimatedUsageCalls = 0;
-  let stopped: "calls" | "cost" | null = null;
+  let stopped: StopReason | null = null;
   let next = 0;
   const pending = new Map<number, number>();
   const reservedNow = () => [...pending.values()].reduce((sum, value) => sum + value, 0);
@@ -85,6 +91,9 @@ export function createBudget(options: {
       if (usage.estimated) estimatedUsageCalls += 1;
       spent += costUsd(usage.inputTokens, usage.outputTokens, options.prices);
     },
+    halt() {
+      stopped ??= "interrupted";
+    },
     get stopped() {
       return stopped;
     },
@@ -102,15 +111,24 @@ export function createBudget(options: {
   };
 }
 
+export type MeterHooks = {
+  onUsage?: (usage: Usage) => void;
+  /** The answer text of every request, in order ("" when there was none), for the scoring sheets. */
+  onAnswer?: (text: string) => void;
+  /** Called when the budget refused this request (the unit is then left out of the measures). */
+  onStop?: () => void;
+};
+
 /**
  * A fetch that goes through the budget: it reserves before the request and records the usage the
  * provider returns (`usage.prompt_tokens`, `usage.completion_tokens`), or an estimate from the text
- * when there is none. It never reads or logs the key.
+ * when there is none. A request that fails or is aborted (a timeout) is counted at the worst case,
+ * `max_tokens` of output, because the provider may still bill it. It never reads or logs the key.
  */
 export function meteredFetch(
   base: typeof fetch,
   budget: Budget,
-  onUsage: (usage: Usage) => void = () => undefined,
+  hooks: MeterHooks = {},
 ): typeof fetch {
   return async (input, init) => {
     let prompt = "";
@@ -123,23 +141,36 @@ export function meteredFetch(
     } catch {
       prompt = "";
     }
-    const ticket = budget.reserve(prompt.length);
+    let ticket: number;
+    try {
+      ticket = budget.reserve(prompt.length);
+    } catch (error) {
+      hooks.onStop?.();
+      throw error;
+    }
     let response: Response;
     try {
       response = await base(input, init);
     } catch (error) {
-      const usage = { inputTokens: tokensOf(prompt.length), outputTokens: 0, estimated: true };
+      const usage = {
+        inputTokens: tokensOf(prompt.length),
+        outputTokens: MAX_OUTPUT_TOKENS,
+        estimated: true,
+      };
       budget.settle(ticket, usage);
-      onUsage(usage);
+      hooks.onUsage?.(usage);
+      hooks.onAnswer?.("");
       throw error;
     }
     let usage: Usage = { inputTokens: tokensOf(prompt.length), outputTokens: 0, estimated: true };
+    let answer = "";
     try {
       const payload = (await response.clone().json()) as {
         usage?: { prompt_tokens?: unknown; completion_tokens?: unknown };
         choices?: { message?: { content?: unknown } }[];
       };
       const text = payload.choices?.[0]?.message?.content;
+      answer = typeof text === "string" ? text : "";
       const reported = payload.usage;
       if (
         typeof reported?.prompt_tokens === "number" &&
@@ -153,7 +184,7 @@ export function meteredFetch(
       } else {
         usage = {
           inputTokens: tokensOf(prompt.length),
-          outputTokens: tokensOf(typeof text === "string" ? text.length : 0),
+          outputTokens: tokensOf(answer.length),
           estimated: true,
         };
       }
@@ -161,7 +192,8 @@ export function meteredFetch(
       // Not JSON: keep the input estimate; the gateway treats the answer as a failed request.
     }
     budget.settle(ticket, usage);
-    onUsage(usage);
+    hooks.onUsage?.(usage);
+    hooks.onAnswer?.(answer);
     return response;
   };
 }

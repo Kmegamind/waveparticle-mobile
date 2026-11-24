@@ -1,4 +1,5 @@
-import { mkdtempSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -31,10 +32,16 @@ import {
   type PauseRunsInput,
   type RestMessagesInput,
 } from "@/lib/offline-runs/suites";
+import { NO_SHEETS } from "@/lib/offline-runs/scoring";
 import { unitGatewayFactory } from "@/lib/offline-runs/unit";
 import { stubAnswer } from "../e2e/support/stub-cards.mjs";
 import { STUB_ENV, stubFetch } from "../scripts/offline-runs/stub-fetch.mjs";
-import { settingsFromArgs } from "../scripts/offline-runs/run.mjs";
+import { parseArgs } from "../scripts/offline-runs/run.mjs";
+import {
+  childEnv,
+  confirmationGiven,
+  issueConfirmation,
+} from "../scripts/offline-runs/confirm.mjs";
 import { seedContent } from "./support/seed-content";
 import { seedPromptSource, seedRows } from "./support/seed-prompts";
 
@@ -54,6 +61,7 @@ function deps(
     content: seedContent(),
     budget,
     concurrency: 2,
+    env: STUB_ENV,
     gatewayFor: unitGatewayFactory({
       env: STUB_ENV,
       fetchImpl: stubFetch(answer) as typeof fetch,
@@ -113,7 +121,7 @@ describe("the input sets are test data in the reworded shape", () => {
     const stories = { pause: ["US-AI-3", 56], rest: ["US-AI-6", 59], split: ["US-AI-1", 40] };
     for (const target of targets.targets) {
       expect([target.story, target.issue], target.id).toEqual(stories[target.suite]);
-      expect(["max", "min", "equal"]).toContain(target.kind);
+      expect(["max", "below", "min", "above", "equal"]).toContain(target.kind);
     }
   });
 });
@@ -336,8 +344,8 @@ describe("AC3: the split", () => {
 });
 
 describe("the budget stop", () => {
-  it("test_us_ai_12_budget_defaults_are_2600_calls_and_5_dollars", () => {
-    expect(DEFAULT_MAX_CALLS).toBe(2_600);
+  it("test_us_ai_12_budget_defaults_are_3100_calls_and_5_dollars", () => {
+    expect(DEFAULT_MAX_CALLS).toBe(3_100);
     expect(DEFAULT_MAX_COST_USD).toBe(5);
   });
 
@@ -494,7 +502,9 @@ describe("AC4: results against the targets", () => {
         endedAt: "2026-11-24T00:00:00Z",
         suites: ["split"],
         prompts: [],
+        promptSource: "test",
         testData: true,
+        incomplete: null,
       },
       budget: createBudget({ maxCalls: 1, maxCostUsd: 1, prices }).snapshot(),
       pause: [],
@@ -517,30 +527,74 @@ describe("AC4: results against the targets", () => {
         },
       ],
     };
-    const rows = evaluate(empty, targets, { pause: [], rest: [] });
+    const rows = evaluate(empty, targets, NO_SHEETS);
     const status = (id: string) => rows.find((row) => row.id === id)?.status;
     expect(status("split.time_ambiguous_wrong")).toBe("FAIL");
     expect(status("split.time_stated_correct")).toBe("PASS");
     expect(status("split.valid_first_attempt")).toBe("NO DATA");
     expect(status("rest.relevance")).toBe("NO DATA");
-    const report = renderReport(empty, targets, { pause: [], rest: [] });
+    const report = renderReport(empty, targets, NO_SHEETS);
     expect(report).toContain("`split.time_ambiguous_wrong` (US-AI-1, #40)");
   });
 });
 
 describe("the runner settings", () => {
-  it("test_us_ai_12_runner_defaults_to_the_stub_and_needs_confirm_for_real", () => {
-    expect(settingsFromArgs([])).toEqual({ OFFLINE_RUN_MODE: "stub" });
-    expect(
-      settingsFromArgs(["--real", "--confirm", "--max-calls", "100", "--max-cost", "2"]),
-    ).toEqual({
-      OFFLINE_RUN_MODE: "real",
-      OFFLINE_RUN_CONFIRM: "1",
-      OFFLINE_RUN_MAX_CALLS: "100",
-      OFFLINE_RUN_MAX_COST_USD: "2",
+  it("test_us_ai_12_runner_defaults_to_the_stub_and_confirm_is_never_a_setting", () => {
+    expect(parseArgs([])).toEqual({ settings: { OFFLINE_RUN_MODE: "stub" }, confirm: false });
+    expect(parseArgs(["--real", "--confirm", "--max-calls", "100", "--max-cost", "2"])).toEqual({
+      settings: {
+        OFFLINE_RUN_MODE: "real",
+        OFFLINE_RUN_MAX_CALLS: "100",
+        OFFLINE_RUN_MAX_COST_USD: "2",
+      },
+      confirm: true,
     });
-    expect(() => settingsFromArgs(["--max-cost"])).toThrow();
-    expect(() => settingsFromArgs(["--nope"])).toThrow();
+    expect(() => parseArgs(["--max-cost"])).toThrow();
+    expect(() => parseArgs(["--nope"])).toThrow();
+  });
+
+  it("test_us_ai_12_i1_confirmation_from_the_environment_is_dropped_and_refused", () => {
+    // An OFFLINE_RUN_CONFIRM from the shell or .env never reaches the runner.
+    const env = childEnv(
+      {
+        OFFLINE_RUN_CONFIRM: "1",
+        OFFLINE_RUN_CONFIRM_FILE: "/tmp/x",
+        MODEL_API_KEY: "k",
+        PATH: "p",
+      },
+      { OFFLINE_RUN_MODE: "real" },
+    );
+    expect(env).toEqual({ MODEL_API_KEY: "k", PATH: "p", OFFLINE_RUN_MODE: "real" });
+    // And a value alone is refused by the runner's guard.
+    expect(confirmationGiven({ OFFLINE_RUN_CONFIRM: "1" })).toBe(false);
+    expect(confirmationGiven({ OFFLINE_RUN_CONFIRM: "a".repeat(64) })).toBe(false);
+    const issued = issueConfirmation(mkdtempSync(path.join(tmpdir(), "wp-confirm-")));
+    expect(confirmationGiven(issued.settings)).toBe(true);
+    issued.cleanup();
+    expect(confirmationGiven(issued.settings)).toBe(false);
+  });
+
+  it("test_us_ai_12_i1_a_real_run_with_the_env_set_but_no_flag_refuses", () => {
+    // The model address is a closed local port, so nothing could reach a real model either way.
+    const result = spawnSync(
+      process.execPath,
+      [path.join(root, "scripts", "offline-runs", "run.mjs"), "--real", "--suite", "split"],
+      {
+        cwd: root,
+        encoding: "utf8",
+        timeout: 120_000,
+        env: {
+          PATH: process.env.PATH,
+          OFFLINE_RUN_CONFIRM: "1",
+          MODEL_API_KEY: "not-a-key",
+          MODEL_API_URL: "http://127.0.0.1:9/v1/chat/completions",
+          MODEL_NAME: "none",
+          NODE_ENV: "test",
+        },
+      },
+    );
+    expect(result.status).not.toBe(0);
+    expect(`${result.stdout}${result.stderr}`).toContain("needs the flag --confirm");
   });
 
   it("test_us_ai_12_prices_from_settings_model_name_or_the_highest", () => {

@@ -1,27 +1,41 @@
 import { companionPeople, sceneTableOf } from "@/lib/content/scene";
-import type { PauseCategory } from "@/lib/content/pause-snag";
 import type { StoryContent } from "@/lib/content/types";
 import { allowUserWords, mentionsWord } from "@/lib/model-gateway/checks";
+import { capGoalMinutes, findTimeInGoal } from "@/lib/prototype/goal-time";
 import { pauseMessageFor, restReplyFor, stuckFacts } from "@/lib/prototype/rest-lines";
 import { laterStoryWords } from "@/lib/prototype/rest-later-words";
-import { capGoalMinutes, findTimeInGoal } from "@/lib/prototype/goal-time";
+import { pauseHistory, type FocusSession, type PauseLogEntry } from "@/lib/prototype/session";
+import { splitGoal } from "@/lib/prototype/split-goal";
 import { generationInputs, storyById } from "@/lib/prototype/story-inputs";
 import { keywordOnlySafetyCheck } from "@/lib/safety/check";
 import type { Budget } from "./budget";
-import { callsOf, inPool, newUnit, tokensOfUnit, type CallSummary, type GatewayFor } from "./unit";
+import {
+  callsOf,
+  inPool,
+  newUnit,
+  tokensOfUnit,
+  type CallSummary,
+  type GatewayFor,
+  type UnitLog,
+} from "./unit";
 
 /**
  * The three suites of the offline runs (#42, US-AI-12), as reworded by the decisions (see
- * `docs/architecture/offline-runs.md`). They run the app's own code paths: `pauseMessageFor` and
- * `restReplyFor` (keyword layer only, no classifier call) and the gateway's `splitPlan`. A unit
- * started after the budget stopped is skipped; a unit the stop cut short is dropped.
+ * `docs/architecture/offline-runs.md`). They run the app's own code paths: `pauseMessageFor` with
+ * the app's `pauseHistory`, `restReplyFor` and `splitGoal` (the keyword layer only, no classifier
+ * call). A unit the budget refused is left out; every other unit is kept, also when it finished
+ * after the stop. A unit that throws is recorded as failed with reason `error`.
  */
+
+export type RecordSink = (suite: "pause" | "rest" | "split", record: object) => void;
 
 export type SuiteDeps = {
   content: StoryContent;
   gatewayFor: GatewayFor;
   budget: Budget;
   concurrency: number;
+  /** Called with every record as soon as it exists (the run appends it to `results.jsonl`). */
+  onRecord?: RecordSink;
 };
 
 export type PauseRunsInput = {
@@ -29,6 +43,8 @@ export type PauseRunsInput = {
   pausesPerRun: number;
   arms: ("on" | "off")[];
   stories: string[];
+  /** The last focus card shown before the Pause, per Story (the app sends it as `lastCard`). */
+  lastCards?: Record<string, string>;
 };
 
 export type RestMessagesInput = {
@@ -72,6 +88,7 @@ export type RestRecord = Timing & {
   stepCount: number;
   message: string;
   status: "ok" | "failed" | "keyword_stop";
+  failedReason?: string;
   reply?: string;
   /** Later words found in the shown reply by an independent check (should always be empty). */
   shownLeaks: string[];
@@ -84,7 +101,7 @@ export type SplitRecord = Timing & {
   kind: string;
   ambiguous: boolean;
   totalMinutes: number;
-  status: "ok" | "failed";
+  status: "ok" | "failed" | "keyword_stop";
   failedReason?: string;
   stepCount?: number;
   steps?: { title: string; description: string; minutes: number }[];
@@ -102,6 +119,11 @@ export type TimeReadRecord = {
 const failedReasonOf = (calls: CallSummary[]) =>
   calls.find((call) => call.source === "failed")?.reason;
 
+const timingOf = (unit: UnitLog, started: number): Timing => ({
+  latencyMs: Date.now() - started,
+  ...tokensOfUnit(unit),
+});
+
 /** AC1: 20 runs of five Pauses in one Step, per Story and arm. Pauses in a run are in order. */
 export async function runPauseSuite(input: PauseRunsInput, deps: SuiteDeps) {
   const runs = input.arms.flatMap((arm) =>
@@ -111,57 +133,62 @@ export async function runPauseSuite(input: PauseRunsInput, deps: SuiteDeps) {
   );
   const perRun = await inPool(runs, deps.concurrency, async ({ arm, storyId, run }) => {
     const records: PauseRecord[] = [];
-    const recentCategories: string[] = [];
-    const usedProps: string[] = [];
-    const earlierStories: string[] = [];
-    const earlierLines: string[] = [];
+    // The run's pause log, read back with the app's own `pauseHistory` (one Step, step 0).
+    const pauseLog: PauseLogEntry[] = [];
+    const lastCard = input.lastCards?.[storyId];
     for (let pause = 1; pause <= input.pausesPerRun; pause += 1) {
       if (deps.budget.stopped) break;
       const unit = newUnit();
       const gateway = deps.gatewayFor(unit);
       const started = Date.now();
-      const result =
-        arm === "on"
-          ? await pauseMessageFor(
-              deps.content,
-              {
-                storyId,
-                pauseNumber: pause,
-                recentCategories: recentCategories.slice(-2),
-                usedProps,
-                earlierStories,
-                earlierLines,
-              },
-              gateway,
-            )
-          : await pauseWithoutCategory(deps.content, storyId, pause, gateway, {
-              earlierStories,
-              earlierLines,
-            });
-      if (deps.budget.stopped) break;
+      const history = pauseHistory({ pauseLog, current: 0 } as unknown as FocusSession);
+      let result: Awaited<ReturnType<typeof pauseMessageFor>>;
+      let thrown = false;
+      try {
+        result =
+          arm === "on"
+            ? await pauseMessageFor(
+                deps.content,
+                { storyId, pauseNumber: pause, lastCard, ...history },
+                gateway,
+              )
+            : await pauseWithoutCategory(deps.content, storyId, pause, gateway, {
+                earlierStories: history.earlierStories,
+                earlierLines: history.earlierLines,
+                lastCard,
+              });
+      } catch {
+        result = { status: "failed" };
+        thrown = true;
+      }
+      if (unit.stoppedByBudget) break;
       const calls = callsOf(unit);
-      const ok = result.status === "ok";
+      const shown = result.status === "ok" ? result : null;
+      const ok = shown !== null;
       const record: PauseRecord = {
         arm,
         storyId,
         run,
         pause,
         status: ok ? "ok" : "failed",
-        failedReason: ok ? undefined : (failedReasonOf(calls) ?? "unknown"),
-        category: ok ? result.category : undefined,
-        prop: ok ? result.prop : undefined,
-        story: ok ? result.story : undefined,
-        message: ok ? result.text : undefined,
+        failedReason: ok ? undefined : thrown ? "error" : (failedReasonOf(calls) ?? "unknown"),
+        category: shown?.category,
+        prop: shown?.prop,
+        story: shown?.story,
+        message: shown?.text,
         calls,
-        latencyMs: Date.now() - started,
-        ...tokensOfUnit(unit),
+        ...timingOf(unit, started),
       };
       records.push(record);
-      if (ok) {
-        if (result.category) recentCategories.push(result.category);
-        if (result.prop) usedProps.push(result.prop);
-        if (result.story) earlierStories.push(result.story);
-        earlierLines.push(result.text);
+      deps.onRecord?.("pause", record);
+      if (result.status === "ok") {
+        pauseLog.push({
+          step: 0,
+          category: result.category,
+          prop: result.prop,
+          story: result.story,
+          text: result.text,
+        });
       }
     }
     return records;
@@ -178,11 +205,8 @@ async function pauseWithoutCategory(
   storyId: string,
   pauseNumber: number,
   gateway: ReturnType<GatewayFor>,
-  earlier: { earlierStories: string[]; earlierLines: string[] },
-): Promise<
-  | { status: "ok"; text: string; story: string; category?: PauseCategory; prop?: string }
-  | { status: "failed" }
-> {
+  earlier: { earlierStories: string[]; earlierLines: string[]; lastCard?: string },
+): Promise<Awaited<ReturnType<typeof pauseMessageFor>>> {
   const story = storyById(content, storyId);
   const inputs = generationInputs(content, storyId);
   const companionStories = content.stories.filter((item) => item.companionId === story.companionId);
@@ -209,7 +233,13 @@ async function pauseWithoutCategory(
     prop: first.prop,
   });
   if (second.source !== "generated" || !second.text.trim()) return { status: "failed" };
-  return { status: "ok", text: second.text.trim(), story: first.story, prop: first.prop };
+  return {
+    status: "ok",
+    isTestData: false,
+    text: second.text.trim(),
+    story: first.story,
+    prop: first.prop,
+  };
 }
 
 /** AC2: every message as the first message of a rest chat, at each position. */
@@ -222,20 +252,27 @@ export async function runRestSuite(input: RestMessagesInput, deps: SuiteDeps) {
     if (deps.budget.stopped) return null;
     const unit = newUnit();
     const started = Date.now();
-    const result = await restReplyFor(
-      deps.content,
-      {
-        storyId: input.story,
-        message: item.text,
-        history: [],
-        replyIndex: 0,
-        stepIndex: item.stepIndex,
-        stepCount: item.stepCount,
-      },
-      deps.gatewayFor(unit),
-      keywordOnlySafetyCheck,
-    );
-    if (deps.budget.stopped) return null;
+    let result: Awaited<ReturnType<typeof restReplyFor>>;
+    let thrown = false;
+    try {
+      result = await restReplyFor(
+        deps.content,
+        {
+          storyId: input.story,
+          message: item.text,
+          history: [],
+          replyIndex: 0,
+          stepIndex: item.stepIndex,
+          stepCount: item.stepCount,
+        },
+        deps.gatewayFor(unit),
+        keywordOnlySafetyCheck,
+      );
+    } catch {
+      result = { status: "failed" };
+      thrown = true;
+    }
+    if (unit.stoppedByBudget) return null;
     const calls = callsOf(unit);
     const reply = result.status === "ok" ? result.text : undefined;
     const later = laterStoryWords(deps.content, input.story, {
@@ -250,20 +287,23 @@ export async function runRestSuite(input: RestMessagesInput, deps: SuiteDeps) {
           ...exactCase.filter((word) => mentionsWord(reply, word, true)),
         ]
       : [];
+    const status =
+      result.status === "ok" ? "ok" : result.status === "crisis" ? "keyword_stop" : "failed";
     const record: RestRecord = {
       messageId: item.id,
       group: item.group,
       stepIndex: item.stepIndex,
       stepCount: item.stepCount,
       message: item.text,
-      status:
-        result.status === "ok" ? "ok" : result.status === "crisis" ? "keyword_stop" : "failed",
+      status,
+      failedReason:
+        status === "failed" ? (thrown ? "error" : (failedReasonOf(calls) ?? "unknown")) : undefined,
       reply,
       shownLeaks,
       calls,
-      latencyMs: Date.now() - started,
-      ...tokensOfUnit(unit),
+      ...timingOf(unit, started),
     };
+    deps.onRecord?.("rest", record);
     return record;
   });
   return records.filter((record): record is RestRecord => record !== null && record !== undefined);
@@ -280,35 +320,53 @@ export function readTimes(input: GoalLinesInput): TimeReadRecord[] {
   }));
 }
 
-/** AC3, the split: each line three times, with the time the dialogue would use. */
-export async function runSplitSuite(input: GoalLinesInput, deps: SuiteDeps) {
+/**
+ * AC3, the split: each line three times through the app's `splitGoal` (the keyword gate, the
+ * gateway and the final Plan check), with the time the dialogue would use. The per-browser limit
+ * does not apply to an offline run, so it is switched off for this call only (TEST-NO-CAP).
+ */
+export async function runSplitSuite(
+  input: GoalLinesInput,
+  deps: SuiteDeps & { env: Record<string, string | undefined> },
+) {
   const items = input.lines.flatMap((line) =>
     Array.from({ length: input.runsPerLine }, (_, run) => ({ ...line, run: run + 1 })),
   );
+  const env = { ...deps.env, MODEL_CALL_LIMIT_ENABLED: "0" };
   const records = await inPool(items, deps.concurrency, async (item) => {
     if (deps.budget.stopped) return null;
     const unit = newUnit();
     const started = Date.now();
     const totalMinutes = capGoalMinutes(findTimeInGoal(item.goal)) ?? input.defaultMinutes;
-    const result = await deps
-      .gatewayFor(unit)
-      .splitPlan({ goal: item.goal, totalMinutes, splitFiner: false });
-    if (deps.budget.stopped) return null;
+    const outcome = await splitGoal(
+      { goal: item.goal, totalMinutes, splitFiner: false },
+      {
+        env,
+        today: "2026-01-01",
+        readCounter: () => undefined,
+        writeCounter: () => undefined,
+        createGateway: () => deps.gatewayFor(unit),
+        safety: keywordOnlySafetyCheck,
+      },
+    );
+    if (unit.stoppedByBudget) return null;
     const calls = callsOf(unit);
+    const status =
+      outcome.status === "plan" ? "ok" : outcome.status === "crisis" ? "keyword_stop" : "failed";
     const record: SplitRecord = {
       lineId: item.id,
       run: item.run,
       kind: item.kind,
       ambiguous: item.ambiguous,
       totalMinutes,
-      status: result.source === "generated" ? "ok" : "failed",
-      failedReason: result.source === "generated" ? undefined : result.reason,
-      stepCount: result.source === "generated" ? result.steps.length : undefined,
-      steps: result.source === "generated" ? result.steps : undefined,
+      status,
+      failedReason: status === "failed" ? (failedReasonOf(calls) ?? "plan_check") : undefined,
+      stepCount: outcome.status === "plan" ? outcome.plan.steps.length : undefined,
+      steps: outcome.status === "plan" ? outcome.plan.steps : undefined,
       calls,
-      latencyMs: Date.now() - started,
-      ...tokensOfUnit(unit),
+      ...timingOf(unit, started),
     };
+    deps.onRecord?.("split", record);
     return record;
   });
   return records.filter((record): record is SplitRecord => record !== null && record !== undefined);

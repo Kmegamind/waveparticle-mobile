@@ -1,28 +1,37 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { StoryContent } from "@/lib/content/types";
 import type { PromptRow, PromptSource } from "@/lib/prompts/repository";
 import { createBudget, type Prices } from "./budget";
 import { parseCsv, renderReport, scoringSheets, type RunResults, type TargetsFile } from "./report";
+import { NO_SHEETS, type Sheets } from "./scoring";
 import {
   readTimes,
   runPauseSuite,
   runRestSuite,
   runSplitSuite,
   type GoalLinesInput,
+  type PauseRecord,
   type PauseRunsInput,
+  type RecordSink,
   type RestMessagesInput,
+  type RestRecord,
+  type SplitRecord,
 } from "./suites";
 import { unitGatewayFactory } from "./unit";
 
 /**
  * One offline run (#42, US-AI-12): the suites in order (split, rest, pause; the cheap ones first,
- * so a budget stop cuts the longest suite), then `results.json`, the two scoring sheets and
- * `report.md` in `outDir`. Never called from the app; the runner and the tests call it.
+ * so a budget stop cuts the longest suite). Every record is appended to `results.jsonl` as soon as
+ * it exists. Whatever happens (the end, a budget stop, an error, or a stop asked for by Ctrl-C), `results.json`,
+ * the scoring sheets and `report.md` are written from what finished; a run that did not finish is
+ * marked INCOMPLETE with the reason. Never called from the app; the runner and the tests call it.
  */
 
 export const SUITES = ["split", "rest", "pause"] as const;
 export type Suite = (typeof SUITES)[number];
+
+export const PROMPT_SOURCE = "the seed files in docs/ai/prompts, not the database's active rows";
 
 export type RunInputs = {
   pause: PauseRunsInput;
@@ -46,11 +55,21 @@ export type RunOptions = {
   outDir: string;
   timeLimitMs?: number;
   now?: () => Date;
+  /** Called after each record is appended (tests use it to fail on purpose midway). */
+  afterRecord?: RecordSink;
+  /**
+   * A file whose appearance asks the run to stop (run.mjs writes it on Ctrl-C): no new request is
+   * made, the units in flight finish, and the partial report is written.
+   */
+  stopFile?: string;
 };
 
 export async function runOffline(options: RunOptions): Promise<RunResults> {
   const now = options.now ?? (() => new Date());
   const startedAt = now().toISOString();
+  mkdirSync(options.outDir, { recursive: true });
+  const jsonl = path.join(options.outDir, "results.jsonl");
+  writeFileSync(jsonl, "");
   const budget = createBudget({
     maxCalls: options.maxCalls,
     maxCostUsd: options.maxCostUsd,
@@ -58,10 +77,21 @@ export async function runOffline(options: RunOptions): Promise<RunResults> {
   });
   const prompts: PromptSource = async (key) =>
     options.promptRows.find((row) => row.key === key) ?? null;
+  const pause: PauseRecord[] = [];
+  const rest: RestRecord[] = [];
+  const split: SplitRecord[] = [];
+  const onRecord: RecordSink = (suite, record) => {
+    appendFileSync(jsonl, `${JSON.stringify({ suite, ...record })}\n`);
+    if (suite === "pause") pause.push(record as PauseRecord);
+    else if (suite === "rest") rest.push(record as RestRecord);
+    else split.push(record as SplitRecord);
+    options.afterRecord?.(suite, record);
+  };
   const deps = {
     content: options.content,
     budget,
     concurrency: options.concurrency,
+    onRecord,
     gatewayFor: unitGatewayFactory({
       env: options.env,
       fetchImpl: options.fetchImpl,
@@ -72,35 +102,64 @@ export async function runOffline(options: RunOptions): Promise<RunResults> {
   };
   const has = (suite: Suite) => options.suites.includes(suite);
   const times = has("split") ? readTimes(options.inputs.split) : [];
-  const split = has("split") ? await runSplitSuite(options.inputs.split, deps) : [];
-  const rest = has("rest") ? await runRestSuite(options.inputs.rest, deps) : [];
-  const pause = has("pause") ? await runPauseSuite(options.inputs.pause, deps) : [];
   const used = new Set([
     ...(has("split") ? ["plan_split"] : []),
     ...(has("rest") ? ["rest_reply"] : []),
     ...(has("pause") ? ["stuck_story", "pause_predicament"] : []),
     "retry_hints",
   ]);
-  const results: RunResults = {
-    meta: {
-      mode: options.mode,
-      model: options.env.MODEL_NAME?.trim() || "(not set)",
-      startedAt,
-      endedAt: now().toISOString(),
-      suites: options.suites,
-      prompts: options.promptRows
-        .filter((row) => used.has(row.key))
-        .map((row) => ({ key: row.key, version: row.version })),
-      testData: true,
-    },
-    budget: budget.snapshot(),
-    pause,
-    rest,
-    split,
-    times,
+  let incomplete: string | null = null;
+  let written = false;
+  const finish = (): RunResults => {
+    if (!incomplete && budget.stopped === "interrupted") {
+      incomplete = "the run was interrupted (Ctrl-C); the units in flight finished";
+    } else if (!incomplete && budget.stopped) {
+      incomplete = `the budget stop ended the run (${budget.stopped} limit)`;
+    }
+    const results: RunResults = {
+      meta: {
+        mode: options.mode,
+        model: options.env.MODEL_NAME?.trim() || "(not set)",
+        startedAt,
+        endedAt: now().toISOString(),
+        suites: options.suites,
+        prompts: options.promptRows
+          .filter((row) => used.has(row.key))
+          .map((row) => ({ key: row.key, version: row.version })),
+        promptSource: PROMPT_SOURCE,
+        testData: true,
+        incomplete,
+      },
+      budget: budget.snapshot(),
+      pause: [...pause],
+      rest: [...rest],
+      split: [...split],
+      times,
+    };
+    if (!written) {
+      written = true;
+      writeRunFiles(options.outDir, results, options.inputs.targets);
+    }
+    return results;
   };
-  writeRunFiles(options.outDir, results, options.inputs.targets);
-  return results;
+  const stopFile = options.stopFile;
+  const watch = stopFile
+    ? setInterval(() => {
+        if (existsSync(stopFile)) budget.halt();
+      }, 200)
+    : null;
+  try {
+    if (has("split")) await runSplitSuite(options.inputs.split, { ...deps, env: options.env });
+    if (has("rest")) await runRestSuite(options.inputs.rest, deps);
+    if (has("pause")) await runPauseSuite(options.inputs.pause, deps);
+  } catch (error) {
+    incomplete = `the run stopped on an error (${error instanceof Error ? error.message : String(error)})`;
+    throw error;
+  } finally {
+    if (watch) clearInterval(watch);
+    finish();
+  }
+  return finish();
 }
 
 export function writeRunFiles(outDir: string, results: RunResults, targets: TargetsFile): void {
@@ -110,10 +169,8 @@ export function writeRunFiles(outDir: string, results: RunResults, targets: Targ
   const sheets = scoringSheets(results);
   writeFileSync(path.join(outDir, "scoring-rest.csv"), sheets.rest);
   writeFileSync(path.join(outDir, "scoring-pause.csv"), sheets.pause);
-  writeFileSync(
-    path.join(outDir, "report.md"),
-    renderReport(results, targets, { pause: [], rest: [] }),
-  );
+  writeFileSync(path.join(outDir, "scoring-overblock.csv"), sheets.overblock);
+  writeFileSync(path.join(outDir, "report.md"), renderReport(results, targets, NO_SHEETS));
 }
 
 /**
@@ -122,12 +179,15 @@ export function writeRunFiles(outDir: string, results: RunResults, targets: Targ
  */
 export function rescore(outDir: string): string {
   const read = (name: string) => readFileSync(path.join(outDir, name), "utf8");
+  const sheet = (name: string) => (existsSync(path.join(outDir, name)) ? parseCsv(read(name)) : []);
   const results = JSON.parse(read("results.json")) as RunResults;
   const targets = JSON.parse(read("targets.json")) as TargetsFile;
-  const report = renderReport(results, targets, {
-    rest: parseCsv(read("scoring-rest.csv")),
-    pause: parseCsv(read("scoring-pause.csv")),
-  });
+  const sheets: Sheets = {
+    rest: sheet("scoring-rest.csv"),
+    pause: sheet("scoring-pause.csv"),
+    overblock: sheet("scoring-overblock.csv"),
+  };
+  const report = renderReport(results, targets, sheets);
   writeFileSync(path.join(outDir, "report.md"), report);
   return report;
 }
