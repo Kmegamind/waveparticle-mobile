@@ -21,7 +21,8 @@ export type LogFeature =
   | "story-cards"
   | "model-gateway"
   | "goal-dialogue"
-  | "safety";
+  | "safety"
+  | "cost-cap";
 
 export type LogLevel = "warn" | "error";
 
