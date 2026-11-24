@@ -104,8 +104,10 @@ export function PrivacyNotice({ back }: { back: "me" | "sign-in" }) {
       </p>
       <p>
         The safety check keeps nothing you wrote, not even a copy. Our server log notes only that
-        the help page was shown or that the check could not run, with the time and the screen, never
-        your words.
+        the help page was shown or that the check could not run, with the time, the screen and
+        field, the result, which part of the check decided, how long it took and the versions of the
+        check; and, separately, which button on the help page you chose next. It never holds your
+        words or anything made from them.
       </p>
       <p>
         Our app does not keep a separate record of what is sent to the language model or of what it

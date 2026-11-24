@@ -5,6 +5,13 @@ export type SafetyKeywordResult = {
   flagged: boolean;
 };
 
+/**
+ * The version of the word list below, written into every safety log line (US-SAF-6, #119). Raise
+ * it with any change to the patterns or to `normalize`: `tests/safety-log-119.test.ts` pins the
+ * list's fingerprint to this number, so a change without a new version fails.
+ */
+export const KEYWORD_LIST_VERSION = 1;
+
 const crisisPatterns = [
   /\b(?:want|wanna)\s+to\s+(?:kill|hurt|harm)\s+(?:myself|me|him|her|them)\b/,
   /\b(?:plan to|planning to|intend to|going to|about to)\s+(?:kill|hurt|harm)\s+(?:myself|me|him|her|them)\b/,

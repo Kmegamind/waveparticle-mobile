@@ -62,10 +62,9 @@ export function supabaseFailureCounter(env: Env, fetchImpl?: typeof fetch): Fail
   };
 }
 
-type Log = (level: LogLevel, fields: LogFields, durationMs?: number) => void;
+type Log = (level: LogLevel, fields: LogFields) => void;
 
-const serverLog: Log = (level, fields, durationMs) =>
-  logEvent("safety", fields, { level, durationMs });
+const serverLog: Log = (level, fields) => logEvent("safety", fields, { level });
 
 /** Runs the alarm after the answer is sent, so the person never waits for the webhook. */
 function afterResponse(work: () => Promise<void>): void {
@@ -124,28 +123,30 @@ export function serverSafetyCheckFrom(options: {
   });
 }
 
-/** One log line per event: identifiers and timing only, never the text. */
-function logOnly(log: Log) {
-  return (event: SafetyEvent) => {
-    if (event.kind === "classifier_failed") {
-      log(
-        "error",
-        { event: "safety_classifier_failed", reason: event.reason, position: event.position },
-        event.latencyMs,
-      );
-      return;
-    }
-    log(
-      "warn",
-      {
-        event: "safety_crisis",
-        layer: event.layer,
-        position: event.position,
-        promptVersion: event.promptVersion,
-      },
-      event.latencyMs,
-    );
+/**
+ * One log line per event (US-SAF-6 AC1, #119): `safety_crisis` when S1 is shown,
+ * `safety_classifier_failed` when the keyword layer had to decide alone. Each holds exactly the
+ * fields of `SafetyEventFields`, plus the failure's reason; never the text or a hash of it (AC2).
+ */
+export function safetyLogFields(event: SafetyEvent): LogFields {
+  const common = {
+    at: event.at,
+    position: event.position,
+    tier: event.tier,
+    lang: event.lang,
+    keywordListVersion: event.keywordListVersion,
+    classifierPromptVersion: event.classifierPromptVersion,
+    layer: event.layer,
+    latencyMs: event.latencyMs,
   };
+  return event.kind === "classifier_failed"
+    ? { event: "safety_classifier_failed", ...common, reason: event.reason }
+    : { event: "safety_crisis", ...common };
+}
+
+function logOnly(log: Log) {
+  return (event: SafetyEvent) =>
+    log(event.kind === "classifier_failed" ? "error" : "warn", safetyLogFields(event));
 }
 
 let shared: SafetyCheck | null = null;

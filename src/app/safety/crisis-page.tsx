@@ -20,6 +20,7 @@ import {
   s1State,
   US_LINE,
 } from "@/lib/safety/help-lines";
+import { sendNextAction, type NextAction } from "@/lib/safety/next-action";
 
 // S1 of prototype v4 (#262, #233) with the help for the chosen country (#118, SAFETY-REGION):
 // S1-0 when no country is known or the phone copy cannot be read, S1-E for a country with an
@@ -92,6 +93,22 @@ export function CrisisPage({ onBack }: { onBack: () => void }) {
   // The /try test build is signed out (US-ACC-1): there is no Me to choose a country on.
   const signedOut = pathname.startsWith("/try");
   const online = useSyncExternalStore(subscribeOnline, isOnline, () => true);
+  // What the user did next (US-SAF-6, #119): the first action only, one beacon per S1.
+  const reported = useRef(false);
+  const report = (action: NextAction) => {
+    if (reported.current) return;
+    reported.current = true;
+    sendNextAction(action, pathname);
+  };
+  useEffect(() => {
+    const onHide = () => {
+      if (reported.current) return;
+      reported.current = true;
+      sendNextAction("left", window.location.pathname);
+    };
+    window.addEventListener("pagehide", onHide);
+    return () => window.removeEventListener("pagehide", onHide);
+  }, []);
   useEffect(() => {
     // #398: S1 replaces the screen in place, so focus moves to its title. A screen reader then
     // reads it, and Tab continues to the support button (every place that shows S1 inline).
@@ -120,7 +137,11 @@ export function CrisisPage({ onBack }: { onBack: () => void }) {
               </p>
               {signedOut || !online ? null : (
                 <p>
-                  <Link className="crisis-link" href="/me/country">
+                  <Link
+                    className="crisis-link"
+                    href="/me/country"
+                    onClick={() => report("choose_country")}
+                  >
                     Choose your country
                   </Link>
                 </p>
@@ -139,6 +160,7 @@ export function CrisisPage({ onBack }: { onBack: () => void }) {
                   <a
                     className="crisis-link"
                     href={contactHref(view.entry.secondary)}
+                    onClick={() => report("second_contact")}
                     {...(view.entry.secondary.kind === "web" ? external : {})}
                   >
                     {contactLabel(view.entry.secondary)}
@@ -159,7 +181,12 @@ export function CrisisPage({ onBack }: { onBack: () => void }) {
             </>
           ) : null}
           <p>
-            <a className="crisis-link" href={DIRECTORY.url} {...external}>
+            <a
+              className="crisis-link"
+              href={DIRECTORY.url}
+              onClick={() => report("directory")}
+              {...external}
+            >
               {DIRECTORY.label}
             </a>
           </p>
@@ -168,11 +195,19 @@ export function CrisisPage({ onBack }: { onBack: () => void }) {
           <a
             className="button-filled"
             href={supportHref}
+            onClick={() => report("get_support")}
             {...(supportHref.startsWith("https:") ? external : {})}
           >
             {support}
           </a>
-          <button className="button-tinted" onClick={onBack} type="button">
+          <button
+            className="button-tinted"
+            onClick={() => {
+              report("back");
+              onBack();
+            }}
+            type="button"
+          >
             {back}
           </button>
         </div>

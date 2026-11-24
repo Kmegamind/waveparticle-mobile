@@ -295,6 +295,24 @@ Where to look: in Vercel, open the project, then **Logs** (Runtime Logs). Filter
 Plus on Pro keeps them for 30 days (Vercel documentation, checked on 2026-11-20). For longer
 retention, set up a Vercel log drain; none is configured.
 
+### Safety log
+The safety lines (#119, US-SAF-6) are `"feature":"safety"` lines in the same server log:
+`safety_crisis` (S1 was shown), `safety_classifier_failed` (the keyword layer decided alone) and
+`safety_next_action` (what the person tapped on S1). The first two hold exactly `at`, `position`,
+`tier`, `lang`, `keywordListVersion`, `classifierPromptVersion`, `layer` and `latencyMs` (the
+failure also `reason`); the third `at`, `action`, `screen` and `lang`. None holds the text, a part
+of it, its length or a hash of it. No database table holds safety events.
+
+Retention and readers are **pending the legal review** (#121); the proposal
+(`docs/ai/AI_05_safety.md` section 6) is set in `src/lib/safety/log-policy.ts`:
+`SAFETY_LOG_RETENTION_DAYS` = 90, readers = the named members of the Vercel project. Owner step:
+with no log drain, Vercel deletes runtime logs after at most 30 days, so the 90-day ceiling holds
+and nothing needs deleting. Keep the Vercel project's member list to named staff (Vercel → Team →
+Members). If a log drain is ever added, set its retention for `"feature":"safety"` lines to no more
+than `SAFETY_LOG_RETENTION_DAYS` days and limit who can read it in the same way. When legal
+decides, change the values in `log-policy.ts`, set `SAFETY_LOG_POLICY_PENDING_LEGAL` to false, and
+update this section and the privacy notice.
+
 ## After each deploy
 - Smoke test: open the deployed home page and confirm the product name is
   visible. To run the end-to-end test against a deployed address instead of a local
