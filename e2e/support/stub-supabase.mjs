@@ -52,6 +52,8 @@
 //   POST /rest/v1/rpc/save_hotline_draft | publish_hotline | roll_back_hotline   admin only, as
 //                                     20261128000000; publish and roll back write a history row
 //   POST /__hotlines  { reset: true }  puts the list and its history rows back
+//   POST /__fail_reads { token, tables: ["profiles"] }   reads of those tables answer 500 for that
+//                                     account until set again (#118, a failed profile read)
 //   POST /__app_text  { failReads?: boolean, reset?: true | "<key>" }   published reads without a
 //                                     user session answer 503 while failReads is on (database
 //                                     down); reset puts every key (true) or one key back to the
@@ -759,6 +761,14 @@ createServer(async (request, response) => {
     return json(response, 200, ordered(found, url.searchParams.get("order")));
   }
 
+  if (path === "/__fail_reads" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    const target = datasets.get(body.token);
+    if (!target) return json(response, 404, { error: "no such token" });
+    target.failReads = Array.isArray(body.tables) ? body.tables : [];
+    return json(response, 200, { ok: true });
+  }
+
   if (path === "/__hotlines" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
     if (body.reset === true) {
@@ -918,6 +928,9 @@ createServer(async (request, response) => {
     const hit = (row) => matches(row, params);
 
     if (request.method === "GET" || request.method === "HEAD") {
+      if ((dataset.failReads ?? []).includes(table)) {
+        return json(response, 500, { code: "XX000", message: "read failed (stub)" });
+      }
       let found = ordered(rows.filter(hit), url.searchParams.get("order"));
       const offset = Number(url.searchParams.get("offset") ?? "0");
       if (offset > 0) found = found.slice(offset);

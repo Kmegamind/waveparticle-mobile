@@ -80,10 +80,12 @@ export async function readAccountHelpLine(
   userId: string,
 ): Promise<{ ok: boolean; copy: HelpLineCopy }> {
   const profile = await readProfile(client, userId);
+  // A failed profile read is an error, never "no country" (review of #406, I-2).
+  if (!profile.ok) return { ok: false, copy: { userId, country: null, entry: null } };
   const country = isCountryCode(profile.helpCountry) ? profile.helpCountry : null;
-  if (!country) return { ok: true, copy: { country: null, entry: null } };
+  if (!country) return { ok: true, copy: { userId, country: null, entry: null } };
   const { ok, entry } = await readPublishedEntry(client, country);
-  return { ok, copy: { country, entry } };
+  return { ok, copy: { userId, country, entry } };
 }
 
 /** Every version of every entry (ADM-14, ADM-15); content editors only. */

@@ -11,9 +11,11 @@ import {
   countryName,
   DIRECTORY,
   entryLine,
+  getKnownSession,
   HELP_LINE_EVENT,
   HELP_LINE_KEY,
   helpLineStorage,
+  isPublicHelpPath,
   readHelpLineCopy,
   s1State,
   US_LINE,
@@ -37,7 +39,11 @@ function subscribe(onChange: () => void) {
   };
 }
 let lastRaw: string | null | undefined;
-let lastCopy: ReturnType<typeof readHelpLineCopy> = null;
+let lastSession: string | null | undefined;
+let lastCopy: { copy: ReturnType<typeof readHelpLineCopy>; session: string | null | undefined } = {
+  copy: null,
+  session: undefined,
+};
 function snapshot() {
   const storage = helpLineStorage();
   let raw: string | null = null;
@@ -46,12 +52,15 @@ function snapshot() {
   } catch {
     raw = null;
   }
-  if (raw !== lastRaw) {
+  const session = getKnownSession();
+  if (raw !== lastRaw || session !== lastSession) {
     lastRaw = raw;
-    lastCopy = readHelpLineCopy(storage);
+    lastSession = session;
+    lastCopy = { copy: readHelpLineCopy(storage), session };
   }
   return lastCopy;
 }
+const SERVER_SNAPSHOT = { copy: null, session: undefined };
 
 const external = { rel: "noopener noreferrer", target: "_blank" } as const;
 
@@ -72,10 +81,16 @@ export function CrisisPage({ onBack }: { onBack: () => void }) {
   const support = useAppText("ui.S1.support");
   const back = useAppText("ui.S1.back");
   const heading = useRef<HTMLHeadingElement>(null);
-  const copy = useSyncExternalStore(subscribe, snapshot, () => null);
-  const view = s1State(copy);
+  const known = useSyncExternalStore(subscribe, snapshot, () => SERVER_SNAPSHOT);
+  const pathname = usePathname() ?? "";
+  // On public pages (/try, /safety, /privacy, /terms) the copy shows only when it belongs to the
+  // session this page knows; elsewhere the page itself needs a session (review of #406, I-1).
+  const view = s1State(known.copy, {
+    publicPage: isPublicHelpPath(pathname),
+    session: known.session,
+  });
   // The /try test build is signed out (US-ACC-1): there is no Me to choose a country on.
-  const signedOut = (usePathname() ?? "").startsWith("/try");
+  const signedOut = pathname.startsWith("/try");
   const online = useSyncExternalStore(subscribeOnline, isOnline, () => true);
   useEffect(() => {
     // #398: S1 replaces the screen in place, so focus moves to its title. A screen reader then

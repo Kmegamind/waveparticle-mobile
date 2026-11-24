@@ -23,6 +23,9 @@ Option A.
   seed (the US entry only) and the `hotline` Publish history kind (0018 addition).
 - The phone copy is `waveparticle.helpLine` in local storage: the country and its published entry.
   `HelpLineSync` refreshes it once per page load, Me and ME-REGION write it, and sign out removes it.
+- The copy carries the account's user id. It is removed at sign out, account deletion, on the
+  sign-in pages and when the refresh finds no session or another user; on public pages it shows
+  only for the session the page knows (review of #406, I-1). A failed read keeps it (I-2).
 - No copy, an unreadable copy or no country is S1-0, written in the code: never a US entry.
 
 ## Consequences

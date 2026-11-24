@@ -30,8 +30,12 @@ export type HotlineEntry = {
   note: string | null;
 };
 
-/** What the phone keeps (SAFETY-REGION-STORE): the chosen country and its published entry. */
-export type HelpLineCopy = { country: string | null; entry: HotlineEntry | null };
+/**
+ * What the phone keeps (SAFETY-REGION-STORE): whose account it belongs to, the chosen country and
+ * its published entry. The user id ties the copy to one account, so another person's country is
+ * never shown (review of #406, I-1).
+ */
+export type HelpLineCopy = { userId: string; country: string | null; entry: HotlineEntry | null };
 
 /** ISO 3166-1 alpha-2, every officially assigned code. */
 export const COUNTRY_CODES = (
@@ -129,8 +133,34 @@ export type S1State =
   | { state: "no-entry"; country: string };
 
 /** S1-0, S1-E or S1-N from the phone copy; anything unreadable is S1-0 (never a US default). */
-export function s1State(copy: HelpLineCopy | null): S1State {
+/**
+ * Who is signed in, as far as this page knows: a user id, null (no session), or undefined (not
+ * known yet, for example offline). Set by the shell's refresh of the copy (HelpLineSync).
+ */
+export type KnownSession = string | null | undefined;
+
+/** Public pages (signed-out visitors may open them): there S1 needs a known matching session. */
+export function isPublicHelpPath(pathname: string): boolean {
+  return ["/try", "/safety", "/privacy", "/terms", "/auth"].some(
+    (base) => pathname === base || pathname.startsWith(`${base}/`),
+  );
+}
+
+/**
+ * S1-0, S1-E or S1-N from the phone copy; anything unreadable is S1-0 (never a US default). The
+ * copy is used only when it belongs to the session this page knows, or, on a signed-in page while
+ * the session is not known (offline), as it stands: the offline promise of SAFETY-REGION-STORE.
+ */
+export function s1State(
+  copy: HelpLineCopy | null,
+  context: { publicPage: boolean; session: KnownSession } = {
+    publicPage: false,
+    session: undefined,
+  },
+): S1State {
   if (!copy || !isCountryCode(copy.country)) return { state: "none" };
+  if (context.session !== undefined && context.session !== copy.userId) return { state: "none" };
+  if (context.session === undefined && context.publicPage) return { state: "none" };
   if (copy.entry && copy.entry.country === copy.country) {
     return { state: "entry", country: copy.country, entry: copy.entry };
   }
@@ -140,6 +170,19 @@ export function s1State(copy: HelpLineCopy | null): S1State {
 export const HELP_LINE_KEY = "waveparticle.helpLine";
 /** Sent on this page when the copy changes, so an open S1 follows (the storage event covers other tabs). */
 export const HELP_LINE_EVENT = "waveparticle:help-line";
+
+let knownSession: KnownSession = undefined;
+
+/** The session this page load learned from the server (HelpLineSync); undefined until then. */
+export function getKnownSession(): KnownSession {
+  return knownSession;
+}
+
+export function setKnownSession(session: string | null): void {
+  if (knownSession === session) return;
+  knownSession = session;
+  announce();
+}
 
 function announce() {
   try {
@@ -176,10 +219,18 @@ export function asEntry(value: unknown): HotlineEntry | null {
 /** A copy from untrusted JSON, or null when it cannot be read. */
 export function asCopy(value: unknown): HelpLineCopy | null {
   if (typeof value !== "object" || value === null) return null;
-  const { country, entry } = value as { country?: unknown; entry?: unknown };
-  if (country === null) return { country: null, entry: null };
+  const { userId, country, entry } = value as {
+    userId?: unknown;
+    country?: unknown;
+    entry?: unknown;
+  };
+  if (typeof userId !== "string" || userId.length === 0 || userId.length > 64) return null;
+  if (country === null) return { userId, country: null, entry: null };
   if (!isCountryCode(country)) return null;
-  return { country, entry: entry === null ? null : asEntry(entry) };
+  if (entry === null) return { userId, country, entry: null };
+  // An entry that cannot be read makes the whole copy unreadable: S1-0, never S1-N (review M-1).
+  const parsed = asEntry(entry);
+  return parsed ? { userId, country, entry: parsed } : null;
 }
 
 type CopyStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;

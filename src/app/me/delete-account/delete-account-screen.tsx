@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
+import { helpLineStorage, removeHelpLineCopy } from "@/lib/safety/help-lines";
 import { deleteAccountAction } from "./actions";
 
 /** ACCOUNT-DELETE as in prototype v4: one card that asks here, Keep my account first. */
@@ -14,6 +15,8 @@ export function DeleteAccountScreen() {
     setError("");
     startTransition(async () => {
       const outcome = await deleteAccountAction().catch(() => ({ status: "failed" as const }));
+      // #118: signed out here means the help line copy is no longer this person's.
+      if (outcome.status === "signed-out") removeHelpLineCopy(helpLineStorage());
       // On success the action opens Sign in; anything returned here is a refusal.
       setError(
         outcome.status === "signed-out"

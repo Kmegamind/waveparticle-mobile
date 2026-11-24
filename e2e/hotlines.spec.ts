@@ -270,3 +270,137 @@ test("#118 ADM-15: an admin saves a draft for a new country and publishes it, wi
     });
   }
 });
+
+// Review of #406, I-1 and I-2: the copy belongs to one account and never outlives it.
+
+test("#118 I-1 Sign out removes the copy, so S1 on /safety is S1-0", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await signIn(context, baseURL!, profile("FR"));
+  await page.goto("/me");
+  await waitForCopy(page, "FR");
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page).toHaveURL(/\/auth\/sign-in$/);
+  await waitForCopy(page, "none");
+  await page.goto("/safety");
+  const crisis = await openS1(page);
+  await expect(crisis).toHaveAttribute("data-s1", "none");
+  await expect(crisis).not.toContainText("France");
+});
+
+test("#118 I-1 deleting the account removes the copy", async ({ page, context, baseURL }) => {
+  await signIn(context, baseURL!, profile("US"));
+  await page.goto("/me/delete-account");
+  await waitForCopy(page, "US");
+  await page.getByRole("button", { name: "Delete account" }).click();
+  await expect(page).toHaveURL(/\/auth\/sign-in\?deleted=1$/);
+  await waitForCopy(page, "none");
+  await page.goto("/safety");
+  const crisis = await openS1(page);
+  await expect(crisis).toHaveAttribute("data-s1", "none");
+  await expect(crisis).not.toContainText("Help in");
+});
+
+test("#118 I-1 an account switch drops the last account's copy", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await signIn(context, baseURL!, profile("FR"));
+  await page.goto("/safety");
+  await waitForCopy(page, "FR");
+  // Another person signs in on the same phone without a Sign out (the cookie is replaced).
+  const second = await signIn(context, baseURL!, profile(null));
+  await page.reload();
+  await waitForCopy(page, null);
+  const owner = await page.evaluate(
+    (key) => (JSON.parse(window.localStorage.getItem(key) ?? "{}") as { userId?: string }).userId,
+    KEY,
+  );
+  expect(owner).toBe(second.userId);
+  const crisis = await openS1(page);
+  await expect(crisis).toHaveAttribute("data-s1", "none");
+  await expect(crisis).not.toContainText("France");
+});
+
+test("#118 I-1 a session that ended on another device removes the copy on the next load", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await signIn(context, baseURL!, profile("US"));
+  await page.goto("/safety");
+  await waitForCopy(page, "US");
+  await context.clearCookies();
+  await page.reload();
+  await waitForCopy(page, "none");
+  const crisis = await openS1(page);
+  await expect(crisis).toHaveAttribute("data-s1", "none");
+  await expect(crisis.getByRole("link", { name: "Get support now" })).toHaveAttribute(
+    "href",
+    "https://findahelpline.com",
+  );
+});
+
+test("#118 I-2 a failed profile read keeps the copy and shows an error on Me, never Not chosen", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const account = await signIn(context, baseURL!, profile("US"));
+  await page.goto("/me");
+  await waitForCopy(page, "US");
+  await fetch(`${STUB_SUPABASE}/__fail_reads`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ token: account.token, tables: ["profiles"] }),
+  });
+  await page.reload();
+  const row = page.getByRole("link", { name: /Country/ });
+  await expect(row).toContainText("Couldn’t load. Try again.");
+  await expect(row).not.toContainText("Not chosen");
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Your country could not be read." }),
+  ).toBeVisible();
+  // The refresh failed too: the copy is still this account's US entry.
+  await page.goto("/safety");
+  await expect(page.locator('form[data-ready="true"]')).toBeVisible();
+  await page.waitForLoadState("networkidle");
+  await waitForCopy(page, "US");
+  const crisis = await openS1(page);
+  await expect(crisis).toHaveAttribute("data-s1", "entry");
+  await fetch(`${STUB_SUPABASE}/__fail_reads`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ token: account.token, tables: [] }),
+  });
+});
+
+test("#118 M-1 a corrupt entry in the copy is S1-0, never S1-N", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const account = await signIn(context, baseURL!, profile("US"));
+  await page.goto("/safety");
+  await waitForCopy(page, "US");
+  await context.setOffline(true);
+  await page.evaluate(
+    ([key, userId]) =>
+      window.localStorage.setItem(
+        key,
+        JSON.stringify({
+          userId,
+          country: "US",
+          entry: { country: "US", primary: { kind: "phone", value: "not a number" } },
+        }),
+      ),
+    [KEY, account.userId],
+  );
+  const crisis = await openS1(page);
+  await expect(crisis).toHaveAttribute("data-s1", "none");
+  await expect(crisis).not.toContainText("No help line is listed");
+  await context.setOffline(false);
+});

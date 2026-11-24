@@ -31,7 +31,15 @@ async function CountryContent() {
       <p className="me-quiet">
         Used only to show help lines on the safety page. We never read your location.
       </p>
-      <CountryPicker chosen={profile.helpCountry} countries={countryList()} />
+      {profile.ok ? null : (
+        <p className="me-country-error" role="alert">
+          Your country could not be read. You can still choose one.
+        </p>
+      )}
+      <CountryPicker
+        chosen={profile.ok ? profile.helpCountry : undefined}
+        countries={countryList()}
+      />
     </main>
   );
 }

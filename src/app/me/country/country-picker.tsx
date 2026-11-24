@@ -14,7 +14,8 @@ export function CountryPicker({
   chosen,
   countries,
 }: {
-  chosen: string | null;
+  /** The saved country, null for none, undefined when it could not be read (nothing ticked). */
+  chosen: string | null | undefined;
   countries: { code: string; name: string }[];
 }) {
   const router = useRouter();
@@ -33,7 +34,7 @@ export function CountryPicker({
         status: "failed" as const,
       }));
       if (result.status !== "ok") return setFailed(country);
-      if (result.copy) writeHelpLineCopy(helpLineStorage(), result.copy);
+      writeHelpLineCopy(helpLineStorage(), result.copy);
       setQuery("");
       router.push("/me");
       router.refresh();
@@ -41,7 +42,7 @@ export function CountryPicker({
   }
 
   const row = (code: string | null, label: string) => {
-    const selected = (chosen ?? null) === code;
+    const selected = chosen !== undefined && chosen === code;
     return (
       <li key={code ?? "none"}>
         <button

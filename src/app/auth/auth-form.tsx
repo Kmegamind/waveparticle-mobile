@@ -51,6 +51,8 @@ export function AuthForm({ mode, notice = "" }: { mode: AuthMode; notice?: strin
       if (mode === "sign-in") {
         const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
         if (authError) throw authError;
+        // #118: a new sign-in starts with no help line copy; the first refresh writes this account's.
+        removeHelpLineCopy(helpLineStorage());
         router.push("/");
       } else if (mode === "sign-up") {
         const { error: authError } = await supabase.auth.signUp({

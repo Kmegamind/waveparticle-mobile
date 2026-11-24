@@ -30,10 +30,16 @@ async function MeContent() {
   ]);
   const view = meView(progress, content.companions);
   // #118: the chosen country and its published entry, for the Country row and the phone copy.
-  const entry = profile.helpCountry
-    ? await readPublishedEntry(client, profile.helpCountry)
-    : { ok: true, entry: null };
-  const helpLine = { ok: entry.ok, copy: { country: profile.helpCountry, entry: entry.entry } };
+  // A failed profile read is an error state, never "Not chosen", and the phone keeps its copy (I-2).
+  const entry =
+    profile.ok && profile.helpCountry
+      ? await readPublishedEntry(client, profile.helpCountry)
+      : { ok: profile.ok, entry: null };
+  const helpLine = {
+    ok: profile.ok && entry.ok,
+    profileOk: profile.ok,
+    copy: { userId: user.id, country: profile.helpCountry, entry: entry.entry },
+  };
   const email = user.email ?? "";
   const href = view.current
     ? continueHref({ id: view.current.goalId, status: "in_progress" })

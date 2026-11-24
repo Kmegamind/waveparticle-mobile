@@ -19,10 +19,20 @@ export function createSupabaseProfileWriter(client: Pick<SupabaseClient, "from">
   };
 }
 
+export type ProfileRead = {
+  /** False when the profile could not be read: callers must not treat it as "nothing chosen". */
+  ok: boolean;
+  nickname: string | null;
+  keepClockRunning: boolean;
+  helpCountry: string | null;
+};
+
+const MISSING_COLUMN = "42703";
+
 export async function readProfile(
   client: Pick<SupabaseClient, "from">,
   userId: string,
-): Promise<{ nickname: string | null; keepClockRunning: boolean; helpCountry: string | null }> {
+): Promise<ProfileRead> {
   const read = (columns: string) =>
     client
       .from("profiles")
@@ -31,10 +41,12 @@ export async function readProfile(
       .maybeSingle() as unknown as Promise<Result>;
   let result = await read("nickname, keep_clock_running, help_country");
   // Before the #118 migration has run the column is missing: the other settings still read.
-  if (result.error) result = await read("nickname, keep_clock_running");
+  const code = (result.error as { code?: unknown } | null)?.code;
+  if (result.error && code === MISSING_COLUMN) result = await read("nickname, keep_clock_running");
   const row = (result.error ? null : result.data) as
     { nickname?: unknown; keep_clock_running?: unknown; help_country?: unknown } | null | undefined;
   return {
+    ok: !result.error,
     nickname: typeof row?.nickname === "string" ? row.nickname : null,
     keepClockRunning: row?.keep_clock_running === true,
     helpCountry: isCountryCode(row?.help_country) ? (row.help_country as string) : null,

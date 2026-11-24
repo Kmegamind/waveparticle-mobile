@@ -27,6 +27,8 @@ export function isPublicPath(pathname: string, prototypeEnabled: boolean): boole
   if (pathname === "/safety" || pathname.startsWith("/safety/")) return true;
   // The privacy notice (#102) and the Terms (#104) can be read before an account exists.
   if (pathname === "/privacy" || pathname === "/terms") return true;
+  // #118: the phone copy's refresh answers a signed-out request with { signedIn: false } only.
+  if (pathname === "/me/help-line") return true;
   if (prototypeEnabled && isTryPath(pathname)) return true;
   return false;
 }

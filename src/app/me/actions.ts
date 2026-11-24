@@ -36,20 +36,23 @@ export async function setKeepClockRunningAction(input: unknown) {
 
 /**
  * ME-REGION (#118): saves the country for help lines on the account, then answers the copy the
- * phone keeps (the country and its published entry). `copy` is missing when the entry could not
- * be read; the phone then keeps the country only on its next refresh.
+ * phone keeps (the user id, the country and its published entry). When the entry could not be
+ * read, the copy holds the new country with no entry until the next refresh.
  */
 export async function setHelpCountryAction(
   input: unknown,
-): Promise<{ status: "ok"; copy: HelpLineCopy | null } | { status: "invalid" | "failed" }> {
+): Promise<{ status: "ok"; copy: HelpLineCopy } | { status: "invalid" | "failed" }> {
   try {
     const found = await deps();
     const outcome = await setHelpCountry(input, found);
     if (outcome.status !== "ok") return outcome;
+    const userId = found.userId!;
     const country = (input as { country: string | null }).country;
-    if (!country) return { status: "ok", copy: { country: null, entry: null } };
+    if (!country) return { status: "ok", copy: { userId, country: null, entry: null } };
     const { ok, entry } = await readPublishedEntry(found.client, country);
-    return { status: "ok", copy: ok ? { country, entry } : null };
+    // A failed entry read still updates the country at once: S1-N (the directory) is safer than
+    // the old country's line (review of #406, M-2).
+    return { status: "ok", copy: { userId, country, entry: ok ? entry : null } };
   } catch {
     return { status: "failed" as const };
   }

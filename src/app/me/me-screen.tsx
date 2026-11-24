@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useReducer, useRef, useState } from "react";
 import {
   applyPrefs,
@@ -34,7 +35,11 @@ import { useShowCrisis } from "./me-safety-gate";
  * Appearance, Plain text, History (ME-CAL, #82), Signals, Country (#118) and Sign out. At most five settings show.
  */
 
-const NO_HELP_LINE = { ok: false, copy: { country: null, entry: null } };
+const NO_HELP_LINE = {
+  ok: false,
+  profileOk: true,
+  copy: { userId: "", country: null, entry: null },
+};
 
 const initials = (name: string) => name.trim().slice(0, 2).toUpperCase();
 
@@ -214,7 +219,7 @@ export function MeScreen({
   helpLine = NO_HELP_LINE,
 }: {
   /** The account's help line (#118); `ok` false when the entry could not be read. */
-  helpLine?: { ok: boolean; copy: HelpLineCopy };
+  helpLine?: { ok: boolean; profileOk: boolean; copy: HelpLineCopy };
   name: string;
   email: string;
   since: string;
@@ -223,6 +228,7 @@ export function MeScreen({
   continueHref: string | null;
 }) {
   const [prefs, setPrefs] = usePrefs();
+  const router = useRouter();
 
   useEffect(() => {
     // #118 (SAFETY-REGION-STORE): Me read the account, so the phone copy is refreshed here too.
@@ -321,13 +327,25 @@ export function MeScreen({
         <span className="me-row-label">
           Country
           <span className="me-row-value">
-            {helpLine.copy.country ? countryName(helpLine.copy.country) : "Not chosen"}
+            {!helpLine.profileOk
+              ? "Couldn’t load. Try again."
+              : helpLine.copy.country
+                ? countryName(helpLine.copy.country)
+                : "Not chosen"}
           </span>
         </span>
         <span aria-hidden="true" className="me-caret">
           ›
         </span>
       </Link>
+      {helpLine.profileOk ? null : (
+        <p className="me-quiet" role="alert">
+          Your country could not be read.{" "}
+          <button className="me-text-button" onClick={() => router.refresh()} type="button">
+            Retry
+          </button>
+        </p>
+      )}
 
       <Link className="me-row me-row-button" href="/me/about">
         About the stories

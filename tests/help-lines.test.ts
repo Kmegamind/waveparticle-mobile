@@ -15,7 +15,9 @@ import {
   writeHotline,
   type HotlineDraftInput,
 } from "@/lib/hotlines/admin";
-import { entryOfRow, type HotlineRow } from "@/lib/hotlines/repository";
+import { entryOfRow, readAccountHelpLine, type HotlineRow } from "@/lib/hotlines/repository";
+import { readProfile } from "@/lib/me/supabase-profile";
+import { isPublicPath } from "@/lib/supabase/session";
 import { setHelpCountry } from "@/lib/me/profile";
 import { publishHistoryEntries } from "@/lib/publish-history/admin";
 import {
@@ -27,6 +29,7 @@ import {
   DIRECTORY,
   entryLine,
   HELP_LINE_KEY,
+  isPublicHelpPath,
   readHelpLineCopy,
   removeHelpLineCopy,
   s1State,
@@ -39,6 +42,9 @@ import {
 
 const root = path.resolve(import.meta.dirname, "..");
 const read = (file: string) => readFileSync(path.join(root, file), "utf8");
+
+const A = "11111111-1111-4111-8111-111111111111";
+const B = "22222222-2222-4222-8222-222222222222";
 
 const US: HotlineEntry = {
   country: "US",
@@ -78,8 +84,8 @@ function memoryStorage(initial: Record<string, string> = {}) {
 describe("#118 AC2 S1-0 when no country is known: no default country", () => {
   it("is S1-0 with no copy, no country, an unknown code or an unreadable copy", () => {
     expect(s1State(null)).toEqual({ state: "none" });
-    expect(s1State({ country: null, entry: null })).toEqual({ state: "none" });
-    expect(s1State({ country: "XX", entry: null })).toEqual({ state: "none" });
+    expect(s1State({ userId: A, country: null, entry: null })).toEqual({ state: "none" });
+    expect(s1State({ userId: A, country: "XX", entry: null })).toEqual({ state: "none" });
     expect(readHelpLineCopy(memoryStorage({ [HELP_LINE_KEY]: "not json" }))).toBeNull();
     expect(readHelpLineCopy(null)).toBeNull();
   });
@@ -104,14 +110,20 @@ describe("#118 AC2 S1-0 when no country is known: no default country", () => {
 
 describe("#118 AC1 AC3 S1-E and S1-N from the phone copy", () => {
   it("a chosen country with an entry is S1-E; without one it is S1-N", () => {
-    expect(s1State({ country: "US", entry: US })).toEqual({
+    expect(s1State({ userId: A, country: "US", entry: US })).toEqual({
       state: "entry",
       country: "US",
       entry: US,
     });
-    expect(s1State({ country: "FR", entry: null })).toEqual({ state: "no-entry", country: "FR" });
+    expect(s1State({ userId: A, country: "FR", entry: null })).toEqual({
+      state: "no-entry",
+      country: "FR",
+    });
     // An entry of another country is not shown as this country's help line.
-    expect(s1State({ country: "FR", entry: US })).toEqual({ state: "no-entry", country: "FR" });
+    expect(s1State({ userId: A, country: "FR", entry: US })).toEqual({
+      state: "no-entry",
+      country: "FR",
+    });
   });
 
   it("the US entry reads Call or text 988, with tel: and sms: links and no service name", () => {
@@ -124,18 +136,42 @@ describe("#118 AC1 AC3 S1-E and S1-N from the phone copy", () => {
     expect(entryOfRow(row())).toEqual(US);
   });
 
-  it("the copy is written, read and removed at sign out; a bad entry is dropped", () => {
+  it("the copy is written, read and removed; a corrupt copy is unreadable (S1-0, never S1-N)", () => {
     const storage = memoryStorage();
-    writeHelpLineCopy(storage, { country: "US", entry: US });
-    expect(readHelpLineCopy(storage)).toEqual({ country: "US", entry: US });
-    expect(
-      asCopy({ country: "US", entry: { ...US, primary: { kind: "phone", value: "call" } } }),
-    ).toEqual({
+    writeHelpLineCopy(storage, { userId: A, country: "US", entry: US });
+    expect(readHelpLineCopy(storage)).toEqual({ userId: A, country: "US", entry: US });
+    // A damaged entry, or a copy with no user id (an older shape), cannot be read at all.
+    const damaged = {
+      userId: A,
       country: "US",
-      entry: null,
-    });
+      entry: { ...US, primary: { kind: "phone", value: "call" } },
+    };
+    expect(asCopy(damaged)).toBeNull();
+    expect(asCopy({ country: "US", entry: US })).toBeNull();
+    storage.setItem(HELP_LINE_KEY, JSON.stringify(damaged));
+    expect(s1State(readHelpLineCopy(storage))).toEqual({ state: "none" });
     removeHelpLineCopy(storage);
     expect(readHelpLineCopy(storage)).toBeNull();
+  });
+
+  it("a copy shows only for its own account: another user, a public page or no session is S1-0", () => {
+    const copy = { userId: A, country: "US", entry: US };
+    // A signed-in page that knows the session: only the same user's copy.
+    expect(s1State(copy, { publicPage: false, session: A }).state).toBe("entry");
+    expect(s1State(copy, { publicPage: false, session: B }).state).toBe("none");
+    expect(s1State(copy, { publicPage: false, session: null }).state).toBe("none");
+    // Offline on a signed-in page (the session is not known): the copy, the offline promise.
+    expect(s1State(copy, { publicPage: false, session: undefined }).state).toBe("entry");
+    // A public page (/try, /safety): only with a known matching session.
+    expect(s1State(copy, { publicPage: true, session: undefined }).state).toBe("none");
+    expect(s1State(copy, { publicPage: true, session: null }).state).toBe("none");
+    expect(s1State(copy, { publicPage: true, session: A }).state).toBe("entry");
+    for (const path of ["/try/goal", "/safety", "/privacy", "/terms", "/auth/sign-in"]) {
+      expect(isPublicHelpPath(path), path).toBe(true);
+    }
+    for (const path of ["/me", "/rest", "/focus", "/goal", "/tryout"]) {
+      expect(isPublicHelpPath(path), path).toBe(false);
+    }
   });
 
   it("the directory is Find A Helpline at findahelpline.com", () => {
@@ -143,6 +179,59 @@ describe("#118 AC1 AC3 S1-E and S1-N from the phone copy", () => {
       name: "Find A Helpline",
       url: "https://findahelpline.com",
       label: "Find A Helpline: findahelpline.com",
+    });
+  });
+});
+
+describe("#118 I-2 a failed profile read is an error, never no country", () => {
+  type Answer = { data: unknown; error: unknown };
+  function client(answers: Answer[]) {
+    const columns: string[] = [];
+    const query = (answer: Answer) => {
+      const chain = {
+        select: (cols: string) => (columns.push(cols), chain),
+        eq: () => chain,
+        maybeSingle: async () => answer,
+      };
+      return chain;
+    };
+    let call = 0;
+    return {
+      columns,
+      from: () => query(answers[Math.min(call++, answers.length - 1)]),
+    } as unknown as Parameters<typeof readProfile>[0] & { columns: string[] };
+  }
+
+  it("a read error answers ok false, and only a missing column falls back to the old columns", async () => {
+    const failed = client([{ data: null, error: { code: "XX000" } }]);
+    expect(await readProfile(failed, A)).toMatchObject({ ok: false, helpCountry: null });
+    expect(failed.columns).toHaveLength(1);
+    const before = client([
+      { data: null, error: { code: "42703" } },
+      { data: { nickname: "Ada", keep_clock_running: true }, error: null },
+    ]);
+    expect(await readProfile(before, A)).toEqual({
+      ok: true,
+      nickname: "Ada",
+      keepClockRunning: true,
+      helpCountry: null,
+    });
+    expect(before.columns).toEqual([
+      "nickname, keep_clock_running, help_country",
+      "nickname, keep_clock_running",
+    ]);
+  });
+
+  it("the account's help line is not ok when the profile could not be read", async () => {
+    const failed = client([{ data: null, error: { code: "XX000" } }]);
+    expect(await readAccountHelpLine(failed, A)).toEqual({
+      ok: false,
+      copy: { userId: A, country: null, entry: null },
+    });
+    const none = client([{ data: { help_country: null }, error: null }]);
+    expect(await readAccountHelpLine(none, A)).toEqual({
+      ok: true,
+      copy: { userId: A, country: null, entry: null },
     });
   });
 });
@@ -300,6 +389,19 @@ describe("#118 ADM-14 ADM-15: the hotline list in the admin", () => {
 
 describe("#118 the migration, the seed and the privacy notice", () => {
   const sql = read("supabase/migrations/20261128000000_hotlines.sql");
+
+  it("the database accepts only the listed country codes for help_country (review M-3)", () => {
+    const check = sql.slice(sql.indexOf("add column help_country"), sql.indexOf("));"));
+    expect(check.match(/'([A-Z]{2})'/g)?.map((code) => code.slice(1, 3))).toEqual(COUNTRY_CODES);
+  });
+
+  it("the profile route is public only for its signed-out answer", () => {
+    expect(isPublicPath("/me/help-line", false)).toBe(true);
+    expect(isPublicPath("/me", false)).toBe(false);
+    expect(isPublicPath("/me/country", false)).toBe(false);
+    const route = read("src/app/me/help-line/route.ts");
+    expect(route).toContain("if (!user) return Response.json({ signedIn: false }, { headers });");
+  });
 
   it("adds the country to profiles with no default, so it is in the export and goes with the account", () => {
     expect(sql).toMatch(/alter table public\.profiles\s+add column help_country text check/);
