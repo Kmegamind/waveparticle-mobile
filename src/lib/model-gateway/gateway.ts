@@ -23,6 +23,7 @@ import type {
   GatewayCall,
   GatewayFailure,
   GatewayFailureReason,
+  GatewayAttempt,
   GatewayLog,
   LineResult,
   ModelGateway,
@@ -158,10 +159,23 @@ export function createModelGateway(options: {
   /** Most attempts per call within the time limit (default 3). */
   maxAttempts?: number;
   log?: (event: GatewayLog) => void;
+  /**
+   * Called after every attempt with the rules that attempt failed (empty when it passed). Only the
+   * offline runs use it (#42), to count what the checks caught before a retry. Rule ids only.
+   */
+  onAttempt?: (event: GatewayAttempt) => void;
 }): ModelGateway {
   const timeLimitMs = options.timeLimitMs ?? DEFAULT_TIME_LIMIT_MS;
   const maxAttempts = Math.max(1, options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS);
   const log = options.log ?? (() => undefined);
+  /** `onAttempt` can never change a result: whatever it throws is ignored (#42). */
+  const report = (event: GatewayAttempt) => {
+    try {
+      options.onAttempt?.(event);
+    } catch {
+      // Ignored on purpose.
+    }
+  };
 
   /**
    * One pipeline for every call: generate, parse, clean, check. A failed answer is generated again
@@ -237,6 +251,7 @@ export function createModelGateway(options: {
           controller,
         );
         const parsed = accept(raw);
+        report({ call, attempt: attempts, rejectedRules: parsed.ok ? [] : parsed.rejectedRules });
         if (parsed.ok) {
           log({
             call,
@@ -257,6 +272,7 @@ export function createModelGateway(options: {
         controller.abort();
         reason = error instanceof TimeLimitError ? "timeout" : "request";
         rejectedRules = [reason];
+        report({ call, attempt: attempts, rejectedRules: [reason] });
         nextPrompt = prompt;
         if (reason === "timeout") break;
       }

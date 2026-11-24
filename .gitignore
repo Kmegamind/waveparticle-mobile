@@ -11,3 +11,6 @@ secrets/
 /test-results
 *.tsbuildinfo
 .vercel
+
+# Offline run output (#42); commit only a summary report you choose
+/offline-runs
