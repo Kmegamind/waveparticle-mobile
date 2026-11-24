@@ -1295,7 +1295,7 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user who expresses a clear intention to hurt myself or someone else, **I want** to be taken out of the story to real help, **so that** I get support and not a character's reply.
 
 **Acceptance criteria**
-- Given a message is classified as a crisis, then a page appears in the system voice (no serif font, no tape, no Companion) with the line "This is outside the story.", a body text approved by legal, a primary button "Get support now" that opens the resource for my region, and a secondary button "Back to my Step".
+- Given a message is classified as a crisis, then a page appears in the system voice (no serif font, no tape, no Companion) with the line "This is outside the story.", a body text approved by legal, a primary button "Get support now" that opens the support for the country I chose under Me (or the international directory when I have not chosen one or my country has no entry, US-SAF-5, SAFETY-REGION), and a secondary button "Back to my Step".
 - Given I tap Back to my Step, then I return to the screen I was on with the field emptied.
 - Given the crisis page, then the Companion never mentions it, and the text I wrote is discarded and not sent to any AI.
 - Given the legal text is not yet available, then a placeholder body is used and clearly marked in the build.
@@ -1319,11 +1319,13 @@ These rules come from the product principles and from decisions. They are repeat
 **As a** user in any country, **I want** the help button to open a real service for where I live, **so that** the support is actually available to me.
 
 **Acceptance criteria**
-- Given the crisis page, then "Get support now" opens a hotline or service that is correct for my region.
-- Given the region is unknown, then a global directory is offered.
-- Given the list, then it has a named owner who keeps it current, and the source of the region (device locale, network address or a setting) and what is stored are decided and written down.
+- Given I chose a country under Me and the hotline list has an entry for it, then the crisis page names that country and "Get support now" opens that entry's service (S1-E).
+- Given I have not chosen a country, then the crisis page shows the international directory link, a clearly labelled line "If you are in the United States: call or text 988", and a "Choose your country" link to Me; the app does not read my location and does not assume a country (S1-0).
+- Given I chose a country that has no entry, then "Get support now" opens the international directory, Find A Helpline (S1-N).
+- Given any of these, then the directory link is shown as a text link, never as a third button.
+- Given the list, then it is edited in the admin and owned by the product owner, each entry shows when it was last checked and by whom, and the source of the region (a setting on Me) and what is stored (the country, on the account with a copy on the phone, included in the data export) are written down (SAFETY-REGION, SAFETY-REGION-STORE, HOTLINES).
 
-**Priority:** Must · **Area:** Safety · **Screens:** S1, R1-C · **Depends on:** US-SAF-2, US-SAF-8 · **Size:** M · **Source:** DEC A5; AI05v2 section 7 item 2
+**Priority:** Must · **Area:** Safety · **Screens:** S1 (S1-0, S1-E, S1-N), R1-C, ME, ME-REGION, ADM-14, ADM-15 · **Depends on:** US-SAF-2, US-SAF-8 · **Size:** M · **Source:** DEC A5, SAFETY-REGION, SAFETY-REGION-STORE, SAFETY-DIRECTORY, HOTLINES (2026-11-23); AI05v2 section 7 item 2
 
 ### US-SAF-6 · What is logged about safety events
 

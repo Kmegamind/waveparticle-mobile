@@ -402,6 +402,23 @@ The session record is a read model over sessions and session steps; it needs no 
 
 The Home card line is the last line he said in the user's most recent session, stored in that session's record. There are no separate status lines (HOME-LINE).
 
+### 2.16 Hotline entry
+
+Decided 2026-11-23 (SAFETY-REGION, SAFETY-REGION-STORE, SAFETY-DIRECTORY, HOTLINES): S1 shows the entry for the country the user chose under Me (ME-REGION). Entries are support resources, not story text, so NO-BACKUP does not apply; the hotline list is edited in the admin (ADM-14, ADM-15), owned by the product owner, and only the admin role publishes. The only starting entry is the United States, "call or text 988", confirmed by the product owner. No other number, name or URL is added without the product owner, and every entry is on the legal review list (#121).
+
+| Field | Type | Example and rule |
+|---|---|---|
+| country | text, primary key | ISO 3166-1 alpha-2, upper case: `US`. One entry per country. |
+| service_name | text | The service's own name, in English (L1). |
+| primary_kind | `phone`, `text` or `web` | What **Get support now** opens: `tel:`, `sms:` or an `https` address. |
+| primary_value | text | `988` for the US entry. |
+| secondary_kind, secondary_value | optional | A second way in, shown as a text link: for the US entry, text 988. |
+| note | text, optional | Hours or languages, one short line. |
+| checked_on, checked_by | date, text | When the entry was last checked and who checked it. The product owner checks every entry at least every 6 months and before each release; ADM-14 marks an older one. |
+| versions | draft and published, with restore | As ADMIN; each publish and roll back writes a Publish history row of kind `hotline` (`docs/decisions/0018`, addition of 2026-11-23). |
+
+The international directory is not an entry: it is one fixed link, Find A Helpline (findahelpline.com), shown on S1 in every state (SAFETY-DIRECTORY). If the database cannot answer, the app uses a copy of the US entry and the directory link written in the code, so S1 is never blank (as APP-TEXT).
+
 ## 3. How the user's steps share out the story
 
 Let N be the number of steps the user confirmed. There is no maximum (Decided, T2), and few steps are allowed (Decided, C2).
@@ -609,6 +626,7 @@ profiles(
   user_id uuid primary key references auth.users,   -- account required (ACC)
   nickname text,
   keep_clock_running boolean not null default false,   -- decided setting (F2), under Me, Signals
+  help_country text,                                   -- to add (#118): ISO 3166-1 alpha-2 or null (no default, SAFETY-REGION-STORE); copied to the phone; in the export
   created_at timestamptz default now()
 )
 

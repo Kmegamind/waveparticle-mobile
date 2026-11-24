@@ -36,7 +36,7 @@ Ambiguity rule: when a message could be T2 or T3, treat it as the higher tier. W
 
 He never knows, never mentions, never reacts to the safety layer. In T2 and T3 his reply for that message is **not generated or not shown**.
 
-**T3:** unchanged S1 from NF6 v4: "This is outside the story." Body from legal. Primary button "Get support now" (region resource), secondary "Back to my task". Placeholder text stays until legal fills it.
+**T3:** unchanged S1 from NF6 v4: "This is outside the story." Body from legal. Primary button "Get support now" (the resource for the chosen country, or the directory; SAFETY-REGION), secondary "Back to my task". Placeholder text stays until legal fills it.
 
 **T2 step-out line (draft for legal, plain human, no clinical words, no advice, no "story"):**
 *"That sounds really heavy. You do not have to do the task right now."*
@@ -106,7 +106,7 @@ Open tension: without raw text, a missed crisis cannot be learned from. Option: 
 ## 7. What Yue and legal must decide
 
 1. **Tier definitions** and who may change them; whether T2 exists in phase 1 (the NF6 draft says "strong only").
-2. **Resources by region:** which lines, who maintains them, what the default is when the region is unknown (a global directory is an option; check which). Where region comes from (locale, IP, setting) and what is stored.
+2. **Resources by region:** which lines, who maintains them, what the default is when the region is unknown (a global directory is an option; check which). Where region comes from (locale, IP, setting) and what is stored. **Decided 2026-11-23 (SAFETY-REGION, SAFETY-REGION-STORE, SAFETY-DIRECTORY, HOTLINES):** the user chooses a country under Me; no location is read and there is no default country. With no country chosen, S1 shows the Find A Helpline link, the labelled line "If you are in the United States: call or text 988" and a "Choose your country" link. The country is stored on the account with a copy on the phone. The list is edited in the admin and owned by the product owner, and starts with the US 988 entry only. The directory and the US entry are on the legal review list (#121).
 3. **Disclosure that it is an AI** and whether it must appear in the experience (see AI-4 v2 `meta`); rules for **minors** and age gating; rules for **companion chatbots** and crisis protocols in the target US states and in the EU (*verify with counsel*; I recall recent state laws on companion chatbots that cover crisis protocols and AI disclosure, and I may be wrong on scope and dates).
 4. **Logging and privacy:** position-only vs sampling with consent; retention; GDPR and CCPA treatment of the events; model-provider data retention (open decision D-AI-8).
 5. **Human review** of flagged cases: none, or a rota; legal exposure of both.
