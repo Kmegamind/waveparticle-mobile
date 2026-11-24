@@ -152,8 +152,10 @@ export async function runOffline(options: RunOptions): Promise<RunResults> {
       try {
         why = readFileSync(stopFile, "utf8");
       } catch {
-        why = "";
+        return; // Gone again or not readable yet: check again next time.
       }
+      // The writers rename a finished file into place, so an empty file is not a stop yet.
+      if (why === "") return;
       if (why.startsWith(LAUNCHER_GONE)) haltReason = launcherGone;
       budget.halt();
     } else if (parentPid && !processAlive(parentPid)) {

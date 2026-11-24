@@ -3,9 +3,10 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } fro
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { runOffline, type RunInputs } from "@/lib/offline-runs/run";
+import { LAUNCHER_GONE, runOffline, type RunInputs } from "@/lib/offline-runs/run";
 import type { GoalLinesInput, RestMessagesInput } from "@/lib/offline-runs/suites";
 import type { TargetsFile } from "@/lib/offline-runs/report";
+import { writeStopFile } from "../scripts/offline-runs/stop-file.mjs";
 import { STUB_ENV, stubFetch } from "../scripts/offline-runs/stub-fetch.mjs";
 import { seedContent } from "./support/seed-content";
 import { seedRows } from "./support/seed-prompts";
@@ -103,6 +104,34 @@ describe("P1: a stop works with the plain stub", () => {
     // A full small run has 69 splits, 60 replies and 20 pauses; it stopped right after record 5.
     const records = results.split.length + results.rest.length + results.pause.length;
     expect(records).toBeLessThanOrEqual(5 + 2);
+  });
+
+  it("test_420_q1_an_empty_stop_file_is_checked_again_not_read_as_a_stop", async () => {
+    const outDir = mkdtempSync(path.join(tmpdir(), "wp-offline-"));
+    const stopFile = path.join(outDir, "stop");
+    let seen = 0;
+    const results = await plainRun({
+      outDir,
+      stopFile,
+      concurrency: 1,
+      afterRecord: () => {
+        seen += 1;
+        // As if the runner looked in the middle of a plain write: the file exists but is empty.
+        if (seen === 3) writeFileSync(stopFile, "");
+        if (seen === 8) writeStopFile(stopFile, LAUNCHER_GONE);
+      },
+    });
+    const records = results.split.length + results.rest.length + results.pause.length;
+    expect(records).toBe(8);
+    expect(results.meta.incomplete).toContain("the launcher went away");
+  });
+
+  it("test_420_q1_the_stop_file_is_written_whole_by_a_rename", () => {
+    const folder = mkdtempSync(path.join(tmpdir(), "wp-stop-"));
+    const file = path.join(folder, "stop");
+    writeStopFile(file, "stop");
+    expect(readFileSync(file, "utf8")).toBe("stop");
+    expect(readdirSync(folder)).toEqual(["stop"]);
   });
 
   it("test_420_p1_a_gone_launcher_stops_a_plain_stub_run_before_its_first_request", async () => {

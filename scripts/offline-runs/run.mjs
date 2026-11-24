@@ -11,11 +11,12 @@
 // Only the literal flag --confirm opens the real model (see confirm.mjs); an OFFLINE_RUN_* value in
 // the shell or in .env is dropped before the runner starts.
 import { spawn } from "node:child_process";
-import { rmSync, writeFileSync } from "node:fs";
+import { rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { childEnv, issueConfirmation } from "./confirm.mjs";
+import { writeStopFile } from "./stop-file.mjs";
 
 /** The signals that ask the runner to stop after the units in flight (#420). */
 export const STOP_SIGNALS = ["SIGINT", "SIGTERM", "SIGHUP"];
@@ -98,7 +99,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.met
   const stop = () => {
     if (!asked) {
       asked = true;
-      writeFileSync(stopFile, "stop");
+      writeStopFile(stopFile, "stop");
       console.error("Stopping after the units in flight; the partial report follows.");
       return;
     }

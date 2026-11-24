@@ -3,8 +3,8 @@
 // even killed and left unreaped by its own parent (a zombie, which still answers a pid check), the
 // operating system closes its end and this side reads end-of-file. The watch then writes the stop
 // file, and the runner stops after the units in flight and writes the partial report.
-import { writeFileSync } from "node:fs";
 import net from "node:net";
+import { writeStopFile } from "./stop-file.mjs";
 
 /** Must match LAUNCHER_GONE in src/lib/offline-runs/run.ts. */
 const LAUNCHER_GONE = "launcher gone";
@@ -24,7 +24,7 @@ export default function setup() {
     if (done) return;
     done = true;
     try {
-      writeFileSync(stopFile, LAUNCHER_GONE);
+      writeStopFile(stopFile, LAUNCHER_GONE);
     } catch {
       // The run also watches the launcher's pid.
     }
