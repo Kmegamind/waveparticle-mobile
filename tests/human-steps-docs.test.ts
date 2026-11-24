@@ -51,7 +51,9 @@ describe("#189 AC3: documented migration commands", () => {
       expect(part).toContain("supabase db push");
     }
     expect(prod).toMatch(/product owner only/);
-    expect(prod).toMatch(/Agents never run `supabase link` or `supabase db push`, for dev or prod/);
+    expect(prod).toMatch(
+      /Agents never run `supabase link`, `supabase db push`, `supabase db reset` or\s+`supabase migration repair`, for dev or prod/,
+    );
     for (const part of [dev, prod]) expect(part).toContain("cat supabase/.temp/project-ref");
   });
 

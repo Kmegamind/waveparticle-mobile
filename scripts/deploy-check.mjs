@@ -84,6 +84,31 @@ function siteUrl(base, path) {
   return new URL(path, base.endsWith("/") ? base : `${base}/`).toString();
 }
 
+const LOOPBACK = new Set(["127.0.0.1", "localhost", "[::1]"]);
+
+/**
+ * Whether the bypass secret may go to this address: https and a host ending in .vercel.app, or
+ * a host the owner listed (VERCEL_BYPASS_HOSTS, comma-separated host names). A listed loopback
+ * host (tests) may use http; any other host needs https.
+ * @param {string} baseUrl
+ * @param {string[]} hosts
+ */
+export function bypassAllowed(baseUrl, hosts = []) {
+  let url;
+  try {
+    url = new URL(baseUrl);
+  } catch {
+    return false;
+  }
+  const host = url.hostname.toLowerCase();
+  const listed = hosts
+    .map((h) => h.trim().toLowerCase())
+    .filter(Boolean)
+    .includes(host);
+  if (url.protocol === "https:") return host.endsWith(".vercel.app") || listed;
+  return url.protocol === "http:" && listed && LOOPBACK.has(host);
+}
+
 /**
  * How Vercel Deployment Protection answered, or null: a 401 (the protection page) or a redirect
  * to Vercel's own sign-in on vercel.com.
@@ -106,13 +131,33 @@ function vercelProtection(response, baseUrl) {
  * Website checks against a deployment: the home page and the sign-in page do not answer 5xx,
  * and a signed-out visit to the home page redirects to /auth/sign-in.
  * `bypassSecret` (VERCEL_AUTOMATION_BYPASS_SECRET) is sent as the x-vercel-protection-bypass
- * header so a protected Preview answers; it is never part of a result.
+ * header so a protected Preview answers, but only to a host bypassAllowed accepts; it is never
+ * part of a result.
  * Returns [{ name, ok, message }].
  * @param {string} baseUrl
  * @param {typeof fetch} [fetchImpl]
- * @param {{ bypassSecret?: string }} [options]
+ * @param {{ bypassSecret?: string, bypassHosts?: string[] }} [options]
  */
-export async function checkSite(baseUrl, fetchImpl = fetch, { bypassSecret } = {}) {
+export async function checkSite(
+  baseUrl,
+  fetchImpl = fetch,
+  { bypassSecret, bypassHosts = [] } = {},
+) {
+  if (bypassSecret && !bypassAllowed(baseUrl, bypassHosts)) {
+    let host = baseUrl;
+    try {
+      host = new URL(baseUrl).host;
+    } catch {
+      // keep the text as given
+    }
+    return [
+      {
+        name: "deployment protection",
+        ok: false,
+        message: `VERCEL_AUTOMATION_BYPASS_SECRET is set, but ${host} is not a Vercel address (https, ending in .vercel.app) or a host listed in VERCEL_BYPASS_HOSTS, so the secret was not sent and nothing was checked. Check E2E_BASE_URL, add the host to VERCEL_BYPASS_HOSTS if it is your own domain on Vercel, or unset the secret.`,
+      },
+    ];
+  }
   const results = [];
   const init = {
     redirect: /** @type {const} */ ("manual"),

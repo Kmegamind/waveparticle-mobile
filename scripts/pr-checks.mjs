@@ -16,8 +16,11 @@ const EXAMPLE_STEP_TEXTS = [
   "Apply to dev, then prod: 20261201000000_my_change.sql (docs/HUMAN_STEPS.md, Apply migrations).",
   "Add MY_SETTING in Vercel, scopes Production and Preview, server only (no NEXT_PUBLIC_ prefix), then redeploy.",
 ];
-const EXAMPLE_MARKERS = ["20261201000000_my_change.sql", "MY_SETTING"];
-const PLACEHOLDER_WORDS = /\b(tbd|tba|todo|fixme|n\/a)\b|\?\?\?|\.\.\.|…/i;
+// Names that appear only in the examples, matched as whole names (MY_SETTINGS_URL is real).
+const EXAMPLE_MARKERS = [/(^|[^\w.])20261201000000_my_change\.sql\b/, /\bMY_SETTING\b/];
+// A step that is a placeholder: it starts with one (or is only one). "..." inside a real
+// sentence, for example in a click path, is fine.
+const PLACEHOLDER_START = /^(tbd|tba|todo|fixme|n\/a|\?\?\?|\.\.\.|…)(?=$|[\s.:,;!)-])/i;
 
 /**
  * The body as GitHub shows it, for finding headings: HTML comments removed (an unclosed one runs
@@ -91,11 +94,11 @@ function placeholderReason(line) {
   }
   if (
     EXAMPLE_STEP_TEXTS.some((example) => normalise(example) === normalise(text)) ||
-    EXAMPLE_MARKERS.some((marker) => text.includes(marker))
+    EXAMPLE_MARKERS.some((marker) => marker.test(text))
   ) {
     return "it is the example from the template or the error message, not a real step";
   }
-  if (PLACEHOLDER_WORDS.test(text)) {
+  if (PLACEHOLDER_START.test(text)) {
     return 'it holds a placeholder ("TBD", "TODO", "N/A", "..." or similar)';
   }
   const words = text.match(/[\p{L}\p{N}][\p{L}\p{N}'._/-]*/gu) ?? [];

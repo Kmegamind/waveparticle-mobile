@@ -261,6 +261,16 @@ describe("#189 review I1: placeholder steps fail", () => {
     expect(checkHumanSteps({ body: body(example) })[0]).toMatch(/is the example/);
   });
 
+  it.each([
+    "1. [prod] Vercel → Settings → ... → Save the new value.",
+    "1. [prod] Add MY_SETTINGS_URL in Vercel, scope Production.",
+    "1. [prod] Add MY_SETTING_URL in Vercel, scope Production.",
+    "1. [dev, prod] Apply to dev, then prod: 20261201000000_my_change_two.sql today.",
+    "1. [repo] Write the todo list into the issue.",
+  ])("accepts a real step with dots or a name like the example's (re-review N2): %j", (step) => {
+    expect(checkHumanSteps({ body: body(step) })).toEqual([]);
+  });
+
   it("accepts a short real step of four words", () => {
     expect(checkHumanSteps({ body: body("1. [prod] Redeploy Production in Vercel.") })).toEqual([]);
   });

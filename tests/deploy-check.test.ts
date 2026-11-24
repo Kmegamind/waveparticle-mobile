@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   TABLES_QUERY,
+  bypassAllowed,
   checkSite,
   compareTables,
   expectedTables,
@@ -171,7 +172,8 @@ describe("#189 review I5: Vercel Deployment Protection", () => {
       "/": { status: 307, location: "/auth/sign-in" },
       "/auth/sign-in": { status: 200 },
     });
-    const results = await checkSite(base, impl, { bypassSecret: "bypass-123" });
+    const preview = "https://waveparticle-mobile-git-x-team.vercel.app";
+    const results = await checkSite(preview, impl, { bypassSecret: "bypass-123" });
     expect(results.every((r) => r.ok)).toBe(true);
     for (const call of calls) {
       expect(call.init?.headers).toEqual({ "x-vercel-protection-bypass": "bypass-123" });
@@ -181,9 +183,44 @@ describe("#189 review I5: Vercel Deployment Protection", () => {
 
   it("says the secret was refused when the protection still answers 401", async () => {
     const { impl } = fakeFetch({ "/": { status: 401 } });
-    const [result] = await checkSite(base, impl, { bypassSecret: "bypass-123" });
+    const [result] = await checkSite("https://preview-abc.vercel.app", impl, {
+      bypassSecret: "bypass-123",
+    });
     expect(result.message).toMatch(/was not accepted/);
     expect(result.message).not.toContain("bypass-123");
+  });
+});
+
+describe("#189 re-review N3: the bypass secret goes only to Vercel or listed hosts", () => {
+  it.each([
+    ["https://waveparticle-mobile.vercel.app", [], true],
+    ["https://waveparticle-mobile-git-x-team.vercel.app/", [], true],
+    ["http://waveparticle-mobile.vercel.app", [], false],
+    ["https://vercel.app.evil.example", [], false],
+    ["https://evil-vercel.app", [], false],
+    ["https://app.example.org", [], false],
+    ["https://app.example.org", ["app.example.org"], true],
+    ["https://APP.example.org", [" app.example.org "], true],
+    ["http://app.example.org", ["app.example.org"], false],
+    ["http://127.0.0.1:4100", [], false],
+    ["http://127.0.0.1:4100", ["127.0.0.1"], true],
+    ["not a url", ["not a url"], false],
+  ])("%s with hosts %j: %s", (url, hosts, allowed) => {
+    expect(bypassAllowed(url, hosts)).toBe(allowed);
+  });
+
+  it("refuses with a plain sentence and sends nothing to another host", async () => {
+    const { impl, calls } = fakeFetch({ "/": { status: 200 } });
+    const results = await checkSite("https://typo.example.com", impl, {
+      bypassSecret: "bypass-123",
+    });
+    expect(calls).toHaveLength(0);
+    expect(results).toHaveLength(1);
+    expect(results[0].ok).toBe(false);
+    expect(results[0].message).toMatch(
+      /^VERCEL_AUTOMATION_BYPASS_SECRET is set, but typo\.example\.com is not a Vercel address .* so the secret was not sent/,
+    );
+    expect(results[0].message).not.toContain("bypass-123");
   });
 });
 
@@ -322,13 +359,35 @@ describe("#189 AC5: npm run check:deploy against local stand-ins", () => {
     expect(blocked.out).toMatch(/FAIL: This deployment is behind Vercel Deployment Protection/);
     expect(blocked.code).toBe(1);
     const through = await run(
-      { E2E_BASE_URL: siteUrl, VERCEL_AUTOMATION_BYPASS_SECRET: "bypass-xyz-789" },
+      {
+        E2E_BASE_URL: siteUrl,
+        VERCEL_AUTOMATION_BYPASS_SECRET: "bypass-xyz-789",
+        VERCEL_BYPASS_HOSTS: "example.org, 127.0.0.1",
+      },
       ["--skip-db"],
     );
     expect(through.out).toMatch(/OK: a signed-out visit to the home page goes to \/auth\/sign-in/);
     expect(through.out).not.toContain("bypass-xyz-789");
     expect(through.code).toBe(0);
     expect(seen).toContain("bypass-xyz-789");
+  });
+
+  it("refuses to send the bypass secret to a host that is not listed", async () => {
+    let requests = 0;
+    const siteUrl = await serve((_req, res) => {
+      requests += 1;
+      res.writeHead(200).end("page");
+    });
+    const { code, out } = await run(
+      { E2E_BASE_URL: siteUrl, VERCEL_AUTOMATION_BYPASS_SECRET: "bypass-xyz-789" },
+      ["--skip-db"],
+    );
+    expect(out).toMatch(
+      /FAIL: VERCEL_AUTOMATION_BYPASS_SECRET is set, but 127\.0\.0\.1:\d+ is not a Vercel address/,
+    );
+    expect(out).not.toContain("bypass-xyz-789");
+    expect(requests).toBe(0);
+    expect(code).toBe(1);
   });
 
   it("fails without E2E_BASE_URL and never sends the token to a stand-in off this machine", async () => {
