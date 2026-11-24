@@ -452,3 +452,29 @@ test("#118 a redirect to the sign-in page clears the copy", async ({ page, conte
   const crisis = await openS1(page);
   await expect(crisis).toHaveAttribute("data-s1", "none");
 });
+
+test("#118 I-R1 an auth server outage keeps the copy (only a missing session signs out)", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const account = await signIn(context, baseURL!, profile("US"));
+  await page.goto("/safety");
+  await waitForCopy(page, "US");
+  const fail = (tables: string[]) =>
+    fetch(`${STUB_SUPABASE}/__fail_reads`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token: account.token, tables }),
+    });
+  await fail(["auth"]);
+  try {
+    const answer = page.waitForResponse("**/me/help-line");
+    await page.reload();
+    expect(await (await answer).json()).toEqual({ signedIn: true, ok: false });
+    await page.waitForLoadState("networkidle");
+    await waitForCopy(page, "US");
+  } finally {
+    await fail([]);
+  }
+});

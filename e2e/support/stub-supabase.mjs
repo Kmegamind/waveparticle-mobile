@@ -53,7 +53,8 @@
 //                                     20261128000000; publish and roll back write a history row
 //   POST /__hotlines  { reset: true }  puts the list and its history rows back
 //   POST /__fail_reads { token, tables: ["profiles"] }   reads of those tables answer 500 for that
-//                                     account until set again (#118, a failed profile read)
+//                                     account until set again (#118, a failed profile read);
+//                                     "auth" makes GET /auth/v1/user answer 500
 //   POST /__app_text  { failReads?: boolean, reset?: true | "<key>" }   published reads without a
 //                                     user session answer 503 while failReads is on (database
 //                                     down); reset puts every key (true) or one key back to the
@@ -504,6 +505,10 @@ createServer(async (request, response) => {
 
   if (path === "/auth/v1/user") {
     if (!dataset || dataset.deleted) return json(response, 401, { code: 401, msg: "invalid JWT" });
+    // #118: "auth" in __fail_reads makes the auth server answer 500 (an outage, not a sign out).
+    if ((dataset.failReads ?? []).includes("auth")) {
+      return json(response, 500, { code: 500, msg: "auth unavailable (stub)" });
+    }
     const { id, email } = dataset.user;
     return json(response, 200, {
       id,

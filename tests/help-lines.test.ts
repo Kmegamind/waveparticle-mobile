@@ -400,7 +400,12 @@ describe("#118 the migration, the seed and the privacy notice", () => {
     expect(isPublicPath("/me", false)).toBe(false);
     expect(isPublicPath("/me/country", false)).toBe(false);
     const route = read("src/app/me/help-line/route.ts");
-    expect(route).toContain("if (!user) return Response.json({ signedIn: false }, { headers });");
+    expect(route).toContain(
+      'if (session.kind === "none") return Response.json({ signedIn: false }, { headers });',
+    );
+    expect(route).toContain(
+      'if (session.kind === "error") return Response.json({ signedIn: true, ok: false }, { headers });',
+    );
   });
 
   it("adds the country to profiles with no default, so it is in the export and goes with the account", () => {

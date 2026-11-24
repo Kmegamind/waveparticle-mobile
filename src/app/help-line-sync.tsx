@@ -5,6 +5,7 @@ import { logEvent } from "@/lib/logging/server-log";
 import {
   asCopy,
   helpLineStorage,
+  consumeHelpLineReset,
   readHelpLineCopy,
   removeHelpLineCopy,
   setKnownSession,
@@ -25,6 +26,8 @@ const TIMEOUT_MS = 10_000;
 export function HelpLineSync() {
   useEffect(() => {
     let live = true;
+    // A new session from /auth/callback: the old copy goes before anything else.
+    consumeHelpLineReset(helpLineStorage());
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     const signedOut = () => {
@@ -89,6 +92,7 @@ export function HelpLineSync() {
  */
 export function HelpLineClear() {
   useEffect(() => {
+    consumeHelpLineReset(helpLineStorage());
     removeHelpLineCopy(helpLineStorage());
     setKnownSession(null);
   }, []);

@@ -262,6 +262,27 @@ export function writeHelpLineCopy(storage: CopyStorage | null, copy: HelpLineCop
   }
 }
 
+/** Set by /auth/callback when it starts a new session (#118, review of #406 M-B). */
+export const HELP_LINE_RESET_COOKIE = "wp_help_line_reset";
+
+/**
+ * Reads and clears the callback's one-time marker; when it was there, the copy goes first. Runs
+ * before the first refresh on every page, so a new session never sees the last account's copy.
+ */
+export function consumeHelpLineReset(
+  storage: CopyStorage | null,
+  doc: { cookie: string } | null = typeof document === "undefined" ? null : document,
+): boolean {
+  if (!doc) return false;
+  const marked = doc.cookie
+    .split(";")
+    .some((part) => part.trim().startsWith(`${HELP_LINE_RESET_COOKIE}=`));
+  if (!marked) return false;
+  removeHelpLineCopy(storage);
+  doc.cookie = `${HELP_LINE_RESET_COOKIE}=; Max-Age=0; Path=/; SameSite=Lax`;
+  return true;
+}
+
 /** At sign out the copy goes (SAFETY-REGION-STORE): another person may use this phone. */
 export function removeHelpLineCopy(storage: CopyStorage | null): void {
   try {
