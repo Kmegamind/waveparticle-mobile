@@ -24,6 +24,7 @@ CI and local runs have no model keys. Decision NO-BACKUP forbids silent stand-in
   in the httpOnly cookie `wp_try_model_calls` (`YYYY-MM-DD:N`, path `/try`, one day). Past the
   cap the split fails and the page shows GD-F. Clearing cookies resets the cap, so it slows
   people down but does not stop them; Vercel Deployment Protection is still the real gate.
+  Since #256 the owner can switch the limit off with `MODEL_CALL_LIMIT_ENABLED=0` (TEST-NO-CAP, the test-stage setting).
 - **Privacy.** The goal text is sent only to the gateway. It is never logged or stored on the
   server. The gateway logs rule ids and timing only.
 - **His lines.** FLOW 4.3 takes his dialogue lines from small authored pools

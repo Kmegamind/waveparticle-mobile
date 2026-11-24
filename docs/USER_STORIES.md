@@ -1129,13 +1129,13 @@ These rules come from the product principles and from decisions. They are repeat
 
 **Acceptance criteria**
 - ~~Given I write a Goal in free text, then a first small call classifies its shape.~~ Superseded by GOAL-SHAPE-LOCAL: given I write a Goal in free text (any Goal is allowed), then a local rule in code (`classifyGoalShape`), with no model call, decides its shape (specific, vague, big or unknown) for the Companion's reaction (US-GD-2); a model call may be added later. The planning call returns the Steps as structured data with a title, a description of one or two sentences and minutes for each.
-- Given the planning call, then the splitting itself, for every kind of Goal, is the job of the planning prompt from the AI workflow (open item P1: the real prompt is still to be added, and Yue will supply the file; the text in the AI_01 spec is a placeholder); this backlog sets no splitting rules per kind of Goal.
+- Given the planning call, then the splitting itself, for every kind of Goal, is the job of the planning prompt from the AI workflow (PLAN-PROMPT, 2026-11-24: the owner's prompt in `docs/ai/AI_01` section 4 and `docs/ai/prompts/plan_split.md`; P1 is closed); this backlog sets no splitting rules per kind of Goal.
 - Given the answer, then the code checks that it parses and that the minutes add up to the time I gave (fixing or retrying if not); there is no maximum number of Steps.
 - Given the time I gave, then the Plan always matches it, and no message says the Plan is longer than my time.
 - Given a failure, then the call is generated again within the time limit and then the failure screen is shown (US-GD-8, FAIL-SCREEN); generic Steps are never produced silently and no stored Plan stands in (NO-BACKUP).
 - Given the calls, then the safety layer sees my text first (US-SAF-1).
 
-**Priority:** Must · **Area:** AI pipeline · **Screens:** GD2, GD4, GD-F · **Depends on:** US-AI-8, US-SAF-1 · **Size:** L · **Source:** AI01; DEC D1a, D1b, D1c, D1d, T2, P1, GOAL-SHAPE-LOCAL; NF7v7 section 8; US-NF7 NF7-16, NF7-17, NF7-29. The description is in US-GD-9; reading the time from the Goal is in US-GD-11.
+**Priority:** Must · **Area:** AI pipeline · **Screens:** GD2, GD4, GD-F · **Depends on:** US-AI-8, US-SAF-1 · **Size:** L · **Source:** AI01; DEC D1a, D1b, D1c, D1d, T2, P1, PLAN-PROMPT, GOAL-SHAPE-LOCAL; NF7v7 section 8; US-NF7 NF7-16, NF7-17, NF7-29. The description is in US-GD-9; reading the time from the Goal is in US-GD-11.
 
 ### US-AI-2 · Story cards are made ahead for each part and shared
 

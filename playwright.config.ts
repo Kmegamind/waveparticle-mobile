@@ -85,6 +85,8 @@ export default defineConfig({
             MODEL_API_KEY: "stub",
             MODEL_API_URL: `http://127.0.0.1:${stubPort}/v1/chat/completions`,
             MODEL_NAME: "stub",
+            // The test stage runs with no per-browser daily limit (#256, TEST-NO-CAP).
+            MODEL_CALL_LIMIT_ENABLED: "0",
           },
           reuseExistingServer: !process.env.CI,
           timeout: 300_000,
