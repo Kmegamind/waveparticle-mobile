@@ -6,6 +6,7 @@ export {
 } from "./gateway";
 export { cardNouns, checkRunList, similarity } from "./run-list";
 export type {
+  GatewayAttempt,
   GatewayCall,
   GatewayFailure,
   GatewayFailureReason,
