@@ -39,17 +39,29 @@ export async function readCapped(request: Request, limit: number): Promise<strin
 }
 
 /**
- * Same site only. A browser marks its own request `Sec-Fetch-Site: same-origin`; one that does not
- * send that header must send an `Origin` whose host is the host the request was sent to. The
- * request's own URL is not compared: behind a proxy or in development it can name another host
- * (127.0.0.1 versus localhost) than the browser used.
+ * The body must be declared JSON (#119 re-review N1). A cross-site page cannot send this content
+ * type without a CORS preflight, which the route never answers, so such a request never leaves the
+ * other page. That is what lets `isSameOrigin` accept a missing or `null` Origin.
+ */
+export function isJsonRequest(request: Request): boolean {
+  const type = request.headers.get("content-type") ?? "";
+  return type.split(";")[0].trim().toLowerCase() === "application/json";
+}
+
+/**
+ * Same site only. A browser that sends `Sec-Fetch-Site` must send `same-origin`. One that does not
+ * (Safari before 16.4, Firefox before 90) is accepted when its `Origin` is missing, `null` (what
+ * a no-referrer POST sends) or names the host the request was sent to; a foreign Origin is
+ * refused. The request's own URL is not compared: behind a proxy or in development it can name
+ * another host (127.0.0.1 versus localhost) than the browser used.
  */
 export function isSameOrigin(request: Request): boolean {
   const site = request.headers.get("sec-fetch-site");
   if (site !== null) return site === "same-origin";
   const origin = request.headers.get("origin");
+  if (origin === null || origin === "null") return true;
   const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
-  if (!origin || !host) return false;
+  if (!host) return false;
   try {
     return new URL(origin).host === host.split(",")[0].trim();
   } catch {

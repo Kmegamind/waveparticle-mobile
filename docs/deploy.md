@@ -307,8 +307,9 @@ records each request's address, time, IP address and browser with the line, so t
 matched by time and IP address, and the crisis line's request address can hold a Goal or session
 id. Treat the safety log as personal data. The next-action request is sent with no referrer and no
 cookie, and the site sends `Referrer-Policy: strict-origin-when-cross-origin` (`next.config.ts`).
-`POST /safety/next-action` refuses other sites (the `Origin` header) and bodies over 200 bytes, but
-has no rate limit: add a Vercel firewall rule or a per-IP limit before a public launch.
+`POST /safety/next-action` refuses a body not sent as `application/json`, other sites (the
+`Sec-Fetch-Site` header, or `Origin` when that is missing) and bodies over 200 bytes, but has no
+rate limit: add a Vercel firewall rule or a per-IP limit before a public launch.
 
 Retention and readers are **pending the legal review** (#121); the proposal
 (`docs/ai/AI_05_safety.md` section 6) is set in `src/lib/safety/log-policy.ts`:

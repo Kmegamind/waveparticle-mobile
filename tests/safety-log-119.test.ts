@@ -56,7 +56,11 @@ const AC1_FIELDS = [
 const FRAME = ["level", "feature", "event", "requestId"];
 
 /** What a same-site browser request carries (review M2). */
-const SAME_SITE = { origin: "http://localhost", "sec-fetch-site": "same-origin" };
+const SAME_SITE = {
+  origin: "null",
+  "sec-fetch-site": "same-origin",
+  "content-type": "application/json",
+};
 
 const fixedNow = () => new Date("2026-11-24T10:00:00.000Z");
 const classifierSays = (outcome: ClassifierOutcome) => async (): Promise<ClassifierOutcome> =>
@@ -621,32 +625,46 @@ describe("#119 fix round 1 (review I1, M2, M3, M4, M6)", () => {
     }
   });
 
-  it("test_119_m2_a_request_from_another_site_or_with_no_origin_is_refused", async () => {
+  it("test_119_m2_n1_same_site_browsers_old_and_new_pass_and_other_sites_are_refused", async () => {
     const lines: string[] = [];
     vi.spyOn(console, "warn").mockImplementation((line: string) => void lines.push(line));
-    expect((await post({ body })).status).toBe(403);
-    expect((await post({ body, headers: { origin: "https://elsewhere.example" } })).status).toBe(
-      403,
-    );
+    const json = { "content-type": "application/json" };
+    const status = async (headers: Record<string, string>) =>
+      (await post({ body, headers: { ...json, ...headers } })).status;
+    // A current browser: Sec-Fetch-Site decides.
+    expect(await status({ "sec-fetch-site": "same-origin", origin: "null" })).toBe(204);
+    expect(await status({ "sec-fetch-site": "cross-site", origin: "null" })).toBe(403);
+    expect(await status({ "sec-fetch-site": "same-site", host: "app.example" })).toBe(403);
+    // Old Safari (before 16.4) or Firefox (before 90): no Sec-Fetch-Site, and a no-referrer POST
+    // sends `Origin: null`; some send no Origin at all.
+    expect(await status({ origin: "null", host: "app.example" })).toBe(204);
+    expect(await status({ host: "app.example" })).toBe(204);
+    expect(await status({ origin: "https://app.example", host: "app.example" })).toBe(204);
+    // A foreign Origin is refused.
+    expect(await status({ origin: "https://evil.example", host: "app.example" })).toBe(403);
+    expect(await status({ origin: "https://elsewhere.example" })).toBe(403);
+    expect(lines.filter((line) => line.includes("safety_next_action"))).toHaveLength(4);
+  });
+
+  it("test_119_n1_a_body_not_declared_json_is_refused", async () => {
+    const lines: string[] = [];
+    vi.spyOn(console, "warn").mockImplementation((line: string) => void lines.push(line));
+    for (const type of [undefined, "text/plain", "application/x-www-form-urlencoded"]) {
+      const headers: Record<string, string> = { origin: "null", "sec-fetch-site": "same-origin" };
+      if (type) headers["content-type"] = type;
+      expect((await post({ body, headers })).status, String(type)).toBe(415);
+    }
     expect(
       (
         await post({
           body,
-          headers: { origin: "http://localhost", "sec-fetch-site": "cross-site" },
+          headers: { ...SAME_SITE, "content-type": "application/json; charset=utf-8" },
         })
       ).status,
-    ).toBe(403);
-    expect(lines).toEqual([]);
-    expect((await post({ body, headers: SAME_SITE })).status).toBe(204);
-    // A browser that sends no Sec-Fetch-Site: the Origin's host must be the request's host.
-    expect(
-      (await post({ body, headers: { origin: "https://app.example", host: "app.example" } }))
-        .status,
     ).toBe(204);
-    expect(
-      (await post({ body, headers: { origin: "https://evil.example", host: "app.example" } }))
-        .status,
-    ).toBe(403);
+    expect(lines.filter((line) => line.includes("safety_next_action"))).toHaveLength(1);
+    // The page sends that content type.
+    expect(new Headers(NEXT_ACTION_REQUEST.headers).get("content-type")).toBe("application/json");
   });
 
   it("test_119_m3_the_size_limit_holds_without_a_content_length_and_counts_bytes", async () => {
