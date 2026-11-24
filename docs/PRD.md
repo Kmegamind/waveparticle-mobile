@@ -481,7 +481,7 @@ Targets are hypotheses: time from opening the app to a started Step as short as 
 ### 8.3 Platform
 
 - The product is a progressive web app (PWA, a website installable to the home screen), built with Next.js, TypeScript, Supabase and Vercel. Mobile first; desktop later.
-- Haptics and push notifications on iPhone depend on installation to the home screen and on what iOS web supports. The product owner tested vibration, notifications and the clock on a real iPhone and Android phone on 2026-11-24 (S2 resolved). The Signals settings stay capability-gated: nothing happens on a device that lacks the feature.
+- Haptics and push notifications on iPhone depend on installation to the home screen and on what iOS web supports. The product owner tested vibration, notifications and the clock on a real iPhone and Android phone on 2026-11-24 (S2 resolved, #153). That test covered what the phones can do; how a time-up notification reaches a locked screen is still for the owner to decide (#116). The Signals settings stay capability-gated: nothing happens on a device that lacks the feature.
 - The clock is computed from timestamps because a page's timers stop when the screen locks.
 - The interface is English only.
 

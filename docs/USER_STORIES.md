@@ -1654,5 +1654,5 @@ The goal of M1 is that a real tester can create an account, type a Goal, get a P
 - **Home refinements:** US-HOME-11
 - **Settings and search:** US-GM-6, US-MAP-11
 - **Safety and compliance:** US-SAF-4, US-SAF-5, US-SAF-6, US-SAF-7, US-SAF-8, US-ACC-4, US-ACC-5, US-ACC-6, US-AI-11 (A7b)
-- **Platform checks:** US-PLAT-3 (S2), US-PLAT-4 (S2)
+- **Platform checks:** US-PLAT-3 (S2, resolved 2026-11-24 by the owner's device test, #153), US-PLAT-4 (S2 resolved; waits on an owner decision on delivery, #116)
 - **Accessibility audit:** US-A11Y-2, US-A11Y-4

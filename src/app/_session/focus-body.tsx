@@ -17,6 +17,7 @@ import {
   leaveSession,
   needsCards,
   loadSession,
+  markTimeUp,
   parseSpeed,
   remainingFor,
   returnOnOpen,
@@ -27,6 +28,7 @@ import {
   startRest,
   syncSession,
   tick,
+  timeUpDue,
   undoDone,
   visibleCards,
   type FocusSession,
@@ -228,14 +230,16 @@ export function FocusBody({ host }: { host: FocusHost }) {
   const holding = isHolding(session, now);
   const showFailure = !session.steps[index]?.cards && failed[index] === true;
 
-  // One polite "Step time reached" when the clock reaches 00:00 (F2).
+  // One polite "Step time reached" and one haptic when the clock reaches 00:00 (F2, #115). The
+  // session records it, so a Pause and return or a reload does not repeat it; the ref covers the
+  // render before that record lands (and React's development double run of effects).
   useEffect(() => {
-    if (remaining === 0 && session.steps[index]?.clock && !timeReached.current.has(index)) {
-      timeReached.current.add(index);
-      setAnnouncement("Step time reached");
-      timeUpHaptic(typeof navigator === "undefined" ? undefined : navigator, deviceStorage());
-    }
-  }, [index, remaining, session.steps]);
+    if (!timeUpDue(session, index, now) || timeReached.current.has(index)) return;
+    timeReached.current.add(index);
+    setSession((current) => markTimeUp(current, index));
+    setAnnouncement("Step time reached");
+    timeUpHaptic(typeof navigator === "undefined" ? undefined : navigator, deviceStorage());
+  }, [index, now, session]);
 
   const undoOpen = toastHeldMs !== null || canUndo(session, now);
 
