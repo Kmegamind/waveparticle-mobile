@@ -10,10 +10,24 @@ import {
   SAFETY_LOG_READERS,
   SAFETY_LOG_RETENTION_DAYS,
 } from "@/lib/safety/log-policy";
-import { NEXT_ACTIONS, parseNextAction, s1Screen } from "@/lib/safety/next-action";
+import {
+  NEXT_ACTION_MAX_BYTES,
+  NEXT_ACTION_REQUEST,
+  NEXT_ACTIONS,
+  parseNextAction,
+  s1Screen,
+} from "@/lib/safety/next-action";
+import { createSafetyClassifier } from "@/lib/safety/classifier";
+import { isPublicPath } from "@/lib/supabase/session";
 import { safetyLogFields, serverSafetyCheckFrom } from "@/lib/safety/server";
 import { POST as postNextAction } from "@/app/safety/next-action/route";
 import { seedPromptSource } from "./support/seed-prompts";
+import { saveDisplayName } from "@/lib/me/profile";
+import { renameGoal } from "@/lib/goals/goal-edits";
+import { splitGoal } from "@/lib/prototype/split-goal";
+import { takeTurn } from "@/lib/goal-dialogue/turns";
+import { startGoal } from "@/lib/goals/start-goal";
+import { restReplyFor } from "@/lib/prototype/rest-lines";
 
 // US-SAF-6 (#119): what is logged about safety events. AC1 the fields; AC2 never the text, never
 // a hash of it. AC3 (retention and readers) waits for the legal review (#121): the proposal is a
@@ -40,6 +54,9 @@ const AC1_FIELDS = [
 ];
 /** What `logEvent` adds to every line of every feature. */
 const FRAME = ["level", "feature", "event", "requestId"];
+
+/** What a same-site browser request carries (review M2). */
+const SAME_SITE = { origin: "http://localhost", "sec-fetch-site": "same-origin" };
 
 const fixedNow = () => new Date("2026-11-24T10:00:00.000Z");
 const classifierSays = (outcome: ClassifierOutcome) => async (): Promise<ClassifierOutcome> =>
@@ -144,6 +161,10 @@ describe("#119 AC1 a safety event holds the agreed fields", () => {
     const list = source.slice(source.indexOf("const crisisPatterns"));
     const fingerprint = createHash("sha256").update(list).digest("hex");
     expect(fingerprints[KEYWORD_LIST_VERSION]).toBe(fingerprint);
+    // Review M7: the version is the newest entry, and no two versions share a fingerprint, so
+    // editing the list means adding a version, not overwriting the stored one. Keep old entries.
+    expect(KEYWORD_LIST_VERSION).toBe(Math.max(...Object.keys(fingerprints).map(Number)));
+    expect(new Set(Object.values(fingerprints)).size).toBe(Object.keys(fingerprints).length);
   });
 
   it("test_119_ac1_what_i_did_next_is_one_of_the_s1_actions_on_a_fixed_screen", async () => {
@@ -167,6 +188,7 @@ describe("#119 AC1 a safety event holds the agreed fields", () => {
     const response = await postNextAction(
       new Request("http://localhost/safety/next-action", {
         method: "POST",
+        headers: SAME_SITE,
         body: JSON.stringify({ action: "get_support", screen: "rest" }),
       }),
     );
@@ -363,9 +385,14 @@ describe("#119 AC2 no log or database write ever holds the text or a hash of it"
     ];
     for (const body of bodies) {
       const response = await postNextAction(
-        new Request("http://localhost/safety/next-action", { method: "POST", body }),
+        new Request("http://localhost/safety/next-action", {
+          method: "POST",
+          headers: SAME_SITE,
+          body,
+        }),
       );
-      expect(response.status).toBeGreaterThanOrEqual(400);
+      // Past the origin check: refused for the body itself.
+      expect([400, 413]).toContain(response.status);
     }
     expect(lines).toEqual([]);
     expect(parseNextAction(JSON.stringify({ action: "back", screen: "rest" }))).toEqual({
@@ -403,5 +430,280 @@ describe("#119 AC3 retention and readers (pending the legal review, #121)", () =
     expect(deploy).toContain("### Safety log");
     expect(deploy).toContain("SAFETY_LOG_RETENTION_DAYS");
     expect(deploy).toMatch(/pending the legal review/i);
+  });
+});
+
+// Fix round 1 (review M1): the same sentinel through the functions the server actions call, with
+// the real server check (classifier, log, day counter and alarm). A crisis must save nothing; on
+// a classifier failure the save goes ahead, and no log line or database or webhook write of the
+// check holds the text.
+describe("#119 AC2 the callers of the check leave no trace of the text", () => {
+  const goalId = "11111111-2222-4333-8444-555555555555";
+  const crisisText = `${SENTINEL} everything is grey`;
+
+  function writes(): { calls: string[]; record: (name: string) => () => Promise<never> } {
+    const calls: string[] = [];
+    return {
+      calls,
+      record: (name) => async () => {
+        calls.push(name);
+        throw new Error("no write expected");
+      },
+    };
+  }
+
+  type Caller = [string, (check: Awaited<ReturnType<typeof harness>>["check"]) => Promise<unknown>];
+
+  const callers = (saved: ReturnType<typeof writes>): Caller[] => [
+    [
+      "saveDisplayName",
+      (check) =>
+        saveDisplayName(
+          { name: crisisText },
+          {
+            userId: goalId,
+            writer: { upsert: saved.record("profiles.upsert") },
+            safety: check,
+          },
+        ),
+    ],
+    [
+      "renameGoal",
+      (check) =>
+        renameGoal(
+          { goalId, title: crisisText },
+          {
+            userId: goalId,
+            writer: {
+              rename: saved.record("goals.rename"),
+              setKind: saved.record("goals.setKind"),
+              newestSessionIn: saved.record("sessions.read"),
+            },
+            safety: check,
+          },
+        ),
+    ],
+    [
+      "splitGoal",
+      (check) =>
+        splitGoal(
+          { goal: crisisText, totalMinutes: 30, splitFiner: false },
+          {
+            env: {},
+            today: "2026-11-24",
+            readCounter: () => undefined,
+            writeCounter: () => saved.calls.push("counter"),
+            safety: check,
+          },
+        ),
+    ],
+    [
+      "takeTurn",
+      (check) =>
+        takeTurn(
+          { kind: "goal", goal: crisisText },
+          {
+            secret: Buffer.alloc(32, 7),
+            now: () => 0,
+            newId: () => "dialogue-1",
+            split: async () => {
+              saved.calls.push("split");
+              return { status: "failed" };
+            },
+            safety: check,
+          },
+        ),
+    ],
+    [
+      "startGoal",
+      (check) =>
+        startGoal(
+          {
+            goalId,
+            goalText: crisisText,
+            title: "Write the report",
+            splitFiner: null,
+            steps: [{ title: "Open the file", description: "", minutes: 10 }],
+          },
+          {
+            userId: goalId,
+            writer: {
+              goalExists: saved.record("goals.exists"),
+              insertGoal: saved.record("goals.insert"),
+              updateGoal: saved.record("goals.update"),
+              replaceSteps: saved.record("steps.replace"),
+              deleteGoal: saved.record("goals.delete"),
+            },
+            safety: check,
+          },
+        ),
+    ],
+    [
+      "restReplyFor",
+      (check) =>
+        restReplyFor(
+          null as never,
+          {
+            message: crisisText,
+            history: [{ from: "you", text: `${SENTINEL} earlier` }],
+            replyIndex: 0,
+          },
+          null,
+          check,
+        ),
+    ],
+  ];
+
+  for (const index of [0, 1, 2, 3, 4, 5]) {
+    it(`test_119_m1_caller_${index}_a_classifier_crisis_saves_nothing_and_logs_no_text`, async () => {
+      const { check, captured, settle } = harness('{"tier":"crisis"}');
+      const saved = writes();
+      const [name, run] = callers(saved)[index];
+      expect(await run(check), name).toMatchObject({ status: "crisis" });
+      await settle();
+      expect(saved.calls, name).toEqual([]);
+      expect(captured.logs.join("\n")).toContain('"event":"safety_crisis"');
+      expectNoTrace(captured, [crisisText, SENTINEL]);
+    });
+  }
+
+  it("test_119_m1_a_classifier_failure_on_a_save_logs_no_text", async () => {
+    const { check, captured, settle } = harness("fail");
+    const upserts: unknown[] = [];
+    const outcome = await saveDisplayName(
+      { name: SENTINEL },
+      {
+        userId: goalId,
+        writer: { upsert: async (...args) => void upserts.push(args) },
+        safety: check,
+      },
+    );
+    await settle();
+    expect(outcome).toMatchObject({ status: "ok" });
+    expect(upserts).toHaveLength(1);
+    expect(captured.writes.some((write) => write.startsWith("https://db.test/"))).toBe(true);
+    expectNoTrace(captured, [SENTINEL]);
+  });
+});
+
+describe("#119 fix round 1 (review I1, M2, M3, M4, M6)", () => {
+  const post = (init: RequestInit) =>
+    postNextAction(new Request("http://localhost/safety/next-action", { method: "POST", ...init }));
+  const body = JSON.stringify({ action: "back", screen: "rest" });
+
+  it("test_119_i1_the_next_action_request_sends_no_referrer_and_no_cookie", () => {
+    expect(NEXT_ACTION_REQUEST).toMatchObject({
+      method: "POST",
+      keepalive: true,
+      credentials: "omit",
+      referrerPolicy: "no-referrer",
+    });
+    // sendBeacon cannot drop the referrer or the cookies, so it is not used.
+    expect(read("src/lib/safety/next-action.ts")).not.toMatch(/navigator\.sendBeacon\(/);
+  });
+
+  it("test_119_i1_every_response_sends_a_referrer_policy", async () => {
+    const config = (await import("../next.config")).default;
+    const rules = await config.headers!();
+    expect(rules).toContainEqual({
+      source: "/:path*",
+      headers: [{ key: "Referrer-Policy", value: "strict-origin-when-cross-origin" }],
+    });
+  });
+
+  it("test_119_i1_the_docs_and_notice_say_the_platform_records_request_details", () => {
+    const notice = read("src/app/privacy/privacy-notice.tsx");
+    expect(notice).toContain("IP address");
+    expect(notice).not.toContain("anything made from them");
+    for (const file of ["src/lib/safety/next-action.ts", "docs/api/safety-classifier.md"]) {
+      expect(read(file), file).toMatch(/IP address/);
+      expect(read(file), file).not.toMatch(/\bunlinked\b|no id joins them|never the address/i);
+    }
+  });
+
+  it("test_119_m2_a_request_from_another_site_or_with_no_origin_is_refused", async () => {
+    const lines: string[] = [];
+    vi.spyOn(console, "warn").mockImplementation((line: string) => void lines.push(line));
+    expect((await post({ body })).status).toBe(403);
+    expect((await post({ body, headers: { origin: "https://elsewhere.example" } })).status).toBe(
+      403,
+    );
+    expect(
+      (
+        await post({
+          body,
+          headers: { origin: "http://localhost", "sec-fetch-site": "cross-site" },
+        })
+      ).status,
+    ).toBe(403);
+    expect(lines).toEqual([]);
+    expect((await post({ body, headers: SAME_SITE })).status).toBe(204);
+    // A browser that sends no Sec-Fetch-Site: the Origin's host must be the request's host.
+    expect(
+      (await post({ body, headers: { origin: "https://app.example", host: "app.example" } }))
+        .status,
+    ).toBe(204);
+    expect(
+      (await post({ body, headers: { origin: "https://evil.example", host: "app.example" } }))
+        .status,
+    ).toBe(403);
+  });
+
+  it("test_119_m3_the_size_limit_holds_without_a_content_length_and_counts_bytes", async () => {
+    const lines: string[] = [];
+    vi.spyOn(console, "warn").mockImplementation((line: string) => void lines.push(line));
+    let pulled = 0;
+    const endless = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulled += 1;
+        controller.enqueue(new Uint8Array(64).fill(32));
+        if (pulled > 1000) controller.close();
+      },
+    });
+    const response = await post({
+      headers: SAME_SITE,
+      body: endless,
+      duplex: "half",
+    } as RequestInit);
+    expect(response.status).toBe(413);
+    expect(pulled).toBeLessThan(10);
+    expect((await post({ headers: { ...SAME_SITE, "content-length": "x" }, body })).status).toBe(
+      413,
+    );
+    // 70 three-byte characters: 70 UTF-16 units but 210 bytes.
+    const wide = JSON.stringify({ action: "back", screen: "€".repeat(70) });
+    expect(wide.length).toBeLessThan(NEXT_ACTION_MAX_BYTES);
+    expect((await post({ headers: SAME_SITE, body: wide })).status).toBe(413);
+    expect(lines).toEqual([]);
+  });
+
+  it("test_119_m4_the_route_is_named_as_a_public_path", () => {
+    expect(isPublicPath("/safety/next-action", false)).toBe(true);
+    expect(read("src/lib/supabase/session.ts")).toContain('pathname === "/safety/next-action"');
+  });
+
+  it("test_119_m6_a_failure_after_the_prompt_was_read_names_its_version", async () => {
+    const events: SafetyEvent[] = [];
+    const prompt = { key: "safety_classifier", version: 4, body: "{{text}}", params: {} } as never;
+    const check = createSafetyCheck({
+      classifier: createSafetyClassifier({
+        provider: async () => "not json",
+        prompts: async () => prompt,
+      }),
+      onEvent: (event) => events.push(event),
+    });
+    await check("fine", { position: "rest_chat" });
+    expect(events[0]).toMatchObject({
+      kind: "classifier_failed",
+      reason: "parse",
+      classifierPromptVersion: 4,
+    });
+
+    const missing = createSafetyCheck({
+      classifier: createSafetyClassifier({ provider: async () => "{}", prompts: async () => null }),
+      onEvent: (event) => events.push(event),
+    });
+    await missing("fine", { position: "rest_chat" });
+    expect(events[1]).toMatchObject({ reason: "prompt", classifierPromptVersion: null });
   });
 });

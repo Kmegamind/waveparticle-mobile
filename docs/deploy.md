@@ -302,6 +302,13 @@ The safety lines (#119, US-SAF-6) are `"feature":"safety"` lines in the same ser
 `tier`, `lang`, `keywordListVersion`, `classifierPromptVersion`, `layer` and `latencyMs` (the
 failure also `reason`); the third `at`, `action`, `screen` and `lang`. None holds the text, a part
 of it, its length or a hash of it. No database table holds safety events.
+No id in the JSON lines joins a `safety_next_action` line to its `safety_crisis` line. But Vercel
+records each request's address, time, IP address and browser with the line, so the lines can be
+matched by time and IP address, and the crisis line's request address can hold a Goal or session
+id. Treat the safety log as personal data. The next-action request is sent with no referrer and no
+cookie, and the site sends `Referrer-Policy: strict-origin-when-cross-origin` (`next.config.ts`).
+`POST /safety/next-action` refuses other sites (the `Origin` header) and bodies over 200 bytes, but
+has no rate limit: add a Vercel firewall rule or a per-IP limit before a public launch.
 
 Retention and readers are **pending the legal review** (#121); the proposal
 (`docs/ai/AI_05_safety.md` section 6) is set in `src/lib/safety/log-policy.ts`:

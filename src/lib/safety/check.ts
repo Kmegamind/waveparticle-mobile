@@ -69,7 +69,11 @@ export type SafetyEventFields = {
   tier: ClassifierTier;
   lang: typeof SAFETY_CHECK_LANGUAGE;
   keywordListVersion: number;
-  /** The version of the `safety_classifier` prompt that answered; null when it did not answer. */
+  /**
+   * The version of the `safety_classifier` prompt that was asked: the one that answered, or, on a
+   * failure, the one read before it failed. Null when no prompt was read (a keyword crisis, no
+   * classifier, or the prompt itself could not be read).
+   */
   classifierPromptVersion: number | null;
   layer: SafetyLayer;
   /** The whole check, keyword layer and classifier, in milliseconds. */
@@ -152,7 +156,7 @@ export function createSafetyCheck(options: {
       emit({
         kind: "classifier_failed",
         reason: outcome.reason,
-        ...fields(keyword, "keyword_alone", null),
+        ...fields(keyword, "keyword_alone", outcome.promptVersion ?? null),
       });
       return { ...gate(keyword, "keyword_alone"), classifierFailed: true };
     }

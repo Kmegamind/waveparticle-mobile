@@ -93,7 +93,7 @@ export function CrisisPage({ onBack }: { onBack: () => void }) {
   // The /try test build is signed out (US-ACC-1): there is no Me to choose a country on.
   const signedOut = pathname.startsWith("/try");
   const online = useSyncExternalStore(subscribeOnline, isOnline, () => true);
-  // What the user did next (US-SAF-6, #119): the first action only, one beacon per S1.
+  // What the user did next (US-SAF-6, #119): the first action only, one request per S1.
   const reported = useRef(false);
   const report = (action: NextAction) => {
     if (reported.current) return;
