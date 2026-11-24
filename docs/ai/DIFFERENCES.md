@@ -24,7 +24,7 @@ How to read it: each item names the decision id in brackets. The spec section is
 
 ## AI_00_index.md
 
-- [ ] Classification table, AI-1: the output is steps with title, description and minutes (D1c). The conversation order is goal, time, whether to split finer (T2). Mark the split prompt as a placeholder until the real planning prompt is supplied (D1b, P1).
+- [ ] Classification table, AI-1: the output is steps with title, description and minutes (D1c). The conversation order is goal, time, whether to split finer (T2). ~~Mark the split prompt as a placeholder until the real planning prompt is supplied (D1b, P1).~~ Obsolete (2026-11-24, PLAN-PROMPT): supplied.
 - [ ] Table row AI-2: step cards are no longer authored and picked by code. They are made ahead once per story part from the story facts and the key moments, checked before publishing and read afterwards, with no fallback (SHARED-STORY, CARDS-PER-PART, NO-BACKUP, PUBLISH-FIRST). Add the background card (D3, T4) here or as its own row.
 - [ ] Table row AI-3: the stuck message is generated on every Pause and receives the pause number; from the third pause the prompt is stronger (F1). The second call (resolved line on Back) becomes the return pop-up generation (R1, T6).
 - [ ] Table row AI-4: remove "third Pause shows a system warning" (F1). No message limit and no hidden cap (R2). He answers in character (A3).
@@ -40,7 +40,7 @@ How to read it: each item names the decision id in brackets. The spec section is
 
 ## AI_01_goal-split.md
 
-- [ ] Header: state that the prompt text in section 4 is a placeholder. The real planning prompt (the planning expert in the AI workflow) is to be supplied by Yue and must replace it (D1b, P1). Keep the I/O contract. `AI_01a_current-planning-prompt.md` records the goal-splitting prompt of the current web app; it is a reference, not the planning expert (no such file was found), so P1 stays open.
+- [ ] ~~Header: state that the prompt text in section 4 is a placeholder. The real planning prompt (the planning expert in the AI workflow) is to be supplied by Yue and must replace it (D1b, P1). Keep the I/O contract. `AI_01a_current-planning-prompt.md` records the goal-splitting prompt of the current web app; it is a reference, not the planning expert (no such file was found), so P1 stays open.~~ Obsolete (2026-11-24, PLAN-PROMPT): section 4 holds the owner's planning prompt and P1 is closed.
 - [ ] Goal dialogue order: the goal, the time, then a question whether to split the goal into finer steps (T2). Add the answer as an input (`split_finer`) and add the new question to the trigger table. Say that the question suits users with a detailed goal. Where the feeling question sits is not decided; do not guess.
 - [ ] The assistant proposes a split and the user can adjust it. The user can edit each step's time, the number of steps, the titles and the descriptions; if the edits change the total, the goal's time follows (D1d). No AI call is needed for edits; the AI-5 hook still applies to every edited text.
 - [ ] Output: each step has a title and a description of one or two sentences that expands the title (what to do, what to watch for) (D1c). Update the schema, the format block and the code validation.
@@ -176,7 +176,7 @@ How to read it: each item names the decision id in brackets. The spec section is
 - [ ] Rename the proposals P1 to P6: the id P1 now means the real planning prompt in `docs/DECISIONS.md`. Avoid the clash.
 - [ ] Proposals: P1 (cancel the warning) is decided (F1). P2 (Kth pause rule) is replaced by the pause-number rule (F1). P3 (rest chat) is decided the other way (A3). P4 (AI question) is decided: terms and settings only (A4). P5 (three tiers) is amended: two tiers in the demo (A5b). P6 (return line picked) is decided the other way: generated live (A6, H2, T6). Done in #295: each row now states its outcome.
 - [ ] To-do T2 stays cancelled. T3 (wireframe: Back, resolved line, timed R2) is closed: Back opens the return pop-up (R1); there is no timed return screen. T4: cancel it; no fallback pools (NO-BACKUP). T5: remove the 30-message cap (R2). T13 (non-English versions) is deleted (L1). T14: supply the generator inputs (scene table, allowed props, allowed names, rules) for all 26 stories (C1).
-- [ ] Add to-dos: the real planning prompt (P1); the prompt for making step cards ahead per part, with key moments and leak checks (SHARED-STORY, CARDS-PER-PART); the background card prompt (D3); the return pop-up prompt (R1, T6); the third-pause prompt and its test (F1); key moments for every story (C2); the legal check on disclosure (A4); the provider retention terms (A7b).
+- [ ] Add to-dos: ~~the real planning prompt (P1)~~ (obsolete, 2026-11-24, PLAN-PROMPT: supplied); the prompt for making step cards ahead per part, with key moments and leak checks (SHARED-STORY, CARDS-PER-PART); the background card prompt (D3); the return pop-up prompt (R1, T6); the third-pause prompt and its test (F1); key moments for every story (C2); the legal check on disclosure (A4); the provider retention terms (A7b).
 - [ ] Section "Decided (carried forward)": D-AI-1 hybrid is superseded; D-AI-2 is replaced (no resolved call; the pop-up); D-AI-4: remove the warning; D-AI-5 amended.
 - [ ] Section "small test" table: delete the quiet-line test, the deflect versus answer test and the return-card "he waited" arm; add the third-pause test and the return pop-up test.
 - [ ] Questions to other sessions: update the pool-size counts (80 or 160 lines no longer apply); remove the quiet-line and HOME-2 questions; the question about chat history staying visible stays.
@@ -201,7 +201,7 @@ How to read it: each item names the decision id in brackets. The spec section is
 
 - Whether the background card appears once at the start of the goal (T1b). Assumption used above: yes. (Later Steps have no special opening card, CARDS-SPREAD.)
 - Closed: a card may use facts of its own part; the spoiler check runs against the parts after the card's own part (LEAK-BY-PART).
-- The real planning prompt (P1) and the provider retention terms (A7b).
+- ~~The real planning prompt (P1)~~ (closed 2026-11-24, PLAN-PROMPT) and the provider retention terms (A7b).
 - The exact placement of the background card and first story card, and of the feeling question in the goal dialogue.
 - Closed: the third-pause message never addresses an instruction to the user, so no exemption is needed (PAUSE-3).
 - Closed: the cards of all parts are spread across the Steps, none is dropped, and later Steps have no special opening card (CARDS-SPREAD).
