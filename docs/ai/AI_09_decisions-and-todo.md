@@ -47,8 +47,8 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 | T5 | Chat cost caps (last 6 turns, 300 chars); no message cap (R2) | Engineering |
 | T6 | Update prototype C1 note and NF6 text ("Kth line", "three replies") | Prototype session |
 | T7 | Open decisions D-AI-3, 6, 8, 9 | Yue |
-| T8 | Offline real-model run for AI-3 snags (AI-3 v2 §A6): 20 runs × 5 Pauses × 4 entry states, categories on and off | WP2.8 (after Yue agrees) |
-| T9 | Offline real-model run for rest chat (AI-4 v2 §C): 180 replies | WP2.8 |
+| T8 | Offline real-model run for AI-3 snags (AI-3 v2 §A6): 20 runs × 5 Pauses × 4 entry states, categories on and off. Runner built in #42 (4 Stories in place of entry states, SCENE-PER-STORY; `docs/architecture/offline-runs.md`); the owner runs it | WP2.8 (after Yue agrees) |
+| T9 | Offline real-model run for rest chat (AI-4 v2 §C): 180 replies. Runner built in #42; the owner runs it | WP2.8 |
 | T10 | Wizard of Oz arms for Pauses, chat, return line | Yue recruits real users |
 | T11 | (cancelled) Scope label and JSON output for AI-4: a rest reply carries no label (CHAT-NO-LABEL) | — |
 | T12 | `used_lines` run store and dedupe check in the AI-6 checker | Engineering |

@@ -1,7 +1,7 @@
 import { getActivePrompt, type PromptSource } from "@/lib/prompts/repository";
 import { createModelGateway } from "./gateway";
 import { createHttpModelProvider } from "./http";
-import type { GatewayLog, ModelGateway } from "./types";
+import type { GatewayAttempt, GatewayLog, ModelGateway } from "./types";
 import { logEvent } from "@/lib/logging/server-log";
 
 /** A model call that takes at least this long is logged as slow (#135). */
@@ -34,6 +34,8 @@ export function createServerModelGateway(
     timeLimitMs?: number;
     maxAttempts?: number;
     log?: (event: GatewayLog) => void;
+    /** Every attempt's failed rules, for the offline runs (#42). */
+    onAttempt?: (event: GatewayAttempt) => void;
     /** The prompt source; the database through getActivePrompt unless a test passes another. */
     prompts?: PromptSource;
   } = {},
@@ -49,6 +51,7 @@ export function createServerModelGateway(
     timeLimitMs: options.timeLimitMs,
     maxAttempts: options.maxAttempts,
     log: options.log ?? logGatewayCall,
+    onAttempt: options.onAttempt,
     provider: configured
       ? createHttpModelProvider({
           apiKey,

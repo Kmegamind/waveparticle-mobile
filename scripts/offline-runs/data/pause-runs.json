@@ -1,0 +1,8 @@
+{
+  "testData": true,
+  "note": "TEST DATA for the offline runs (#42), not product content. AC1 as reworded: four Stories (SCENE-PER-STORY replaces the four entry states), 20 runs of five Pauses in one Step each, in two arms: category and prop picked by the code (on, the product, PAUSE-TWO-CALLS) and none offered (off, a test arm only, docs/ai/AI_03 section A1).",
+  "runsPerStory": 20,
+  "pausesPerRun": 5,
+  "arms": ["on", "off"],
+  "stories": ["site-search", "trinity", "kitchen-martinis", "bohr-difficulties"]
+}

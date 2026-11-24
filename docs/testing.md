@@ -17,3 +17,5 @@
 - Seed card checks (#46): `npm run check:cards` (a CI step of its own) runs the admin card checks and a repeated-lines check on every card of `src/content/<companion>/story-decks.json`; a failing card fails CI and is listed by key.
 
 - Copy rules (#9): `tests/copy-rules.test.ts` scans the code default of every app text key (`src/content/app-text.json`) for "overdue", "behind", "missed", "owe", "catch up", "abandoned", "partial", any streak, and Mission or Task for the user's work. CI fails on a match and lists each key and text.
+
+- Offline runs (#42): `node scripts/offline-runs/run.mjs --stub` runs the three offline suites against the stub model with no network; only the owner runs `--real --confirm` against the real model (`docs/architecture/offline-runs.md`). `tests/offline-runs.test.ts` proves the runner with the stub; `npm test` never starts the runner itself.

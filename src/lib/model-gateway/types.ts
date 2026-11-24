@@ -31,6 +31,9 @@ export type GatewayLog = {
   attempts: number;
 };
 
+/** One attempt of a call and the rules it failed (empty when it passed); offline runs only (#42). */
+export type GatewayAttempt = { call: GatewayCall; attempt: number; rejectedRules: string[] };
+
 export type ModelProvider = (input: { prompt: string; signal: AbortSignal }) => Promise<string>;
 
 export type PlanSplitInput = {
