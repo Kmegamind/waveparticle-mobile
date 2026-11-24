@@ -33,6 +33,7 @@ One file per component in this folder. To add one, create `docs/architecture/<co
 - [Life Path (account)](life-path-account.md): `/companions/oppenheimer` (CPAGE, #258): the 26 stories under six named periods (each story's `period`, #284) (drafts, PERIOD-NAMES) with no dates or ages.
 - [Me area](me-area.md): ME (#81): initials, display name with Edit (`profiles.nickname`; the server's safety check runs before the save, and a crisis shows S1 in place of Me, #392), email, first-launch date, the Current…
 - [Model gateway](model-gateway.md): Server-only calls for the plan split, step cards, the pause message (two calls since #56: the stuck story, then his words about it), the rest reply and the return pop-up.
+- [Offline runs](offline-runs.md): #42 (US-AI-12, `docs/decisions/0030`): measures the pause message, the rest reply and the goal split with the real prompts before users see them, and compares the results with targets set before the…
 - [Prompts (ADM-08)](prompts-adm-08.md): Every gateway prompt and its check limits, read from `public.prompts` through `getActivePrompt` (#282, `docs/decisions/0015`).
 - [Publish history](publish-history.md): #289 (`docs/decisions/0018`): every publish and roll back writes one `public.publish_history` row in the same transaction (kind, key, version, action, editor, time).
 - [Root layout](root-layout.md): Page shell, install metadata and the phone viewport.

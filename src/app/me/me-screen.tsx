@@ -41,6 +41,12 @@ const NO_HELP_LINE = {
   copy: { userId: "", country: null, entry: null },
 };
 
+const APPEARANCE_LABEL: Record<Appearance, string> = {
+  day: "Day",
+  night: "Night",
+  system: "System",
+};
+
 const initials = (name: string) => name.trim().slice(0, 2).toUpperCase();
 
 const sinceDate = (iso: string) =>
@@ -228,6 +234,8 @@ export function MeScreen({
   continueHref: string | null;
 }) {
   const [prefs, setPrefs] = usePrefs();
+  // #83: a setting change is said aloud once, in words (the buttons also carry their state).
+  const [settingAnnounce, setSettingAnnounce] = useState("");
   const router = useRouter();
 
   useEffect(() => {
@@ -237,6 +245,13 @@ export function MeScreen({
 
   function setAppearance(appearance: Appearance) {
     setPrefs({ ...prefs, appearance });
+    setSettingAnnounce(`Appearance: ${APPEARANCE_LABEL[appearance]}.`);
+  }
+
+  function togglePlainText() {
+    const plainText = !prefs.plainText;
+    setPrefs({ ...prefs, plainText });
+    setSettingAnnounce(plainText ? "Plain text on." : "Plain text off.");
   }
 
   return (
@@ -276,13 +291,7 @@ export function MeScreen({
       <div className="me-row me-setting">
         <span id="me-appearance">Appearance</span>
         <div aria-labelledby="me-appearance" className="me-segmented" role="group">
-          {(
-            [
-              ["day", "Day"],
-              ["night", "Night"],
-              ["system", "System"],
-            ] as const
-          ).map(([value, label]) => (
+          {(Object.entries(APPEARANCE_LABEL) as [Appearance, string][]).map(([value, label]) => (
             <button
               aria-pressed={prefs.appearance === value}
               className="me-segment"
@@ -302,13 +311,16 @@ export function MeScreen({
           aria-checked={prefs.plainText}
           aria-labelledby="me-plain-text"
           className="me-toggle"
-          onClick={() => setPrefs({ ...prefs, plainText: !prefs.plainText })}
+          onClick={togglePlainText}
           role="switch"
           type="button"
         >
           {prefs.plainText ? "On" : "Off"}
         </button>
       </div>
+      <p aria-live="polite" className="sr-only" data-testid="me-setting-announce">
+        {settingAnnounce}
+      </p>
 
       <Disclosure id="me-history" label="History">
         <HistoryPanel history={view.history} />
