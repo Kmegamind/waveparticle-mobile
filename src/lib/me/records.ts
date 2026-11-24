@@ -56,7 +56,8 @@ export function storyRecord(
   sessionId: string,
 ): StoryRecordView | null {
   const session = progress.sessions.find((item) => item.id === sessionId);
-  if (!session || session.state !== "completed") return null;
+  // #114: a session with the Story turned off has no chapter of his.
+  if (!session || session.state !== "completed" || isStoryOff(session)) return null;
   const goal = progress.goals.find((item) => item.id === session.goalId);
   if (!goal || !isStoryId(content, session.storyId)) return null;
   const story = storyById(content, session.storyId);

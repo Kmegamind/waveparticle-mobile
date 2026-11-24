@@ -24,13 +24,18 @@ Option D:
   row level security on, no policy, revoked from `anon` and `authenticated`, cascading from
   `auth.users`. `public.research_condition()` returns the caller's condition or null.
 - `src/lib/research/condition.ts` reads it through the user's own client. A failed read throws: the
-  focus page then does not open, so a participant never falls back to the Story. Only a missing
-  function (the migration has not run, so nobody can be flagged) reads as no condition.
-- The Story is off **per session**: such a session has `companion_id` and `story_id` `none`. The
-  flag decides only on `/focus`, where a new session is opened Story-off and an open Story session
-  is turned Story-off in place (its done Steps and shown cards stay). No migration of `sessions` is
-  needed, and the Life Path, the summary and the Story record ignore these sessions because they
-  are not Oppenheimer's.
+  focus page then does not open, so a participant never falls back to the Story. A missing function
+  (the migration has not run, was dropped, or the schema cache is stale) throws too when the server
+  setting `RESEARCH_STUDY_ACTIVE` is `1`, set before the first participant is assigned; unset, it
+  reads as no condition with one warning per server process.
+- The Story is off **per session**: `sessions.story_off_at` (added by the same migration) is when it
+  went off. The session keeps its Companion and story, so the record says which story it played;
+  a Step done before `story_off_at` was done with the Story on. The flag decides only on `/focus`,
+  where a new session is opened Story-off and an open Story session gets `story_off_at` in place
+  (its done Steps and shown cards stay). A session for an older Plan is restarted unchanged. The
+  Life Path, the summary and the Story record skip sessions with `story_off_at`.
+  (First version of this PR: `companion_id` and `story_id` `none`; changed in review because it
+  erased the story and mixed sessions with Story-on Steps into the study data.)
 - The pause message, the rest reply and the return pop-up actions refuse a flagged account on the
   server, so no model call is made for it even if the browser asks.
 

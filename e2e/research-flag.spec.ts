@@ -8,7 +8,7 @@ const GOAL = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeee01";
 const STEP = ["eeeeeeee-eeee-4eee-8eee-eeeeeeeeee03", "eeeeeeee-eeee-4eee-8eee-eeeeeeeeee04"];
 
 /** A Goal of two Steps with no session yet. */
-async function signInWithGoal(page: Page, researchCondition?: "no_story") {
+async function signInWithGoal(page: Page, researchCondition?: "no_story" | "fail") {
   const now = new Date().toISOString();
   return signIn(
     page.context(),
@@ -102,14 +102,28 @@ test("test_114_ac2_the_story_freezes_and_history_records_the_goal_and_steps", as
     .poll(async () => {
       const tables = await stubTables(account);
       const session = (
-        tables.sessions as { companion_id: string; story_id: string; state: string }[]
+        tables.sessions as {
+          companion_id: string;
+          story_id: string;
+          state: string;
+          story_off_at?: string | null;
+        }[]
       )[0];
       const done = (tables.session_steps as { done_at: string | null }[]).filter(
         (step) => step.done_at !== null,
       ).length;
-      return session ? [session.companion_id, session.story_id, session.state, done] : null;
+      // I3: the session keeps its Companion and story and carries the time the Story went off.
+      return session
+        ? [
+            session.companion_id,
+            typeof session.story_id === "string" && session.story_id.length > 0,
+            typeof session.story_off_at === "string",
+            session.state,
+            done,
+          ]
+        : null;
     })
-    .toEqual(["none", "none", "completed", 2]);
+    .toEqual(["oppenheimer", true, true, "completed", 2]);
   const tables = await stubTables(account);
   expect(tables.session_lines).toEqual([]);
 
@@ -148,3 +162,122 @@ for (const path of ["/me", "/me/signals", "/me/about"]) {
     }
   });
 }
+
+test("test_114_i2_the_focus_page_does_not_open_when_the_flag_cannot_be_read", async ({ page }) => {
+  const account = await signInWithGoal(page, "fail");
+  await page.goto(`/focus?goal=${GOAL}`);
+  await expect(page.getByText("Could not open this Goal. Try again.")).toBeVisible();
+  await expect(page.locator("main.focus-page")).toHaveCount(0);
+  await expect(page.getByRole("timer")).toHaveCount(0);
+  // Nothing was opened on the account.
+  expect((await stubTables(account)).sessions).toEqual([]);
+});
+
+const SESSION = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeee02";
+
+test("test_114_ac2_an_open_story_session_freezes_when_the_flag_is_set", async ({ page }) => {
+  const now = new Date();
+  const earlier = new Date(now.getTime() - 20 * 60_000).toISOString();
+  const account = await signIn(
+    page.context(),
+    baseUrlOf(page),
+    (userId) => ({
+      goals: [
+        {
+          id: GOAL,
+          user_id: userId,
+          title: "Write the report",
+          text: "Write the report",
+          status: "in_progress",
+          kind: "one_time",
+          created_at: earlier,
+          updated_at: earlier,
+        },
+      ],
+      steps: STEP.map((id, position) => ({
+        id,
+        goal_id: GOAL,
+        position,
+        title: position === 0 ? "Outline" : "Draft",
+        description: null,
+        minutes: 15,
+      })),
+      // An open Story session: Step 1 was done with his background card shown.
+      sessions: [
+        {
+          id: SESSION,
+          goal_id: GOAL,
+          user_id: userId,
+          state: "open",
+          companion_id: "oppenheimer",
+          story_id: "site-search",
+          seed: "s",
+          step_count: 2,
+          started_at: earlier,
+          last_active_at: earlier,
+          completed_at: null,
+        },
+      ],
+      session_steps: STEP.map((stepId, position) => ({
+        id: `eeeeeeee-eeee-4eee-8eee-eeeeeeeeee1${position}`,
+        session_id: SESSION,
+        step_id: stepId,
+        position,
+        opened_at: earlier,
+        done_at: position === 0 ? earlier : null,
+      })),
+      session_lines: [
+        {
+          id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeee20",
+          session_id: SESSION,
+          session_step_id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeee10",
+          seq: 0,
+          kind: "background",
+          card_id: null,
+          source: "authored",
+          text: "His background card.",
+          pause_number: null,
+          shown_at: earlier,
+        },
+      ],
+    }),
+    { researchCondition: "no_story" },
+  );
+  await page.goto(`/focus?goal=${GOAL}`);
+  const focus = page.locator('main.focus-page[data-ready="true"]');
+  await expect(focus).toBeVisible();
+  // The done Step stays done; no card comes back, not even the one shown before.
+  await expect(focus.getByText("Step 2 of 2", { exact: true })).toBeVisible();
+  await expect(focus.getByTestId("story-card")).toHaveCount(0);
+  await expect(page.getByText("His background card.")).toHaveCount(0);
+
+  await expect
+    .poll(async () => {
+      const session = (await stubTables(account)).sessions.find(
+        (row) => (row as { id: string }).id === SESSION,
+      ) as { story_off_at?: string } | undefined;
+      return typeof session?.story_off_at === "string";
+    })
+    .toBe(true);
+  const tables = await stubTables(account);
+  const session = tables.sessions.find((row) => (row as { id: string }).id === SESSION) as {
+    companion_id: string;
+    story_id: string;
+    state: string;
+    story_off_at: string;
+  };
+  // Kept: the Companion, the story, the state, the shown card and the done Step.
+  expect([session.companion_id, session.story_id, session.state]).toEqual([
+    "oppenheimer",
+    "site-search",
+    "open",
+  ]);
+  expect(tables.sessions).toHaveLength(1);
+  expect((tables.session_lines as { text: string }[]).map((line) => line.text)).toEqual([
+    "His background card.",
+  ]);
+  // Step 1 was done before the Story went off.
+  const steps = tables.session_steps as { position: number; done_at: string | null }[];
+  const first = steps.find((step) => step.position === 0)!;
+  expect(Date.parse(first.done_at!)).toBeLessThan(Date.parse(session.story_off_at));
+});

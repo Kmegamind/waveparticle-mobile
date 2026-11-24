@@ -8,6 +8,7 @@ import type {
 } from "@/lib/progress/account-progress";
 import { generationInputs, storyById, storyIds, storyProfile } from "@/lib/prototype/story-inputs";
 import { startStory } from "@/lib/story/start";
+import { isStoryOff } from "@/lib/progress/focus-session";
 import type { FinishShown } from "./run";
 import { RUN_COMPANION_ID, type RunWriter } from "./run-writer";
 
@@ -35,7 +36,9 @@ export function sessionIdOf(raw: unknown): string | null {
 
 const ownSession = (progress: AccountProgress, sessionId: string) =>
   progress.sessions.find(
-    (session) => session.id === sessionId && session.companionId === COMPANION_ID,
+    // #114: a session with the Story turned off has no summary (END is his closing line).
+    (session) =>
+      session.id === sessionId && session.companionId === COMPANION_ID && !isStoryOff(session),
   ) ?? null;
 
 const byPosition = <T extends { position: number }>(items: T[]) =>
@@ -111,6 +114,7 @@ const completedOf = (progress: AccountProgress, storyId: string) =>
     (session) =>
       session.state === "completed" &&
       session.companionId === COMPANION_ID &&
+      !isStoryOff(session) &&
       session.storyId === storyId,
   );
 

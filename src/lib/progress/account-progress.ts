@@ -59,6 +59,11 @@ export type ProgressSession = {
   backgroundCardSource: LineSource | null;
   mergedKeyMoments: number[];
   closingLine: string | null;
+  /**
+   * #114: when the Story was turned off for this session (`sessions.story_off_at`); null or missing
+   * while the Story is on.
+   */
+  storyOffAt?: string | null;
   steps: SessionStep[];
   lines: SessionLine[];
 };

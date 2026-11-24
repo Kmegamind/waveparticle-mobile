@@ -6,6 +6,11 @@
 -- policy. The app asks through research_condition(), which answers only for the signed-in account
 -- (auth.uid()). The team assigns and removes a condition with one SQL command in the SQL editor
 -- (docs/deploy.md, Research flag). Deleting the account removes the row.
+--
+-- A session keeps its Companion and story. sessions.story_off_at is when the Story was turned off
+-- for it (null: the Story was on for the whole session). A Step done before that time was done with
+-- the Story on, a Step done at or after it with the Story off. Such a session never counts as story
+-- progress (no Life Path row, no summary, no Story record).
 
 create table public.research_conditions (
   user_id uuid primary key references auth.users (id) on delete cascade,
@@ -29,5 +34,8 @@ as $$
   where r.user_id = auth.uid();
 $$;
 
-revoke all on function public.research_condition() from public;
+revoke all on function public.research_condition() from public, anon;
 grant execute on function public.research_condition() to authenticated;
+
+alter table public.sessions
+  add column story_off_at timestamptz;

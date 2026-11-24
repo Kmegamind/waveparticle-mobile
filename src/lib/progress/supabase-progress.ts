@@ -76,6 +76,7 @@ function sessionFromRow(row: Row): ProgressSession {
       ? row.merged_key_moments.filter((item): item is number => typeof item === "number")
       : [],
     closingLine: nullableText(row.closing_line),
+    storyOffAt: nullableText(row.story_off_at),
     steps: [],
     lines: [],
   };
@@ -195,6 +196,8 @@ export function createSupabaseProgressStore(
               background_card_source: session.backgroundCardSource,
               merged_key_moments: session.mergedKeyMoments,
               closing_line: session.closingLine,
+              // #114: written only when set, so the write works before the migration has run.
+              ...(session.storyOffAt ? { story_off_at: session.storyOffAt } : {}),
             })),
           ),
         );

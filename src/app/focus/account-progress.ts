@@ -1,6 +1,6 @@
 import { getStoryContent } from "@/lib/content/repository";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
-import { NO_STORY, openFocusSession, type AccountFocusPlan } from "@/lib/progress/focus-session";
+import { openFocusSession, type AccountFocusPlan } from "@/lib/progress/focus-session";
 import { storyProfiles } from "@/lib/prototype/story-inputs";
 import { pickStory } from "@/lib/prototype/story-ids";
 import { storyIsOff } from "@/lib/research/condition";
@@ -21,10 +21,10 @@ export async function loadFocusPlan(
   const store = createSupabaseProgressStore(client);
   // #114: a failed read of the research flag throws, so the page does not open with the Story.
   const [progress, storyOff] = await Promise.all([store.read(userId, userId), storyIsOff(client)]);
-  // The study condition needs no story content: no Companion, no cards (F1-STUDY).
-  const content = storyOff ? null : await getStoryContent();
-  // A new session plays the Life Path's current story (#258); an open one keeps its own.
-  const storyId = content ? storyForNewSession(content, progress) : NO_STORY;
+  const content = await getStoryContent();
+  // A new session plays the Life Path's current story (#258); an open one keeps its own. With the
+  // Story off (#114) it is the story where the Life Path froze.
+  const storyId = storyForNewSession(content, progress);
   if (!storyId) return null;
   const opened = openFocusSession(progress, goalId, {
     storyId,
@@ -39,7 +39,7 @@ export async function loadFocusPlan(
       await store.write(userId, { userId, goals: [], sessions: [session] });
     }
   }
-  if (opened.plan.storyOff || !content) return { plan: opened.plan, goalLine: "", who: "" };
+  if (opened.plan.storyOff) return { plan: opened.plan, goalLine: "", who: "" };
   const story = pickStory(storyProfiles(content), opened.plan.storyId);
   // "My goal" and the "Who I am" sheet (#72) show the session's own story.
   return { plan: opened.plan, goalLine: story.goalShort, who: story.who };

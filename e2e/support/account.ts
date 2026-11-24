@@ -33,7 +33,7 @@ export async function signIn(
     missingFunctions?: string[];
     contentRole?: "admin" | "writer";
     /** #114: the research flag's study condition for this account. */
-    researchCondition?: "no_story";
+    researchCondition?: "no_story" | "fail";
   } = {},
 ): Promise<StubAccount> {
   const token = `stub-${randomUUID()}`;

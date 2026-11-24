@@ -1,11 +1,11 @@
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { AccountProgress, ProgressSession } from "@/lib/progress/account-progress";
 import { screenState } from "@/lib/progress/account-progress";
 import {
-  NO_STORY,
   applyFocusSnapshot,
+  doneWithStory,
   isStoryOff,
   openFocusSession,
   planStorageKey,
@@ -23,7 +23,7 @@ import {
   syncSession,
   visibleCards,
 } from "@/lib/prototype/session";
-import { readResearchCondition, storyIsOff } from "@/lib/research/condition";
+import { readResearchCondition, resetResearchWarning, storyIsOff } from "@/lib/research/condition";
 import { lifePath, storyForNewSession } from "@/lib/summary/life-path";
 import { summaryOf } from "@/lib/summary/finish-run";
 import { historyEntry, meView } from "@/lib/me/me-view";
@@ -72,6 +72,18 @@ const withWrites = (progress: AccountProgress, writes: ProgressSession[]): Accou
   ],
 });
 
+const STORY = "site-search";
+
+/** A new Story-off session for the Goal, as /focus opens it with the flag on. */
+function storyOffSession(progress = account()) {
+  return openFocusSession(progress, "goal-1", {
+    storyId: STORY,
+    storyOff: true,
+    now: NOW,
+    newId: ids(),
+  })!;
+}
+
 /** Every Step done through the browser's snapshot, as the focus page records it. */
 function finishAll(progress: AccountProgress): AccountProgress {
   const session = progress.sessions.find((item) => item.state === "open")!;
@@ -84,11 +96,17 @@ function finishAll(progress: AccountProgress): AccountProgress {
 }
 
 describe("#114 the flag: a closed table read for the signed-in account only", () => {
-  it("test_114_the_migration_is_the_newest_and_runs_after_content_roles", () => {
+  it("test_114_the_migration_runs_after_content_roles", () => {
     const names = readdirSync(path.join(root, "supabase", "migrations")).sort();
-    expect(names.at(-1)).toBe(MIGRATION);
     expect(names.indexOf(MIGRATION)).toBeGreaterThan(
       names.indexOf("20261116000000_content_roles.sql"),
+    );
+  });
+
+  it("test_114_the_migration_adds_story_off_at_and_closes_the_function_to_anon", () => {
+    expect(sql()).toMatch(/alter table public\.sessions\s+add column story_off_at timestamptz;/);
+    expect(sql()).toContain(
+      "revoke all on function public.research_condition() from public, anon;",
     );
   });
 
@@ -109,46 +127,75 @@ describe("#114 the flag: a closed table read for the signed-in account only", ()
     expect(body).toMatch(/security definer/);
     expect(body).toMatch(/set search_path = ''/);
     expect(body).toMatch(/where r\.user_id = auth\.uid\(\)/);
-    expect(sql()).toContain("revoke all on function public.research_condition() from public;");
     expect(sql()).toContain(
       "grant execute on function public.research_condition() to authenticated;",
     );
   });
 
+  const rpcClient = (data: unknown, error: { code?: string } | null = null) => ({
+    rpc: async () => ({ data, error }),
+  });
+
   it("test_114_reads_the_condition_and_fails_closed", async () => {
-    const client = (data: unknown, error: { code?: string } | null = null) => ({
-      rpc: async () => ({ data, error }),
-    });
-    expect(await readResearchCondition(client("no_story"))).toBe("no_story");
-    expect(await readResearchCondition(client(null))).toBeNull();
-    expect(await readResearchCondition(client("something else"))).toBeNull();
-    expect(await storyIsOff(client("no_story"))).toBe(true);
-    // The migration has not run: nobody can be flagged yet.
-    expect(await readResearchCondition(client(null, { code: "PGRST202" }))).toBeNull();
+    expect(await readResearchCondition(rpcClient("no_story"))).toBe("no_story");
+    expect(await readResearchCondition(rpcClient(null))).toBeNull();
+    expect(await readResearchCondition(rpcClient("something else"))).toBeNull();
+    expect(await storyIsOff(rpcClient("no_story"))).toBe(true);
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
     // Any other failure throws, so the focus page never falls back to the Story.
-    await expect(readResearchCondition(client(null, { code: "500" }))).rejects.toThrow();
+    await expect(readResearchCondition(rpcClient(null, { code: "500" }), {})).rejects.toThrow();
+    expect(error.mock.calls.join("\n")).toContain("research_read_failed");
+    error.mockRestore();
+  });
+
+  it("test_114_i1_a_missing_function_reads_as_no_flag_with_one_warning_before_a_study", async () => {
+    resetResearchWarning();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const missing = rpcClient(null, { code: "PGRST202" });
+    expect(await readResearchCondition(missing, {})).toBeNull();
+    expect(await readResearchCondition(rpcClient(null, { code: "42883" }), {})).toBeNull();
+    const lines = warn.mock.calls.map((call) => String(call[0]));
+    expect(lines.filter((line) => line.includes("research_function_missing"))).toHaveLength(1);
+    warn.mockRestore();
+  });
+
+  it("test_114_i1_a_missing_function_fails_closed_while_a_study_is_active", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const active = { RESEARCH_STUDY_ACTIVE: "1" };
+    for (const code of ["PGRST202", "42883"]) {
+      await expect(readResearchCondition(rpcClient(null, { code }), active)).rejects.toThrow();
+    }
+    const lines = error.mock.calls.map((call) => String(call[0]));
+    expect(lines.some((line) => line.includes('"reason":"function_missing"'))).toBe(true);
+    error.mockRestore();
+    // The setting does not change an answer that was read.
+    expect(await readResearchCondition(rpcClient("no_story"), active)).toBe("no_story");
+    expect(await readResearchCondition(rpcClient(null), active)).toBeNull();
+  });
+
+  it("test_114_i1_the_setting_is_documented", () => {
+    expect(read(".env.example")).toMatch(/^RESEARCH_STUDY_ACTIVE=$/m);
+    expect(read("docs/deploy.md")).toContain("RESEARCH_STUDY_ACTIVE=1");
   });
 
   it("test_114_deploy_says_how_to_assign_and_remove_with_one_sql_command", () => {
     const deploy = read("docs/deploy.md");
     expect(deploy).toMatch(/## Research flag/);
     expect(deploy).toMatch(
-      /insert into public\.research_conditions \(user_id, condition\)\s+select id, 'no_story' from auth\.users where email = '[^']+'\s+on conflict \(user_id\) do update set condition = excluded\.condition;/,
+      /insert into public\.research_conditions \(user_id, condition\)\s+select id, 'no_story' from auth\.users where email = '[^']+'\s+on conflict \(user_id\) do update set condition = excluded\.condition, assigned_at = now\(\);/,
     );
     expect(deploy).toMatch(/delete from public\.research_conditions/);
   });
 });
 
 describe("#114 AC1 the focus page in the study condition", () => {
-  it("test_114_ac1_a_new_session_has_no_companion_and_no_story", () => {
-    const result = openFocusSession(account(), "goal-1", {
-      storyId: NO_STORY,
-      storyOff: true,
-      newId: ids(),
-    })!;
+  it("test_114_ac1_a_new_session_keeps_its_story_and_is_marked_story_off", () => {
+    const result = storyOffSession();
     const session = result.writes[0];
-    expect(session.companionId).toBe(NO_STORY);
-    expect(session.storyId).toBe(NO_STORY);
+    expect(session.companionId).toBe("oppenheimer");
+    expect(session.storyId).toBe(STORY);
+    expect(session.storyOffAt).toBe(NOW);
+    expect(isStoryOff(session)).toBe(true);
     expect(result.plan.storyOff).toBe(true);
     // The current Step with its description is on the plan.
     expect(result.plan.steps[0]).toEqual({
@@ -166,7 +213,7 @@ describe("#114 AC1 the focus page in the study condition", () => {
         description: s.description ?? "",
         minutes: s.minutes,
       })),
-      storyId: NO_STORY,
+      storyId: STORY,
     };
     const base = syncSession(null, plan, 1);
     const started = setStepCards(base, 0, NO_CARDS, 1_000);
@@ -195,28 +242,6 @@ describe("#114 AC1 the focus page in the study condition", () => {
     expect(returnWithoutPopup(away, 1_000 + 10 * 60_000).returnPending).toBeNull();
   });
 
-  it("test_114_ac1_the_focus_page_hides_his_side_and_the_rest_page_his_words", () => {
-    const focus = read("src/app/_session/focus-body.tsx");
-    expect(focus).toMatch(/\{storyOff \? null : \(\s*<section aria-labelledby="his-side"/);
-    expect(focus).toMatch(/\{storyOff \? null : \(\s*<WhoIAmSheet/);
-    expect(focus).toMatch(/returnPending && !storyOff \?/);
-    expect(focus).toMatch(/\(storyOff \? noCards : loadStepCards\)\(/);
-    const rest = read("src/app/_session/rest-body.tsx");
-    expect(rest).toMatch(/\{storyOff \? null : \(\s*<>\s*<section aria-label="Conversation"/);
-    const page = read("src/app/focus/account-focus.tsx");
-    expect(page).toContain("storyOff: plan.storyOff");
-    expect(page).toContain("plan.storyOff ? ACCOUNT_PATHS : accountPathsFor(plan.sessionId)");
-  });
-
-  it("test_114_ac1_the_server_refuses_his_lines_for_a_flagged_account", () => {
-    const focus = read("src/app/focus/actions.ts");
-    expect(
-      focus.match(/storyIsOff\((client|signedIn\.client)\)\.catch\(\(\) => true\)/g),
-    ).toHaveLength(2);
-    const rest = read("src/app/rest/actions.ts");
-    expect(rest).toMatch(/return !\(await storyIsOff\(client\)\.catch\(\(\) => true\)\);/);
-  });
-
   it("test_114_a_story_off_session_has_its_own_device_key", () => {
     expect(planStorageKey({ sessionId: "s1", storyOff: false })).toBe("waveparticle.session.s1");
     expect(planStorageKey({ sessionId: "s1", storyOff: true })).toBe(
@@ -241,29 +266,69 @@ describe("#114 AC2 the Story freezes and History still records the Goal and Step
     )!;
     progress = withWrites(progress, [halfway.session]);
 
+    const LATER = "2026-11-24T11:00:00.000Z";
     const frozen = openFocusSession(progress, "goal-1", {
-      storyId: "site-search",
+      storyId: STORY,
       storyOff: true,
+      now: LATER,
       newId: ids(),
     })!;
     expect(frozen.writes).toHaveLength(1);
-    expect(frozen.writes[0].id).toBe(first.plan.sessionId);
-    expect(isStoryOff(frozen.writes[0])).toBe(true);
+    const session = frozen.writes[0];
+    expect(session.id).toBe(first.plan.sessionId);
+    // I3: the Companion and the story are kept; only the time the Story went off is added.
+    expect(session.companionId).toBe("oppenheimer");
+    expect(session.storyId).toBe(STORY);
+    expect(session.storyOffAt).toBe(LATER);
     expect(frozen.plan.storyOff).toBe(true);
-    // The done Step stays done; the shown card stays in the record.
+    // The done Step stays done; the shown card stays in the record, but none goes to the device.
     expect(frozen.plan.done).toEqual([true, false]);
-    expect(frozen.writes[0].lines.map((line) => line.text)).toEqual(["His card."]);
+    expect(session.lines.map((line) => line.text)).toEqual(["His card."]);
+    expect(frozen.plan.cards).toEqual([[], []]);
+    // The first Step was done with the Story on; the second is not done yet.
+    expect(session.steps.map((step) => doneWithStory(session, step))).toEqual([true, null]);
     // Seeding the device from the account keeps the done Step.
     expect(seedFocusSession(frozen.plan, 1, 0).current).toBe(1);
+    // A line the browser sends now is not stored.
+    const tampered = applyFocusSnapshot(
+      withWrites(progress, [session]),
+      {
+        sessionId: session.id,
+        current: 2,
+        opened: [true, true],
+        lines: [{ step: 1, kind: "story_card", seq: 0, text: "Sneaked in.", pauseNumber: null }],
+      },
+      { now: "2026-11-24T12:00:00.000Z", newId: ids(), userId: "user-1" },
+    )!;
+    expect(tampered.session.lines.map((line) => line.text)).toEqual(["His card."]);
+    expect(tampered.session.steps.map((step) => doneWithStory(tampered.session, step))).toEqual([
+      true,
+      false,
+    ]);
+  });
+
+  it("test_114_i3_a_session_for_an_older_plan_is_restarted_unchanged", () => {
+    const first = openFocusSession(account(), "goal-1", { storyId: STORY, newId: ids() })!;
+    const progress = withWrites(account(), first.writes);
+    progress.goals[0].steps = [
+      { id: "step-c", position: 0, title: "Only", description: null, minutes: 20 },
+    ];
+    const again = openFocusSession(progress, "goal-1", {
+      storyId: STORY,
+      storyOff: true,
+      now: NOW,
+      newId: ids(),
+    })!;
+    expect(again.writes.map((session) => session.state)).toEqual(["restarted", "open"]);
+    const [restarted, opened] = again.writes;
+    expect(restarted.storyOffAt ?? null).toBeNull();
+    expect(restarted.storyId).toBe(STORY);
+    expect(opened.storyOffAt).toBe(NOW);
   });
 
   it("test_114_ac2_finishing_in_the_study_condition_makes_no_life_path_row", () => {
     const before = storyForNewSession(seed, account());
-    const opened = openFocusSession(account(), "goal-1", {
-      storyId: NO_STORY,
-      storyOff: true,
-      newId: ids(),
-    })!;
+    const opened = storyOffSession();
     const done = finishAll(withWrites(account(), opened.writes));
     const session = done.sessions[0];
     expect(session.state).toBe("completed");
@@ -280,11 +345,7 @@ describe("#114 AC2 the Story freezes and History still records the Goal and Step
   });
 
   it("test_114_ac2_history_records_the_goal_and_steps_without_the_companion", () => {
-    const opened = openFocusSession(account(), "goal-1", {
-      storyId: NO_STORY,
-      storyOff: true,
-      newId: ids(),
-    })!;
+    const opened = storyOffSession();
     const done = finishAll(withWrites(account(), opened.writes));
     const session = done.sessions[0];
     const entry = historyEntry(done, session, seed.companions)!;
@@ -297,19 +358,12 @@ describe("#114 AC2 the Story freezes and History still records the Goal and Step
     const record = sessionRecord(done, session.id, seed.companions)!;
     expect(record.doneSteps).toEqual(["Outline", "Draft"]);
     expect(record.storyRecordHref).toBeNull();
-    expect(read("src/app/me/history-panel.tsx")).toMatch(
-      /entry\.companion\s*\?\s*`\$\{entry\.companion\} · \$\{entry\.minutes\} min`\s*:\s*`\$\{entry\.minutes\} min`/,
-    );
   });
 
   it("test_114_removing_the_flag_keeps_an_open_story_off_session_story_off", () => {
-    const opened = openFocusSession(account(), "goal-1", {
-      storyId: NO_STORY,
-      storyOff: true,
-      newId: ids(),
-    })!;
+    const opened = storyOffSession();
     const progress = withWrites(account(), opened.writes);
-    const again = openFocusSession(progress, "goal-1", { storyId: "site-search", newId: ids() })!;
+    const again = openFocusSession(progress, "goal-1", { storyId: STORY, newId: ids() })!;
     expect(again.writes).toEqual([]);
     expect(again.plan.storyOff).toBe(true);
   });

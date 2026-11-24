@@ -114,8 +114,8 @@ active through `activate_prompt` and write a `prompt` history row in the same tr
 
 Research conditions (#114) live in `public.research_conditions` (`user_id`, `condition` `no_story`,
 `assigned_at`), closed to the API like content roles; `research_condition()` answers for `auth.uid()`
-only. A session played in the study condition has `companion_id` and `story_id` `none`, so it never
-counts as story progress.
+only. A session played in the study condition has `sessions.story_off_at` (when the Story went off;
+it keeps its Companion and story), so it never counts as story progress.
 
 A Plan is the Goal's Steps. Story progress for a Companion is the completed
 sessions grouped by `companion_id` and `story_id`. A restarted session does
