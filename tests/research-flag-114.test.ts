@@ -103,6 +103,19 @@ describe("#114 the flag: a closed table read for the signed-in account only", ()
     );
   });
 
+  it("test_114_n2_a_trigger_keeps_story_off_at_once_it_is_set", () => {
+    const body = sql().slice(sql().indexOf("create function private.keep_story_off_at()"));
+    expect(body).toMatch(/returns trigger/);
+    expect(body).toMatch(/set search_path = ''/);
+    // Only null to a time: any change of a value that is set is refused.
+    expect(body).toMatch(
+      /if old\.story_off_at is not null and new\.story_off_at is distinct from old\.story_off_at then\s+raise exception/,
+    );
+    expect(sql()).toMatch(
+      /create trigger sessions_keep_story_off_at\s+before update of story_off_at on public\.sessions\s+for each row\s+execute function private\.keep_story_off_at\(\);/,
+    );
+  });
+
   it("test_114_the_migration_adds_story_off_at_and_closes_the_function_to_anon", () => {
     expect(sql()).toMatch(/alter table public\.sessions\s+add column story_off_at timestamptz;/);
     expect(sql()).toContain(

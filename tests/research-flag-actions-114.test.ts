@@ -68,6 +68,7 @@ vi.mock("@/lib/logging/server-log", () => ({ logEvent: () => {} }));
 
 const { loadAccountReturnLine, loadAccountStepCards } = await import("@/app/focus/actions");
 const { loadAccountPauseMessage, loadAccountRestReply } = await import("@/app/rest/actions");
+const { finishRunAction } = await import("@/app/end/actions");
 
 const SESSION = "00000000-0000-4000-8000-000000000001";
 
@@ -196,5 +197,23 @@ describe("#114 I3 the session store reads and writes story_off_at", () => {
     });
     expect(upserts[0][0].story_off_at).toBe("2026-11-24T10:00:00.000Z");
     expect("story_off_at" in upserts[1][0]).toBe(false);
+  });
+});
+
+describe("#114 N2 END refuses a flagged account", () => {
+  const input = { sessionId: SESSION };
+  for (const flag of ["on", "failing"] as const) {
+    it(`test_114_n2_finish_run_with_the_flag_${flag}_fails_with_no_model_call_and_no_read`, async () => {
+      setFlag(flag);
+      await expect(finishRunAction(input)).resolves.toEqual({ status: "failed" });
+      expect(state.gatewayCalls).toEqual([]);
+      expect(state.tableReads).toEqual([]);
+    });
+  }
+
+  it("test_114_n2_finish_run_with_the_flag_off_reads_the_account", async () => {
+    setFlag("off");
+    await finishRunAction(input);
+    expect(state.tableReads).toContain("sessions");
   });
 });

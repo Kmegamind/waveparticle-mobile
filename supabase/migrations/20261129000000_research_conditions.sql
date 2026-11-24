@@ -39,3 +39,25 @@ grant execute on function public.research_condition() to authenticated;
 
 alter table public.sessions
   add column story_off_at timestamptz;
+
+-- story_off_at only ever goes from null to a time (#114, review N2): once the Story is off for a
+-- session it stays off, so the session can never become story progress afterwards. The owner's
+-- update policy on sessions would otherwise let the browser clear or move it.
+create function private.keep_story_off_at()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if old.story_off_at is not null and new.story_off_at is distinct from old.story_off_at then
+    raise exception 'story_off_at cannot be changed once it is set'
+      using errcode = 'check_violation';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger sessions_keep_story_off_at
+  before update of story_off_at on public.sessions
+  for each row
+  execute function private.keep_story_off_at();

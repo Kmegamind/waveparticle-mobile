@@ -33,7 +33,9 @@ Option D:
   a Step done before `story_off_at` was done with the Story on. The flag decides only on `/focus`,
   where a new session is opened Story-off and an open Story session gets `story_off_at` in place
   (its done Steps and shown cards stay). A session for an older Plan is restarted unchanged. The
-  Life Path, the summary and the Story record skip sessions with `story_off_at`.
+  Life Path, the summary and the Story record skip sessions with `story_off_at`. A trigger
+  (`private.keep_story_off_at`) refuses any change of `story_off_at` once it is set, and the END
+  action refuses a flagged account, so no closing line or model call is made for it.
   (First version of this PR: `companion_id` and `story_id` `none`; changed in review because it
   erased the story and mixed sessions with Story-on Steps into the study data.)
 - The pause message, the rest reply and the return pop-up actions refuse a flagged account on the
