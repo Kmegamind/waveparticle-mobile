@@ -162,6 +162,45 @@ a {
   }
 }
 
+/*
+ * The hand layer (DESIGN.md section 7, issue 83; src/app/hand-layer.tsx). Plain text (the
+ * plain-text class on <html>, set on Me) swaps the hand font for the body face and draws each mark
+ * as a straight line in the same box. No screen uses the layer yet.
+ */
+.hand {
+  font-family: var(--type-hand);
+  font-variation-settings:
+    "INFM" 0,
+    "BNCE" 0;
+  font-weight: 600;
+}
+
+.plain-text .hand {
+  font-family: var(--type-sans);
+  font-variation-settings: normal;
+  font-weight: 700;
+}
+
+.mark-svg {
+  fill: none;
+  stroke: var(--mark);
+  stroke-linecap: round;
+  stroke-width: 2.4;
+}
+
+.mark-svg path {
+  vector-effect: non-scaling-stroke;
+}
+
+.mark-svg .mark-straight,
+.plain-text .mark-svg .mark-hand {
+  display: none;
+}
+
+.plain-text .mark-svg .mark-straight {
+  display: inline;
+}
+
 .app-shell {
   margin-inline: auto;
   max-width: var(--layout-phone-max);
