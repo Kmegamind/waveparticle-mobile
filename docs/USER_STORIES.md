@@ -1320,7 +1320,7 @@ These rules come from the product principles and from decisions. They are repeat
 
 **Acceptance criteria**
 - Given I chose a country under Me and the hotline list has an entry for it, then the crisis page names that country and "Get support now" opens that entry's service (S1-E).
-- Given I have not chosen a country, then the crisis page shows the international directory link, a clearly labelled line "If you are in the United States: call or text 988", and a "Choose your country" link to Me; the app does not read my location and does not assume a country (S1-0).
+- Given I have not chosen a country, then the crisis page shows the international directory link, a clearly labelled line "If you are in the United States: call or text 988", and a "Choose your country" link to Me; the app does not read my location and does not assume a country (S1-0). The same content (without the Choose your country link when offline) is shown when no country can be read and the database cannot answer.
 - Given I chose a country that has no entry, then "Get support now" opens the international directory, Find A Helpline (S1-N).
 - Given any of these, then the directory link is shown as a text link, never as a third button.
 - Given the list, then it is edited in the admin and owned by the product owner, each entry shows when it was last checked and by whom, and the source of the region (a setting on Me) and what is stored (the country, on the account with a copy on the phone, included in the data export) are written down (SAFETY-REGION, SAFETY-REGION-STORE, HOTLINES).

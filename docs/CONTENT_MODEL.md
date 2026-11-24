@@ -409,7 +409,7 @@ Decided 2026-11-23 (SAFETY-REGION, SAFETY-REGION-STORE, SAFETY-DIRECTORY, HOTLIN
 | Field | Type | Example and rule |
 |---|---|---|
 | country | text, primary key | ISO 3166-1 alpha-2, upper case: `US`. One entry per country. |
-| service_name | text | The service's own name, in English (L1). |
+| service_name | text, optional | The service's own name, in English (L1). An entry with no name shows only its contact line, so the US entry reads "Call or text 988" (pending the owner). |
 | primary_kind | `phone`, `text` or `web` | What **Get support now** opens: `tel:`, `sms:` or an `https` address. |
 | primary_value | text | `988` for the US entry. |
 | secondary_kind, secondary_value | optional | A second way in, shown as a text link: for the US entry, text 988. |
@@ -417,7 +417,7 @@ Decided 2026-11-23 (SAFETY-REGION, SAFETY-REGION-STORE, SAFETY-DIRECTORY, HOTLIN
 | checked_on, checked_by | date, text | When the entry was last checked and who checked it. The product owner checks every entry at least every 6 months and before each release; ADM-14 marks an older one. |
 | versions | draft and published, with restore | As ADMIN; each publish and roll back writes a Publish history row of kind `hotline` (`docs/decisions/0018`, addition of 2026-11-23). |
 
-The international directory is not an entry: it is one fixed link, Find A Helpline (findahelpline.com), shown on S1 in every state (SAFETY-DIRECTORY). If the database cannot answer, the app uses a copy of the US entry and the directory link written in the code, so S1 is never blank (as APP-TEXT).
+The international directory is not an entry: it is one fixed link, Find A Helpline (findahelpline.com), shown on S1 in every state (SAFETY-DIRECTORY). When no country is known, or the phone copy cannot be read and the database cannot answer, the app shows a copy of the S1-0 content written in the code (the directory link and the labelled line "If you are in the United States: call or text 988"; the "Choose your country" link is left out when offline), never an unlabelled US entry, so S1 is never blank and never assumes a country (as APP-TEXT).
 
 ## 3. How the user's steps share out the story
 

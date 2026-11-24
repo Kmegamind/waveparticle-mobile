@@ -502,18 +502,18 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 - **Shows:** "This is outside the story.", a short body supplied after legal and clinical review, the support resource for the country the user chose under Me (SAFETY-REGION), and two buttons. The app never reads a location and has no default country. Below the resource, always, the international directory as a text link: Find A Helpline (findahelpline.com, SAFETY-DIRECTORY). It is never a third button. What the resource area shows depends on the state below.
 - **Can do and leads to:** **Get support now** opens an outside resource: the entry's main contact in S1-E (for example a `tel:` link on a phone), the directory in S1-0 and S1-N. The directory link opens Find A Helpline. **Choose your country** (S1-0 only) opens ME-REGION. **Back to my Goal** returns to the screen that triggered it with the text field emptied.
 - **System back:** same as Back to my Goal.
-- **States:** it never blocks Back or Home. S1 needs no network: it reads the copy of the chosen country and its published entry kept on the phone (SAFETY-REGION-STORE). If neither the phone copy nor the database answers, it uses the US entry and the directory link written in the code (HOTLINES). Loading: none, because nothing waits on the network.
+- **States:** it never blocks Back or Home. S1 needs no network: it reads the copy of the chosen country and its published entry kept on the phone (SAFETY-REGION-STORE). When no country is known, or the phone copy cannot be read and the database cannot answer, it shows S1-0 from a copy written in the code (the directory link and the labelled line "If you are in the United States: call or text 988"; the "Choose your country" link is left out when offline), never an unlabelled US entry (HOTLINES). Loading: none, because nothing waits on the network.
 
 #### S1-0 · Safety, no country chosen
 
 - **Frame:** state of S1.
-- **Shows:** the directory link; a clearly labelled line "If you are in the United States: call or text 988"; a **Choose your country** text link to ME-REGION. Signed out (the `/try` test build only, US-ACC-1), the Choose your country link is not shown.
+- **Shows:** the directory link; a clearly labelled line "If you are in the United States: call or text 988" (plain text, not a link: Get support now is the one action); a **Choose your country** text link to ME-REGION. Signed out (the `/try` test build only, US-ACC-1), the Choose your country link is not shown.
 - **Can do and leads to:** **Get support now** opens the directory. Choose your country opens ME-REGION; its back returns to Me, not to S1.
 
 #### S1-E · Safety, an entry for the chosen country
 
 - **Frame:** state of S1.
-- **Shows:** the country's name in plain text ("Help in <country>"), the entry's service name, its main contact and, when there is one, a second contact as a text link (for example "Text 988"), and the directory link.
+- **Shows:** the country's name in plain text ("Help in <country>"), the entry's service name when it has one (the name is optional; an entry with no name shows only its contact line, so the US entry reads "Call or text 988"), its main contact and, when there is one, a second contact as a text link (for example "Text 988"), and the directory link.
 - **Can do and leads to:** **Get support now** opens the main contact.
 
 #### S1-N · Safety, no entry for the chosen country
@@ -667,7 +667,7 @@ The content admin is a desktop tool (ADMIN, ADMIN-DESKTOP); these two screens ar
 
 #### ADM-15 · Hotline entry
 
-- **Shows:** the country (ISO 3166-1 alpha-2 code and English name, fixed once saved), the service name, the main contact (kind: phone, text or web; and its value), an optional second contact, a short note, the last checked date and who checked it, and the versions.
+- **Shows:** a short note that a new or changed entry should be checked against the legal review (#121) before Publish (a note, not a block); the country (ISO 3166-1 alpha-2 code and English name, fixed once saved), the service name (optional), the main contact (kind: phone, text or web; and its value), an optional second contact, a short note, the last checked date and who checked it, and the versions.
 - **Can do and leads to:** Save draft; **Publish** (admin role only), which writes a Publish history row of kind `hotline` (`docs/decisions/0018`); restore an older version.
 - **States:** a contact that is not a valid phone number or `https` address cannot be saved.
 
@@ -745,7 +745,7 @@ Each item names the files that disagree or leave the point open. File names are 
 14. **Safety details.** What is logged and the exact wording of S1. The hotline list, the region source and the directory are decided (SAFETY-REGION, SAFETY-REGION-STORE, SAFETY-DIRECTORY, HOTLINES, 2026-11-23); the entries and the directory wait for the legal review (#121). The low-mood tier is deferred; when it returns, the rule for how often its sentence may appear is open. Files: `PRODUCT_doc-map-and-open-decisions` (A5), `AI_Specs/AI_05_safety_2026-11-04_v2_draft`.
 15. **Waiting dots on the rest page.** They override the earlier rule of no typing indicator and need a decision. File: `PRDs_MomTest/wireframes_NF6_v5_rest-conversation_EN_2026-10-29.html`.
 16. **System back on Home, Goals, Me, F-RET, and the root of Companions, and on F1.** Nothing states these for the current flow. System back on F1 as Pause comes from `FLOW_jump-rules-and-screen-registry_2026-10-29_v1_draft` and has not been re-confirmed.
-17. **Loading, error and offline states** are not specified for most screens outside Goals, the focus page and the rest page: Home, Companions, the goal dialogue, END, Me, S1 and the sheets.
+17. **Loading, error and offline states** are not specified for most screens outside Goals, the focus page, the rest page and S1 (whose offline state is in its entry): Home, Companions, the goal dialogue, END, Me and the sheets.
 18. **Rest-chat questions about things he could not know.** Decided (ERA-ANSWER): he answers as a person of his own time would, says plainly when he does not know, and may guess. A list of later-knowledge words stays as a check.
 19. **HOME-3 and Start over.** Start over restarts his night, but the decision on resuming removes the old Start-from-Step-1 behaviour for lapsed Goals. This document keeps HOME-3 and Start over as a choice the user makes. File: `DECISIONS.md` (T5, T6).
 20. **Story content.** New users start at chapter 1 (M1). There are no fallback cards or lines (NO-BACKUP, NO-FALLBACK-TABLES); the formerly authored cards (the Trinity night, "finding the place", Moriarty story 1) are reference examples and evaluation material only. Every story's cards and closing line must be made ahead and published; a person reads them afterwards (SHARED-STORY, PUBLISH-FIRST).
