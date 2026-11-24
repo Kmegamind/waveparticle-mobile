@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { rollBackHistoryItem, type RollBackResult } from "@/lib/publish-history/admin";
 import { rollBackAppTextAction } from "../app-text/actions";
 import { rollBackContentFieldAction } from "../companions/actions";
+import { rollBackHotlineAction } from "../hotlines/actions";
 import { rollBackPromptAction } from "../prompts/actions";
 import { rollBackStoryCardAction } from "../stories/actions";
 
@@ -25,6 +26,10 @@ export async function rollBackFromHistoryAction(
       story_card: (itemKey, itemVersion) => rollBackStoryCardAction(itemKey, itemVersion),
       companion_field: (itemKey, itemVersion) => rollBackContentFieldAction(itemKey, itemVersion),
       story_field: (itemKey, itemVersion) => rollBackContentFieldAction(itemKey, itemVersion),
+      hotline: async (itemKey, itemVersion) => {
+        const result = await rollBackHotlineAction(itemKey, itemVersion);
+        return result.ok ? { ok: true } : { ok: false, error: result.error };
+      },
       prompt: async (itemKey, itemVersion) => {
         const result = await rollBackPromptAction(itemKey, itemVersion);
         return result.ok

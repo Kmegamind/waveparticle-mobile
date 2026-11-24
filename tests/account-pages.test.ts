@@ -30,8 +30,8 @@ describe("#102 AC1 AC3 #8 AC3 the privacy notice", () => {
   it("is a real notice with a date, not a placeholder", () => {
     // Changed on 2026-11-22 for the safety classifier (#117, SAFETY-PROVIDER), and on 2026-11-23
     // for the display name's safety check (#398, SAFETY-FIELDS-NAME).
-    expect(PRIVACY_NOTICE_DATE).toBe("November 23, 2026");
-    expect(words).toContain("Last changed: November 23, 2026");
+    expect(PRIVACY_NOTICE_DATE).toBe("November 24, 2026");
+    expect(words).toContain("Last changed: November 24, 2026");
     expect(words).not.toMatch(/placeholder|not written yet/i);
   });
 

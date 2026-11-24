@@ -1,0 +1,14 @@
+{
+  "_note": "The starting hotline list (#118, DECISIONS HOTLINES): only the United States, 'call or text 988', confirmed by the product owner. Loaded by supabase/migrations/20261128000000_hotlines.sql as version 1, published. Add no other number, name or URL without the product owner.",
+  "entries": [
+    {
+      "country": "US",
+      "serviceName": null,
+      "primary": { "kind": "phone", "value": "988" },
+      "secondary": { "kind": "text", "value": "988" },
+      "note": null,
+      "checkedOn": "2026-11-23",
+      "checkedBy": "the product owner"
+    }
+  ]
+}

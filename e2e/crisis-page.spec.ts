@@ -35,15 +35,11 @@ test("a crisis message opens the system page and back clears the field", async (
   expect(font.toLowerCase()).not.toContain("newsreader");
   expect(font.toLowerCase()).not.toContain("georgia");
 
+  // #118: a signed-out visitor has no country, so S1 is S1-0 and Get support now opens the
+  // directory (the S1 states are in e2e/hotlines.spec.ts).
   const support = crisis.getByRole("link", { name: "Get support now" });
   await expect(support).toHaveClass(/button-filled/);
-  await expect(support).toHaveAttribute("href", "#region-resource");
-  await support.click();
-  await expect(
-    crisis.getByText(
-      "PLACEHOLDER: no regional support resource is listed in docs/DECISIONS.md or docs/CONTENT_MODEL.md.",
-    ),
-  ).toBeVisible();
+  await expect(support).toHaveAttribute("href", "https://findahelpline.com");
 
   const back = crisis.getByRole("button", { name: "Back to my Goal" });
   await expect(back).toHaveClass(/button-tinted/);

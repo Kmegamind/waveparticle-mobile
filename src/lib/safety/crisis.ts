@@ -1,13 +1,11 @@
 import { checkSafetyText } from "./keyword";
 
 /**
- * Legal body text and regional support resources are not stated in
- * docs/DECISIONS.md or docs/CONTENT_MODEL.md. These strings are placeholders.
+ * The legal body text waits for the legal and clinical review (US-SAF-8, #121), so it is a marked
+ * placeholder. The help lines by region are in ./help-lines.ts (#118).
  */
 export const crisisPlaceholder = {
   legalBody: "PLACEHOLDER: legal body text is not available yet.",
-  regionResource:
-    "PLACEHOLDER: no regional support resource is listed in docs/DECISIONS.md or docs/CONTENT_MODEL.md.",
 } as const;
 
 export type FreeTextGate = { action: "crisis-page"; modelRequest: null } | { action: "continue" };

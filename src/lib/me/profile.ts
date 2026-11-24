@@ -1,10 +1,16 @@
 import { keywordOnlySafetyCheck, type SafetyCheck } from "@/lib/safety/check";
+import { isCountryCode } from "@/lib/safety/help-lines";
 
 /**
  * Settings on the account (#81, #71): the display name and "Keep the clock running when I
  * leave", in `profiles` (row-level security: own row only). Nothing typed is logged.
  */
-export type ProfileFields = { nickname?: string; keepClockRunning?: boolean };
+export type ProfileFields = {
+  nickname?: string;
+  keepClockRunning?: boolean;
+  /** The country for help lines (#118, SAFETY-REGION-STORE); null clears it. */
+  helpCountry?: string | null;
+};
 
 export type ProfileWriter = { upsert(userId: string, fields: ProfileFields): Promise<void> };
 
@@ -57,6 +63,25 @@ export async function setKeepClockRunning(
   if (typeof on !== "boolean") return { status: "invalid" };
   try {
     await deps.writer.upsert(deps.userId, { keepClockRunning: on });
+    return { status: "ok" };
+  } catch {
+    return { status: "failed" };
+  }
+}
+
+/**
+ * The country for help lines (#118, ME-REGION): an ISO 3166-1 alpha-2 code from the list, or null
+ * for "No country". Stored on the account (SAFETY-REGION-STORE); the app never guesses it.
+ */
+export async function setHelpCountry(
+  input: unknown,
+  deps: { userId: string | null; writer: ProfileWriter },
+): Promise<ProfileOutcome> {
+  if (!deps.userId) return { status: "failed" };
+  const country = (input as { country?: unknown } | null)?.country;
+  if (country !== null && !isCountryCode(country)) return { status: "invalid" };
+  try {
+    await deps.writer.upsert(deps.userId, { helpCountry: country });
     return { status: "ok" };
   } catch {
     return { status: "failed" };

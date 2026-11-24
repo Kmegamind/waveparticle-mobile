@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useReducer, useRef, useState } from "react";
 import {
   applyPrefs,
@@ -17,6 +18,12 @@ import {
   type SaveOutcome,
 } from "@/lib/me/display-name-edit";
 import type { MeView } from "@/lib/me/me-view";
+import {
+  countryName,
+  helpLineStorage,
+  writeHelpLineCopy,
+  type HelpLineCopy,
+} from "@/lib/safety/help-lines";
 import { SignOutButton } from "../auth/auth-form";
 import { ContinueLink } from "../continue-link";
 import { saveDisplayNameAction } from "./actions";
@@ -25,8 +32,14 @@ import { useShowCrisis } from "./me-safety-gate";
 
 /**
  * ME (#81, #83, #74) as in prototype v4: the account, the Goal in progress, on-hold Goals,
- * Appearance, Plain text, History (ME-CAL, #82), Signals and Sign out. At most five settings show.
+ * Appearance, Plain text, History (ME-CAL, #82), Signals, Country (#118) and Sign out. At most five settings show.
  */
+
+const NO_HELP_LINE = {
+  ok: false,
+  profileOk: true,
+  copy: { userId: "", country: null, entry: null },
+};
 
 const initials = (name: string) => name.trim().slice(0, 2).toUpperCase();
 
@@ -203,7 +216,10 @@ export function MeScreen({
   since,
   view,
   continueHref,
+  helpLine = NO_HELP_LINE,
 }: {
+  /** The account's help line (#118); `ok` false when the entry could not be read. */
+  helpLine?: { ok: boolean; profileOk: boolean; copy: HelpLineCopy };
   name: string;
   email: string;
   since: string;
@@ -212,6 +228,12 @@ export function MeScreen({
   continueHref: string | null;
 }) {
   const [prefs, setPrefs] = usePrefs();
+  const router = useRouter();
+
+  useEffect(() => {
+    // #118 (SAFETY-REGION-STORE): Me read the account, so the phone copy is refreshed here too.
+    if (helpLine.ok) writeHelpLineCopy(helpLineStorage(), helpLine.copy);
+  }, [helpLine]);
 
   function setAppearance(appearance: Appearance) {
     setPrefs({ ...prefs, appearance });
@@ -300,6 +322,30 @@ export function MeScreen({
       </Link>
 
       <p className="me-quiet">Nothing is sent unless you turn it on.</p>
+
+      <Link className="me-row me-row-button" href="/me/country">
+        <span className="me-row-label">
+          Country
+          <span className="me-row-value">
+            {!helpLine.profileOk
+              ? "Couldn’t load. Try again."
+              : helpLine.copy.country
+                ? countryName(helpLine.copy.country)
+                : "Not chosen"}
+          </span>
+        </span>
+        <span aria-hidden="true" className="me-caret">
+          ›
+        </span>
+      </Link>
+      {helpLine.profileOk ? null : (
+        <p className="me-quiet" role="alert">
+          Your country could not be read.{" "}
+          <button className="me-text-button" onClick={() => router.refresh()} type="button">
+            Retry
+          </button>
+        </p>
+      )}
 
       <Link className="me-row me-row-button" href="/me/about">
         About the stories

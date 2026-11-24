@@ -1,0 +1,5 @@
+# Help lines by region
+
+#118 (US-SAF-5; DECISIONS SAFETY-REGION, SAFETY-REGION-STORE, SAFETY-DIRECTORY, HOTLINES; `docs/decisions/0029`): the country the user chooses on Me (ME-REGION `/me/country`), stored in `profiles.help_country` with a copy on the phone, and the hotline list in `public.hotlines`, edited in ADM-14 `/admin/hotlines` and ADM-15 `/admin/hotlines/<country>` by the admin role only (writers read). S1 (`src/app/safety/crisis-page.tsx`) reads only the phone copy, which carries the account's user id and never outlives the account, so it needs no network: S1-0 (no country, or no readable copy: the directory link, the labelled line "If you are in the United States: call or text 988" and "Choose your country"), S1-E (the entry) or S1-N (no entry: the directory). The app never reads a location. The starting list is the US 988 entry only (`src/content/hotlines.json`, loaded by the migration).
+
+Path: `src/lib/safety/help-lines.ts`, `src/lib/hotlines/`, `src/app/help-line-sync.tsx`, `src/app/me/help-line/`, `src/app/me/country/`, `src/app/admin/hotlines/`, `supabase/migrations/20261128000000_hotlines.sql`

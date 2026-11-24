@@ -28,6 +28,7 @@ export const PUBLISH_HISTORY_KINDS = {
   companion_field: "Companion field",
   story_field: "Story field",
   prompt: "Prompt",
+  hotline: "Hotline",
 } as const;
 export type PublishHistoryKind = keyof typeof PUBLISH_HISTORY_KINDS;
 
@@ -58,6 +59,7 @@ const ADMIN_ONLY_KINDS: ReadonlySet<string> = new Set([
   "companion_field",
   "story_field",
   "prompt",
+  "hotline",
 ]);
 
 const isKnownKind = (kind: string): kind is PublishHistoryKind =>

@@ -1,4 +1,5 @@
 import { PUBLISH_HISTORY_KINDS } from "@/lib/publish-history/admin";
+import { countryName, isCountryCode } from "@/lib/safety/help-lines";
 
 // ADM-12 (#313, row 48): a readable name for every Publish history row, shown before its key.
 // Pure: the page passes the Companions, stories and prompt purposes it already reads. A key the
@@ -39,6 +40,7 @@ function name(kind: string, key: string, lookup: NameLookup): string | null {
     return screen ? `App text · screen ${screen}` : null;
   }
   if (kind === "prompt") return lookup.promptPurpose[key] ?? null;
+  if (kind === "hotline") return isCountryCode(key) ? `Hotline · ${countryName(key)}` : null;
   if (kind === "story_card") {
     const card = key.match(/^crd\.([^.]+)\.([^.]+)\.(?:bg|p(\d+)\.c(\d+))$/);
     if (!card) return null;

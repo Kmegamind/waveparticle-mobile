@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isCountryCode } from "@/lib/safety/help-lines";
 import type { ProfileWriter } from "./profile";
 
 type Result = { data?: unknown; error: unknown };
@@ -10,6 +11,7 @@ export function createSupabaseProfileWriter(client: Pick<SupabaseClient, "from">
       const row: Record<string, unknown> = { user_id: userId };
       if (fields.nickname !== undefined) row.nickname = fields.nickname;
       if (fields.keepClockRunning !== undefined) row.keep_clock_running = fields.keepClockRunning;
+      if (fields.helpCountry !== undefined) row.help_country = fields.helpCountry;
       const result = (await client.from("profiles").upsert(row)) as Result;
       // The message carries no row data, so nothing the user typed can reach a log.
       if (result.error) throw new Error("profile write failed");
@@ -17,19 +19,36 @@ export function createSupabaseProfileWriter(client: Pick<SupabaseClient, "from">
   };
 }
 
+export type ProfileRead = {
+  /** False when the profile could not be read: callers must not treat it as "nothing chosen". */
+  ok: boolean;
+  nickname: string | null;
+  keepClockRunning: boolean;
+  helpCountry: string | null;
+};
+
+const MISSING_COLUMN = "42703";
+
 export async function readProfile(
   client: Pick<SupabaseClient, "from">,
   userId: string,
-): Promise<{ nickname: string | null; keepClockRunning: boolean }> {
-  const result = (await client
-    .from("profiles")
-    .select("nickname, keep_clock_running")
-    .eq("user_id", userId)
-    .maybeSingle()) as Result;
+): Promise<ProfileRead> {
+  const read = (columns: string) =>
+    client
+      .from("profiles")
+      .select(columns)
+      .eq("user_id", userId)
+      .maybeSingle() as unknown as Promise<Result>;
+  let result = await read("nickname, keep_clock_running, help_country");
+  // Before the #118 migration has run the column is missing: the other settings still read.
+  const code = (result.error as { code?: unknown } | null)?.code;
+  if (result.error && code === MISSING_COLUMN) result = await read("nickname, keep_clock_running");
   const row = (result.error ? null : result.data) as
-    { nickname?: unknown; keep_clock_running?: unknown } | null | undefined;
+    { nickname?: unknown; keep_clock_running?: unknown; help_country?: unknown } | null | undefined;
   return {
+    ok: !result.error,
     nickname: typeof row?.nickname === "string" ? row.nickname : null,
     keepClockRunning: row?.keep_clock_running === true,
+    helpCountry: isCountryCode(row?.help_country) ? (row.help_country as string) : null,
   };
 }

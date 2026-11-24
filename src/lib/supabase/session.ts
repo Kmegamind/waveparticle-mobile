@@ -21,12 +21,61 @@ export async function getCurrentUser(client: SupabaseClient): Promise<User | nul
   return data.user;
 }
 
+/** The session cookie of @supabase/ssr: sb-<project>-auth-token, or its chunks .0, .1, ... */
+export const SESSION_COOKIE = /^sb-.+-auth-token(\.\d+)?$/;
+
+/** Auth error codes that mean "no valid session" (the rest are outages or transient errors). */
+const NO_SESSION_CODES = new Set([
+  "bad_jwt",
+  "no_authorization",
+  "session_not_found",
+  "session_expired",
+  "refresh_token_not_found",
+  "refresh_token_already_used",
+  "user_not_found",
+]);
+
+export type SessionCheck = { kind: "user"; user: User } | { kind: "none" } | { kind: "error" };
+
+/**
+ * Who is signed in, telling "no session" from "could not tell" (#118, review of #406 I-R1). No
+ * session: no session cookie, a missing or invalid or expired session, or a 401/403 from the auth
+ * server. Any other error (a 5xx, a network failure, a refresh that failed for a transient reason)
+ * is `error`. getCurrentUser keeps its own behaviour for every other caller.
+ */
+export async function checkSession(
+  client: SupabaseClient,
+  cookieNames: string[],
+): Promise<SessionCheck> {
+  if (!cookieNames.some((name) => SESSION_COOKIE.test(name))) return { kind: "none" };
+  try {
+    const { data, error } = await client.auth.getUser();
+    if (!error) return data.user ? { kind: "user", user: data.user } : { kind: "none" };
+    return sessionErrorKind(error);
+  } catch (error) {
+    return sessionErrorKind(error);
+  }
+}
+
+/** `none` for an error that means there is no valid session, `error` for everything else. */
+export function sessionErrorKind(error: unknown): { kind: "none" } | { kind: "error" } {
+  const failure = (error ?? {}) as { name?: unknown; status?: unknown; code?: unknown };
+  if (failure.name === "AuthSessionMissingError") return { kind: "none" };
+  if (failure.status === 401 || failure.status === 403) return { kind: "none" };
+  if (typeof failure.code === "string" && NO_SESSION_CODES.has(failure.code)) {
+    return { kind: "none" };
+  }
+  return { kind: "error" };
+}
+
 /** Paths a signed-out visitor may open. /try is public only while the test path is enabled (#208). */
 export function isPublicPath(pathname: string, prototypeEnabled: boolean): boolean {
   if (pathname.startsWith("/auth/")) return true;
   if (pathname === "/safety" || pathname.startsWith("/safety/")) return true;
   // The privacy notice (#102) and the Terms (#104) can be read before an account exists.
   if (pathname === "/privacy" || pathname === "/terms") return true;
+  // #118: the phone copy's refresh answers a signed-out request with { signedIn: false } only.
+  if (pathname === "/me/help-line") return true;
   if (prototypeEnabled && isTryPath(pathname)) return true;
   return false;
 }
