@@ -1,0 +1,497 @@
+<!-- Copy of the owner's admin prototype content-admin/admin-prototype_2026-11-14_v1.html (outside the repository),
+     with only ADM-14 Hotlines and ADM-15 Hotline entry added for #118 (issue #404). Every other page is unchanged. -->
+<title>WaveParticle Content Admin</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap">
+<style>
+/* Layout: a working tool. Left rail of pages, a dense main area; at phone width the rail becomes a scrolling strip. */
+:root{
+  --bg:#f5f6f4; --panel:#ffffff; --ink:#1d2421; --muted:#5f6b66; --line:#dde2df; --soft:#eef1ef;
+  --accent:#1f6f5c; --accent-soft:#e2f0eb; --ok:#2f7d4f; --ok-soft:#e3f2e8; --warn:#9a6a10; --warn-soft:#fbf0d9;
+  --bad:#b23b3b; --bad-soft:#f8e3e3; --info:#3a5ea8; --info-soft:#e4ebf8; --phone:#16191c; --phone-ink:#ece7dc;
+  --f-display:"Fraunces",Georgia,serif; --f-body:"IBM Plex Sans",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121615; --panel:#1a1f1e; --ink:#e4e9e6; --muted:#9aa6a1; --line:#2c3432; --soft:#212826;
+  --accent:#5fc0a3; --accent-soft:#1d3530; --ok:#6cc58f; --ok-soft:#1c3226; --warn:#e0b55a; --warn-soft:#3a2f17;
+  --bad:#ec8585; --bad-soft:#3d2121; --info:#8fb0f0; --info-soft:#1f2a40; --phone:#0b0d0e; --phone-ink:#ece7dc; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121615; --panel:#1a1f1e; --ink:#e4e9e6; --muted:#9aa6a1; --line:#2c3432; --soft:#212826;
+  --accent:#5fc0a3; --accent-soft:#1d3530; --ok:#6cc58f; --ok-soft:#1c3226; --warn:#e0b55a; --warn-soft:#3a2f17;
+  --bad:#ec8585; --bad-soft:#3d2121; --info:#8fb0f0; --info-soft:#1f2a40; --phone:#0b0d0e; --phone-ink:#ece7dc; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5}
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100%}
+.rail{background:var(--panel);border-right:1px solid var(--line);padding:18px 12px;position:sticky;top:env(safe-area-inset-top,0px);height:100vh;overflow:auto}
+.brand{font-family:var(--f-display);font-size:19px;font-weight:600;padding:0 8px 2px}
+.brand small{display:block;font-family:var(--f-body);font-size:11px;color:var(--muted);font-weight:400;letter-spacing:.04em;text-transform:uppercase;margin-top:2px}
+.proto{margin:12px 8px 14px;font-size:11.5px;background:var(--warn-soft);color:var(--warn);padding:6px 8px;border-radius:6px}
+.navgroup{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:12px 8px 4px}
+.rail a{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 8px;border-radius:6px;color:var(--ink);text-decoration:none}
+.rail a:hover{background:var(--soft)}
+.rail a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.rail a .k{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);font-weight:400}
+main{padding-block:22px 60px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));min-width:0}
+.crumb{font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.crumb a{color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:600;font-size:26px;margin:4px 0 4px;text-wrap:balance}
+h2{font-size:15px;margin:0 0 10px;font-weight:600}
+.lede{color:var(--muted);max-width:68ch;margin:0 0 18px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+button,.btn{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 12px;border-radius:7px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--panel);font-weight:600}
+button.small{font-size:12px;padding:3px 9px}
+button:focus-visible,a:focus-visible,[contenteditable]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.key{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);background:var(--soft);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:500;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.s-draft{background:var(--soft);color:var(--muted)}
+.s-gen{background:var(--info-soft);color:var(--info)}
+.s-fail{background:var(--bad-soft);color:var(--bad)}
+.s-checked{background:var(--warn-soft);color:var(--warn)}
+.s-read{background:var(--accent-soft);color:var(--accent)}
+.s-pub{background:var(--ok-soft);color:var(--ok)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--soft)}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.tile b{display:block;font-family:var(--f-display);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
+.tile span{font-size:12px;color:var(--muted)}
+/* status board */
+.board td.cell{padding:4px 3px;text-align:center}
+.dot{display:inline-block;width:18px;height:18px;border-radius:4px;border:1px solid var(--line);background:var(--soft)}
+.dot.d1{background:var(--info-soft);border-color:var(--info)}
+.dot.d2{background:var(--warn-soft);border-color:var(--warn)}
+.dot.d3{background:var(--accent-soft);border-color:var(--accent)}
+.dot.d4{background:var(--ok);border-color:var(--ok)}
+.dot.bad{background:var(--bad-soft);border-color:var(--bad)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:8px 0 0}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+/* pipeline */
+.flow{display:grid;grid-template-columns:minmax(150px,1fr) 34px minmax(150px,1fr) 34px minmax(150px,1fr) 34px minmax(150px,1fr);align-items:stretch;min-width:820px}
+.flow .col{display:flex;flex-direction:column;gap:6px}
+.flow .colhead{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.node{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--panel)}
+.node .key{margin-right:4px}
+.arrow{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:18px}
+.lane{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--panel);margin-bottom:14px}
+.lane h2{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lane p{color:var(--muted);margin:0 0 12px;max-width:80ch}
+.states{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:10px 0 0;font-size:12px}
+/* cards editor */
+.editor{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+.part{border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-bottom:12px}
+.part>header{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.cardrow{display:grid;grid-template-columns:86px minmax(0,1fr) auto;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);align-items:start}
+.cardrow:last-child{border-bottom:0}
+.cardrow .kind{font-size:12px;color:var(--muted);padding-top:2px}
+.cardrow .txt{border-radius:6px;padding:2px 4px;margin:-2px -4px}
+.cardrow .txt[contenteditable="true"]{background:var(--soft);outline:1px dashed var(--accent)}
+.cardrow .meta{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+.fails{font-size:11.5px;color:var(--bad)}
+.phone{background:var(--phone);color:var(--phone-ink);border-radius:26px;padding:18px 16px 22px;position:sticky;top:16px}
+.phone .ph-top{font-size:11px;opacity:.6;display:flex;justify-content:space-between}
+.phone .ph-goal{font-size:11px;opacity:.7;margin:14px 0 4px;text-transform:uppercase;letter-spacing:.08em}
+.phone .ph-goaltext{font-family:var(--f-display);font-size:15px;margin-bottom:14px}
+.phone .slip{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;font-size:13.5px;line-height:1.55;min-height:120px}
+.phone .slip small{display:block;opacity:.6;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.phone .ph-step{font-size:12px;opacity:.8;margin-top:12px}
+.phone .ph-clock{font-family:var(--f-mono);font-size:28px;text-align:center;margin-top:10px}
+/* prompts */
+.assembly{display:flex;flex-direction:column;gap:6px}
+.ppart{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;background:var(--panel)}
+.ppart.on{border-left-color:var(--accent);background:var(--accent-soft)}
+.ppart .top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+.ppart .plus{color:var(--muted);text-align:center;font-size:12px}
+pre.code{font-family:var(--f-mono);font-size:12px;background:var(--soft);border-radius:8px;padding:12px;white-space:pre-wrap;margin:0;line-height:1.55}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cmp .panel p{margin:0 0 8px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px;flex-wrap:wrap}
+.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:8px 10px}
+.tabs button.on{border-bottom-color:var(--accent);color:var(--accent);font-weight:600}
+dl.fields{display:grid;grid-template-columns:170px minmax(0,1fr);gap:0;margin:0}
+dl.fields dt,dl.fields dd{padding:9px 0;border-bottom:1px solid var(--line);margin:0}
+dl.fields dt{color:var(--muted);font-size:12.5px;padding-right:12px}
+dl.fields dd .key{margin-left:6px}
+.note{font-size:12.5px;color:var(--muted)}
+.form{display:grid;gap:12px}
+.form label{display:grid;gap:4px;font-size:12.5px;color:var(--muted);font-weight:600}
+select,input[type=text],textarea{font:inherit;font-size:13.5px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:7px 9px;min-width:0;width:100%}
+textarea{min-height:64px;resize:vertical}
+select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.check{display:flex!important;grid-template-columns:none;align-items:center;gap:8px;font-weight:400!important;color:var(--ink)!important}
+.check input{width:16px;height:16px;accent-color:var(--accent)}
+.est{background:var(--soft);border-radius:8px;padding:10px 12px;font-size:13px}
+dialog.sheet{border:1px solid var(--line);border-radius:12px;padding:0;background:var(--panel);color:var(--ink);width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 40px)}
+dialog.sheet::backdrop{background:rgba(0,0,0,.35)}
+dialog.sheet .sh-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
+dialog.sheet .sh-head h2{margin:0;font-size:16px}
+dialog.sheet .sh-body{padding:16px;overflow:auto}
+dialog.sheet .sh-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
+.lock{font-size:11.5px;color:var(--accent);font-weight:600}
+.conn{display:inline-flex;align-items:center;gap:6px;font-size:12.5px}
+.conn i{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.conn.off i{background:var(--line)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:13px;z-index:20}
+.phase{display:grid;grid-template-columns:72px minmax(0,1fr);gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.phase:last-child{border-bottom:0}
+.phase .pn{font-family:var(--f-mono);font-size:12px;color:var(--accent);font-weight:500}
+.phase h3{margin:0 0 4px;font-size:15px}
+.phase p{margin:0 0 6px;color:var(--muted)}
+.phase ul{margin:4px 0 0;padding-left:18px}
+.idrow{display:grid;grid-template-columns:150px minmax(0,1fr) minmax(0,1.1fr);gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.idrow:last-child{border-bottom:0}
+.idrow code{font-family:var(--f-mono);font-size:12px}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .rail{position:sticky;top:env(safe-area-inset-top,0px);height:auto;z-index:5;display:flex;gap:4px;overflow-x:auto;padding:8px max(12px,env(safe-area-inset-left,0px));border-right:0;border-bottom:1px solid var(--line)}
+  .rail .brand,.rail .proto,.navgroup{display:none}
+  .rail a{white-space:nowrap}
+  .rail a .k{display:none}
+  .editor{grid-template-columns:1fr}
+  .phone{position:static}
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .grid2,.grid3,.cmp{grid-template-columns:1fr}
+  main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  dl.fields{grid-template-columns:1fr}
+  dl.fields dt{border-bottom:0;padding-bottom:0}
+  .idrow{grid-template-columns:1fr}
+  .cardrow{grid-template-columns:1fr}
+  .cardrow .meta{align-items:flex-start;flex-direction:row;flex-wrap:wrap}
+}
+@media (prefers-reduced-motion:no-preference){.toast{animation:up .2s ease-out}@keyframes up{from{transform:translate(-50%,8px);opacity:0}}}
+</style>
+
+<div class="app">
+  <nav class="rail" id="rail" aria-label="Admin pages"></nav>
+  <main id="main"></main>
+</div>
+
+<script>
+const PAGES=[
+ {g:"Overview"},
+ {id:"board",k:"ADM-01",t:"Status board"},
+ {id:"pipeline",k:"ADM-02",t:"Pipeline"},
+ {g:"Content"},
+ {id:"characters",k:"ADM-03",t:"Characters"},
+ {id:"character",k:"ADM-04",t:"Character profile"},
+ {id:"lifepath",k:"ADM-05",t:"Life path"},
+ {id:"cards",k:"ADM-06",t:"Story cards"},
+ {id:"uitext",k:"ADM-07",t:"App text"},
+ {id:"hotlines",k:"ADM-14",t:"Hotlines"},
+ {id:"hotline",k:"ADM-15",t:"Hotline entry"},
+ {g:"AI rules"},
+ {id:"prompts",k:"ADM-08",t:"Prompts"},
+ {id:"checks",k:"ADM-09",t:"Checks"},
+ {id:"models",k:"ADM-13",t:"Models"},
+ {g:"Review and logs"},
+ {id:"review",k:"ADM-10",t:"Review queue"},
+ {id:"live",k:"ADM-11",t:"Live log"},
+ {id:"history",k:"ADM-12",t:"Publish history"},
+ {g:"Reference"},
+ {id:"ids",k:"REF",t:"Naming scheme"},
+ {id:"plan",k:"REF",t:"Build plan"}
+];
+const STATE={draft:["s-draft","Draft"],gen:["s-gen","Generated"],fail:["s-fail","Check failed"],checked:["s-checked","Checks passed"],read:["s-read","Read by a person"],pub:["s-pub","Published"]};
+const pill=s=>`<span class="pill ${STATE[s][0]}">${STATE[s][1]}</span>`;
+const key=k=>`<span class="key">${k}</span>`;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+const STORIES=[["bohr-difficulties","The Trade of a Theorist","The Cambridge years"],["tolman-lecture","The First Course at Berkeley","The Berkeley years"],["truchas-morning","The Morning at Lake Katherine","The Berkeley years"],["midnight-pamphlet","The Midnight Pamphlet","The Berkeley years"],["marry-a-friend","A Friend of Yours","The Berkeley years"],["union-meeting","The Union Meeting at Eagle Hill","The Berkeley years"],["groves-berkeley","The General Comes to Berkeley","The Berkeley years"],["site-search","The Canyon and the Mesa","The war years"],["kitchen-martinis","Martinis in the Kitchen","The war years"],["pash-interview","The Interview with Pash","The war years"],["gadget-meeting","A Cold Night in the Cyclotron Building","The war years"],["interim-committee","The Interim Committee","The war years"],["trinity","The Storm Before the Shot","The war years"],["panel-final-report","The Panel's Last Word","The war years"],["farewell-ceremony","Good-bye to the Mesa","After the war"],["oval-office","The International Problem","After the war"],["eagle-hill-garden","The Garden at Eagle Hill","After the war"],["shelter-island","The Last Day on Shelter Island","After the war"],["huac-closed-session","The Closed Session","The hearing years"],["letter-to-uncle-jim","A Letter to Uncle Jim","The hearing years"],["face-to-face-with-crouch","Face to Face with Crouch","The hearing years"],["griggs-in-princeton","Griggs in Princeton","The hearing years"],["strauss-ultimatum","The Unsigned Letter","The hearing years"],["cross-examination","The Witness Chair, Day Three","The hearing years"],["dreadful-weapon","A Dreadful Weapon","The hearing years"],["fermi-award","The Fermi Award","The hearing years"]];
+// sample progress per story through the 7 stages (0..4 levels; 'bad' = failing checks)
+const STAGES=["Source","Notebook","Card inputs","Cards made","Checks","Read","Published"];
+function storyStages(i){
+  const base=["d4","d4","d1","d1",(i%5===3)?"bad":"d2","",""];
+  if(i===7) return ["d4","d4","d3","d3","d2","d3",""];
+  if(i===12) return ["d4","d4","d3","d1","d2","",""];
+  return base;
+}
+
+const CARDS=[
+ {part:"p1",title:"Riding out to the canyon",rows:[
+  ["opening","I am riding northwest of Santa Fe with Major Dudley and Edwin McMillan. Dudley is the Army officer who has scouted dozens of sites for the laboratory. McMillan is a physicist from Berkeley and came along with me. The canyon is ahead, and I mean to see it clearly.","read",[],"Gemini",false],
+  ["why","The Army has no home for the laboratory, and I am asked to run it. I came to see whether this canyon will serve.","checked",[],"Gemini",false],
+  ["now","The car door is cold under my hand and dust coats my boots. I keep one hand on my hat against the wind.","checked",[],"Gemini",false],
+  ["feeling","I am wary. The canyon mouth is just a shadow between two walls of rock, and I can't tell from here whether it opens up or closes in.","gen",[],"DeepSeek",false]]},
+ {part:"p3",title:"Standing on the canyon floor",rows:[
+  ["landing","We walked down into the canyon and stood on the bottom of it. The flat land turned out to be a thin snake of ground.","read",[],"Gemini",false],
+  ["why","I want a say in where the work goes, and this snake of ground will not hold a town. Dudley has already written it into his report, and the Army likes a report that is finished before anyone has seen the place he is describing.","fail",["length: 47 words, limit 45 (CK-G07)"],"DeepSeek",false],
+  ["now","McMillan paces the width of the floor and comes back shaking his head.","gen",[],"DeepSeek",false]]}
+];
+
+let toastT;
+function toast(m){document.querySelector(".toast")?.remove();const d=document.createElement("div");d.className="toast";d.setAttribute("role","status");d.textContent=m;document.body.appendChild(d);clearTimeout(toastT);toastT=setTimeout(()=>d.remove(),2400)}
+
+function head(crumbs,title,lede,btns=""){
+  return `<div class="crumb">${crumbs}</div><div class="head"><div><h1>${title}</h1>${lede?`<p class="lede">${lede}</p>`:""}</div><div class="btns">${btns}</div></div>`;
+}
+
+const V={};
+
+V.board=()=>{
+  const rows=STORIES.map((s,i)=>`<tr class="click" onclick="location.hash='cards'"><td class="num">${i+1}</td><td>${s[1]}<br>${key("opp."+s[0])}</td>${storyStages(i).map(d=>`<td class="cell"><span class="dot ${d}" title=""></span></td>`).join("")}</tr>`).join("");
+  return head("Overview","Status board","Where every character and story stands, from source to what users see. Click a story to open its cards. All numbers on this page are sample data.")+
+  `<div class="tiles">
+   <div class="tile"><b>3</b><span>characters (1 live, 2 in writing)</span></div>
+   <div class="tile"><b>27</b><span>stories with a notebook</span></div>
+   <div class="tile"><b>41</b><span>items waiting for a person to read</span></div>
+   <div class="tile"><b>0</b><span>stories published to users</span></div></div>
+  <div class="grid3" style="margin-bottom:16px">
+   <div class="panel"><h2>Oppenheimer ${key("chr.opp")}</h2><p class="note">Historical · 26 stories · notebooks done, cards made from the demo run, almost nothing read yet.</p></div>
+   <div class="panel"><h2>Moriarty ${key("chr.mor")}</h2><p class="note">Fictional · world rules approved 11-14 · 5 stories being written · story 1 notebook draft.</p></div>
+   <div class="panel"><h2>Dracula ${key("chr.dra")}</h2><p class="note">Fictional · setting and comic engine drafts · no stories yet.</p></div>
+  </div>
+  <div class="panel"><h2>Oppenheimer, story by story</h2><div class="scroll board"><table>
+   <thead><tr><th class="num">#</th><th>Story</th>${STAGES.map(s=>`<th style="text-align:center">${s}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>
+   <div class="legend"><span><i class="dot d4"></i>done</span><span><i class="dot d3"></i>read by a person</span><span><i class="dot d2"></i>checks passed</span><span><i class="dot d1"></i>made by AI, unread</span><span><i class="dot bad"></i>a check failed</span><span><i class="dot"></i>not started</span></div></div>`;
+};
+
+V.pipeline=()=>{
+  const lane=(code,name,desc,cols)=>`<section class="lane"><h2>${key(code)} ${name}</h2><p>${desc}</p><div class="scroll"><div class="flow">
+   ${cols.map((c,i)=>`<div class="col"><div class="colhead">${c[0]}</div>${c[1].map(n=>`<div class="node">${n}</div>`).join("")}</div>${i<cols.length-1?'<div class="arrow" aria-hidden="true">→</div>':""}`).join("")}
+  </div></div></section>`;
+  return head("Overview","Pipeline","How a change travels from this admin to the user's screen. Each box carries its id, so a page, a table and a screen can be traced to each other.")+
+  `<div class="panel" style="margin-bottom:14px"><h2>Every row in the database moves through the same states</h2>
+   <div class="states">${pill("draft")}→${pill("gen")}→${pill("checked")}→${pill("read")}→${pill("pub")}</div>
+   <p class="note" style="margin-top:10px">The app only ever reads <b>Published</b> rows. Editing a published row makes a new draft version; users keep seeing the old one until someone presses Publish. Rollback re-publishes an older version. The app picks up a publish within about one minute, with no new release.</p></div>`+
+  lane("FL-1","Fixed content","Written by a person, shown as it is: profile, life path, story goals, key lines, app text.",[
+   ["Admin page",[`${key("ADM-04")}Character profile`,`${key("ADM-05")}Life path`,`${key("ADM-07")}App text`]],
+   ["Database table",[`${key("characters")}`,`${key("stories")}`,`${key("ui_text")}`]],
+   ["App reads (server)",[`${key("content.read()")}published rows, cached 60 s`]],
+   ["User sees",[`${key("COMP")}Companions`,`${key("CPAGE")}Life Path`,`${key("F1")}"My goal" line`,`${key("F3")}${key("S1")}system text`]]])+
+  lane("FL-2","Story cards, made ahead and shared","Generated in the admin, checked, read by a person, then published. Every user of a story sees the same reviewed cards.",[
+   ["Admin page",[`${key("ADM-06")}Story cards: Generate`,`${key("ADM-10")}Review queue`]],
+   ["Generation job (server)",[`${key("PR-AI2.card")}prompt, built from parts`,`${key("CK-*")}checks, retry up to 3`,"cost and attempts logged"]],
+   ["Database table",[`${key("story_cards")}one row per card, per version`,`${key("generations")}how each was made`]],
+   ["User sees",[`${key("F1")}background card, story cards`,`${key("END")}closing line`]]])+
+  lane("FL-3","Live conversation","Written by the AI at the moment it is needed. Nobody edits these one by one; you change the prompt and read the log.",[
+   ["User action",[`${key("R1")}presses Pause`,`${key("R1")}types in chat`,`${key("F-RET")}comes back`]],
+   ["App server",["reads published prompt parts + character + story",`${key("PR-AI3.pause")}${key("PR-AI4.chat")}${key("PR-AI3.return")}`,"model call, checks"]],
+   ["Database table",[`${key("session_lines")}what this user saw`,`${key("live_log")}prompt version, checks, timing`]],
+   ["Admin page",[`${key("ADM-11")}Live log`]]])+
+  lane("FL-4","Rules","Prompts, checks and model settings. A change here affects FL-2 the next time cards are generated, and FL-3 at once after Publish.",[
+   ["Admin page",[`${key("ADM-08")}Prompts: edit, Test, Publish`,`${key("ADM-09")}Checks`,`${key("ADM-13")}Models`]],
+   ["Database table",[`${key("prompt_parts")}base / historical / fictional / character`,`${key("check_rules")}`,`${key("model_settings")}`]],
+   ["Used by",["generation jobs (FL-2)","live calls (FL-3)"]],
+   ["Trace",[`${key("generations")}${key("live_log")}record the prompt version used`]]]);
+};
+
+V.characters=()=>head("Content","Characters","A character's mode is chosen once, when it is created. It decides which prompt parts and which fields apply.",'<button class="primary" onclick="toast(\'New character: choose Historical or Fictional first (prototype)\')">New character</button>')+
+ `<div class="panel scroll"><table><thead><tr><th>Character</th><th>Mode</th><th class="num">Stories</th><th>Shown to users</th><th>Last change</th></tr></thead><tbody>
+  <tr class="click" onclick="location.hash='character'"><td><b>J. Robert Oppenheimer</b><br>${key("chr.opp")}</td><td>Historical</td><td class="num">26</td><td>${pill("pub")}</td><td>Yue · 11-14</td></tr>
+  <tr class="click" onclick="toast('Opens Moriarty (prototype shows Oppenheimer only)')"><td><b>James Moriarty</b><br>${key("chr.mor")}</td><td>Fictional</td><td class="num">5</td><td>${pill("draft")}</td><td>Yue · 11-14</td></tr>
+  <tr class="click" onclick="toast('Opens Dracula (prototype shows Oppenheimer only)')"><td><b>Count Dracula</b><br>${key("chr.dra")}</td><td>Fictional</td><td class="num">0</td><td>${pill("draft")}</td><td>11-12</td></tr>
+ </tbody></table></div>`;
+
+let charTab="profile";
+V.character=()=>{
+  const T={profile:["Profile",[["Name","J. Robert Oppenheimer","chr.opp.name"],["Tags","Brilliant · Eloquent · Haunted","chr.opp.tags"],["One line (Companions)","I can give you the answer. Whether you want it is another thing.","chr.opp.line"],["Who I am","I'm a physicist from Berkeley, asked to run a laboratory the Army has not yet found a home for.","chr.opp.who"],["Relationship to the user","Works beside the user as an equal; never coaches.","chr.opp.relationship"]]],
+   voice:["Voice",[["Rules","Short, plain sentences, most under 12 words. Concrete things, not abstractions. Dry wit now and then, never for effect.","chr.opp.voice.rules"],["Feelings","Says what he feels directly (tired, wary, impatient).","chr.opp.voice.feelings"],["Lines to avoid","Grand sentences, morals, aphorisms.","chr.opp.voice.avoid"],["Banned words","as an AI · bro · vibes","chr.opp.banned"]]],
+   people:["People",[["Major Dudley","the Army officer who scouts sites","chr.opp.people.dudley"],["Edwin McMillan","a fellow Berkeley physicist","chr.opp.people.mcmillan"],["Leslie Groves","the general who runs the project","chr.opp.people.groves"]]],
+   sources:["Sources (historical only)",[["Book","Bird & Sherwin, American Prometheus","src.opp.bird"],["Chapters stored","62 chapter files, one paragraph per line","src.opp.bird.ch"],["Rule","Every quotation in a card must appear in the source (CK-H01)","ck.hist.quote"]]],
+   dialogue:["Goal dialogue",[["Opener (GD1)","Dudley has brought us to a canyon at Jemez Springs. I would rather not work out what to do alone. What are you working on?","chr.opp.gd.GD1"],["Time question (GD2)","That has a clear edge to it. How long do you have?","chr.opp.gd.GD2"],["Plan intro (GD4)","Here is how I would cut it. Argue with it now, in ink.","chr.opp.gd.GD4"]]]};
+  const [label,fields]=T[charTab];
+  return head(`<a href="#characters">Characters</a> › Oppenheimer`,"J. Robert Oppenheimer",`Historical · ${key("chr.opp")} · each field has its own id and its own state.`,`<button onclick="toast('Draft saved')">Save draft</button><button class="primary" onclick="toast('Published: users see this within a minute')">Publish</button>`)+
+  `<div class="tabs" role="tablist">${Object.entries(T).map(([k,v])=>`<button role="tab" class="${k===charTab?"on":""}" onclick="charTab='${k}';render()">${v[0]}</button>`).join("")}</div>
+  <div class="panel"><dl class="fields">${fields.map((f,i)=>`<dt>${f[0]}<br>${key(f[2])}</dt><dd><span contenteditable="true" spellcheck="false">${esc(f[1])}</span> ${i===0?pill("pub"):(i===fields.length-1&&charTab!=="sources"?pill("draft"):pill("pub"))}</dd>`).join("")}</dl>
+  <p class="note" style="margin-top:10px">Fictional characters show "World and canon" here instead of "Sources".</p></div>`;
+};
+
+V.lifepath=()=>{
+  let last="";const rows=STORIES.map((s,i)=>{const per=s[2]!==last?`<tr><td colspan="4" style="background:var(--soft);font-weight:600">${s[2]} ${key("chr.opp.period."+(s[2].split(" ")[1]||"x").toLowerCase())}</td></tr>`:"";last=s[2];
+   const st=i===7?"read":(i===12?"checked":"gen");
+   return per+`<tr class="click" onclick="location.hash='cards'"><td class="num">${i+1}</td><td><b>${s[1]}</b><br>${key("opp."+s[0])}</td><td>${st==="read"?"Dudley has picked a canyon. I have to go and look before the Army decides for me.":"<span class='note'>description drafted by AI, unread</span>"}</td><td>${pill(st)}</td></tr>`}).join("");
+  return head(`<a href="#characters">Characters</a> › Oppenheimer`,"Life path","The order of stories and the periods users see on the Life Path screen (CPAGE). Periods are named, never dated.",`<button onclick="toast('Drag rows to reorder (prototype)')">Reorder</button><button class="primary" onclick="toast('New story added as a draft')">Add story</button>`)+
+  `<div class="panel scroll"><table><thead><tr><th class="num">#</th><th>Story</th><th>Life path description</th><th>State</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+};
+
+V.cards=()=>{
+  const parts=CARDS.map((p,pi)=>`<section class="part"><header><div><b>Part ${p.part.slice(1)} · ${p.title}</b> ${key("crd.opp.site-search."+p.part)}</div><div class="btns"><button class="small" onclick="openRegen('part','${p.part}')">Regenerate part</button></div></header>
+   ${p.rows.map((r,ri)=>`<div class="cardrow"><div class="kind">${r[0]}<br>${key(p.part+"."+r[0])}</div><div><div class="txt" id="t${pi}${ri}" onfocus="preview(${pi},${ri})" onclick="preview(${pi},${ri})">${esc(r[1])}</div>${r[3].length?`<div class="fails">${r[3].join("<br>")}</div>`:""}</div>
+   <div class="meta">${pill(r[2])}${r[5]?'<span class="lock">Locked</span>':""}<span class="note">${key("v4")} · ${r[4]}</span><div class="btns"><button class="small" onclick="editCard(${pi},${ri})">Edit</button><button class="small" onclick="openRegen('card','${p.part}.${r[0]}')">Regenerate</button><button class="small" aria-pressed="${r[5]}" onclick="toggleLock(${pi},${ri})">${r[5]?"Unlock":"Lock"}</button><button class="small" onclick="approve(${pi},${ri})">Mark read</button></div></div></div>`).join("")}</section>`).join("");
+  return head(`<a href="#lifepath">Oppenheimer</a> › Ch 8 · The Canyon and the Mesa`,"Story cards",`Made ahead with ${key("PR-AI2.card v4")}, shared by every user of this story. Each card shows the prompt version and the model that wrote it. Regenerating never touches what users see: new text arrives as a draft. Cards are made per part of the story; the app shares the parts across however many steps the user has.`,`<button onclick="openRegen('story','opp.site-search')">Regenerate…</button><button class="primary" onclick="toast('Publish blocked: 1 card failed a check and 4 are unread')">Publish story</button>`)+
+  `<div class="editor"><div>
+   <section class="part"><header><div><b>Background card</b> ${key("crd.opp.site-search.bg")}</div>${pill("read")}</header><div class="cardrow"><div class="kind">where I am</div><div class="txt">Major Dudley, the Army officer who has scouted dozens of sites, has settled on Jemez Springs. I am to run the laboratory, so I am riding out with him and McMillan, a fellow Berkeley physicist, to see the place myself.</div><div class="meta"><span class="note">Yue · 11-14</span></div></div></section>
+   ${parts}
+   <p class="note">Parts 2, 4 to 8 and the closing line are hidden in this prototype.</p></div>
+   <aside><div class="phone" aria-label="Preview as the user sees it"><div class="ph-top"><span>Step 1 of 3</span><span>Preview</span></div>
+    <div class="ph-goal">My goal</div><div class="ph-goaltext">I want the laboratory built where my people can live and work.</div>
+    <div class="slip" id="slip"><small>Right now</small>${esc(CARDS[0].rows[0][1])}</div>
+    <div class="ph-step">Your step: Draft the outline</div><div class="ph-clock">18:42</div></div>
+    <p class="note" style="margin-top:8px">Click any card to preview it in the app's card style.</p></aside></div>`;
+};
+function preview(pi,ri){const r=CARDS[pi].rows[ri];const s=document.getElementById("slip");if(s)s.innerHTML=`<small>${r[0]==="why"?"How I got here":"Right now"}</small>`+esc(document.getElementById("t"+pi+ri).textContent)}
+function editCard(pi,ri){const t=document.getElementById("t"+pi+ri);const on=t.getAttribute("contenteditable")==="true";if(on){t.removeAttribute("contenteditable");CARDS[pi].rows[ri][1]=t.textContent;CARDS[pi].rows[ri][2]="draft";CARDS[pi].rows[ri][3]=[];toast("Saved as a new draft version; checks will rerun");render()}else{t.setAttribute("contenteditable","true");t.focus();toast("Editing. Press Edit again to save.")}}
+function toggleLock(pi,ri){const r=CARDS[pi].rows[ri];r[5]=!r[5];toast(r[5]?"Locked: a regenerate of the part or story keeps this card":"Unlocked");render()}
+let RG={scope:"part",target:"p3"};
+const SCOPES=[["card","One card"],["part","One story part"],["story","Whole story"],["all","All stories of Oppenheimer"]];
+function regenEst(){const n={card:1,part:3,story:10,all:260}[RG.scope];const kept=RG.scope==="card"?0:CARDS.reduce((a,p)=>a+p.rows.filter(r=>r[5]).length,0);return {calls:n,kept}}
+function openRegen(scope,target){RG={scope,target};let d=document.getElementById("regen");if(!d){d=document.createElement("dialog");d.id="regen";d.className="sheet";d.setAttribute("aria-labelledby","rg-title");document.body.appendChild(d)}d.innerHTML=regenBody();if(!d.open)d.showModal()}
+function regenBody(){const e=regenEst();const cost=(e.calls*0.004).toFixed(e.calls>100?0:2);
+ const t=RG.target||"";const part=t.startsWith("p")?t.split(".")[0]:"p3";const card=t.includes(".")&&t.startsWith("p")?t:part+".why";
+ const what={card:"crd.opp.site-search."+card,part:"crd.opp.site-search."+part,story:"opp.site-search",all:"chr.opp (26 stories)"}[RG.scope];
+ return `<div class="sh-head"><h2 id="rg-title">Regenerate</h2><button class="small" onclick="this.closest('dialog').close()">Close</button></div>
+ <div class="sh-body form">
+  <div><div class="note" style="font-weight:600;margin-bottom:6px">How much</div><div class="seg" role="group" aria-label="How much to regenerate">${SCOPES.map(x=>`<button aria-pressed="${RG.scope===x[0]}" onclick="RG.scope='${x[0]}';document.getElementById('regen').innerHTML=regenBody()">${x[1]}</button>`).join("")}</div><p class="note" style="margin:6px 0 0">Target: ${key(what)}</p></div>
+  <label>Model<select id="rg-model"><option>Gemini · gemini-pro (default for story cards)</option><option>DeepSeek · deepseek-flash</option><option disabled>Claude · not connected</option></select></label>
+  <label>Prompt version<select><option>PR-AI2.card v4 · published</option><option>PR-AI2.card v5 · your draft</option></select></label>
+  <label>One-time instruction (optional, not saved into the prompt)<textarea placeholder="For example: shorter, and leave out the weather."></textarea></label>
+  <label class="check"><input type="checkbox" checked ${RG.scope==="card"?"disabled":""}> Keep locked cards (${e.kept} locked)</label>
+  <label class="check"><input type="checkbox"> Make two versions to compare</label>
+  <div class="est"><b>Estimate:</b> about ${e.calls} model call${e.calls>1?"s":""}, about $${cost} (sample price). New text arrives as <b>Draft</b>, runs the checks, and waits for a person to read it. Users keep seeing the published cards until you publish again.</div>
+ </div>
+ <div class="sh-foot"><button onclick="this.closest('dialog').close()">Cancel</button><button class="primary" onclick="this.closest('dialog').close();toast('Generating as draft with '+document.getElementById('rg-model').value.split(' ·')[0]+' (prototype)')">Generate as draft</button></div>`}
+function approve(pi,ri){const r=CARDS[pi].rows[ri];if(r[2]==="fail"){toast("Fix the failed check first");return}r[2]="read";toast("Marked as read by Yue");render()}
+
+const UI=[["F1","ui.F1.goal.label","My goal","pub"],["F3","ui.F3.fail.body","He is not here right now. Please try again.","draft"],["GD-F","ui.GDF.body","That one wouldn't split. Nothing is lost.","pub"],["S1","ui.S1.title","This is outside the story.","read"],["S1","ui.S1.back","Back to my Step","pub"],["OFF","ui.offline.body","No connection. You can still go back to your Step.","pub"],["HOME-0","ui.HOME0.hello","Let's launch your first wave.","pub"]];
+V.uitext=()=>head("Content","App text","Words the app shows in the system's own voice, not a character's. The app asks for a key; if the database cannot answer, it shows the default written in the code, so the app never shows a blank.",`<button class="primary" onclick="toast('Published 1 change')">Publish changes</button>`)+
+ `<div class="panel scroll"><table><thead><tr><th>Screen</th><th>Key</th><th>Text</th><th>State</th></tr></thead><tbody>${UI.map(u=>`<tr><td>${key(u[0])}</td><td>${key(u[1])}</td><td><span contenteditable="true" spellcheck="false">${esc(u[2])}</span></td><td>${pill(u[3])}</td></tr>`).join("")}</tbody></table></div>`;
+
+const PARTS=[["base","Shared base: story card","Same for every character",`Write the next card in the story, in his own voice.
+Always first person, as a real person talks to himself or to a friend.
+One to three sentences, at most 45 words.
+No question marks, no "you", no dashes, no clock times.
+Do not say what will happen later.`,"v4"],
+ ["hist","Mode: historical","Every historical character",`Use only the facts given. Add no people, remarks or outcomes.
+Every quotation must already be in the source.`,"v2"],
+ ["fict","Mode: fictional","Every fictional character (not used here)",`Use the facts, the scene and the details given for this moment.
+You may invent small details true to the world. Add no named people or outcomes.
+Every card tells the reader one thing they did not know.`,"v3"],
+ ["chr","Character: Oppenheimer","Filled from chr.opp.*",`You are {{chr.name}}. {{chr.who}}
+# How he sounds
+{{chr.voice.rules}}
+{{chr.voice.feelings}}`,"auto"],
+ ["story","Story and moment","Filled from opp.site-search.*",`Where he is: {{story.where_now[part]}}
+His goal: {{story.goal_full}}
+Facts for this part: {{story.facts[part]}}
+Who is here: {{story.people_present}}`,"auto"]];
+let partOn="base";
+V.prompts=()=>{
+  const p=PARTS.find(x=>x[0]===partOn);
+  return head("AI rules",`Prompts · ${key("PR-AI2.card")} Story card`,"A prompt is put together from parts. Change the shared base once and every character gets it; change Oppenheimer's part and only he does.",`<select aria-label="Model for the test" id="tm" style="width:auto"><option>Gemini · gemini-pro</option><option>DeepSeek · deepseek-flash</option></select><button onclick="toast('Running v5 draft on Ch 8, part 3 with '+document.getElementById('tm').value.split(' ·')[0]+' (prototype)');document.getElementById('cmp').hidden=false">Test draft</button><button class="primary" onclick="toast('Published v5. Next generation uses it.')">Publish</button>`)+
+  `<div class="grid2"><div class="panel"><h2>Parts used for Oppenheimer</h2><div class="assembly">${PARTS.map((x,i)=>`${i?'<div class="plus">+</div>':""}<div class="ppart ${x[0]===partOn?"on":""}" ${x[0]==="fict"?'style="opacity:.55"':""} onclick="partOn='${x[0]}';render()"><div class="top"><b>${x[1]}</b>${key(x[4]==="auto"?"from data":x[4])}</div><span class="note">${x[2]}</span></div>`).join("")}</div></div>
+  <div class="panel"><h2>${p[1]} ${key(p[4]==="auto"?"from data":p[4])}</h2><pre class="code" contenteditable="${p[4]==="auto"?"false":"true"}" spellcheck="false">${esc(p[3])}</pre>
+   <p class="note" style="margin-top:10px">Model for this prompt: Gemini · gemini-pro · temperature 0.8 · up to 3 tries ${key("MDL.card")} · <a href="#models">change in Models</a></p>
+   <h2 style="margin-top:14px">Versions</h2><table><tbody><tr><td>${key("v5")}</td><td>draft · Yue · today</td><td>${pill("draft")}</td></tr><tr><td>${key("v4")}</td><td>card length 45 words · 11-12</td><td>${pill("pub")}</td></tr><tr><td>${key("v3")}</td><td>first person rule · 11-05</td><td><button class="small" onclick="toast('Rolled back to v3')">Roll back</button></td></tr></tbody></table></div></div>
+  <div class="cmp" id="cmp" hidden style="margin-top:14px"><div class="panel"><h2>Published v4 · Gemini</h2><p>I want a say in where the work goes, and this snake of ground will not hold a town.</p>${pill("checked")}</div><div class="panel"><h2>Draft v5 · test run</h2><p>The floor is a thin snake of ground. A town will not fit on it, and Dudley has already written his report.</p>${pill("checked")}</div></div>`;
+};
+
+const CK=[["CK-G01","No dashes","Global","checks.ts · dash"],["CK-G02","No clock times","Global","checks.ts · clock"],["CK-G03","No backstage words (step, task, scene, chapter)","Global","checks.ts · backstage"],["CK-G04","Does not address the user as 'you'","Global","checks.ts · you"],["CK-G07","Card length: 1 to 3 sentences, at most 45 words","Global","checks.ts · length"],["CK-C01","Never says his own name","Per character","checks.ts · OWN_NAME (now hard-coded)"],["CK-C02","Banned words","Per character","chr.*.banned"],["CK-S01","Words that must not leak (later events)","Per story","opp.*.leak_words"],["CK-H01","Every quotation appears in the source","Historical only","check_entry.py"],["CK-R01","No repeat of the last 4 lines' openings","Per session","run-list.ts"]];
+V.checks=()=>head("AI rules","Checks","Every AI line passes these before it is stored or shown. A failed check makes the AI try again with the reason, up to three times.","")+
+ `<div class="panel scroll"><table><thead><tr><th>Id</th><th>Rule</th><th>Applies to</th><th>Where it lives today</th><th>On</th></tr></thead><tbody>${CK.map(c=>`<tr><td>${key(c[0])}</td><td>${c[1]}</td><td>${c[2]}</td><td class="note">${c[3]}</td><td><input type="checkbox" id="ck-${c[0]}" checked aria-label="${c[1]} active"></td></tr>`).join("")}</tbody></table></div>`;
+
+const USES=[["MDL.card","Story cards and background card","Made ahead","Gemini","0.8","3","60 s"],["MDL.closing","Closing line","Made ahead","Gemini","0.8","3","60 s"],["MDL.notebook","Story notebook","Made ahead","Gemini","0.4","2","120 s"],["MDL.pause","Pause message","Live","DeepSeek","0.9","3","12 s"],["MDL.chat","Rest conversation reply","Live","DeepSeek","0.9","3","12 s"],["MDL.return","Return pop-up","Live","DeepSeek","0.8","3","12 s"],["MDL.split","Goal split","Live","DeepSeek","0.3","3","12 s"]];
+V.models=()=>head("AI rules","Models","Which AI model writes what. Content made ahead can use a slower, better model; live lines need a fast one. Only the admin role can change this page.",`<button class="primary" onclick="toast('Published: the next generation uses the new model')">Publish changes</button>`)+
+ `<div class="panel" style="margin-bottom:14px"><h2>Connected models</h2><table><thead><tr><th>Provider</th><th>Model names</th><th>Key</th><th></th></tr></thead><tbody>
+  <tr><td><b>DeepSeek</b></td><td>${key("deepseek-flash")} ${key("deepseek-pro")}</td><td><span class="conn"><i></i>Set in server settings</span></td><td><button class="small" onclick="toast('Test call OK · 1.1 s (prototype)')">Test connection</button></td></tr>
+  <tr><td><b>Gemini</b></td><td>${key("gemini-pro")} ${key("gemini-flash")}</td><td><span class="conn"><i></i>Set in server settings</span></td><td><button class="small" onclick="toast('Test call OK · 1.6 s (prototype)')">Test connection</button></td></tr>
+  <tr><td><b>Claude</b></td><td class="note">—</td><td><span class="conn off"><i></i>Not connected</span></td><td></td></tr>
+  </tbody></table><p class="note" style="margin-top:8px">API keys are never typed or shown on this website. An engineer adds a key once in the server's settings (Vercel); after that the provider appears here as connected. Any provider with the common chat format can be added this way.</p></div>
+ <div class="panel scroll"><h2>Which model does what</h2><table><thead><tr><th>Use</th><th>When</th><th>Model</th><th>Temperature</th><th>Tries</th><th>Time limit</th></tr></thead><tbody>${USES.map(u=>`<tr><td>${u[1]}<br>${key(u[0])}</td><td>${u[2]}</td><td><select aria-label="Model for ${u[1]}" style="width:auto"><option ${u[3]==="Gemini"?"selected":""}>Gemini · gemini-pro</option><option ${u[3]==="DeepSeek"?"selected":""}>DeepSeek · deepseek-flash</option></select></td><td class="num">${u[4]}</td><td class="num">${u[5]}</td><td class="num">${u[6]}</td></tr>`).join("")}</tbody></table>
+ <p class="note" style="margin-top:8px">Every generated card and live line records the model and prompt version that wrote it, so two models can be compared on the same story.</p></div>`;
+
+V.review=()=>head("Review and logs","Review queue","Everything the AI made that no person has read yet. Nothing in a story can be published while its cards are unread or failing.","")+
+ `<div class="panel scroll"><table><thead><tr><th>Item</th><th>Where</th><th>Made by</th><th>State</th></tr></thead><tbody>
+ <tr class="click" onclick="location.hash='cards'"><td>Story card · why ${key("crd.opp.site-search.p3.why")}</td><td>Ch 8 · part 3</td><td>${key("PR-AI2.card v4")}</td><td>${pill("fail")}</td></tr>
+ <tr class="click" onclick="location.hash='cards'"><td>Story card · feeling ${key("crd.opp.site-search.p1.feeling")}</td><td>Ch 8 · part 1</td><td>${key("PR-AI2.card v4")}</td><td>${pill("gen")}</td></tr>
+ <tr class="click" onclick="location.hash='lifepath'"><td>Life path description ${key("opp.tolman-lecture.path")}</td><td>Ch 2</td><td>AI draft 11-12</td><td>${pill("gen")}</td></tr>
+ <tr><td>Period names ${key("chr.mor.period.*")}</td><td>Moriarty</td><td>AI draft 11-12</td><td>${pill("gen")}</td></tr>
+ <tr><td>Story notebook ${key("mor.alder-entry.notebook")}</td><td>Moriarty · story 1</td><td>${key("PR-NB.fict v1")}</td><td>${pill("gen")}</td></tr>
+ </tbody></table><p class="note" style="margin-top:8px">Showing 5 of 41 (sample).</p></div>`;
+
+V.live=()=>head("Review and logs","Live log","What the AI wrote live for real users, with the prompt version that wrote it. The user's own words are hidden; only the character's lines and the check results are shown.","")+
+ `<div class="panel scroll"><table><thead><tr><th>Time</th><th>What</th><th>Story</th><th>Character's line</th><th>Prompt</th><th>Checks</th><th class="num">ms</th></tr></thead><tbody>
+ <tr><td class="note">14:02</td><td>Pause message ${key("R1")}</td><td>Ch 8</td><td>The car won't start, and Dudley is already halfway down the road on foot.</td><td>${key("PR-AI3.pause v2")}</td><td>${pill("checked")}</td><td class="num">1840</td></tr>
+ <tr><td class="note">14:03</td><td>Chat reply ${key("R1")}</td><td>Ch 8</td><td>Ask me again when I have my boots off. For now, the canyon is too narrow.</td><td>${key("PR-AI4.chat v3")}</td><td>${pill("checked")}</td><td class="num">2210</td></tr>
+ <tr><td class="note">14:05</td><td>Chat reply ${key("R1")}</td><td>Ch 8</td><td class="note">(rejected twice: leaked "Los Alamos", then shown on 3rd try)</td><td>${key("PR-AI4.chat v3")}</td><td>${pill("fail")}</td><td class="num">5120</td></tr>
+ <tr><td class="note">14:11</td><td>Return pop-up ${key("F-RET")}</td><td>Ch 8</td><td>McMillan got the car going while you were gone.</td><td>${key("PR-AI3.return v1")}</td><td>${pill("checked")}</td><td class="num">1390</td></tr>
+ </tbody></table><p class="note" style="margin-top:8px">Sample rows. Each row links to the prompt version, so a bad line can be traced and the prompt fixed.</p></div>`;
+
+/* #118 (issue #404): the hotline list (HOTLINES, SAFETY-DIRECTORY). The US 988 entry is the only entry; its service name is optional and empty here (pending the owner). */
+const HL=[{c:"US",n:"United States",name:"",main:["Phone","988"],second:["Text","988"],note:"",checked:"2026-11-23",by:"Product owner",state:"pub",v:"v1"}];
+const ROLE={now:"admin"};
+V.hotlines=()=>head("Content","Hotlines","The help line the safety page (S1) shows for each country. A country with no entry gets the international directory, Find A Helpline (findahelpline.com), which is always shown as a link and is not an entry. Only the admin role edits and publishes; writers may only read. Owner: the product owner.",
+  `<button class="primary" onclick="location.hash='hotline'">Add an entry</button>`)+
+ `<div class="panel scroll"><table><thead><tr><th>Country</th><th>Service name</th><th>Main contact</th><th>State</th><th>Last checked</th><th>Checked by</th></tr></thead><tbody>${HL.map(h=>`<tr class="click" onclick="location.hash='hotline'"><td>${esc(h.n)} ${key(h.c)}</td><td>${h.name?esc(h.name):'<span class="note">None (optional)</span>'}</td><td>${esc(h.main[0])} ${esc(h.main[1])}</td><td>${pill(h.state)}</td><td class="note">${h.checked}</td><td>${esc(h.by)}</td></tr>`).join("")}</tbody></table>
+ <p class="note" style="margin:12px 0 0">An entry not checked in the last 6 months is marked "Check due". Every entry is checked at least every 6 months and before each release. Sample data: the one entry is the only real entry.</p></div>`;
+V.hotline=()=>{const h=HL[0];
+ const sel=(id,v)=>`<select id="${id}">${["Phone","Text","Web"].map(o=>`<option${o===v?" selected":""}>${o}</option>`).join("")}</select>`;
+ return head(`<a href="#hotlines">Hotlines</a> › ${esc(h.n)}`,`Hotline entry ${key("hotline."+h.c)}`,"What S1 shows for this country. An entry with no service name shows only its contact line, so this one reads \"Call or text 988\".",
+  `<button onclick="toast('Draft saved')">Save draft</button><button class="primary" onclick="toast('Published v2: a Publish history row of kind hotline was written')">Publish</button>`)+
+ `<div class="est" role="note" style="margin-bottom:14px">A new or changed entry should be checked against the legal review (#121) before Publish. This is a note, not a block.</div>
+ <div class="grid2" style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px">
+ <div class="panel"><h2>Entry</h2><div class="form">
+  <label>Country<input type="text" value="${esc(h.n)} (${h.c})" readonly aria-describedby="cn"><span class="note" id="cn">Fixed once saved. ISO 3166-1 alpha-2.</span></label>
+  <label>Service name (optional)<input type="text" value="${esc(h.name)}" placeholder="None"></label>
+  <label>Main contact: what Get support now opens${sel("mk",h.main[0])}<input type="text" value="${esc(h.main[1])}" aria-label="Main contact value"></label>
+  <label>Second contact (optional), shown as a text link${sel("sk",h.second[0])}<input type="text" value="${esc(h.second[1])}" aria-label="Second contact value"></label>
+  <label>Note (optional): hours or languages, one short line<input type="text" value="${esc(h.note)}" placeholder="None"></label>
+  <label>Last checked<input type="text" value="${h.checked}"></label>
+  <label>Checked by<input type="text" value="${esc(h.by)}"></label>
+  <p class="note" style="margin:0">A contact that is not a valid phone number or https address cannot be saved.</p>
+ </div></div>
+ <div class="panel"><h2>Preview on S1</h2><p class="note">S1-E, as the phone shows it.</p><p style="margin:8px 0 2px" class="note">Help in ${esc(h.n)}</p><p style="margin:0;font-weight:600">Call or text 988</p><p style="margin:6px 0"><a href="#hotline" onclick="toast('Would open sms:988');return false">Text 988</a></p><p style="margin:6px 0"><a href="#hotline" onclick="toast('Would open findahelpline.com');return false">Find a helpline: findahelpline.com</a></p>
+ <h2 style="margin-top:18px">Versions</h2><table><thead><tr><th>Version</th><th>State</th><th>When</th><th></th></tr></thead><tbody><tr><td>${key("v1")}</td><td>${pill("pub")}</td><td class="note">11-23</td><td></td></tr></tbody></table>
+ <p class="note">Publish and restore are for the admin role only. Writers see this page read-only.</p></div></div>`;};
+
+V.history=()=>head("Review and logs","Publish history","Who published what, and when. Any entry can be rolled back.","")+
+ `<div class="panel scroll"><table><thead><tr><th>When</th><th>Who</th><th>What</th><th>Version</th><th></th></tr></thead><tbody>
+ <tr><td class="note">11-23 18:00</td><td>Product owner</td><td>Hotline · United States ${key("hotline.US")}</td><td>${key("v1")}</td><td><button class="small" onclick="toast('Nothing to roll back to: v1 is the first version')">Roll back</button></td></tr>
+ <tr><td class="note">11-14 15:20</td><td>Yue</td><td>Oppenheimer · who I am ${key("chr.opp.who")}</td><td>${key("v2")}</td><td><button class="small" onclick="toast('Rolled back to v1')">Roll back</button></td></tr>
+ <tr><td class="note">11-12 10:04</td><td>Yue</td><td>Story card prompt ${key("PR-AI2.card")}</td><td>${key("v4")}</td><td><button class="small" onclick="toast('Rolled back to v3')">Roll back</button></td></tr>
+ <tr><td class="note">11-12 09:40</td><td>Writer</td><td>App text ${key("ui.S1.back")}</td><td>${key("v3")}</td><td><button class="small" onclick="toast('Rolled back to v2')">Roll back</button></td></tr>
+ </tbody></table></div>`;
+
+V.ids=()=>{
+  const R=[["Admin pages","ADM-01 … ADM-15","ADM-06 = Story cards page. One number per page, never reused."],
+   ["Pipelines","FL-1 … FL-4","FL-2 = story cards made ahead. Used in specs and tickets to say which flow a change touches."],
+   ["App screens","F1, R1, GD1, CPAGE, END …","Already used in FLOW.md. Kept as they are."],
+   ["AI features","AI-1 … AI-10","Already used in the AI specs. Kept as they are; prompts take their number."],
+   ["Characters","chr.&lt;short name&gt;","chr.opp, chr.mor, chr.dra. A field adds a dot: chr.opp.who"],
+   ["Stories","&lt;character&gt;.&lt;story slug&gt;","opp.site-search. The slug never changes even if the story is reordered."],
+   ["Cards","crd.&lt;story&gt;.&lt;part&gt;.&lt;kind&gt;","crd.opp.site-search.p3.why"],
+   ["App text","ui.&lt;screen&gt;.&lt;slot&gt;","ui.F3.fail.body. The screen part is the FLOW.md id."],
+   ["Prompts","PR-&lt;AI number&gt;.&lt;name&gt; + version","PR-AI2.card v4 · PR-AI4.chat v3 · PR-NB.hist v1 (the notebook prompt)"],
+   ["Checks","CK-&lt;scope letter&gt;&lt;number&gt;","G global, C character, S story, H historical, F fictional, R per session. CK-G07 = card length."],
+   ["Model settings","MDL.&lt;use&gt;","MDL.card, MDL.pause. One row per use; it names the provider, the model and its settings."],
+   ["Versions","v1, v2, v3 …","Every edit makes a new version. Users see the published one; old ones stay for rollback."],
+   ["States","Draft → Generated → Checks passed → Read → Published","Same five states for every row, in every table."]];
+  return head("Reference","Naming scheme","Every item gets a short id that stays the same for its whole life. Large teams do the same: a ticket number for each piece of work, a fixed key for each piece of text, and a version number for each prompt. With ids, a spec, a ticket, a database row and a screen can all point at the same thing.","")+
+  `<div class="panel">${R.map(r=>`<div class="idrow"><b>${r[0]}</b><code>${r[1]}</code><span class="note">${r[2]}</span></div>`).join("")}</div>`;
+};
+
+V.plan=()=>{
+  const P=[["Phase 0","Settle the rules","Write today's decision into DECISIONS.md; settle the 10 conflicts (card length, pause length, tasks per story…). Freeze the naming scheme.","Decisions written; one number per card kind.",["No code"]],
+   ["Phase 1","Move content into the database","Create the content tables with states and versions. Load Oppenheimer's 26 stories, notebooks and the demo cards. The app reads published rows instead of stories.json. Remove the hard-coded Oppenheimer from prompts and checks.","The app looks the same, but every word comes from the database. Fixes the bug where every chapter uses the Canyon data.",["FL-1, FL-2 tables","No admin pages yet"]],
+   ["Phase 2","Admin shell and fixed content","Sign-in with roles (admin, writer). ADM-03 to ADM-05 and ADM-07 with draft, publish and rollback. Deployed at /admin on the same Vercel project.","A writer edits a story goal, publishes, and sees it in the app within a minute.",["ADM-03, 04, 05, 07, 12"]],
+   ["Phase 3","Prompt library","Prompts as parts, versions, Test (with a choice of model) and Publish, checks list. Models page: DeepSeek and Gemini connected through server settings, one model per use.","Moriarty's card prompt runs from the database.",["ADM-08, 09, 13","FL-4"]],
+   ["Phase 4","Story cards made ahead","Regenerate one card, one part, a whole story or all stories, with a chosen model, prompt version and one-time instruction; locked cards are kept; cost shown first. Check, review queue, edit, mark read, publish. The app shows published cards.","Ch 8 plays from reviewed, published cards.",["ADM-06, 10","FL-2"]],
+   ["Phase 5","Live log and status board","Log every live line with its prompt version; the board shows each story's stage.","A bad chat reply is traced to its prompt version in one click.",["ADM-01, 11","FL-3"]],
+   ["Phase 6","New character end to end","Run the whole character pipeline in the admin.","Moriarty's first 5 stories go live without a code change.",["All"]]];
+  return head("Reference","Build plan","Each phase is useful by itself and is built in the app's repository through issues and pull requests. Nothing is built yet.","")+
+  `<div class="panel">${P.map(p=>`<div class="phase"><div class="pn">${p[0]}</div><div><h3>${p[1]}</h3><p>${p[2]}</p><div class="note"><b>Done when:</b> ${p[3]}</div><div class="btns" style="margin-top:6px">${p[4].map(x=>key(x)).join("")}</div></div></div>`).join("")}</div>`;
+};
+
+function render(){
+  const id=(location.hash||"#board").slice(1);const cur=V[id]?id:"board";
+  document.getElementById("rail").innerHTML=`<div class="brand">WaveParticle<small>Content admin</small></div><div class="proto">Prototype · sample data · nothing is saved</div>`+
+   PAGES.map(p=>p.g?`<div class="navgroup">${p.g}</div>`:`<a href="#${p.id}" class="${p.id===cur?"on":""}">${p.t}<span class="k">${p.k}</span></a>`).join("");
+  document.getElementById("main").innerHTML=V[cur]();
+}
+window.addEventListener("hashchange",()=>{render();window.scrollTo(0,0)});
+render();
+</script>
