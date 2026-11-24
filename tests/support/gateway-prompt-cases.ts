@@ -5,7 +5,8 @@ import type { ModelGateway, ModelProvider } from "@/lib/model-gateway/types";
  * `tests/fixtures/gateway-prompts.json` holds the prompts the gateway built for them before the
  * prompts moved to the database; the gateway must keep building exactly these strings. The pause
  * cases were recorded again for the two-call pause (#56, `stuck_story` version 3,
- * `pause_predicament` version 1); every other case is unchanged.
+ * `pause_predicament` version 1), and the plan split cases for the owner's planning prompt (#40,
+ * `plan_split` version 2); every other case is unchanged.
  *
  * Each call is answered three times: invalid JSON (a "parse" retry), an answer that fails several
  * checks (a retry with several fixes), then nothing usable, so every prompt and both retry prompts

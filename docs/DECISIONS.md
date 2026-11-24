@@ -265,7 +265,7 @@ Yue decided these on 2026-11-18. Recorded in issue #313.
 
 ### Decisions of 2026-11-21
 
-Yue answered the ten questions in `docs/sprints/decisions-needed_2026-11-21.md`. Recorded in issue #369. Decision 7 (the planning prompt) added no new id: P1 stays open.
+Yue answered the ten questions in `docs/sprints/decisions-needed_2026-11-21.md`. Recorded in issue #369. Decision 7 (the planning prompt) added no new id: P1 stayed open until 2026-11-24 (PLAN-PROMPT).
 
 | Id | Date | Decision | Consequences |
 |---|---|---|---|
@@ -302,6 +302,14 @@ Yue answered the open choices of issue #377 (pull request #394, `docs/decisions/
 | ROLLBACK-WARN | 2026-11-23 | Rolling back a story card shows a warning, never a block. Before a roll back, both roll back buttons for story cards (the card's Versions in ADM-06 and the row in Publish history) run the same checks as Publish, the whole-Story checks included, on the version that would become live. If it has problems, the admin sees them and confirms; on confirm the roll back runs as before. With no problems there is no extra step. | The server never refuses a roll back for a check problem (`docs/decisions/0023` stays). Prompts, app text and Companion and story fields roll back as before. Issue #377. |
 | CARD-PAIR-OTHERS | 2026-11-23 | A problem between two other cards of a Story does not block publishing a card. Only problems that involve the card itself block it: an earlier card it repeats, or a later card that would repeat it. | Fixing either card of a failing pair is always allowed. Both cards of the pair show the problem. Issue #377. |
 | FIX-BY-ACCOUNT | 2026-11-23 | The SQL fix for the published cards (`scripts/story-cards/fix-published.mjs`) publishes as the admin account named with `--by`, so each Publish history row names that account. | The owner runs it with their own admin account (`docs/deploy.md`, Story cards). Issue #377. |
+
+### Planning prompt (2026-11-24)
+
+Yue supplied the planning prompt on 2026-11-24 (batch 2, answer A; issue #40). It closes open item P1.
+
+| Id | Date | Decision | Consequences |
+|---|---|---|---|
+| PLAN-PROMPT | 2026-11-24 | The goal split (AI-1, call 1b) uses the owner's planning prompt, word for word: `docs/ai/prompts/plan_split.md` version 2, the same text in `docs/ai/AI_01_goal-split.md` section 4. The old prompt was `5_Code/Waveparticle-python-main/services/llm_service.py` lines 99-147. The code checks stay: title at most 40 characters, Step title at most 80, Step description at most 40 words, minutes positive whole numbers that add up to the total, no limit on the number of Steps, no multiples of 15. The Goal's shape stays the local rule (GOAL-SHAPE-LOCAL). | Closes P1. The outdated rules in AI_01 section 4 are marked removed. The owner publishes version 2 in `/admin/prompts` (or loads it with the prompt import). Issue #40. |
 
 ### Help lines by region (2026-11-23)
 
@@ -357,6 +365,7 @@ Yue answered the blocking questions of issue #118 (US-SAF-5) on 2026-11-23. The 
 | A label for the user's message (scope) returned with each rest reply, and the checks tied to it (AI_04 sections A2 to A4) | CHAT-NO-LABEL |
 | A later word fails a rest reply even when the user typed it | CHAT-USER-WORD |
 | A small model call classifies the Goal's shape (FR-START-5, AI_01 call 1a) | GOAL-SHAPE-LOCAL |
+| The placeholder planning prompt and its rules: 1 to `n.max` steps, minutes in multiples of 15 from 15 to 120, a 15-minute first step, 60-character step names (AI_01 section 4, `plan_split` version 1) | PLAN-PROMPT |
 | An output guard with a denylist of method and instruction words owned by compliance (FR-SAFETY-12, AI_05 section 3) | NO-DENYLIST |
 | The help-line region taken from the device locale, the network address (IP) or the browser language, or a default region (US-SAF-5, PRD 7.6, AI_05 section 7 item 2) | SAFETY-REGION |
 
@@ -364,7 +373,6 @@ Yue answered the blocking questions of issue #118 (US-SAF-5) on 2026-11-23. The 
 
 | Id | Topic |
 |---|---|
-| P1 | The real AI planning prompt (the "planning expert") must be added to `docs/ai/`; the text in AI_01 is a placeholder. Still open on 2026-11-21: Yue will supply the prompt file; engineering does not draft one (#40) |
 | S2 | The engineering result on phone features (see above) |
 | A7b | Provider data retention terms |
 | M5, M6 | Original test data (issues B15 and B17, "low preference" definition); may be skipped |

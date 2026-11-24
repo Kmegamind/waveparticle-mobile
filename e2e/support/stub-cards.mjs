@@ -89,7 +89,7 @@ function classify(prompt) {
 
 export function stubAnswer(prompt) {
   if (prompt.startsWith("You check short messages")) return classify(prompt);
-  if (prompt.startsWith("Return JSON only with a short title")) {
+  if (prompt.startsWith("You split one goal")) {
     const total = Number(/Total minutes: (\d+)/.exec(prompt)?.[1] ?? "30");
     const first = Math.max(1, Math.floor(total / 2));
     const steps = [{ title: "Read the first part", description: "Read it once.", minutes: first }];

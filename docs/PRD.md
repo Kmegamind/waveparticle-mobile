@@ -135,7 +135,7 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | FR-START-4 | A shortcut called "Just split it" skips the conversation and uses 30 minutes when no time was given. The prototype uses 60 minutes, which is wrong. | Must | NF7 v6 spec |
 | FR-START-5 | A local rule in code (`classifyGoalShape`), with no model call, labels the Goal as specific, big, vague or unknown and decides which authored reaction line he says. A model call may be added later. A vague Goal gets no follow-up question; the planning prompt turns it into concrete first steps (D1f). | Must | GOAL-SHAPE-LOCAL |
 | FR-START-6 | The time question is a slider from 1 minute to 3 hours (there is no 0) with no fixed example times, plus Not sure; Not sure means 30 minutes. The goal time is not rounded to 15 minutes. | Should | TIME-SLIDER, SLIDER-RANGE, NO-ROUNDING |
-| FR-START-7 | A split call, driven by the AI planning prompt (P1, still to be supplied by Yue), turns the Goal and time into Steps, each with a short title, a description and minutes; the minutes sum to the time the user gave, and code validates every result. How a plan is split for different kinds of Goals is the job of that prompt, not of this document. | Must | D1b, D1d |
+| FR-START-7 | A split call, driven by the AI planning prompt (PLAN-PROMPT, `docs/ai/AI_01` section 4), turns the Goal and time into Steps, each with a short title, a description and minutes; the minutes sum to the time the user gave, and code validates every result. How a plan is split for different kinds of Goals is the job of that prompt, not of this document. | Must | D1b, D1d |
 | FR-START-8 | When the split fails twice, a system-voice failure screen keeps the user's text and offers "Try again" and a one-step plan. The app never shows a silent generic list of Steps. | Must | |
 | FR-START-9 | A one-step plan is allowed, and focus screens then drop "Step 1 of 1" and any step list. | Must | |
 | FR-START-10 | The plan card is fully editable before the user starts: the title, description and minutes of each Step, and the number of Steps (add or remove; remove is hidden when only one remains). If the edits change the total, the Goal's time follows the edits. Start stays visible. | Must | D1d |
@@ -414,7 +414,7 @@ Only the goal dialogue calls, the pause message, the return pop-up and the rest 
 | Call | Purpose | Input | Runs when | On failure |
 |---|---|---|---|---|
 | Goal shape (no model call in version 1) | One word: specific, big, vague, unknown, decided by the local rule `classifyGoalShape` (GOAL-SHAPE-LOCAL); a model call may be added later | Goal text | After the Goal is entered | "unknown", authored confirmation line |
-| Goal split | Steps with titles, descriptions and minutes, from the AI planning prompt (P1) | Goal text, minutes, the answer to the split question | Time chosen or "Just split it" | Retry once, then the failure screen with a one-step option; never silent generic Steps |
+| Goal split | Steps with titles, descriptions and minutes, from the AI planning prompt (PLAN-PROMPT) | Goal text, minutes, the answer to the split question | Time chosen or "Just split it" | Retry once, then the failure screen with a one-step option; never silent generic Steps |
 | Story cards (made ahead) | The story cards of each story part, plus the background card | Story facts, key turning points, the part; never an exact date | Once per story, before publishing | Cannot be published; if published cards fail to load at run time, the failure screen with Retry (FAIL-PREMADE) |
 | Pause message, part 1 | The stuck story: the snag in his own story | Entry state, pause number, rules, the Story's scene table (SCENE-PER-STORY), the category and prop chosen by code (PAUSE-TWO-CALLS) | Pause | Failure message with Retry |
 | Pause message, part 2 | His description of the predicament and his feelings, shown as his first message (1 or 2 sentences, at most 30 words, LEN-PAUSE) | Part 1 output, pause number | Pause | Failure message with Retry |
@@ -507,7 +507,6 @@ Every decided row in `docs/DECISIONS.md`, up to 2026-11-17, is applied in sectio
 
 | Id | Question | Note |
 |---|---|---|
-| P1 | The real AI planning prompt (the "planning expert") must be added to `docs/ai/`; the text in AI_01 is a placeholder. | Needed for the goal split. Still open on 2026-11-21: Yue will supply the prompt file. |
 | S2 | Engineering result on which phone features (vibration, lock-screen alerts, background timers) a web app can use on iPhone and Android. | Signals are specified but not promised on every phone. |
 | A7b | Provider data retention terms. | Not decided. |
 | M5, M6 | Original test data (issues B15 and B17, the definition of "low preference"). | May be skipped. |
