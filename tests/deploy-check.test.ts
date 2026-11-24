@@ -183,7 +183,7 @@ describe("#189 review I5: Vercel Deployment Protection", () => {
 
   it("says the secret was refused when the protection still answers 401", async () => {
     const { impl } = fakeFetch({ "/": { status: 401 } });
-    const [result] = await checkSite("https://preview-abc.vercel.app", impl, {
+    const [result] = await checkSite("https://waveparticle-mobile-abc-team.vercel.app", impl, {
       bypassSecret: "bypass-123",
     });
     expect(result.message).toMatch(/was not accepted/);
@@ -197,6 +197,15 @@ describe("#189 re-review N3: the bypass secret goes only to Vercel or listed hos
     ["https://waveparticle-mobile-git-x-team.vercel.app/", [], true],
     ["http://waveparticle-mobile.vercel.app", [], false],
     ["https://vercel.app.evil.example", [], false],
+    // Someone else's Vercel deployments (re-review N5).
+    ["https://waveparticle-mob1le.vercel.app", [], false],
+    ["https://other-project.vercel.app", [], false],
+    ["https://xwaveparticle-mobile.vercel.app", [], false],
+    ["https://waveparticle-mobilex.vercel.app", [], false],
+    ["https://waveparticle-mobile.vercel.app.evil.example", [], false],
+    ["https://waveparticle-mobile-d9ukq3jzo-kmegaminds-projects.vercel.app", [], true],
+    ["https://waveparticle-mobile-git-chore-189-kmegaminds-projects.vercel.app", [], true],
+    ["https://other-project.vercel.app", ["other-project.vercel.app"], true],
     ["https://evil-vercel.app", [], false],
     ["https://app.example.org", [], false],
     ["https://app.example.org", ["app.example.org"], true],
@@ -211,14 +220,14 @@ describe("#189 re-review N3: the bypass secret goes only to Vercel or listed hos
 
   it("refuses with a plain sentence and sends nothing to another host", async () => {
     const { impl, calls } = fakeFetch({ "/": { status: 200 } });
-    const results = await checkSite("https://typo.example.com", impl, {
+    const results = await checkSite("https://waveparticle-mob1le.vercel.app", impl, {
       bypassSecret: "bypass-123",
     });
     expect(calls).toHaveLength(0);
     expect(results).toHaveLength(1);
     expect(results[0].ok).toBe(false);
     expect(results[0].message).toMatch(
-      /^VERCEL_AUTOMATION_BYPASS_SECRET is set, but typo\.example\.com is not a Vercel address .* so the secret was not sent/,
+      /^VERCEL_AUTOMATION_BYPASS_SECRET is set, but waveparticle-mob1le\.vercel\.app is not one of this project's Vercel addresses .* so the secret was not sent/,
     );
     expect(results[0].message).not.toContain("bypass-123");
   });
@@ -383,7 +392,7 @@ describe("#189 AC5: npm run check:deploy against local stand-ins", () => {
       ["--skip-db"],
     );
     expect(out).toMatch(
-      /FAIL: VERCEL_AUTOMATION_BYPASS_SECRET is set, but 127\.0\.0\.1:\d+ is not a Vercel address/,
+      /FAIL: VERCEL_AUTOMATION_BYPASS_SECRET is set, but 127\.0\.0\.1:\d+ is not one of this project's Vercel addresses/,
     );
     expect(out).not.toContain("bypass-xyz-789");
     expect(requests).toBe(0);

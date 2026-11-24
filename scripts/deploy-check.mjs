@@ -86,10 +86,15 @@ function siteUrl(base, path) {
 
 const LOOPBACK = new Set(["127.0.0.1", "localhost", "[::1]"]);
 
+// This project's own Vercel addresses: production and the team's Preview form
+// (waveparticle-mobile-<hash>-<team>.vercel.app, waveparticle-mobile-git-<branch>-<team>.vercel.app).
+// Any other .vercel.app host belongs to someone else and never gets the secret.
+const PROJECT_HOST = /^waveparticle-mobile(-[a-z0-9-]+)?\.vercel\.app$/;
+
 /**
- * Whether the bypass secret may go to this address: https and a host ending in .vercel.app, or
- * a host the owner listed (VERCEL_BYPASS_HOSTS, comma-separated host names). A listed loopback
- * host (tests) may use http; any other host needs https.
+ * Whether the bypass secret may go to this address: https and one of this project's Vercel
+ * hosts, or a host the owner listed (VERCEL_BYPASS_HOSTS, comma-separated host names). A listed
+ * loopback host (tests) may use http; any other host needs https.
  * @param {string} baseUrl
  * @param {string[]} hosts
  */
@@ -105,7 +110,7 @@ export function bypassAllowed(baseUrl, hosts = []) {
     .map((h) => h.trim().toLowerCase())
     .filter(Boolean)
     .includes(host);
-  if (url.protocol === "https:") return host.endsWith(".vercel.app") || listed;
+  if (url.protocol === "https:") return PROJECT_HOST.test(host) || listed;
   return url.protocol === "http:" && listed && LOOPBACK.has(host);
 }
 
@@ -154,7 +159,7 @@ export async function checkSite(
       {
         name: "deployment protection",
         ok: false,
-        message: `VERCEL_AUTOMATION_BYPASS_SECRET is set, but ${host} is not a Vercel address (https, ending in .vercel.app) or a host listed in VERCEL_BYPASS_HOSTS, so the secret was not sent and nothing was checked. Check E2E_BASE_URL, add the host to VERCEL_BYPASS_HOSTS if it is your own domain on Vercel, or unset the secret.`,
+        message: `VERCEL_AUTOMATION_BYPASS_SECRET is set, but ${host} is not one of this project's Vercel addresses (https, waveparticle-mobile.vercel.app or waveparticle-mobile-….vercel.app) or a host listed in VERCEL_BYPASS_HOSTS, so the secret was not sent and nothing was checked. Check E2E_BASE_URL, add the host to VERCEL_BYPASS_HOSTS if it is your own domain on Vercel, or unset the secret.`,
       },
     ];
   }

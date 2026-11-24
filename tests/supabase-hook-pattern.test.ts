@@ -23,6 +23,13 @@ const caught = [
   "supabase migration up --linked",
   "supabase db reset --linked",
   "cd x && supabase link --project-ref abc",
+  // Global flags, with or without a value, before the subcommand (re-review N6).
+  "supabase --debug db push",
+  "supabase --workdir . link",
+  "supabase --experimental db reset",
+  "supabase --workdir=/x --debug migration repair --status applied 20261106000000",
+  "npx supabase@latest --debug db push",
+  "supabase -o json link --project-ref abc",
 ];
 const allowed = [
   "supabase migration list",
@@ -32,6 +39,12 @@ const allowed = [
   "echo supabase linked",
   "cat supabase/.temp/project-ref",
   "node scripts/content/import.mjs",
+  "supabase --debug db pull",
+  "supabase --workdir . migration list",
+  "supabase --debug login",
+  "supabase --profile x projects list",
+  "supabase db diff",
+  "supabase migration new my_change",
 ];
 
 const python = (text: string) =>
@@ -46,7 +59,7 @@ const python = (text: string) =>
 describe("#189 the hook pattern for remote Supabase commands", () => {
   it("is written once in docs/HUMAN_STEPS.md", () => {
     expect(pattern).toBe(
-      "\\bsupabase(@\\S+)?\\s+(link|db\\s+(push|reset)|migration\\s+(repair|up))\\b",
+      "\\bsupabase(@\\S+)?(\\s+--?\\S+(\\s+(?!-)[^\\s-]\\S*)?)*\\s+(link|db\\s+(push|reset)|migration\\s+(repair|up))\\b",
     );
   });
 

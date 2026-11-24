@@ -179,10 +179,11 @@ Then run `npm run check:deploy` against a Preview deployment (below).
 Agents never run `supabase link`, `supabase db push`, `supabase db reset` or
 `supabase migration repair`, for dev or prod, not even with `--dry-run`. The owner adds this
 pattern to `deploy_patterns` in `.claude/guardrails.json`, so the agent hook asks a human before
-any of them (also the `npx supabase` and `supabase@<version>` forms):
+any of them (also the `npx supabase` and `supabase@<version>` forms, and with global flags
+such as `--debug` or `--workdir .` before the subcommand):
 
 <!-- hook-pattern -->
-`\bsupabase(@\S+)?\s+(link|db\s+(push|reset)|migration\s+(repair|up))\b`
+`\bsupabase(@\S+)?(\s+--?\S+(\s+(?!-)[^\s-]\S*)?)*\s+(link|db\s+(push|reset)|migration\s+(repair|up))\b`
 
 In the JSON file each backslash is written twice.
 
@@ -276,8 +277,11 @@ deployment is protected (not a security failure). To check a Preview, the owner 
 secret once: Vercel → the project → **Settings** → **Deployment Protection** → **Protection Bypass
 for Automation** → **Add Secret** (or copy the existing one). Pass it inline as
 `VERCEL_AUTOMATION_BYPASS_SECRET`; the check sends it as the `x-vercel-protection-bypass` header
-and never prints it. It sends it only to an `https` address ending in `.vercel.app`; for your own
-domain on Vercel, also pass `VERCEL_BYPASS_HOSTS=<host>` (comma-separated). For any other address
+and never prints it. It sends it only to this project's own Vercel addresses over `https`:
+`waveparticle-mobile.vercel.app` and the Preview form `waveparticle-mobile-<…>.vercel.app`, never
+another `.vercel.app` host (that would be someone else's). Copy the Preview address from Vercel
+rather than typing it. For your own domain on Vercel, also pass `VERCEL_BYPASS_HOSTS=<host>`
+(comma-separated). For any other address
 the check refuses, says why, and does not send the secret.
 
 ```sh

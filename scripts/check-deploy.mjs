@@ -9,7 +9,7 @@
 //   SUPABASE_API_URL       only for tests: a local stand-in for https://api.supabase.com
 //   VERCEL_AUTOMATION_BYPASS_SECRET  optional: lets the check through Vercel Deployment
 //                          Protection on a Preview (sent as x-vercel-protection-bypass, never printed),
-//                          only to https hosts ending in .vercel.app or listed in
+//                          only to https waveparticle-mobile(-*).vercel.app hosts or those listed in
 //   VERCEL_BYPASS_HOSTS    optional: comma-separated extra host names (a custom domain on Vercel)
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
