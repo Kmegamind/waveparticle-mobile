@@ -48,6 +48,8 @@ const isNone = (section) => /^none\.?$/i.test(section.trim());
  * Checks the "Human steps" section of a pull request body.
  * - `addedMigrations`: file names (no folder) of migrations this pull request adds.
  * - `newEnvNames`: environment variable names this pull request adds.
+ * @param {{ body: string, addedMigrations?: string[], newEnvNames?: string[] }} args
+ * @returns {string[]}
  */
 export function checkHumanSteps({ body, addedMigrations = [], newEnvNames = [] }) {
   const section = humanStepsSection(body);

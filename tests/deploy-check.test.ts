@@ -31,7 +31,7 @@ function fakeFetch(answers: Record<string, FakeAnswer | "down">) {
     const headers = new Headers(answer.location ? { location: answer.location } : {});
     return new Response(null, { status: answer.status, headers });
   };
-  return { impl, calls };
+  return { impl: impl as unknown as typeof fetch, calls };
 }
 
 describe("#189 AC5: tables and row-level security expected from the migrations", () => {
@@ -150,7 +150,10 @@ describe("#189 AC5: reading the live tables", () => {
       return Response.json(rows, { status: 201 });
     };
     expect(
-      await readLiveTables({ ref: "abc", token: "t0k", apiUrl: "http://127.0.0.1:1/" }, impl),
+      await readLiveTables(
+        { ref: "abc", token: "t0k", apiUrl: "http://127.0.0.1:1/" },
+        impl as unknown as typeof fetch,
+      ),
     ).toEqual(rows);
     expect(seen!.url).toBe("http://127.0.0.1:1/v1/projects/abc/database/query");
     expect(seen!.init.method).toBe("POST");
@@ -161,7 +164,10 @@ describe("#189 AC5: reading the live tables", () => {
 
   it("explains a refused token without printing it or the answer", async () => {
     const impl = async () => new Response("secret body", { status: 401 });
-    const error = await readLiveTables({ ref: "abc", token: "t0k" }, impl).catch((e: Error) => e);
+    const error = await readLiveTables(
+      { ref: "abc", token: "t0k" },
+      impl as unknown as typeof fetch,
+    ).catch((e: Error) => e);
     expect((error as Error).message).toMatch(/refused SUPABASE_ACCESS_TOKEN \(status 401\)/);
     expect((error as Error).message).not.toMatch(/t0k|secret body/);
   });
@@ -186,7 +192,7 @@ describe("#189 AC5: npm run check:deploy against local stand-ins", () => {
         process.execPath,
         [path.join(root, "scripts/check-deploy.mjs"), ...args],
         {
-          env: { PATH: process.env.PATH ?? "", ...env },
+          env: { PATH: process.env.PATH ?? "", ...env } as unknown as NodeJS.ProcessEnv,
         },
       );
       let out = "";

@@ -13,6 +13,9 @@ describe("CI container", () => {
 
   it("gives every job a time limit", () => {
     const ci = read(".github/workflows/ci.yml");
-    expect((ci.match(/timeout-minutes:/g) ?? []).length).toBe(2);
+    // One limit per job (check, pr-closes-issue and, since #189, pr-human-steps).
+    const jobs = ci.slice(ci.indexOf("\njobs:")).match(/^ {2}[a-z][a-z0-9-]*:$/gm) ?? [];
+    expect(jobs.length).toBe(3);
+    expect((ci.match(/timeout-minutes:/g) ?? []).length).toBe(jobs.length);
   });
 });

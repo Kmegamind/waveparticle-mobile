@@ -245,7 +245,11 @@ describe("#189 the check-pr command in a scratch git repository", () => {
   const checkPr = (dir: string, prBody: string) =>
     spawnSync(process.execPath, [path.join(root, "scripts/check-pr.mjs")], {
       cwd: dir,
-      env: { PATH: process.env.PATH, BASE_REF: "main", BODY: prBody },
+      env: {
+        PATH: process.env.PATH,
+        BASE_REF: "main",
+        BODY: prBody,
+      } as unknown as NodeJS.ProcessEnv,
       encoding: "utf8",
     });
 
