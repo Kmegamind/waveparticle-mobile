@@ -29,7 +29,12 @@ export async function signIn(
   context: BrowserContext,
   baseURL: string,
   tables: (userId: string) => StubTables = () => ({}),
-  options: { missingFunctions?: string[]; contentRole?: "admin" | "writer" } = {},
+  options: {
+    missingFunctions?: string[];
+    contentRole?: "admin" | "writer";
+    /** #114: the research flag's study condition for this account. */
+    researchCondition?: "no_story";
+  } = {},
 ): Promise<StubAccount> {
   const token = `stub-${randomUUID()}`;
   const userId = randomUUID();
@@ -42,6 +47,7 @@ export async function signIn(
       tables: tables(userId),
       missingFunctions: options.missingFunctions ?? [],
       contentRole: options.contentRole ?? null,
+      researchCondition: options.researchCondition ?? null,
     }),
   });
   if (!seeded.ok) throw new Error(`stub seed failed: ${seeded.status}`);

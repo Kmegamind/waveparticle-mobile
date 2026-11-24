@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>F1-STUDY and R1-STUDY</title>
+<!--
+  #114 (US-MAP-11, M4): the two new states of the study condition, drawn only as far as they differ
+  from prototype version 4. Everything that stays is F1 and R1 of version 4 unchanged (seam, Your
+  goal panel, Your steps, Done | Pause; the rest header). What goes: his side (portrait, "My goal",
+  the card stack, F1-C, F3), F-RET, and on the rest page his slips and the composer.
+  Values are the Oppenheimer skin of DESIGN.md 3.4. Open in a browser at 390 px wide.
+-->
+<style>
+  :root { --bg:#140D12; --raised:#292127; --ink:#F1EDF0; --ink-2:#CEC9CC; --edge:#7F787D;
+    --hairline:#31282E; --tag-fill:#A1CAA8; --tag-ink:#050B06; --tag-edge:#6E9876; --mark:#719F7A; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:17px/1.5 "Atkinson Hyperlegible Next", system-ui, sans-serif;
+    display:flex; flex-wrap:wrap; gap:32px; padding:24px; }
+  .phone { width:390px; height:800px; border:1px solid var(--hairline); border-radius:28px; padding:26px 22px 16px;
+    display:flex; flex-direction:column; }
+  .cap { font-size:12.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-2); font-weight:700; margin:0; }
+  .seam { display:flex; justify-content:space-between; align-items:center; }
+  .ticks { display:flex; gap:6px; } .ticks i { width:10px; height:3px; background:var(--edge); display:block; }
+  .ticks i.now { background:var(--mark); }
+  .clock { font:600 78px/1 "Atkinson Hyperlegible Mono", ui-monospace, monospace; margin:18px 0 28px; }
+  .panel p { margin:0 0 8px; } .desc { color:var(--ink-2); }
+  .more { margin-top:12px; background:none; border:0; color:var(--ink); font:700 15px/1.2 inherit; text-decoration:underline; padding:12px 0; }
+  .grow { flex:1; }
+  .actions { display:grid; grid-template-columns:62fr 38fr; gap:10px; }
+  .btn { height:56px; border-radius:14px; font:700 17px/1.1 inherit; border:1px solid var(--edge); background:var(--raised); color:var(--ink); }
+  .btn.filled { background:var(--tag-fill); color:var(--tag-ink); border-color:var(--tag-edge); box-shadow:0 2px 0 0 var(--tag-edge); }
+  .rest-head { display:flex; justify-content:space-between; align-items:center; }
+  .rest-head a { color:var(--ink); font-weight:700; font-size:15px; }
+  .note { color:var(--ink-2); font-size:13.5px; margin-top:16px; }
+</style>
+</head>
+<body>
+  <section class="phone" aria-label="F1-STUDY">
+    <div class="seam"><p class="cap">Step 2 of 3</p><span class="ticks"><i></i><i class="now"></i><i></i></span></div>
+    <p class="clock" role="timer">24:12</p>
+    <div class="panel">
+      <p class="cap">Your goal</p>
+      <p>Write the report</p>
+      <p><span class="cap">Now</span> Draft</p>
+      <p class="desc">Write the first version of each section.</p>
+      <button class="more">Your steps ▾</button>
+    </div>
+    <div class="grow"></div>
+    <div class="actions"><button class="btn filled">Done</button><button class="btn">Pause</button></div>
+    <p class="note">F1-STUDY: no portrait, no "My goal", no cards. The clock starts when the Step opens.</p>
+  </section>
+  <section class="phone" aria-label="R1-STUDY">
+    <div class="rest-head"><button class="btn" style="height:44px;border:0;background:none">‹ Back to step</button><p class="cap">Paused</p><a href="#">Home</a></div>
+    <div class="grow"></div>
+    <p class="note">R1-STUDY: the header only. No message of his, no text box. Back to step restarts the clock at once (no F-RET).</p>
+  </section>
+</body>
+</html>

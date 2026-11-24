@@ -1,3 +1,5 @@
+import { isStoryOff } from "./focus-session";
+
 export type LineSource = "authored" | "generated";
 
 export type LineKind = "background" | "story_card" | "pause_message" | "return_popup" | "closing";
@@ -203,7 +205,8 @@ export function screenState(progress: AccountProgress): ScreenState {
   const lifePath: ScreenState["lifePath"] = [];
   const seen = new Set<string>();
   for (const session of progress.sessions) {
-    if (session.state !== "completed") continue;
+    // #114: a session played with the Story off never makes a Life Path row.
+    if (session.state !== "completed" || isStoryOff(session)) continue;
     const key = `${session.companionId}:${session.storyId}`;
     if (seen.has(key)) continue;
     seen.add(key);

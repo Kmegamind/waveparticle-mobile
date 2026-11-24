@@ -2,7 +2,7 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 import {
-  accountSessionKey,
+  planStorageKey,
   seedFocusSession,
   sessionPlanOf,
   type AccountFocusPlan,
@@ -44,8 +44,10 @@ export function AccountFocus({
   return (
     <FocusBody
       host={{
-        paths: accountPathsFor(plan.sessionId),
-        storageKey: accountSessionKey(plan.sessionId),
+        // #114: with the Story off there is no summary (END is his closing line); the last Done
+        // keeps the Undo toast here.
+        paths: plan.storyOff ? ACCOUNT_PATHS : accountPathsFor(plan.sessionId),
+        storageKey: planStorageKey(plan),
         goalLine,
         who,
         plan: sessionPlanOf(plan),
@@ -56,6 +58,8 @@ export function AccountFocus({
         seed,
         onProgress: record,
         keepClockRunning,
+        // #114: the study condition of the research flag (F1-STUDY).
+        storyOff: plan.storyOff,
       }}
     />
   );

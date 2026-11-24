@@ -8,11 +8,18 @@ import type { PauseResponse, RestReplyResponse } from "@/lib/prototype/rest-line
 import { serverSafetyCheck } from "@/lib/safety/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
+import { storyIsOff } from "@/lib/research/condition";
 
 // Server actions of the signed-in rest page (#257). No test data: without the model they fail.
 
+/**
+ * Signed in and not in the study condition (#114, R1-STUDY: the Companion is off, so no model
+ * call is made for a flagged account; a failed read of the flag refuses too).
+ */
 async function isSignedIn() {
-  return (await getCurrentUser(await createSupabaseServerClient())) !== null;
+  const client = await createSupabaseServerClient();
+  if ((await getCurrentUser(client)) === null) return false;
+  return !(await storyIsOff(client).catch(() => true));
 }
 
 function gateway() {

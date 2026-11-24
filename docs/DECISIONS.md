@@ -328,6 +328,13 @@ Yue answered the blocking questions of issue #118 (US-SAF-5) on 2026-11-23. The 
 |---|---|---|---|
 | TEST-NO-CAP | 2026-11-24 | (owner) No daily cap on real model calls during the test stage; revisit before public release (#256). The per-browser daily limit of 20 on `/goal` and `/try` is kept in code but can be switched off by the server-only setting `MODEL_CALL_LIMIT_ENABLED`: `0` turns it off, unset or `1` keeps it on, any other value keeps it on and logs one warning. The owner sets `MODEL_CALL_LIMIT_ENABLED=0` for the test stage. #256 (a daily cap per signed-in account) stays open in "Later". | Until the owner sets the value in Vercel, the limit of 20 per browser still applies. With it off there is no limit on model calls at all: the owner watches usage in the model provider's dashboard (as in SESSION-PAGES-OPEN). Before public release, set it back to `1` (or remove it) and decide the cap in #256. See `docs/deploy.md`. Issue: "Switch to turn off the per-browser daily limit on /goal and /try". |
 
+### Research flag (2026-11-24, proposed by the agent for #114; the owner confirms)
+
+| Id | Date | Decision | Consequences |
+|---|---|---|---|
+| RESEARCH-FLAG | 2026-11-24 | (proposed, agent, #114) The internal research flag of M4 is one row in `public.research_conditions` (`user_id`, `condition` `no_story`, `assigned_at`): row level security on, no policy, closed to the API, so nobody reads or changes it through the app. The team assigns and removes it with one SQL command in the Supabase SQL editor (`docs/deploy.md`, Research flag), as content roles. The app asks `public.research_condition()`, which answers only for the signed-in account. No admin page, no list of emails in an environment setting, no setting, label or word about it in the interface. If the flag cannot be read, the focus page does not open (it never falls back to the Story for a participant); only a missing function (migration not run, so nobody can be flagged) reads as no flag. | Not in the data export and not shown to the participant (open item RESEARCH-EXPORT). Deleting the account removes the row. |
+| STUDY-SESSION | 2026-11-24 | (proposed, agent, #114) The Story is off per session: a session played in the study condition has `companion_id` and `story_id` `none`. The flag decides on `/focus`: a new session is opened with the Story off, and the account's open session that plays the Story is turned into a Story-off session in place, keeping its done Steps and the cards already shown. No more cards, no closing line, no Life Path row: the Life Path's current story stays where it was (the Story is frozen, never advanced silently). A Story-off session stays so until it ends, even if the flag is removed; the next session then plays the current story. | F1-STUDY and R1-STUDY in `docs/FLOW.md`. The pause message, the rest reply and the return pop-up are refused on the server for a flagged account; END is not offered (it is his closing line). History (ME-CAL, ME-REC) records the Goal and the done Steps without the Companion name and without "His chapter". Home, Goals, the goal dialogue and the Companions tab are unchanged (open item RESEARCH-SURFACES). |
+
 ## 2. Superseded rules (do not implement)
 
 | Rule | Replaced by |
@@ -385,6 +392,8 @@ Yue answered the blocking questions of issue #118 (US-SAF-5) on 2026-11-23. The 
 | TIME-LIMIT | The length of the waiting time limit for live generation and the wording of the failure message (FAIL-SCREEN); set by testing |
 | CLOCK-NUMBERS | Whether the return pop-up may use exact clock numbers (TIME-WORDS) |
 | KEY-REVIEW | The review of the machine-derived key moments (KEY-MOMENTS-DRAFT) |
+| RESEARCH-EXPORT | Whether the data export lists the research condition (now: no), and whether the participant is told after the study (#114) |
+| RESEARCH-SURFACES | In the study condition, Home and Goals still name the Companion, the goal dialogue is still in his voice and the Companions tab and Life Path still open; whether the study hides them (#114) |
 | PERIOD-NAMES | The named periods of each character's Life Path (PERIODS), drafted for Yue to approve |
 | MORIARTY-READ | Yue's reading of the 31 cards of Moriarty story 1 (MORIARTY-6) |
 

@@ -72,6 +72,34 @@ where user_id = (select id from auth.users where email = 'person@example.com');
 The migration `supabase/migrations/20261116000000_content_roles.sql` must run first. No key with full
 database rights is needed: the app asks `public.content_role()` with the signed-in user's session.
 
+## Research flag
+The study condition of US-MAP-11 (#114, `docs/decisions/0031`, decision M4: no switch in the app)
+turns the Companion and the Story off for one participant: the focus page is a plain timer. The
+account must already exist (signed up once). To put it in the study condition, run one command in
+the Supabase SQL editor:
+
+```sql
+insert into public.research_conditions (user_id, condition)
+select id, 'no_story' from auth.users where email = 'person@example.com'
+on conflict (user_id) do update set condition = excluded.condition;
+```
+
+To take it out again:
+
+```sql
+delete from public.research_conditions
+where user_id = (select id from auth.users where email = 'person@example.com');
+```
+
+To list who is in it: `select u.email, r.condition, r.assigned_at from public.research_conditions r
+join auth.users u on u.id = r.user_id;`. The flag takes effect the next time the participant opens the
+focus page: an open Story session is turned Story-off there and keeps its done Steps. Taking the flag
+out leaves an open Story-off session as it is; the next session plays the Story again from where it
+was frozen. The migration `supabase/migrations/20261129000000_research_conditions.sql` must run before anyone
+can be assigned. Until it runs, the app reads every account as not in the study (the function is
+missing, so nobody can be flagged); any other failure to read the flag keeps the focus page from
+opening, so a participant never falls back to the Story.
+
 ## App text
 The app's own words (#288, `docs/decisions/0017`) live in `public.app_text`. Run the migration
 `supabase/migrations/20261117000000_app_text.sql` (after the content roles migration), then load the

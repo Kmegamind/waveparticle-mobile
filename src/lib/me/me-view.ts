@@ -2,6 +2,7 @@ import { companionById } from "@/lib/content/companions";
 import type { Companion } from "@/lib/content/types";
 import { homeView } from "@/lib/home/home-view";
 import type { AccountProgress, ProgressSession } from "@/lib/progress/account-progress";
+import { isStoryOff } from "@/lib/progress/focus-session";
 
 /**
  * The Me page (#81) and its history (#82) from the account only. A session is in the history once
@@ -13,6 +14,7 @@ import type { AccountProgress, ProgressSession } from "@/lib/progress/account-pr
 export type HistoryEntry = {
   sessionId: string;
   goalTitle: string;
+  /** The Companion's short name; empty for a session played with the Story off (#114). */
   companion: string;
   firstDoneAt: string;
   minutes: number;
@@ -50,7 +52,7 @@ export function historyEntry(
   return {
     sessionId: session.id,
     goalTitle: goal.title,
-    companion: companionById(companions, session.companionId).shortName,
+    companion: isStoryOff(session) ? "" : companionById(companions, session.companionId).shortName,
     firstDoneAt: done.map((step) => step.doneAt).sort()[0],
     minutes: done.reduce((sum, step) => sum + step.minutes, 0),
   };

@@ -45,7 +45,15 @@ export type StepCards = {
    * again, and the full set replaces these, keeping the shown count and the clock.
    */
   partial?: true;
+  /**
+   * The study condition (#114, F1-STUDY): the Step has no cards at all. It starts its clock as if
+   * its cards were in, and nothing is shown or recorded.
+   */
+  none?: true;
 };
+
+/** The "cards" of a Step with the Story off (#114): none, so the clock starts at once. */
+export const NO_CARDS: StepCards = { opening: "", story: [], premade: true, none: true };
 
 export type StepRun = {
   cards: StepCards | null;
@@ -199,9 +207,11 @@ export function setStepCards(
   const step = session.steps[index];
   if (!step || (step.cards && !step.cards.partial)) return session;
   const minutes = (step.targetSeconds * session.speed) / 60;
-  const limited = cards.premade
-    ? { opening: cards.opening, story: [...cards.story], premade: true as const }
-    : { opening: cards.opening, story: cards.story.slice(0, maxStoryCards(minutes)) };
+  const limited = cards.none
+    ? NO_CARDS
+    : cards.premade
+      ? { opening: cards.opening, story: [...cards.story], premade: true as const }
+      : { opening: cards.opening, story: cards.story.slice(0, maxStoryCards(minutes)) };
   let next: StepRun = { ...step, cards: limited };
   // A partial Step already runs: its clock and shown cards stay as they are.
   if (step.cards?.partial) return replaceStep(session, index, next);
@@ -246,7 +256,7 @@ function dueStoryCount(session: FocusSession, index: number, nowMs: number): num
 /** The cards of a Step that are visible now, oldest first: the opening card, then story cards. */
 export function visibleCards(session: FocusSession, index: number, nowMs: number): string[] {
   const step = session.steps[index];
-  if (!step?.cards) return [];
+  if (!step?.cards || step.cards.none) return [];
   const count = Math.max(step.shownStory, dueStoryCount(session, index, nowMs));
   return [step.cards.opening, ...step.cards.story.slice(0, count)];
 }
@@ -514,6 +524,15 @@ export function setReturnLine(session: FocusSession, text: string): FocusSession
 /** Start in the return pop-up: it closes and the clock starts from the frozen value. */
 export function startFromReturn(session: FocusSession, nowMs: number): FocusSession {
   return resumeSession({ ...session, returnPending: null, returnLine: null }, nowMs);
+}
+
+/**
+ * Opening the focus page with the Story off (#114, F1-STUDY): there is no return pop-up (it is his
+ * voice), so a return that would open it restarts the clock at once instead.
+ */
+export function returnWithoutPopup(session: FocusSession, nowMs: number): FocusSession {
+  const next = returnOnOpen(session, nowMs);
+  return next.returnPending ? startFromReturn(next, nowMs) : next;
 }
 
 function isSession(value: unknown): value is FocusSession {

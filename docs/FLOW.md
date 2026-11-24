@@ -37,9 +37,11 @@ Some screen names below name a state of a page rather than a separate page. For 
 | F-RET | Return pop-up | Session (modal over F1) |
 | F2 | Focus, timer at 00:00 | Session (state of F1) |
 | F3 | Focus, cards failed to load | Session (state of F1) |
+| F1-STUDY | Focus, the Story turned off (research flag only) | Session (state of F1) |
 | R1 | Rest, he writes first | Session |
 | R1-C | Rest, you answered (chatting) | Session (state of R1) |
 | R-OFF | Rest, no network | Session (state of R1) |
+| R1-STUDY | Rest, the Story turned off (research flag only) | Session (state of R1) |
 | S1 | Safety | System |
 | S1-0 | Safety, no country chosen | System (state of S1) |
 | S1-E | Safety, an entry for the chosen country | System (state of S1) |
@@ -455,6 +457,15 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 - **System back:** acts as Pause.
 - **States:** the wording and the waiting time limit are set by testing (TIME-LIMIT).
 
+#### F1-STUDY · Focus, the Story turned off
+
+- **Frame:** state of F1 (and of F1S), for a participant the team assigned to the study condition with the internal research flag (M4, RESEARCH-FLAG, US-MAP-11). There is no switch for it anywhere in the interface. Drawn in `docs/design/prototype/pr-114/F1-STUDY.html`.
+- **Purpose:** a plain timer to compare against, with the Companion and the Story switched off.
+- **Shows:** the seam ("Step x of N", the paired Step marks and the clock), the "Your goal" panel with "Now", the current Step name and its short description (when there is one), **Your steps ▾**, and **Done | Pause**. No portrait, no "My goal" line, no cards, no dots, no ‹ ›, no F1-C sheet, no F3, no F-RET. The clock starts when the Step opens (it does not wait for cards).
+- **Can do and leads to:** **Done** as F1; the last Done keeps the "Step done" toast with Undo on this page and then shows "Every Step of this Goal is done." with a link to Home (no END, which is his closing line). **Pause** opens R1-STUDY. **Your steps ▾** as F1.
+- **System back:** acts as Pause.
+- **States:** F2 as F1 (00:00, one light haptic). Coming back after 5 minutes or more away, or from Back to step, resumes the clock at once (F-RET is his voice, so it does not open). The Story is frozen: the Life Path does not move and no Life Path row is made; the Goal and its done Steps are recorded in History (ME-CAL, ME-REC) as for any session.
+
 #### F-RET · Return pop-up
 
 - **Frame:** modal over F1 or F1S. The focus page stays visible behind it with the clock frozen. Any open sheet is closed first.
@@ -494,6 +505,15 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 - **Can do and leads to:** **Retry** tries again. **‹ Back to step** with no connection shows the failure screen with **Retry** (FAIL-SCREEN, OFFLINE-RESUME). **Home** opens Home.
 - **System back:** same as Home.
 - **States:** when the connection returns, the box is enabled again without a notice.
+
+#### R1-STUDY · Rest, the Story turned off
+
+- **Frame:** state of R1, for the study condition only (F1-STUDY). Drawn in `docs/design/prototype/pr-114/F1-STUDY.html`.
+- **Purpose:** the pause of a plain timer: the clock is frozen.
+- **Shows:** the same slim header (**‹ Back to step**, "Paused", **Home**) and nothing else: no message of his, no text box, no failure screen. No model call is made.
+- **Can do and leads to:** **‹ Back to step** opens F1-STUDY and the clock restarts at once (no F-RET). **Home** opens Home with the Step paused.
+- **System back:** same as Home.
+- **States:** none.
 
 #### S1 · Safety
 

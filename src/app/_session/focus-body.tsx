@@ -15,9 +15,11 @@ import {
   leaveSession,
   needsCards,
   loadSession,
+  NO_CARDS,
   parseSpeed,
   remainingFor,
   returnOnOpen,
+  returnWithoutPopup,
   saveSession,
   setReturnLine,
   setStepCards,
@@ -41,6 +43,13 @@ const TICK_MS = 250;
 const SWIPE_PX = 40;
 
 const currentTime = () => Date.now();
+
+/** The study condition (#114): a Step's "cards" are none, with no request to the server. */
+const noCards = async (): Promise<StepCardsResponse> => ({
+  status: "ok",
+  isTestData: false,
+  cards: NO_CARDS,
+});
 
 /** The Plan the focus page works through: a Goal and its Steps. */
 export type FocusPlan = SessionPlan & { goal: { text: string; minutes: number } };
@@ -75,6 +84,11 @@ export type FocusHost = {
   keepClockRunning?: boolean;
   /** Called after Done and Undo with the new current Step (the /try store keeps it). */
   onStepChange?: (current: number) => void;
+  /**
+   * The study condition of the research flag (#114, F1-STUDY): no portrait, no "My goal", no
+   * cards, no "Who I am" sheet and no return pop-up. The clock starts when the Step opens.
+   */
+  storyOff?: boolean;
 };
 
 /** Shown when there is no Goal or no Step to work on. */
@@ -93,8 +107,11 @@ function initialSession(host: FocusHost): FocusSession {
     loadSession(window.localStorage, host.storageKey) ?? host.seed?.(speed, currentTime()) ?? null;
   const synced = syncSession(stored, host.plan, speed);
   // A frozen clock restarts at once after a short absence; after Back to step or 5 minutes or
-  // more away, the return pop-up (F-RET) opens first and the clock waits for Start.
-  return returnOnOpen(synced, currentTime());
+  // more away, the return pop-up (F-RET) opens first and the clock waits for Start. With the Story
+  // off there is no pop-up: the clock restarts at once (#114).
+  return host.storyOff
+    ? returnWithoutPopup(synced, currentTime())
+    : returnOnOpen(synced, currentTime());
 }
 
 /** A light haptic where the device has one (#25 AC3). Nothing happens without it. */
@@ -113,6 +130,7 @@ export function FocusBody({ host }: { host: FocusHost }) {
   const returnFailureText = useAppText("ui.F-RET.fail.body");
   const returnRetryLabel = useAppText("ui.F-RET.fail.retry");
   const { goalLine, paths, plan, storageKey, who } = host;
+  const storyOff = host.storyOff === true;
   const [session, setSession] = useState<FocusSession>(() => initialSession(host));
   const [now, setNow] = useState(currentTime);
   const [failed, setFailed] = useState<Record<number, boolean>>({});
@@ -164,7 +182,9 @@ export function FocusBody({ host }: { host: FocusHost }) {
       setSession((current) =>
         document.visibilityState === "hidden"
           ? leaveSession(current, at, keepClockRunning)
-          : returnOnOpen(current, at),
+          : storyOff
+            ? returnWithoutPopup(current, at)
+            : returnOnOpen(current, at),
       );
     };
     const onHide = () => {
@@ -181,7 +201,7 @@ export function FocusBody({ host }: { host: FocusHost }) {
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", onHide);
     };
-  }, [keepClockRunning, session, storageKey]);
+  }, [keepClockRunning, session, storageKey, storyOff]);
 
   const fetchCards = useCallback(
     (target: number) => {
@@ -193,7 +213,9 @@ export function FocusBody({ host }: { host: FocusHost }) {
       const earlierCards = session.steps
         .slice(0, target)
         .flatMap((step) => (step.cards ? [step.cards.opening, ...step.cards.story] : []));
-      loadStepCards({
+      // #114: with the Story off nothing is asked for; the Step's clock starts as if its cards
+      // were in.
+      (storyOff ? noCards : loadStepCards)({
         storyId: plan.storyId,
         index: target,
         planMinutes: steps.map((step) => step.minutes),
@@ -211,7 +233,7 @@ export function FocusBody({ host }: { host: FocusHost }) {
           }
         });
     },
-    [loadStepCards, plan.storyId, session.steps, steps],
+    [loadStepCards, plan.storyId, session.steps, steps, storyOff],
   );
 
   // Load the current Step's cards, and the next Step's ahead of time once this Step's cards are
@@ -300,7 +322,8 @@ export function FocusBody({ host }: { host: FocusHost }) {
   const returnPending = session.returnPending;
   const returnLine = session.returnLine;
   useEffect(() => {
-    if (!returnPending || returnLine !== null || returnFailed || returnRequested.current) return;
+    if (storyOff || !returnPending || returnLine !== null || returnFailed) return;
+    if (returnRequested.current) return;
     returnRequested.current = true;
     const pausedAt = session.pausedAtMs ?? currentTime();
     const awayMinutes = ((currentTime() - pausedAt) / 60_000) * session.speed;
@@ -325,6 +348,7 @@ export function FocusBody({ host }: { host: FocusHost }) {
     returnPending,
     session.pausedAtMs,
     session.speed,
+    storyOff,
   ]);
 
   // #5 AC5: focus moves into the pop-up at once (the page behind it is inert), and to Start when
@@ -396,7 +420,7 @@ export function FocusBody({ host }: { host: FocusHost }) {
 
   return (
     <main className="focus-page" data-ready="true">
-      <div className="focus-frame" inert={returnPending !== null}>
+      <div className="focus-frame" inert={returnPending !== null && !storyOff}>
         <header className="focus-seam">
           {total > 1 ? (
             <div className="focus-seam-row">
@@ -424,93 +448,97 @@ export function FocusBody({ host }: { host: FocusHost }) {
         </header>
 
         <div className="focus-middle" key={index}>
-          <section aria-labelledby="his-side" className="focus-his">
-            <div className="focus-mygoal">
-              <button
-                aria-expanded={sheetOpen}
-                aria-haspopup="dialog"
-                aria-label="Where I am now"
-                className="focus-avatar"
-                onClick={() => setSheetOpen(true)}
-                ref={portrait}
-                type="button"
-              >
-                <span aria-hidden="true" className="try-avatar">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- a decorative portrait */}
-                  <img alt="" src={COMPANION.portrait} />
-                </span>
-              </button>
-              <div>
-                <h2 className="focus-label" id="his-side">
-                  My goal
-                </h2>
-                <p className="focus-goal-line">{goalLine}</p>
-              </div>
-            </div>
-            {isTestData ? <p className="try-caption">Test data: chapter 8 cards</p> : null}
-
-            {showFailure ? (
-              <div className="focus-failure">
-                <p>{cardsFailureText}</p>
-                <button className="button-filled" onClick={onRetry} type="button">
-                  {cardsRetryLabel}
-                </button>
-              </div>
-            ) : cards.length > 0 ? (
-              <div
-                aria-label="Story cards"
-                className="focus-stack"
-                onKeyDown={(event) => {
-                  if (event.key === "ArrowLeft" && shown > 0) earlier();
-                  if (event.key === "ArrowRight" && shown < cards.length - 1) newer();
-                }}
-                onPointerDown={onPointerDown}
-                onPointerUp={onPointerUp}
-                role="group"
-                tabIndex={0}
-              >
-                <figure
-                  aria-current={shown === cards.length - 1 ? "true" : undefined}
-                  className={cards.length > 1 ? "focus-slip focus-slip-stacked" : "focus-slip"}
-                  data-testid="story-card"
+          {storyOff ? null : (
+            <section aria-labelledby="his-side" className="focus-his">
+              <div className="focus-mygoal">
+                <button
+                  aria-expanded={sheetOpen}
+                  aria-haspopup="dialog"
+                  aria-label="Where I am now"
+                  className="focus-avatar"
+                  onClick={() => setSheetOpen(true)}
+                  ref={portrait}
+                  type="button"
                 >
-                  <span aria-hidden="true" className="focus-tape" />
-                  <span className="focus-card-label">{cardLabel(index, shown, cards.length)}</span>
-                  {/* #101 AC1: the position in words; the dots are decoration only. */}
-                  <span className="sr-only">{`, Card ${shown + 1} of ${cards.length}`}</span>
-                  <div className="focus-card-text">
-                    <p>{cards[shown]}</p>
-                  </div>
-                  <span aria-hidden="true" className="focus-dots">
-                    {cards.map((card, position) => (
-                      <span
-                        className={position === shown ? "focus-dot focus-dot-on" : "focus-dot"}
-                        key={`${position}-${card.slice(0, 8)}`}
-                      />
-                    ))}
+                  <span aria-hidden="true" className="try-avatar">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- a decorative portrait */}
+                    <img alt="" src={COMPANION.portrait} />
                   </span>
-                  <div className="focus-pager">
-                    <button
-                      aria-label="Earlier card"
-                      disabled={shown === 0}
-                      onClick={earlier}
-                      type="button"
-                    >
-                      ‹
-                    </button>
-                    <button
-                      aria-label="Newer card"
-                      disabled={shown >= cards.length - 1}
-                      onClick={newer}
-                      type="button"
-                    >
-                      ›
-                    </button>
-                  </div>
-                </figure>
+                </button>
+                <div>
+                  <h2 className="focus-label" id="his-side">
+                    My goal
+                  </h2>
+                  <p className="focus-goal-line">{goalLine}</p>
+                </div>
               </div>
-            ) : null}
-          </section>
+              {isTestData ? <p className="try-caption">Test data: chapter 8 cards</p> : null}
+
+              {showFailure ? (
+                <div className="focus-failure">
+                  <p>{cardsFailureText}</p>
+                  <button className="button-filled" onClick={onRetry} type="button">
+                    {cardsRetryLabel}
+                  </button>
+                </div>
+              ) : cards.length > 0 ? (
+                <div
+                  aria-label="Story cards"
+                  className="focus-stack"
+                  onKeyDown={(event) => {
+                    if (event.key === "ArrowLeft" && shown > 0) earlier();
+                    if (event.key === "ArrowRight" && shown < cards.length - 1) newer();
+                  }}
+                  onPointerDown={onPointerDown}
+                  onPointerUp={onPointerUp}
+                  role="group"
+                  tabIndex={0}
+                >
+                  <figure
+                    aria-current={shown === cards.length - 1 ? "true" : undefined}
+                    className={cards.length > 1 ? "focus-slip focus-slip-stacked" : "focus-slip"}
+                    data-testid="story-card"
+                  >
+                    <span aria-hidden="true" className="focus-tape" />
+                    <span className="focus-card-label">
+                      {cardLabel(index, shown, cards.length)}
+                    </span>
+                    {/* #101 AC1: the position in words; the dots are decoration only. */}
+                    <span className="sr-only">{`, Card ${shown + 1} of ${cards.length}`}</span>
+                    <div className="focus-card-text">
+                      <p>{cards[shown]}</p>
+                    </div>
+                    <span aria-hidden="true" className="focus-dots">
+                      {cards.map((card, position) => (
+                        <span
+                          className={position === shown ? "focus-dot focus-dot-on" : "focus-dot"}
+                          key={`${position}-${card.slice(0, 8)}`}
+                        />
+                      ))}
+                    </span>
+                    <div className="focus-pager">
+                      <button
+                        aria-label="Earlier card"
+                        disabled={shown === 0}
+                        onClick={earlier}
+                        type="button"
+                      >
+                        ‹
+                      </button>
+                      <button
+                        aria-label="Newer card"
+                        disabled={shown >= cards.length - 1}
+                        onClick={newer}
+                        type="button"
+                      >
+                        ›
+                      </button>
+                    </div>
+                  </figure>
+                </div>
+              ) : null}
+            </section>
+          )}
 
           <section aria-labelledby="your-side" className="focus-yours">
             <div className="focus-panel-head">
@@ -604,15 +632,17 @@ export function FocusBody({ host }: { host: FocusHost }) {
         </p>
       </div>
 
-      <WhoIAmSheet
-        lines={sheetOpen ? doneLines(session, now) : []}
-        onClose={() => setSheetOpen(false)}
-        open={sheetOpen && returnPending === null}
-        returnTo={portrait}
-        who={who}
-      />
+      {storyOff ? null : (
+        <WhoIAmSheet
+          lines={sheetOpen ? doneLines(session, now) : []}
+          onClose={() => setSheetOpen(false)}
+          open={sheetOpen && returnPending === null}
+          returnTo={portrait}
+          who={who}
+        />
+      )}
 
-      {returnPending ? (
+      {returnPending && !storyOff ? (
         <div className="return-shade">
           <div
             aria-describedby="return-line"

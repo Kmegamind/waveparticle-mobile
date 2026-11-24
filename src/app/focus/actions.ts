@@ -12,6 +12,7 @@ import type { LineResponse } from "@/lib/prototype/rest-lines";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { logEvent } from "@/lib/logging/server-log";
+import { storyIsOff } from "@/lib/research/condition";
 
 /**
  * Server actions of the signed-in focus and rest pages (#257). Every one needs a signed-in user;
@@ -41,6 +42,8 @@ export async function loadAccountStepCards(request: unknown): Promise<StepCardsR
   const signedIn = await signedInUser();
   if (!signedIn) return { status: "failed" };
   const { user, client } = signedIn;
+  // #114: no cards in the study condition (a failed read of the flag refuses too).
+  if (await storyIsOff(client).catch(() => true)) return { status: "failed" };
   return premadeStepCards(request, {
     readSession: async (sessionId) => {
       const { data, error } = await client
@@ -71,7 +74,10 @@ export async function loadAccountStepCards(request: unknown): Promise<StepCardsR
 }
 
 export async function loadAccountReturnLine(request: unknown): Promise<LineResponse> {
-  if (!(await signedInUser())) return { status: "failed" };
+  const signedIn = await signedInUser();
+  if (!signedIn) return { status: "failed" };
+  // #114: no return pop-up and no model call in the study condition.
+  if (await storyIsOff(signedIn.client).catch(() => true)) return { status: "failed" };
   return accountReturnLine(await storyContent(), request, gateway());
 }
 
