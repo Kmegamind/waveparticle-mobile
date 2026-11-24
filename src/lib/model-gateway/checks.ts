@@ -1,6 +1,7 @@
 import type { CompanionKind, GeneratedPlan } from "./types";
 
 const FAILURE_WORDING = /\b(error|failed|failure|timeout|exception|undefined)\b/i;
+/** Chinese characters (CJK ideographs) only; Hangul, kana and other scripts are not matched. */
 const CJK = /[\u3400-\u9fff]/;
 const DASH = /—|–|--/;
 /** Banned words in any line of his (also used by the admin card checks, #304). */

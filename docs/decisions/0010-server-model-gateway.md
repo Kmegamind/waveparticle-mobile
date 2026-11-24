@@ -17,6 +17,6 @@ App code calls `src/lib/model-gateway`. The server reads only `MODEL_API_KEY`, `
 
 ## Consequences
 - The three names are server-only. They are set in Vercel Production, Preview and Development. They never use a browser prefix.
-- Prompts in this module only request the JSON shape. The real planning prompt is still open (P1).
+- Prompts in this module only request the JSON shape. The planning prompt is the owner's prompt of 2026-11-24 (`plan_split` version 2, PLAN-PROMPT; P1 closed).
 - `DEEPSEEK_API_KEY` and `GEMINI_API_KEY` stay on the benchmark and the provider check. The gateway does not read them.
 - 1024 output tokens is a starting budget so a reasoning model can still return text. It is not a measured cost decision.

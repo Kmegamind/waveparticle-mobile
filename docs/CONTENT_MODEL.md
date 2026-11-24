@@ -220,7 +220,7 @@ Every card must make sense on its own, so a user can look back at it (Decided, D
 
 There are two things called a step. Do not confuse them.
 
-User step (user content, stored on the server and tied to the account; Decided, S3). It is produced by the planning prompt (the AI "planning expert"). The real planning prompt is still to be supplied (open, P1); the format below is the placeholder format of `docs/ai/AI_01`, extended with the description (Decided, D1c):
+User step (user content, stored on the server and tied to the account; Decided, S3). It is produced by the planning prompt (the AI "planning expert"). The planning prompt is in `docs/ai/AI_01` section 4 (PLAN-PROMPT, 2026-11-24); the format below is its answer: a title, a description and minutes per Step (Decided, D1c):
 
 ```json
 {"title": "<the goal in at most 40 characters>",
@@ -488,7 +488,7 @@ Card count of a step: n, the cards it receives, at least 1 and no upper limit; n
 | Content type | Source | If generation fails |
 |---|---|---|
 | Goal conversation lines (GD0 to GD4C) | Authored pools; the goal's shape is decided by a local rule (GOAL-SHAPE-LOCAL) and the model only splits the plan (Decided, T2) | Failure message with Retry |
-| Plan: step titles, descriptions and minutes | Live, from the planning prompt (P1) | Failure message with Retry; the typed text is kept |
+| Plan: step titles, descriptions and minutes | Live, from the planning prompt (PLAN-PROMPT) | Failure message with Retry; the typed text is kept |
 | Background card | Made ahead, once per story (SHARED-STORY) | If it fails to load: failure screen with Retry; the clock does not start (FAIL-PREMADE) |
 | Story cards | Made ahead, once per story part, from the story's facts and key moments (SHARED-STORY, CARDS-PER-PART) | If they fail to load: failure screen with Retry; the clock does not start (FAIL-PREMADE) |
 | Closing line | Made ahead with the story's cards (CLOSING-AHEAD); END-TONE applies | If it fails to load: failure screen with Retry on the summary (CLOSING-FAIL) |
@@ -735,7 +735,6 @@ Decision M1 (2026-11-05): new users start at chapter 1, with no designated entry
 
 Other missing pieces:
 
-- The real planning prompt (open, P1). The text in `docs/ai/AI_01` is a placeholder. Yue will supply the file (2026-11-21).
 - The review of the key moments and their first-person key lines for every story (KEY-REVIEW).
 - The reading of the published made-ahead cards and background cards of all 26 stories, and the closing line of every story (STORY-PARTS, READ-STATUS, PUBLISH-FIRST). The cards are stored (#293).
 - Generator inputs for all 26 stories: scene tables (drafted, one per story, in `docs/demo/*.stage0.json`, SCENE-PER-STORY; read by the app since #64), allowed props, allowed names and rules, and the leak words per fact.

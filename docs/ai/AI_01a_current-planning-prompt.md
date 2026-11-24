@@ -1,6 +1,8 @@
 # Current goal-splitting prompt in the web app
 
-> **Decisions of 2026-11-21 (#369).** The real planning prompt (P1) is still missing; Yue will supply the file, and engineering does not draft one. The problem points in this prompt and in the current prompts in `docs/ai/prompts/` are to be marked for a later full rewrite. The Goal's shape is decided by a local rule in version 1 (GOAL-SHAPE-LOCAL).
+> **2026-11-24 (#40).** The real planning prompt is in place: `docs/ai/prompts/plan_split.md` version 2 and `docs/ai/AI_01_goal-split.md` section 4 (PLAN-PROMPT, P1 closed). This file stays as the record of the old prompt (lines 99-147 of the file below).
+
+> **Decisions of 2026-11-21 (#369).** ~~The real planning prompt (P1) is still missing; Yue will supply the file, and engineering does not draft one.~~ The problem points in this prompt and in the current prompts in `docs/ai/prompts/` are to be marked for a later full rewrite. The Goal's shape is decided by a local rule in version 1 (GOAL-SHAPE-LOCAL).
 
 Source: `5_Code/Waveparticle-python-main/services/llm_service.py`, function `generate_task_breakdown`, called by `POST /api/generate-tasks` in `routes/api.py`. This file records what exists today so the new app can reuse it. It is a reference, not a specification; where it differs from `docs/DECISIONS.md`, the decisions win.
 

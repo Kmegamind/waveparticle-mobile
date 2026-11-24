@@ -200,7 +200,7 @@ Yue answered the questions raised by the three audits (AI specifications, produc
 
 | Id | Date | Decision | Consequences |
 |---|---|---|---|
-| SESSION-PAGES-OPEN | 2026-11-14 | The signed-in session pages (`/goal`, `/focus`, `/rest`, `/end`) are no longer gated by `PROTOTYPE_ENABLED`. They exist in every environment for signed-in users. The owner monitors usage and accepts the model-call cost without a per-account cap. | Every link to them always shows. Sign-in is still required. The per-account daily cap (#256) stays in "Later". The per-browser daily limit of 20 stays on `/goal` and `/try` until #256 (a daily cap per signed-in account) is built. The sign-in-free test path `/try` stays gated exactly as before (`docs/decisions/0011`). Issue #278. |
+| SESSION-PAGES-OPEN | 2026-11-14 | The signed-in session pages (`/goal`, `/focus`, `/rest`, `/end`) are no longer gated by `PROTOTYPE_ENABLED`. They exist in every environment for signed-in users. The owner monitors usage and accepts the model-call cost without a per-account cap. | Every link to them always shows. Sign-in is still required. The per-account daily cap (#256) stays in "Later". The per-browser daily limit of 20 stays on `/goal` and `/try` until #256 (a daily cap per signed-in account) is built, unless the owner switches it off for the test stage (TEST-NO-CAP). The sign-in-free test path `/try` stays gated exactly as before (`docs/decisions/0011`). Issue #278. |
 | SHARED-STORY | 2026-11-14 | The story content is made ahead of time, once per story, and shared by all users: the background card, the step story cards and the closing line. A person reads it before it is published. **Changed 2026-11-21 (decision PUBLISH-FIRST): it is published first; Yue reads it on the phone afterwards and a published card can be edited.** Only the pause message, the rest conversation, the return pop-up and the goal split are generated live. | Reverses the live-card part of T3 and the "everything live" part of NO-BACKUP. NO-BACKUP still holds for the live parts: no stored text stands in for a failed live message, and FAIL-SCREEN applies to them. The existing `step_cards` and `closing_line` prompts become prompts for making stories ahead, not for live calls. |
 | CARDS-PER-PART | 2026-11-14 | Story cards are made for each part of a story, not for each number of user steps. When the user starts a story, the app spreads the parts across however many steps the user has (example: 4 parts and 2 steps gives parts 1 and 2 in step 1, parts 3 and 4 in step 2). | Replaces "an AI distributes the story across the steps" in T3. The spreading is plain app code (`src/lib/story/start.ts`), with no model call. |
 | ADMIN | 2026-11-14 | A content admin website at `/admin` in the same app lets writers and the product manager edit Companions, stories, cards, app text, prompts and checks, and (amended 2026-11-23, HOTLINES) the hotline list, which only the admin role edits and publishes; writers may only read it, and the product owner owns it. Every change is a draft first and goes live only when someone presses Publish; an older version can be restored. The app reads only published content. | Only signed-in accounts with the admin or writer role can open it, checked on the server. It builds on the prompts table (`docs/decisions/0015`) and the story content tables (#284). Plan and prototype: Yue's product folder, `content-admin/`. |
@@ -265,7 +265,7 @@ Yue decided these on 2026-11-18. Recorded in issue #313.
 
 ### Decisions of 2026-11-21
 
-Yue answered the ten questions in `docs/sprints/decisions-needed_2026-11-21.md`. Recorded in issue #369. Decision 7 (the planning prompt) added no new id: P1 stays open.
+Yue answered the ten questions in `docs/sprints/decisions-needed_2026-11-21.md`. Recorded in issue #369. Decision 7 (the planning prompt) added no new id: P1 stayed open until 2026-11-24 (PLAN-PROMPT).
 
 | Id | Date | Decision | Consequences |
 |---|---|---|---|
@@ -303,6 +303,14 @@ Yue answered the open choices of issue #377 (pull request #394, `docs/decisions/
 | CARD-PAIR-OTHERS | 2026-11-23 | A problem between two other cards of a Story does not block publishing a card. Only problems that involve the card itself block it: an earlier card it repeats, or a later card that would repeat it. | Fixing either card of a failing pair is always allowed. Both cards of the pair show the problem. Issue #377. |
 | FIX-BY-ACCOUNT | 2026-11-23 | The SQL fix for the published cards (`scripts/story-cards/fix-published.mjs`) publishes as the admin account named with `--by`, so each Publish history row names that account. | The owner runs it with their own admin account (`docs/deploy.md`, Story cards). Issue #377. |
 
+### Planning prompt (2026-11-24)
+
+Yue supplied the planning prompt on 2026-11-24 (batch 2, answer A; issue #40). It closes open item P1.
+
+| Id | Date | Decision | Consequences |
+|---|---|---|---|
+| PLAN-PROMPT | 2026-11-24 | The goal split (AI-1, call 1b) uses the owner's planning prompt, word for word: `docs/ai/prompts/plan_split.md` version 2, the same text in `docs/ai/AI_01_goal-split.md` section 4. The old prompt was `5_Code/Waveparticle-python-main/services/llm_service.py` lines 99-147. The code checks stay: title at most 40 characters, Step title at most 80, Step description at most 40 words, minutes positive whole numbers that add up to the total, no limit on the number of Steps, no multiples of 15. The Goal's shape stays the local rule (GOAL-SHAPE-LOCAL). | Closes P1. The outdated rules in AI_01 section 4 are marked removed. The owner publishes version 2 in `/admin/prompts` (or loads it with the prompt import). Issue #40. |
+
 ### Help lines by region (2026-11-23)
 
 Yue answered the blocking questions of issue #118 (US-SAF-5) on 2026-11-23. The other points follow the engineering recommendations of the same day, which were accepted with these answers (issue #402).
@@ -313,6 +321,12 @@ Yue answered the blocking questions of issue #118 (US-SAF-5) on 2026-11-23. The 
 | SAFETY-REGION-STORE | 2026-11-23 | The chosen country is stored on the account (`profiles`), with a copy on the phone so S1 works offline. It is included in the data export and removed when the account is deleted. The privacy notice gets one sentence for it, and its date changes. | The phone copy holds the country and its published entry, so S1 works offline; it is refreshed whenever the app reads the account, and removed at sign out. A signed-out S1 (the `/try` test build only, US-ACC-1) shows S1-0 without the "Choose your country" link. |
 | SAFETY-DIRECTORY | 2026-11-23 | The international directory is Find A Helpline (findahelpline.com), linked and never embedded. | Added to the legal review list on #121. A link leaves the app, so the privacy notice needs no change for it. |
 | HOTLINES | 2026-11-23 | The hotline list is content edited in the admin (ADM-14 list, ADM-15 entry, drawn in `docs/design/prototype/admin-hotlines_2026-11-23_v1.html`), owned by the product owner. The only starting entry is the United States: "call or text 988", confirmed by the product owner. No other number, name or URL is added without the product owner. Each entry has a draft, Publish and restore, as ADMIN, and every publish and roll back writes a Publish history row of kind `hotline` (`docs/decisions/0018`, addition of 2026-11-23). | Only the admin role edits and publishes entries; writers may read them. Each entry carries the date it was last checked and who checked it. The product owner checks every entry at least every 6 months and before each release. The US entry is added to the legal review list on #121. When no country is known or the phone copy cannot be read and the database cannot answer, the app shows a copy of the S1-0 content written in the code (the directory link and the labelled line "If you are in the United States: call or text 988"; the "Choose your country" link is left out when offline), never an unlabelled US entry, so S1 is never blank and never assumes a country (as APP-TEXT; corrected 2026-11-24, review of #403 I-1). The service name of an entry is optional; an entry with no name shows only its contact line, so the US entry reads "Call or text 988" (pending the owner, I-2). The entry editor shows a note that a new or changed entry should be checked against the legal review (#121) before Publish; it is a note, not a block (pending the owner, M-1). |
+
+### Test-stage model calls (2026-11-24)
+
+| Id | Date | Decision | Consequences |
+|---|---|---|---|
+| TEST-NO-CAP | 2026-11-24 | (owner) No daily cap on real model calls during the test stage; revisit before public release (#256). The per-browser daily limit of 20 on `/goal` and `/try` is kept in code but can be switched off by the server-only setting `MODEL_CALL_LIMIT_ENABLED`: `0` turns it off, unset or `1` keeps it on, any other value keeps it on and logs one warning. The owner sets `MODEL_CALL_LIMIT_ENABLED=0` for the test stage. #256 (a daily cap per signed-in account) stays open in "Later". | Until the owner sets the value in Vercel, the limit of 20 per browser still applies. With it off there is no limit on model calls at all: the owner watches usage in the model provider's dashboard (as in SESSION-PAGES-OPEN). Before public release, set it back to `1` (or remove it) and decide the cap in #256. See `docs/deploy.md`. Issue: "Switch to turn off the per-browser daily limit on /goal and /try". |
 
 ## 2. Superseded rules (do not implement)
 
@@ -357,6 +371,7 @@ Yue answered the blocking questions of issue #118 (US-SAF-5) on 2026-11-23. The 
 | A label for the user's message (scope) returned with each rest reply, and the checks tied to it (AI_04 sections A2 to A4) | CHAT-NO-LABEL |
 | A later word fails a rest reply even when the user typed it | CHAT-USER-WORD |
 | A small model call classifies the Goal's shape (FR-START-5, AI_01 call 1a) | GOAL-SHAPE-LOCAL |
+| The placeholder planning prompt and its rules: 1 to `n.max` steps, minutes in multiples of 15 from 15 to 120, a 15-minute first step, 60-character step names (AI_01 section 4, `plan_split` version 1) | PLAN-PROMPT |
 | An output guard with a denylist of method and instruction words owned by compliance (FR-SAFETY-12, AI_05 section 3) | NO-DENYLIST |
 | The help-line region taken from the device locale, the network address (IP) or the browser language, or a default region (US-SAF-5, PRD 7.6, AI_05 section 7 item 2) | SAFETY-REGION |
 
@@ -364,7 +379,6 @@ Yue answered the blocking questions of issue #118 (US-SAF-5) on 2026-11-23. The 
 
 | Id | Topic |
 |---|---|
-| P1 | The real AI planning prompt (the "planning expert") must be added to `docs/ai/`; the text in AI_01 is a placeholder. Still open on 2026-11-21: Yue will supply the prompt file; engineering does not draft one (#40) |
 | S2 | The engineering result on phone features (see above) |
 | A7b | Provider data retention terms |
 | M5, M6 | Original test data (issues B15 and B17, "low preference" definition); may be skipped |
