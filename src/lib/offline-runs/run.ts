@@ -62,7 +62,22 @@ export type RunOptions = {
    * made, the units in flight finish, and the partial report is written.
    */
   stopFile?: string;
+  /**
+   * The launcher's process id (run.mjs). The runner is detached, so if the launcher goes away (a
+   * closed terminal, or killed) the run stops in the same way as for the stop file.
+   */
+  parentPid?: number;
 };
+
+/** True while a process with this id exists (signal 0 only checks; it sends nothing). */
+export function processAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
 
 export async function runOffline(options: RunOptions): Promise<RunResults> {
   const now = options.now ?? (() => new Date());
@@ -109,10 +124,11 @@ export async function runOffline(options: RunOptions): Promise<RunResults> {
     "retry_hints",
   ]);
   let incomplete: string | null = null;
+  let haltReason = "the run was interrupted (Ctrl-C); the units in flight finished";
   let written = false;
   const finish = (): RunResults => {
     if (!incomplete && budget.stopped === "interrupted") {
-      incomplete = "the run was interrupted (Ctrl-C); the units in flight finished";
+      incomplete = haltReason;
     } else if (!incomplete && budget.stopped) {
       incomplete = `the budget stop ended the run (${budget.stopped} limit)`;
     }
@@ -142,18 +158,28 @@ export async function runOffline(options: RunOptions): Promise<RunResults> {
     }
     return results;
   };
-  const stopFile = options.stopFile;
-  const watch = stopFile
-    ? setInterval(() => {
-        if (existsSync(stopFile)) budget.halt();
-      }, 200)
-    : null;
+  const { stopFile, parentPid } = options;
+  const watch =
+    stopFile || parentPid
+      ? setInterval(() => {
+          if (budget.stopped) return;
+          if (stopFile && existsSync(stopFile)) budget.halt();
+          else if (parentPid && !processAlive(parentPid)) {
+            haltReason =
+              "the launcher went away (a closed terminal or a killed process); the units in flight finished";
+            budget.halt();
+          }
+        }, 200)
+      : null;
   try {
     if (has("split")) await runSplitSuite(options.inputs.split, { ...deps, env: options.env });
     if (has("rest")) await runRestSuite(options.inputs.rest, deps);
     if (has("pause")) await runPauseSuite(options.inputs.pause, deps);
   } catch (error) {
     incomplete = `the run stopped on an error (${error instanceof Error ? error.message : String(error)})`;
+    // No unit may start, and no model call may be made, after the error (the other workers of the
+    // suite would otherwise carry on after the report is written).
+    budget.halt();
     throw error;
   } finally {
     if (watch) clearInterval(watch);

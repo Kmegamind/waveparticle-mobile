@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -13,7 +14,7 @@ import {
   type Target,
   type TargetsFile,
 } from "@/lib/offline-runs/report";
-import { runOffline, type RunInputs } from "@/lib/offline-runs/run";
+import { processAlive, runOffline, type RunInputs } from "@/lib/offline-runs/run";
 import { NO_SHEETS, personResult, sheetRows } from "@/lib/offline-runs/scoring";
 import {
   runPauseSuite,
@@ -152,6 +153,62 @@ describe("I2: a run that does not finish still leaves a report", () => {
     const rows = evaluate(results, targets, NO_SHEETS);
     expect(rows.some((row) => row.status === "INCOMPLETE")).toBe(true);
     expect(rows.some((row) => row.status === "PASS" || row.status === "FAIL")).toBe(false);
+  });
+});
+
+describe("#420: the run stops on an error and when the launcher goes away", () => {
+  it("test_420_n1_no_unit_starts_and_no_call_is_made_after_an_error", async () => {
+    const outDir = mkdtempSync(path.join(tmpdir(), "wp-offline-"));
+    const base = stubFetch() as typeof fetch;
+    let requests = 0;
+    let requestsAtError = -1;
+    const fetchImpl: typeof fetch = async (input, init) => {
+      requests += 1;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return base(input, init);
+    };
+    let seen = 0;
+    await expect(
+      run({
+        outDir,
+        fetchImpl,
+        concurrency: 3,
+        inputs: { ...smallInputs(), split: { ...smallInputs().split, runsPerLine: 6 } },
+        suites: ["split"],
+        afterRecord: () => {
+          seen += 1;
+          if (seen === 2) {
+            requestsAtError = requests;
+            throw new Error("boom on purpose");
+          }
+        },
+      }),
+    ).rejects.toThrow("boom on purpose");
+    // Give the other workers time to start new units if they still could.
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(requests).toBe(requestsAtError);
+    const lines = readFileSync(path.join(outDir, "results.jsonl"), "utf8").trim().split("\n");
+    expect(lines.length).toBeLessThanOrEqual(2 + 2);
+    const report = readFileSync(path.join(outDir, "report.md"), "utf8");
+    expect(report).toContain("INCOMPLETE: the run stopped on an error (boom on purpose)");
+  });
+
+  it("test_420_n2_the_runner_stops_and_writes_the_report_when_the_launcher_is_gone", async () => {
+    const gone = spawnSync(process.execPath, ["-e", ""]).pid;
+    expect(processAlive(gone)).toBe(false);
+    expect(processAlive(process.pid)).toBe(true);
+    const outDir = mkdtempSync(path.join(tmpdir(), "wp-offline-"));
+    const base = stubFetch() as typeof fetch;
+    const fetchImpl: typeof fetch = async (input, init) => {
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      return base(input, init);
+    };
+    const results = await run({ outDir, fetchImpl, parentPid: gone });
+    expect(results.budget.stopped).toBe("interrupted");
+    expect(results.meta.incomplete).toContain("the launcher went away");
+    const report = readFileSync(path.join(outDir, "report.md"), "utf8");
+    expect(report).toContain("INCOMPLETE: the launcher went away");
+    expect(results.budget.calls).toBeLessThan(10);
   });
 });
 

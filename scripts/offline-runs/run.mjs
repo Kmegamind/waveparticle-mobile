@@ -17,6 +17,9 @@ import path from "node:path";
 import process from "node:process";
 import { childEnv, issueConfirmation } from "./confirm.mjs";
 
+/** The signals that ask the runner to stop after the units in flight (#420). */
+export const STOP_SIGNALS = ["SIGINT", "SIGTERM", "SIGHUP"];
+
 const FLAGS = {
   "--suite": "OFFLINE_RUN_SUITE",
   "--max-calls": "OFFLINE_RUN_MAX_CALLS",
@@ -82,10 +85,13 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.met
         ...parsed.settings,
         ...(confirmation?.settings ?? {}),
         OFFLINE_RUN_STOP_FILE: stopFile,
+        // If this launcher goes away without a signal it can handle, the runner sees it and stops.
+        OFFLINE_RUN_PARENT_PID: String(process.pid),
       }),
     },
   );
   let asked = false;
+  let childDone = false;
   const stop = () => {
     if (!asked) {
       asked = true;
@@ -93,13 +99,18 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(import.met
       console.error("Stopping after the units in flight; the partial report follows.");
       return;
     }
-    if (child.pid) process.kill(-child.pid, "SIGKILL");
+    if (child.pid && !childDone) process.kill(-child.pid, "SIGKILL");
   };
-  process.on("SIGINT", stop);
-  process.on("SIGTERM", stop);
-  child.on("exit", (code, signal) => {
+  // Ctrl-C, kill, and a closed terminal (SIGHUP) all ask for the same graceful stop.
+  for (const signal of STOP_SIGNALS) process.on(signal, stop);
+  // However this process ends, leave no file behind. A runner still going sees this process gone
+  // (OFFLINE_RUN_PARENT_PID) and stops after the units in flight, writing the partial report.
+  process.on("exit", () => {
     confirmation?.cleanup();
     rmSync(stopFile, { force: true });
+  });
+  child.on("exit", (code, signal) => {
+    childDone = true;
     process.exit(asked ? 130 : (code ?? (signal ? 1 : 1)));
   });
 }
