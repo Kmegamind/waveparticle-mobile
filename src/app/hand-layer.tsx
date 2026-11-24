@@ -11,10 +11,7 @@
 export function HandLabel({
   children,
   repeatsVisibleText = false,
-}: {
-  children: React.ReactNode;
-  repeatsVisibleText?: boolean;
-}) {
+}: React.PropsWithChildren<{ repeatsVisibleText?: boolean }>) {
   return (
     <span aria-hidden={repeatsVisibleText ? true : undefined} className="hand">
       {children}

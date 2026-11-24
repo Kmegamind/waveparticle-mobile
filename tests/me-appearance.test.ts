@@ -97,9 +97,9 @@ describe("#83 AC2 Plain text replaces the hand font and the hand-drawn marks", (
 
   it("a hand label that repeats visible text is hidden from screen readers", () => {
     expect(
-      renderToStaticMarkup(createElement(HandLabel, { repeatsVisibleText: true, children: "Now" })),
+      renderToStaticMarkup(createElement(HandLabel, { repeatsVisibleText: true }, "Now")),
     ).toBe('<span aria-hidden="true" class="hand">Now</span>');
-    expect(renderToStaticMarkup(createElement(HandLabel, { children: "Now" }))).toBe(
+    expect(renderToStaticMarkup(createElement(HandLabel, null, "Now"))).toBe(
       '<span class="hand">Now</span>',
     );
   });
