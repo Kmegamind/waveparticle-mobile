@@ -444,7 +444,7 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 - **Shows:** the clock stays at 00:00 and does not count up. The last story card of the Step arrives at this moment and is not a separate card (CARD-TIMING). No overdue colour or word, no overtime counter, no pop-up and no forced rest. At 00:00 only the light vibration happens, once, by default, on devices that support it; no sound.
 - **Can do and leads to:** **Done** moves on. **Pause** opens R1.
 - **System back:** acts as Pause.
-- **States:** a screen reader hears one polite "Step time reached". Whether the vibration works on iPhone depends on a platform check that has been postponed.
+- **States:** a screen reader hears one polite "Step time reached". The vibration follows the time-up signal on SIG and does nothing on a device without haptics (S2, resolved 2026-11-24).
 
 #### F3 · Cards failed to load
 

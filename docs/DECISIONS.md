@@ -14,7 +14,7 @@ The specification documents were brought in line with the decisions up to 2026-1
 |---|---|---|---|
 | S1 | 2026-11-04 | Release 1 contains everything in the current wireframes: Home, companion browsing, Life Path, goal dialogue, Goals and Me, focus page with story cards, rest conversation, summary. | This is larger than the recommended vertical slice. The backlog is split into milestones so that a testable core loop comes first. |
 | S3, G5 | 2026-11-04 | The text a user writes (goal names, step names, step descriptions) is stored on our server, tied to the account (Supabase). | History works across devices. A clear privacy notice and account deletion are required. |
-| S2 | 2026-11-05 | **Partially resolved:** mobile web background timers are not reliable, so the clock must use timestamps. iOS/iPadOS Home Screen web apps support Web Push from 16.4 onward, but notifications still require permission, a service worker and an installed eligible web app. Vibration is optional and is not promised across phones. Physical iPhone and Android installation tests remain open. | Keep haptics and lock-screen notifications capability-gated and opt-in. Do not use a page timer for elapsed time. See [`docs/research/2026-11-05-phone-features.md`](research/2026-11-05-phone-features.md). |
+| S2 | 2026-11-05, 2026-11-24 | **Resolved 2026-11-24:** the product owner tested on a real iPhone and a real Android phone (issue #153): vibration, notifications and the clock behave as expected. Earlier finding (2026-11-05): mobile web background timers are not reliable, so the clock must use timestamps. iOS/iPadOS Home Screen web apps support Web Push from 16.4 onward, but notifications still require permission, a service worker and an installed eligible web app. Vibration is optional and is not promised across phones. | Keep haptics and lock-screen notifications capability-gated and opt-in. Do not use a page timer for elapsed time. The 00:00 haptic (US-PLAT-3, #115) is built and follows the time-up signal setting. See [`docs/research/2026-11-05-phone-features.md`](research/2026-11-05-phone-features.md). |
 
 ### Focus page and rest conversation
 
@@ -365,7 +365,6 @@ Yue answered the blocking questions of issue #118 (US-SAF-5) on 2026-11-23. The 
 | Id | Topic |
 |---|---|
 | P1 | The real AI planning prompt (the "planning expert") must be added to `docs/ai/`; the text in AI_01 is a placeholder. Still open on 2026-11-21: Yue will supply the prompt file; engineering does not draft one (#40) |
-| S2 | The engineering result on phone features (see above) |
 | A7b | Provider data retention terms |
 | M5, M6 | Original test data (issues B15 and B17, "low preference" definition); may be skipped |
 | TIME-LIMIT | The length of the waiting time limit for live generation and the wording of the failure message (FAIL-SCREEN); set by testing |
