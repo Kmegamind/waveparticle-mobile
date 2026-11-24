@@ -658,7 +658,7 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 
 ### 4.7 Content admin: hotlines
 
-The content admin is a desktop tool (ADMIN, ADMIN-DESKTOP); these two screens are listed here because S1 depends on them (HOTLINES). The admin role edits and publishes; writers may read.
+The content admin is a desktop tool (ADMIN, ADMIN-DESKTOP); these two screens are listed here because S1 depends on them (HOTLINES). The admin role edits and publishes; writers may read. They are drawn in `docs/design/prototype/admin-hotlines_2026-11-23_v1.html` (#404), in the look of the owner's admin prototype; the owner's `content-admin/admin-prototype_2026-11-14_v1.html` stays the reference for every other admin page.
 
 #### ADM-14 · Hotlines, the list
 
