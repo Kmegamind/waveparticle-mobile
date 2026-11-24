@@ -38,7 +38,7 @@ The per-browser daily limit of 20 real model calls (cookie `wp_try_model_calls`,
 counted separately for `/try` and `/goal`: the cookie is scoped to each path, so a browser gets 20 on each
 page, not 20 shared between them.
 The limit can be switched off with the server-only setting `MODEL_CALL_LIMIT_ENABLED` (TEST-NO-CAP in `docs/DECISIONS.md`, #256).
-Set `MODEL_CALL_LIMIT_ENABLED` to `0` to turn the limit off, which is the test-stage setting. Unset or `1` keeps it on.
+Set `MODEL_CALL_LIMIT_ENABLED` to the value `0`, no quotes, to turn the limit off, which is the test-stage setting. Unset or `1` keeps it on.
 Any other value keeps it on and logs one warning (`limit_switch_invalid`). Never give it the `NEXT_PUBLIC_` prefix. Changing it needs a redeploy.
 During the test stage there is no daily cap on model calls; revisit before public release.
 

@@ -60,10 +60,16 @@ describe("the limit switch (#256)", () => {
     expect(written).toEqual([]);
   });
 
+  it("surrounding spaces are ignored", () => {
+    expect(isModelCallLimitOn({ [LIMIT_SWITCH_ENV]: " 0" })).toBe(false);
+    expect(isModelCallLimitOn({ [LIMIT_SWITCH_ENV]: "0 " })).toBe(false);
+    expect(isModelCallLimitOn({ [LIMIT_SWITCH_ENV]: " 1 " })).toBe(true);
+  });
+
   it("an invalid value keeps the limit on and logs once", async () => {
     const lines: string[] = [];
     vi.spyOn(console, "warn").mockImplementation((line: string) => void lines.push(line));
-    for (const value of ["off", "false", "2", " 0"]) {
+    for (const value of ["off", "false", "2", "00"]) {
       expect(isModelCallLimitOn({ [LIMIT_SWITCH_ENV]: value })).toBe(true);
     }
     const { result } = run("off", "2026-11-24:20");
