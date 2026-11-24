@@ -5,7 +5,7 @@
 import type { ModelGateway, PlanStep } from "@/lib/model-gateway";
 import { MODEL_GATEWAY_ENV_NAMES } from "@/lib/model-gateway/server";
 import { keywordOnlySafetyCheck, type SafetyCheck } from "@/lib/safety/check";
-import { takeModelCall } from "./cost-cap";
+import { isModelCallLimitOn, takeModelCall } from "./cost-cap";
 import { SLIDER_MAX_MINUTES } from "./goal-time";
 import { splitWithTestData } from "./test-splitter";
 
@@ -70,9 +70,12 @@ export async function splitGoal(input: SplitInput, deps: SplitDeps): Promise<Spl
   let plan: SplitPlan;
   try {
     if (modelIsConfigured(deps.env) && deps.createGateway) {
-      const allowance = takeModelCall(deps.readCounter(), deps.today);
-      if (!allowance.allowed) return { status: "failed" };
-      deps.writeCounter(allowance.cookie);
+      // The per-browser limit can be switched off by a server setting (#256, isModelCallLimitOn).
+      if (isModelCallLimitOn(deps.env)) {
+        const allowance = takeModelCall(deps.readCounter(), deps.today);
+        if (!allowance.allowed) return { status: "failed" };
+        deps.writeCounter(allowance.cookie);
+      }
       const result = await deps.createGateway().splitPlan(clean);
       // Anything that is not a live generated plan is a failure (NO-BACKUP, #38 AC3).
       if (result?.source !== "generated") return { status: "failed" };
