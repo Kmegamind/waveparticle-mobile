@@ -401,22 +401,31 @@ test.describe("#439 AI feature pages", () => {
   test("test_439_a_long_unbroken_token_stays_inside_its_panel_at_1024_px", async ({
     page,
     context,
+    browser,
   }) => {
     // #439 review round 3: real prompt and table text holds long tokens with no space. None may
     // run out of its panel, where the page would clip it; a self-sized table scrolls instead.
     await page.setViewportSize({ width: 1024, height: 800 });
     const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
     const token = "x".repeat(200);
-    const [feature] = (await (
-      await stub("/rest/v1/ai_features?slug=eq.pause_message", writer.token)
-    ).json()) as (Feature & { pass_questions: unknown[]; approach: unknown[] })[];
-    const saved = await stub("/rest/v1/rpc/save_ai_feature_sections", writer.token, {
-      target_feature: "pause_message",
-      new_purpose: [{ text: token, source: null, draft: false }],
-      new_pass_questions: feature.pass_questions,
-      new_approach: feature.approach,
+    // The purpose holding the token is shown to this account only. Saved into the shared features,
+    // it would widen the index table that the visual gate (another project, run in parallel)
+    // compares with the drawing (#439 review round 4).
+    const purpose = await stub("/__ai_features", null, {
+      token: writer.token,
+      purpose: { pause_message: [{ text: token, source: null, draft: false }] },
     });
-    expect(saved.status).toBe(204);
+    expect(purpose.status).toBe(200);
+    const elsewhere = await browser.newContext();
+    try {
+      const other = await signIn(elsewhere, baseUrlOf(page), undefined, { contentRole: "admin" });
+      const [shared] = (await (
+        await stub("/rest/v1/ai_features?slug=eq.pause_message", other.token)
+      ).json()) as Feature[];
+      expect(shared.purpose.map((item) => item.text)).not.toContain(token);
+    } finally {
+      await elsewhere.close();
+    }
     const stuck = await activePrompt(writer.token, "stuck_story");
 
     const overflow = () =>
@@ -490,6 +499,7 @@ test.describe("#439 AI feature pages", () => {
       expect(scroll.scrollWidth).toBeGreaterThan(scroll.clientWidth);
     } finally {
       await stub("/__prompts", null, { reset: "stuck_story" });
+      await stub("/__ai_features", null, { token: writer.token, purpose: null });
     }
   });
 

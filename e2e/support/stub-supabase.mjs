@@ -65,6 +65,10 @@
 //   POST /__ai_features { reset?: true, testRuns?: [...] }   puts the features back (and removes
 //                                     their history and test runs); testRuns adds rows as the
 //                                     SQL of scripts/ai-features/import-runs.mjs would
+//   POST /__ai_features { token, purpose: { "<slug>": [items] } | null }   for that account only,
+//                                     reads of ai_features show these purpose items (#439: a
+//                                     layout test that no other test, nor the visual gate, sees);
+//                                     null removes them. Reset does not touch them
 //   POST /__fail_reads { token, tables: ["profiles"] }   reads of those tables answer 500 for that
 //                                     account until set again (#118, a failed profile read);
 //                                     "auth" makes GET /auth/v1/user answer 500
@@ -903,6 +907,16 @@ createServer(async (request, response) => {
 
   if (path === "/__ai_features" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
+    if (typeof body.token === "string" && "purpose" in body) {
+      const account = datasets.get(body.token);
+      if (!account) return json(response, 404, { message: "no such account" });
+      const purpose = body.purpose ?? null;
+      if (purpose !== null && !Object.values(purpose).every(validItems)) {
+        return json(response, 400, { code: "23514", message: "violates check constraint" });
+      }
+      account.aiFeaturePurpose = purpose;
+      return json(response, 200, { ok: true });
+    }
     if (body.reset === true) {
       aiFeatures = seededAiFeatures();
       aiFeatureHistory = [];
@@ -933,8 +947,12 @@ createServer(async (request, response) => {
     const user = dataset && !dataset.deleted ? dataset : null;
     if (!user) return json(response, 401, { code: "42501", message: "permission denied" });
     const editor = ["admin", "writer"].includes(user.contentRole);
+    // The account's own purpose items (POST /__ai_features { token, purpose }), if any.
+    const purpose = user.aiFeaturePurpose ?? {};
     const all = {
-      ai_features: aiFeatures,
+      ai_features: aiFeatures.map((row) =>
+        purpose[row.slug] ? { ...row, purpose: purpose[row.slug] } : row,
+      ),
       ai_feature_status_history: aiFeatureHistory,
       ai_feature_test_runs: aiFeatureRuns,
     }[aiFeatureTable[1]];

@@ -10,7 +10,7 @@ Scripts (print SQL, connect to nothing, never call a model):
 - `scripts/ai-features/seed.mjs [--dry-run]`: `parseFeaturePages(markdown)` and `readFeatureSeed(file?)` read section 3 of `docs/ai/AI_11_feature-pages.md` (each `- draft - owner to edit: <text> (source: <file>:<line>)` line becomes an item with `draft: true`); `seedSql(rows, { dryRun })` inserts each feature with status `exploring` only when its slug is missing. `featureSlug(name, keys)`, `quote(text)`, `STATUSES` and `START_STATUS` are exported too.
 - `scripts/ai-features/import-runs.mjs [--dry-run] <offline-run folder>`: `readRunFolder(folder)` reads `results.json` (its `meta`), `targets.json` and `report.md` of a #42 run; `summaryStatuses(report)` reads the summary table; `testRunRows(run, { reportPath })` gives one row per feature and prompt key of each suite that ran (`SUITE_FEATURES`: `split` → `plan_split`, `rest` → `rest_reply`, `pause` → `pause_message`), kind `fake_model` unless `meta.mode` is `real`; `importSql(rows, { dryRun })` upserts on (`feature_slug`, `prompt_key`, `kind`, `run_at`). `reportPathOf(folder, root?)` stores the report path relative to the repository when it is inside it.
 
-The e2e Supabase stand-in (`e2e/support/stub-supabase.mjs`) serves the three tables, both functions and `POST /__ai_features { reset?, testRuns? }`.
+The e2e Supabase stand-in (`e2e/support/stub-supabase.mjs`) serves the three tables, both functions and `POST /__ai_features { reset?, testRuns? }`; `POST /__ai_features { token, purpose }` shows purpose items to one account only (a layout test that the parallel visual gate must never see).
 
 ## The admin pages (#439)
 
