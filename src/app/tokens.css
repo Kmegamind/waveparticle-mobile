@@ -342,11 +342,6 @@
   --adm-list-indent: 20px;
   --adm-list-item-pad: 4px 0;
   --adm-code-leading: 1.55;
-  --adm-col-feature: 27%;
-  --adm-col-purpose: 17%;
-  --adm-col-status: 13%;
-  --adm-col-prompt: 19%;
-  --adm-col-run: 24%;
 }
 
 @media (prefers-color-scheme: dark) {

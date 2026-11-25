@@ -631,6 +631,17 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
       "pull request (#430 T8) decides the row and adds it here.",
   },
   {
+    component: "AI features: table head cell",
+    properties: ["white-space"],
+    reason:
+      "Measured in the drawing (AIF-1, 2026-11-25): its table sizes its own columns (table-layout " +
+      "auto, no col widths) and every heading is white-space normal; it stays on one line only " +
+      "because its sample purposes are short and its last column holds a 'Fake model (stub)' " +
+      "pill that does not wrap (147 px at 1024 and 1280). With the real purposes and no imported " +
+      "run, the same table wraps 'Last offline run' to 2 or 3 lines at 1024 px, so live headings " +
+      "are nowrap. The result, one line, is still compared: the heading's box height.",
+  },
+  {
     component: "feature: breadcrumb link",
     properties: ["align-items", "min-width", "min-height"],
     reason:

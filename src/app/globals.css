@@ -3911,24 +3911,12 @@ button.focus-avatar:focus-visible {
   overflow-x: auto;
 }
 
-.admin-col-feature {
-  width: var(--adm-col-feature);
-}
-
-.admin-col-purpose {
-  width: var(--adm-col-purpose);
-}
-
-.admin-col-status {
-  width: var(--adm-col-status);
-}
-
-.admin-col-prompt {
-  width: var(--adm-col-prompt);
-}
-
-.admin-col-run {
-  width: var(--adm-col-run);
+/* The drawing's headings fit on one line because its sample rows are short and its last column
+   holds a "Fake model (stub)" pill that does not wrap. With the real purposes and no imported run,
+   an auto-sized table squeezes the short columns until "Last offline run" wraps; the headings
+   keep to one line instead, and the table still sizes its columns itself. */
+.admin-table-nowrap-head th {
+  white-space: nowrap;
 }
 
 .admin-legend {

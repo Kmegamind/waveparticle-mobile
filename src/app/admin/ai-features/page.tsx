@@ -66,15 +66,9 @@ async function FeatureTable() {
         </p>
       ) : null}
       <div className="admin-panel admin-scroll">
-        <table aria-label="AI features" className="admin-table">
-          {/* The drawing's column shares, so a long purpose wraps instead of squeezing the rest. */}
-          <colgroup>
-            <col className="admin-col-feature" />
-            <col className="admin-col-purpose" />
-            <col className="admin-col-status" />
-            <col className="admin-col-prompt" />
-            <col className="admin-col-run" />
-          </colgroup>
+        {/* As the drawing, the table sizes its own columns. Its headings keep to one line
+            (admin-table-nowrap-head): see the exception in e2e/admin-visual.spec.ts. */}
+        <table aria-label="AI features" className="admin-table admin-table-nowrap-head">
           <thead>
             <tr>
               <th scope="col">Feature</th>

@@ -327,31 +327,34 @@ test.describe("#439 AI feature pages", () => {
         .getByRole("region", { name: "pause_predicament" })
         .getByLabel("Published pause_predicament"),
     ).toHaveText(predicament);
-    // A draft saved in Prompts shows here at the next page load. The prompts are shared with
-    // e2e/prompts-admin.spec.ts, which puts them back, so the draft is saved again if it went.
-    await expect(async () => {
-      const versions = (await (
-        await stub("/rest/v1/rpc/list_prompt_versions", writer.token, {})
-      ).json()) as { key: string; body: string; active: boolean }[];
-      if (!versions.some((row) => row.key === "stuck_story" && row.body === draftBody)) {
-        const saved = await stub("/rest/v1/rpc/save_prompt_draft", writer.token, {
-          prompt_key: "stuck_story",
-          prompt_body: draftBody,
-          prompt_params: {},
-          prompt_note: "#439 e2e draft",
-        });
-        expect(saved.status).toBe(200);
-      }
+    await expect(prompts.getByRole("region", { name: "stuck_story" })).toContainText("No draft.");
+    // A draft saved in Prompts shows at the very next page load: saved once, reloaded once, and
+    // read once, so a page that kept the prompt text from an earlier load fails here. Only this
+    // test touches stuck_story; the stub puts that one key back afterwards.
+    try {
+      const saved = await stub("/rest/v1/rpc/save_prompt_draft", writer.token, {
+        prompt_key: "stuck_story",
+        prompt_body: draftBody,
+        prompt_params: {},
+        prompt_note: "#439 e2e draft",
+      });
+      expect(saved.status).toBe(200);
+      const version = (await saved.json()) as number;
       await page.reload();
       const key = section(page, "(e) Prompt text").getByRole("region", { name: "stuck_story" });
-      await expect(key.getByLabel("Published stuck_story")).toHaveText(stuck, { timeout: 2_000 });
-      await expect(key.getByLabel(/^Draft v\d+ of stuck_story$/)).toHaveText(draftBody, {
-        timeout: 2_000,
-      });
-    }).toPass({ timeout: 30_000 });
-    await expect(
-      section(page, "(e) Prompt text").getByRole("region", { name: "pause_predicament" }),
-    ).toContainText("No draft.");
+      await expect(key).toBeVisible();
+      expect(await key.getByLabel("Published stuck_story").textContent()).toBe(stuck);
+      expect(
+        await key.getByLabel(`Draft v${version} of stuck_story`, { exact: true }).textContent(),
+      ).toBe(draftBody);
+      expect(
+        await section(page, "(e) Prompt text")
+          .getByRole("region", { name: "pause_predicament" })
+          .textContent(),
+      ).toContain("No draft.");
+    } finally {
+      await stub("/__prompts", null, { reset: "stuck_story" });
+    }
   });
 
   test("test_439_ac4_test_results_mark_the_fake_model_and_no_real_run_yet", async ({
