@@ -1,7 +1,8 @@
 import type { StubTables } from "./account";
 
 // The prototype v4 sample Goals (#73), as rows for the test-only Supabase stub. Times are relative
-// to now so "today" and "this week" hold whenever the tests run.
+// to `now` (the moment the test seeds, unless it passes one), and the Step done "today" is on the
+// calendar day of `now` in the browser's time zone, also in the first minutes after midnight (#428).
 
 export const GOAL = {
   methods: "11111111-1111-4111-8111-111111111111",
@@ -17,10 +18,41 @@ export const SESSION = {
   labEmpty: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa5",
 };
 
-const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+type Ago = (minutes: number) => string;
+const agoFrom =
+  (now: Date): Ago =>
+  (minutes) =>
+    new Date(now.getTime() - minutes * 60_000).toISOString();
 const DAY = 24 * 60;
 
+/** The time of day of `at` in `timeZone`, in milliseconds since that day's midnight. */
+function sinceMidnight(at: Date, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    hourCycle: "h23",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(at);
+  const part = (type: string) => Number(parts.find((item) => item.type === type)?.value);
+  return ((part("hour") * 60 + part("minute")) * 60 + part("second")) * 1000 + at.getMilliseconds();
+}
+
+/** `minutes` before `now`, but never before the start of `now`'s day in `timeZone`. */
+function earlierToday(now: Date, timeZone: string, minutes: number): string {
+  const back = Math.min(minutes * 60_000, sinceMidnight(now, timeZone));
+  return new Date(now.getTime() - back).toISOString();
+}
+
+export type SeedClock = {
+  /** The moment the rows are relative to; the browser's clock should show the same. */
+  now?: Date;
+  /** The browser's time zone (Playwright's `timezoneId`); by default this machine's. */
+  timeZone?: string;
+};
+
 function goal(
+  ago: Ago,
   id: string,
   userId: string,
   title: string,
@@ -51,7 +83,14 @@ function step(
   return { id, goal_id: goalId, position, title, description, minutes };
 }
 
-function session(id: string, goalId: string, userId: string, state: string, minutesAgo: number) {
+function session(
+  ago: Ago,
+  id: string,
+  goalId: string,
+  userId: string,
+  state: string,
+  minutesAgo: number,
+) {
   return {
     id,
     goal_id: goalId,
@@ -67,13 +106,24 @@ function session(id: string, goalId: string, userId: string, state: string, minu
   };
 }
 
-export function sampleGoals(userId: string): StubTables {
+export function sampleGoals(userId: string, clock: SeedClock = {}): StubTables {
+  const now = clock.now ?? new Date();
+  const timeZone = clock.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const ago = agoFrom(now);
   return {
     goals: [
-      goal(GOAL.methods, userId, "Methods section for Friday", "in_progress", "one_time", 5),
-      goal(GOAL.ielts, userId, "IELTS listening, section 3", "in_progress", "ongoing", 2 * DAY),
-      goal(GOAL.portfolio, userId, "Portfolio case study", "on_hold", "one_time", 15 * DAY),
-      goal(GOAL.lab, userId, "Lab report", "done", "one_time", 10 * DAY),
+      goal(ago, GOAL.methods, userId, "Methods section for Friday", "in_progress", "one_time", 5),
+      goal(
+        ago,
+        GOAL.ielts,
+        userId,
+        "IELTS listening, section 3",
+        "in_progress",
+        "ongoing",
+        2 * DAY,
+      ),
+      goal(ago, GOAL.portfolio, userId, "Portfolio case study", "on_hold", "one_time", 15 * DAY),
+      goal(ago, GOAL.lab, userId, "Lab report", "done", "one_time", 10 * DAY),
     ],
     steps: [
       step(
@@ -106,10 +156,10 @@ export function sampleGoals(userId: string): StubTables {
       step("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb21", GOAL.lab, 0, "Results table", null, 30),
     ],
     sessions: [
-      session(SESSION.methods, GOAL.methods, userId, "open", 5),
-      session(SESSION.portfolio, GOAL.portfolio, userId, "on_hold", 15 * DAY),
-      session(SESSION.lab, GOAL.lab, userId, "completed", 10 * DAY),
-      session(SESSION.labEmpty, GOAL.lab, userId, "restarted", 11 * DAY),
+      session(ago, SESSION.methods, GOAL.methods, userId, "open", 5),
+      session(ago, SESSION.portfolio, GOAL.portfolio, userId, "on_hold", 15 * DAY),
+      session(ago, SESSION.lab, GOAL.lab, userId, "completed", 10 * DAY),
+      session(ago, SESSION.labEmpty, GOAL.lab, userId, "restarted", 11 * DAY),
     ],
     session_steps: [
       {
@@ -118,7 +168,8 @@ export function sampleGoals(userId: string): StubTables {
         step_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbb01",
         position: 0,
         opened_at: ago(30),
-        done_at: ago(5),
+        // "1 done today" on the Goals row (#73 AC3): 5 minutes ago, or at midnight if it is not 00:05.
+        done_at: earlierToday(now, timeZone, 5),
       },
       {
         id: "cccccccc-cccc-4ccc-8ccc-cccccccccc02",
@@ -166,9 +217,11 @@ export function sampleGoals(userId: string): StubTables {
 
 /** Extra In progress Goals for Show more (#73 AC4). */
 export function manyGoals(userId: string, count: number): StubTables {
+  const ago = agoFrom(new Date());
   return {
     goals: Array.from({ length: count }, (_, index) =>
       goal(
+        ago,
         `dddddddd-dddd-4ddd-8ddd-${String(index).padStart(12, "0")}`,
         userId,
         `Goal number ${index + 1}`,

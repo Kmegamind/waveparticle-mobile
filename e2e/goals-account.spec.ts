@@ -71,7 +71,11 @@ test.describe("the Goals page", () => {
     page,
     baseURL,
   }) => {
-    await openGoals(page, baseURL!);
+    // The page's "today" is the browser's clock; it is the seed's moment, so a midnight between
+    // seeding and loading cannot move the Step to yesterday (#428).
+    const now = new Date();
+    await page.clock.setFixedTime(now);
+    await openGoals(page, baseURL!, (userId) => sampleGoals(userId, { now }));
     const methods = row(page, "Methods section for Friday");
     await expect(methods.locator("img")).toHaveAttribute("src", "/companions/oppenheimer.png");
     await expect(methods).toContainText("1 done today");
@@ -83,6 +87,30 @@ test.describe("the Goals page", () => {
     await expect(
       ielts.getByRole("link", { name: "Start IELTS listening, section 3" }),
     ).toHaveAttribute("href", `/goal?line=${encodeURIComponent("IELTS listening, section 3")}`);
+  });
+
+  // #428: the Step done "today" stays today in the first minutes after midnight and in the last
+  // minute before it, on the device's calendar (US-GM, FLOW Goals row: "1 done today").
+  test.describe("at 00:04 UTC on a UTC device", () => {
+    test.use({ timezoneId: "UTC" });
+    test("#73 AC3 a Step done since midnight reads 1 done today", async ({ page, baseURL }) => {
+      const now = new Date();
+      now.setUTCHours(24, 4, 0, 0);
+      await page.clock.setFixedTime(now);
+      await openGoals(page, baseURL!, (userId) => sampleGoals(userId, { now, timeZone: "UTC" }));
+      await expect(row(page, "Methods section for Friday")).toContainText("1 done today");
+    });
+  });
+
+  test("#73 AC3 at 23:59 local a Step done 5 minutes ago reads 1 done today", async ({
+    page,
+    baseURL,
+  }) => {
+    const now = new Date();
+    now.setHours(23, 59, 0, 0);
+    await page.clock.setFixedTime(now);
+    await openGoals(page, baseURL!, (userId) => sampleGoals(userId, { now }));
+    await expect(row(page, "Methods section for Friday")).toContainText("1 done today");
   });
 
   test("#73 AC4 more than five Goals show five rows and Show more with no number", async ({

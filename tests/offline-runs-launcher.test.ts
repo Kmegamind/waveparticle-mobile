@@ -1,5 +1,12 @@
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -80,11 +87,51 @@ async function reportOf(outDir: string, timeoutMs = 60_000): Promise<string> {
   throw new Error("no report");
 }
 
-/** The launcher's temporary files left in the temp folder (its stop and token files). */
-const leftovers = (pid: number | undefined) =>
-  readdirSync(tmpdir()).filter((name) => name.startsWith(`wp-offline-run-stop-${pid}-`));
+/**
+ * The launcher's temporary files left in `folder`: its stop file and the stop file's `.tmp` from
+ * the rename.
+ */
+const leftovers = (folder: string, pid: number | undefined) =>
+  readdirSync(folder).filter((name) => name.startsWith(`wp-offline-run-stop-${pid}-`));
 
-const STUB_RUN_ENV = { PATH: process.env.PATH ?? "", NODE_ENV: "test" as const };
+/**
+ * Says, for a failing check, which file was left, what it holds ("launcher gone" is the runner's
+ * pipe watch, "stop" the launcher) and when it was written against report.md and the end of the
+ * runner, so a CI log shows the order (#428).
+ */
+function leftoverReport(folder: string, pid: number | undefined, outDir: string, endedAt: number) {
+  const report = statSync(path.join(outDir, "report.md")).mtimeMs;
+  const lines = leftovers(folder, pid).map((name) => {
+    const file = path.join(folder, name);
+    const written = statSync(file).mtimeMs;
+    const text = JSON.stringify(readFileSync(file, "utf8"));
+    const when = (gap: number, what: string) =>
+      `${Math.abs(Math.round(gap))} ms ${gap < 0 ? "before" : "after"} ${what}`;
+    return `${name} holds ${text}, written ${when(written - report, "report.md")} and ${when(written - endedAt, "the runner ended")}`;
+  });
+  return `left in ${folder}:\n${lines.join("\n")}`;
+}
+
+/**
+ * The launcher's environment, with its own temp folder (#428). Without TMPDIR the launcher's
+ * tmpdir() is /tmp, not this process's tmpdir() (on macOS a per-user folder), so a leftover was
+ * looked for in the wrong folder.
+ */
+function stubRunEnv() {
+  const temp = mkdtempSync(path.join(tmpdir(), "wp-launcher-tmp-"));
+  return { temp, env: { PATH: process.env.PATH ?? "", NODE_ENV: "test" as const, TMPDIR: temp } };
+}
+
+/**
+ * Resolves when the launcher's stdout is closed by every process that holds it: the launcher and
+ * the runner it started, which inherits it. So the runner has ended and its cleanup is done.
+ */
+const closed = (child: ChildProcess) =>
+  new Promise<void>((resolve) => {
+    child.stdout?.resume();
+    if (child.stdout?.closed) resolve();
+    else child.stdout?.on("close", () => resolve());
+  });
 
 describe("P1: a stop works with the plain stub", () => {
   it("test_420_p1_a_stop_file_stops_a_plain_stub_run_at_the_next_request", async () => {
@@ -163,7 +210,8 @@ describe("P2 and P4: the real launcher and runner, stub mode", () => {
           cwd: root,
           stdio: ["ignore", "ignore", "ignore", "pipe"],
           env: {
-            ...STUB_RUN_ENV,
+            PATH: process.env.PATH ?? "",
+            NODE_ENV: "test",
             OFFLINE_RUN_MODE: "stub",
             OFFLINE_RUN_SUITE: "pause",
             OFFLINE_RUN_CONCURRENCY: "1",
@@ -191,6 +239,7 @@ describe("P2 and P4: the real launcher and runner, stub mode", () => {
       { timeout: 120_000 },
       async () => {
         const outDir = mkdtempSync(path.join(tmpdir(), "wp-offline-"));
+        const { temp, env } = stubRunEnv();
         const launcher = spawn(
           process.execPath,
           [
@@ -203,7 +252,7 @@ describe("P2 and P4: the real launcher and runner, stub mode", () => {
             "--out",
             outDir,
           ],
-          { cwd: root, stdio: "ignore", env: STUB_RUN_ENV },
+          { cwd: root, stdio: "ignore", env },
         );
         await recordsOver(outDir, 20);
         launcher.kill(signal);
@@ -212,7 +261,11 @@ describe("P2 and P4: the real launcher and runner, stub mode", () => {
         expect(launcher.exitCode).toBe(130);
         const report = await reportOf(outDir);
         expect(report).toContain("INCOMPLETE: the run was interrupted");
-        expect(leftovers(launcher.pid)).toEqual([]);
+        const left = leftovers(temp, launcher.pid);
+        expect(
+          left,
+          left.length ? leftoverReport(temp, launcher.pid, outDir, Date.now()) : undefined,
+        ).toEqual([]);
         const records = readFileSync(path.join(outDir, "results.jsonl"), "utf8").trim().split("\n");
         expect(records.length).toBeLessThan(800);
       },
@@ -224,6 +277,7 @@ describe("P2 and P4: the real launcher and runner, stub mode", () => {
     { timeout: 120_000 },
     async () => {
       const outDir = mkdtempSync(path.join(tmpdir(), "wp-offline-"));
+      const { temp, env } = stubRunEnv();
       const launcher = spawn(
         process.execPath,
         [
@@ -236,16 +290,23 @@ describe("P2 and P4: the real launcher and runner, stub mode", () => {
           "--out",
           outDir,
         ],
-        { cwd: root, stdio: "ignore", env: STUB_RUN_ENV },
+        // stdout is a pipe so the test can tell when the runner, which inherits it, has ended.
+        { cwd: root, stdio: ["ignore", "pipe", "ignore"], env },
       );
+      const runnerGone = closed(launcher);
       await recordsOver(outDir, 20);
       launcher.kill("SIGKILL");
       await exited(launcher);
       const report = await reportOf(outDir);
       expect(report).toContain("INCOMPLETE: the launcher went away");
-      // Give the runner a moment to finish removing its stop file after writing the report.
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      expect(leftovers(launcher.pid)).toEqual([]);
+      // The killed launcher removes nothing; the runner's own cleanup must, by the time it ends.
+      await runnerGone;
+      const endedAt = Date.now();
+      const left = leftovers(temp, launcher.pid);
+      expect(
+        left,
+        left.length ? leftoverReport(temp, launcher.pid, outDir, endedAt) : undefined,
+      ).toEqual([]);
     },
   );
 });

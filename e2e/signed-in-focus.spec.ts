@@ -16,6 +16,11 @@ const threeSteps: PlanStep[] = [
 async function seed(page: Page, steps: PlanStep[], speed = 60) {
   await page.goto("/try");
   await expect(page.locator('[data-ready="true"]')).toBeVisible();
+  // Home's links prefetch /try/goal just after the page is ready. Leaving while one is in flight
+  // cuts it, and WebKit on Linux reports the cut fetch as a page error ("Fetch API cannot load
+  // /try/goal?_rsc=... due to access control checks"), which #115 AC2 below counts (#428). So the
+  // page's requests finish first.
+  await page.waitForLoadState("networkidle");
   await page.evaluate((planSteps) => {
     window.localStorage.removeItem("waveparticle.prototype.session");
     window.localStorage.setItem(
