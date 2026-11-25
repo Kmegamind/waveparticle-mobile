@@ -177,9 +177,10 @@ describe("admin tokens and shell (#313 rows 1, 2, 3, 4, 7, 9, 11)", () => {
       ["--adm-bad", "#b23b3b"],
       ["--adm-warn", "#9a6a10"],
       ["--adm-info", "#3a5ea8"],
-      ["--adm-font-display", '"Fraunces", Georgia, serif'],
-      ["--adm-font-body", '"IBM Plex Sans", system-ui, sans-serif'],
-      ["--adm-font-mono", '"IBM Plex Mono", ui-monospace, monospace'],
+      // #435: each list is led by the copy next/font serves (src/app/admin/fonts.ts).
+      ["--adm-font-display", 'var(--font-adm-display), "Fraunces", Georgia, serif'],
+      ["--adm-font-body", 'var(--font-adm-body), "IBM Plex Sans", system-ui, sans-serif'],
+      ["--adm-font-mono", 'var(--font-adm-mono), "IBM Plex Mono", ui-monospace, monospace'],
       ["--adm-min-width", "1024px"],
       ["--adm-rail-width", "232px"],
     ]) {
@@ -218,7 +219,7 @@ describe("admin tokens and shell (#313 rows 1, 2, 3, 4, 7, 9, 11)", () => {
     const css = adminCss();
     expect(block(css, ".admin-rail")).toContain("background: var(--adm-panel)");
     expect(block(css, ".admin-menu-link")).toContain("padding: var(--adm-menu-pad)");
-    expect(block(css, '.admin-menu-link[aria-current="page"]')).toContain(
+    expect(block(css, ".admin-menu-link[aria-current]")).toContain(
       "background: var(--adm-accent-soft)",
     );
     expect(block(css, ".admin-main h1")).toContain("font-size: var(--adm-title-size)");
