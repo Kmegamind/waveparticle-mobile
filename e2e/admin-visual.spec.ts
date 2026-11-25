@@ -1,0 +1,485 @@
+import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import { expect, test, type Page } from "@playwright/test";
+import { baseUrlOf, signIn } from "./support/account";
+
+// #435: the admin visual gate. It opens the repository copy of the owner's admin prototype
+// (docs/design/prototype/admin-prototype.html) and the live admin side by side, at 1024 and
+// 1280 px, and compares the computed styles of the fixed components only: the frame, the rail
+// and its menu rows, the page header, panels, tables, pills, chips, buttons and text fields.
+// Over 1 px or a different colour fails. Text and sample or seed data are never compared.
+//
+// The prototype is rendered in standards mode: `<!doctype html><meta charset=utf-8>` is put in
+// front of the file as it is served (docs/design/README.md, "The admin prototype"). It is served
+// from the app's own origin, and its Google Fonts request is answered with the app's own
+// self-hosted copies of the same fonts, so both sides draw the same font files and the test
+// never goes to the network.
+//
+// To compare a new component, add a row to COMPONENTS (and, if needed, a page to
+// PROTOTYPE_PAGES / LIVE_PAGES). Page pull requests extend this map; they do not loosen it.
+//
+// Run with ADMIN_VISUAL_SCREENSHOTS=1 to (re)write the prototype vs live pictures of the frame in
+// docs/design/reference/admin/.
+
+test.use({ colorScheme: "light", isMobile: false, hasTouch: false });
+
+const WIDTHS = [1024, 1280] as const;
+const HEIGHT = 800;
+const PROTOTYPE_FILE = path.join(__dirname, "..", "docs/design/prototype/admin-prototype.html");
+const REFERENCE_DIR = path.join(__dirname, "..", "docs/design/reference/admin");
+const PROTOTYPE_PATH = "/__admin-visual/admin-prototype.html";
+const STANDARDS_MODE = "<!doctype html><meta charset=utf-8>";
+
+// ---------------------------------------------------------------------------------------------
+// The selector map. One place: pages first, then the components compared on them.
+// ---------------------------------------------------------------------------------------------
+
+type PageSetup = (page: Page) => Promise<void>;
+
+/** Prototype screens by hash, with any step needed to show a component. */
+const PROTOTYPE_PAGES: Record<string, { hash: string; prepare?: PageSetup }> = {
+  characters: { hash: "characters" },
+  character: { hash: "character" },
+  uitext: { hash: "uitext" },
+  history: { hash: "history" },
+  prompts: { hash: "prompts" },
+  // The only text fields in the prototype are in the Regenerate dialog of Story cards.
+  regenerate: {
+    hash: "cards",
+    prepare: async (page) => {
+      await page.evaluate(() =>
+        (window as unknown as { openRegen: (s: string, t: string) => void }).openRegen(
+          "part",
+          "p1",
+        ),
+      );
+      await expect(page.locator("dialog.sheet textarea")).toBeVisible();
+    },
+  },
+};
+
+/** Live admin pages by path, with any step needed to show a component. */
+const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
+  companions: { path: "/admin/companions" },
+  // No live page puts a full-size button in the header action row yet (pages adopt the row in
+  // later pull requests). Until one does, the row's slot is filled with one main and one
+  // secondary button of the admin's own button classes; replace this with the real page then.
+  actions: {
+    path: "/admin/companions",
+    prepare: async (page) => {
+      await page.locator(".admin-head").evaluate((head) => {
+        const actions = document.createElement("div");
+        actions.className = "admin-actions";
+        actions.innerHTML =
+          '<button class="button-gray" type="button">Save draft</button>' +
+          '<button class="button-filled" type="button">Publish</button>';
+        head.append(actions);
+      });
+    },
+  },
+  appText: { path: "/admin/app-text" },
+  // A detail page: its menu row (Prompts) is marked as current.
+  prompt: { path: "/admin/prompts/plan_split" },
+};
+
+type Side = { page: string; selector: string };
+type Metric = "x" | "y" | "width" | "contentWidth";
+type Component = {
+  name: string;
+  prototype: Side & { page: keyof typeof PROTOTYPE_PAGES };
+  live: Side & { page: keyof typeof LIVE_PAGES };
+  /** Computed style properties; STYLE when not given. */
+  properties?: readonly string[];
+  /** Box measurements in px (rounded); "contentWidth" is the width inside padding and border. */
+  box?: readonly Metric[];
+};
+
+const FONT = [
+  "font-family",
+  "font-size",
+  "font-weight",
+  "font-style",
+  "line-height",
+  "letter-spacing",
+  "text-transform",
+  "color",
+] as const;
+const SIDES = ["top", "right", "bottom", "left"] as const;
+const BOX = [
+  ...SIDES.map((side) => `padding-${side}`),
+  ...SIDES.flatMap((side) => [
+    `border-${side}-width`,
+    `border-${side}-style`,
+    `border-${side}-color`,
+  ]),
+  "border-top-left-radius",
+  "border-top-right-radius",
+  "border-bottom-right-radius",
+  "border-bottom-left-radius",
+  "background-color",
+] as const;
+const STYLE = [...FONT, ...BOX] as const;
+
+const COMPONENTS: Component[] = [
+  {
+    name: "page (body / frame)",
+    prototype: { page: "characters", selector: "body" },
+    live: { page: "companions", selector: ".admin-shell" },
+    properties: [...FONT, "background-color"],
+  },
+  {
+    name: "rail",
+    prototype: { page: "characters", selector: ".rail" },
+    live: { page: "companions", selector: ".admin-rail" },
+    // x and y carry the 8 px page margin.
+    box: ["x", "y", "width"],
+  },
+  {
+    name: "brand",
+    prototype: { page: "characters", selector: ".brand" },
+    live: { page: "companions", selector: ".admin-brand-name" },
+    properties: FONT,
+  },
+  {
+    name: "brand line (Content admin)",
+    prototype: { page: "characters", selector: ".brand small" },
+    live: { page: "companions", selector: ".admin-brand-sub" },
+    properties: FONT,
+  },
+  {
+    name: "menu group heading",
+    prototype: { page: "characters", selector: ".navgroup" },
+    live: { page: "companions", selector: ".admin-group-heading" },
+  },
+  {
+    name: "menu row",
+    prototype: { page: "characters", selector: ".rail a:not(.on)" },
+    live: { page: "companions", selector: ".admin-menu-link:not([aria-current])" },
+  },
+  {
+    name: "menu row, current",
+    prototype: { page: "characters", selector: ".rail a.on" },
+    live: { page: "companions", selector: ".admin-menu-link[aria-current]" },
+  },
+  {
+    name: "menu row, current on a detail page",
+    prototype: { page: "prompts", selector: ".rail a.on" },
+    live: { page: "prompt", selector: ".admin-menu-link[aria-current]" },
+  },
+  {
+    name: "menu page id",
+    prototype: { page: "characters", selector: ".rail a:not(.on) .k" },
+    live: { page: "companions", selector: ".admin-menu-link:not([aria-current]) .admin-page-id" },
+    properties: FONT,
+  },
+  {
+    name: "content column",
+    prototype: { page: "characters", selector: "main" },
+    live: { page: "companions", selector: ".admin-main" },
+    properties: BOX,
+    box: ["x", "width", "contentWidth"],
+  },
+  {
+    name: "breadcrumb",
+    prototype: { page: "characters", selector: ".crumb" },
+    live: { page: "companions", selector: ".admin-crumb" },
+  },
+  {
+    name: "header row",
+    prototype: { page: "characters", selector: ".head" },
+    live: { page: "companions", selector: ".admin-head" },
+    properties: [
+      ...STYLE,
+      "display",
+      "justify-content",
+      "align-items",
+      "flex-wrap",
+      "column-gap",
+      "row-gap",
+      "margin-bottom",
+    ],
+    box: ["x", "width"],
+  },
+  {
+    name: "page title",
+    prototype: { page: "characters", selector: ".head h1" },
+    live: { page: "companions", selector: ".admin-head h1" },
+    properties: [...STYLE, "margin-top", "margin-bottom"],
+  },
+  {
+    name: "lede",
+    prototype: { page: "characters", selector: ".head .lede" },
+    live: { page: "companions", selector: ".admin-head .admin-lede" },
+    properties: [...STYLE, "margin-bottom"],
+  },
+  {
+    name: "header action row",
+    prototype: { page: "uitext", selector: ".head .btns" },
+    live: { page: "actions", selector: ".admin-head .admin-actions" },
+    properties: ["display", "flex-wrap", "column-gap", "row-gap"],
+  },
+  {
+    name: "panel",
+    prototype: { page: "characters", selector: ".panel" },
+    live: { page: "companions", selector: ".admin-panel" },
+  },
+  {
+    name: "table head cell",
+    prototype: { page: "characters", selector: "th" },
+    live: { page: "companions", selector: ".admin-table th" },
+  },
+  {
+    name: "table cell",
+    prototype: { page: "characters", selector: "td" },
+    live: { page: "companions", selector: ".admin-table td" },
+  },
+  {
+    name: "id chip",
+    prototype: { page: "characters", selector: "td .key" },
+    live: { page: "companions", selector: ".admin-table .admin-chip" },
+  },
+  {
+    name: "pill (Published)",
+    prototype: { page: "characters", selector: ".pill.s-pub" },
+    live: { page: "companions", selector: ".admin-pill-published" },
+  },
+  {
+    name: "main button",
+    prototype: { page: "uitext", selector: ".head button.primary" },
+    live: { page: "actions", selector: ".admin-actions .button-filled" },
+  },
+  {
+    name: "secondary button",
+    prototype: { page: "character", selector: ".head .btns button:not(.primary)" },
+    live: { page: "actions", selector: ".admin-actions .button-gray" },
+  },
+  {
+    name: "small secondary button",
+    prototype: { page: "history", selector: "td button.small" },
+    live: { page: "appText", selector: ".admin-table .button-gray.button-small" },
+  },
+  {
+    name: "text field",
+    prototype: { page: "regenerate", selector: "dialog.sheet textarea" },
+    live: { page: "appText", selector: ".admin-table textarea.admin-text-field" },
+    // Not the weight: both fields take it from around them (font: inherit). The prototype's only
+    // field sits inside a `.form label` (600); live fields have their label beside them (400).
+    // A page pull request that builds a form like the prototype's compares the weight there.
+    properties: STYLE.filter((name) => name !== "font-weight"),
+  },
+];
+
+// ---------------------------------------------------------------------------------------------
+// Reading and comparing.
+// ---------------------------------------------------------------------------------------------
+
+type Reading = Record<string, string | number>;
+
+async function read(page: Page, component: Component, side: "prototype" | "live") {
+  const { selector } = component[side];
+  const properties = component.properties ?? STYLE;
+  const element = page.locator(selector).first();
+  await expect(element, `${component.name}: ${side} ${selector}`).toBeAttached();
+  return element.evaluate(
+    (node, { properties, box }) => {
+      const computed = getComputedStyle(node);
+      const values: Record<string, string | number> = {};
+      for (const name of properties) {
+        let value = computed.getPropertyValue(name);
+        // The first family is the font the page asks for; the rest are fallbacks.
+        if (name === "font-family")
+          value = value
+            .split(",")[0]
+            .trim()
+            .replace(/^["']|["']$/g, "");
+        values[name] = value;
+      }
+      // A side with no border width draws nothing, whatever its style and colour say (the app's
+      // base styles give every element a solid hairline colour of width 0).
+      for (const side of ["top", "right", "bottom", "left"]) {
+        if (computed.getPropertyValue(`border-${side}-width`) !== "0px") continue;
+        for (const part of ["style", "color"]) {
+          if (`border-${side}-${part}` in values) values[`border-${side}-${part}`] = "no border";
+        }
+      }
+      const rect = node.getBoundingClientRect();
+      const px = (name: string) => parseFloat(computed.getPropertyValue(name)) || 0;
+      const measures: Record<string, number> = {
+        x: rect.left + window.scrollX,
+        y: rect.top + window.scrollY,
+        width: rect.width,
+        contentWidth:
+          rect.width -
+          px("padding-left") -
+          px("padding-right") -
+          px("border-left-width") -
+          px("border-right-width"),
+      };
+      for (const metric of box) values[`box ${metric}`] = Math.round(measures[metric] * 100) / 100;
+      return values;
+    },
+    { properties: [...properties], box: [...(component.box ?? [])] },
+  );
+}
+
+const PX = /^-?\d+(\.\d+)?px$/;
+
+/** Differences between two readings: over 1 px, any other value (colours included) not equal. */
+function differences(name: string, prototype: Reading, live: Reading): string[] {
+  const found: string[] = [];
+  for (const key of Object.keys(prototype)) {
+    const a = prototype[key];
+    const b = live[key];
+    if (typeof a === "number" && typeof b === "number") {
+      if (Math.abs(a - b) > 1) found.push(`${name} · ${key}: prototype ${a} px, live ${b} px`);
+    } else if (typeof a === "string" && typeof b === "string" && PX.test(a) && PX.test(b)) {
+      if (Math.abs(parseFloat(a) - parseFloat(b)) > 1) {
+        found.push(`${name} · ${key}: prototype ${a}, live ${b}`);
+      }
+    } else if (a !== b) {
+      found.push(`${name} · ${key}: prototype ${String(a)}, live ${String(b)}`);
+    }
+  }
+  return found;
+}
+
+// ---------------------------------------------------------------------------------------------
+// Opening both sides.
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The app's own @font-face rules for the three admin fonts, with absolute URLs. They answer the
+ * prototype's Google Fonts request, so the prototype draws the same files without the network.
+ */
+async function adminFontFaces(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const families = new Set(["Fraunces", "IBM Plex Sans", "IBM Plex Mono"]);
+    const rules: string[] = [];
+    for (const sheet of Array.from(document.styleSheets)) {
+      let list: CSSRuleList;
+      try {
+        list = sheet.cssRules;
+      } catch {
+        continue;
+      }
+      for (const rule of Array.from(list)) {
+        if (!(rule instanceof CSSFontFaceRule)) continue;
+        const family = rule.style.getPropertyValue("font-family").replace(/["']/g, "").trim();
+        if (!families.has(family)) continue;
+        rules.push(
+          rule.cssText.replace(
+            /url\((["']?)([^"')]+)\1\)/g,
+            (_match, _quote, url: string) =>
+              `url("${new URL(url, sheet.href ?? location.href).href}")`,
+          ),
+        );
+      }
+    }
+    return rules.join("\n");
+  });
+}
+
+async function servePrototype(page: Page, fontFaces: string) {
+  const html = STANDARDS_MODE + readFileSync(PROTOTYPE_FILE, "utf8");
+  await page.route(`**${PROTOTYPE_PATH}`, (route) =>
+    route.fulfill({ body: html, contentType: "text/html; charset=utf-8" }),
+  );
+  await page.route("https://fonts.googleapis.com/**", (route) =>
+    route.fulfill({ body: fontFaces, contentType: "text/css; charset=utf-8" }),
+  );
+  // Nothing else leaves the machine.
+  await page.route("https://fonts.gstatic.com/**", (route) => route.abort());
+}
+
+async function openPrototype(page: Page, origin: string, key: string) {
+  const target = PROTOTYPE_PAGES[key];
+  // A fresh load per screen, so one screen's dialog or state never leaks into the next.
+  await page.goto(`${origin}${PROTOTYPE_PATH}#${target.hash}`);
+  await page.reload();
+  await expect(page.locator("main h1")).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  await target.prepare?.(page);
+}
+
+async function openLive(page: Page, key: string) {
+  const target = LIVE_PAGES[key];
+  await page.goto(target.path);
+  await expect(page.locator(".admin-main h1")).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  await target.prepare?.(page);
+}
+
+async function collect(
+  page: Page,
+  side: "prototype" | "live",
+  open: (key: string) => Promise<void>,
+): Promise<Map<string, Reading>> {
+  const readings = new Map<string, Reading>();
+  const pages = [...new Set(COMPONENTS.map((component) => component[side].page))];
+  for (const key of pages) {
+    await open(key);
+    for (const component of COMPONENTS.filter((item) => item[side].page === key)) {
+      readings.set(component.name, await read(page, component, side));
+    }
+  }
+  return readings;
+}
+
+for (const width of WIDTHS) {
+  test(`test_435_ac5_fixed_components_match_the_prototype_at_${width}_px`, async ({
+    page,
+    context,
+  }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width, height: HEIGHT });
+    await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+    await page.goto("/admin/companions");
+    const origin = new URL(page.url()).origin;
+    await servePrototype(page, await adminFontFaces(page));
+
+    const live = await collect(page, "live", (key) => openLive(page, key));
+    const prototype = await collect(page, "prototype", (key) => openPrototype(page, origin, key));
+
+    const found = COMPONENTS.flatMap((component) =>
+      differences(
+        component.name,
+        prototype.get(component.name) ?? {},
+        live.get(component.name) ?? {},
+      ),
+    );
+    expect(found, `differences from the prototype at ${width} px`).toEqual([]);
+  });
+}
+
+// The pictures for the pull request: the frame (Companions vs the prototype's Characters) at each
+// width, prototype on the left, live on the right. Written only on request.
+test("test_435_frame_pictures_prototype_vs_live", async ({ page, context }) => {
+  test.skip(!process.env.ADMIN_VISUAL_SCREENSHOTS, "Set ADMIN_VISUAL_SCREENSHOTS=1 to write them.");
+  test.setTimeout(120_000);
+  mkdirSync(REFERENCE_DIR, { recursive: true });
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto("/admin/companions");
+  const origin = new URL(page.url()).origin;
+  await servePrototype(page, await adminFontFaces(page));
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: HEIGHT });
+    await openPrototype(page, origin, "characters");
+    const prototype = await page.screenshot();
+    await openLive(page, "companions");
+    const live = await page.screenshot();
+    writeFileSync(path.join(REFERENCE_DIR, `frame-${width}-prototype.png`), prototype);
+    writeFileSync(path.join(REFERENCE_DIR, `frame-${width}-live.png`), live);
+
+    const image = (png: Buffer) => `data:image/png;base64,${png.toString("base64")}`;
+    await page.setViewportSize({ width: width * 2 + 48, height: HEIGHT + 56 });
+    await page.setContent(
+      `<!doctype html><meta charset=utf-8><body style="margin:0;padding:16px;background:#888;display:flex;gap:16px;font:14px system-ui;color:#fff">` +
+        `<figure style="margin:0"><figcaption>Prototype (standards mode), ${width} px</figcaption><img src="${image(prototype)}"></figure>` +
+        `<figure style="margin:0"><figcaption>Live admin, ${width} px</figcaption><img src="${image(live)}"></figure></body>`,
+    );
+    writeFileSync(
+      path.join(REFERENCE_DIR, `frame-${width}-side-by-side.png`),
+      await page.screenshot({ fullPage: true }),
+    );
+  }
+});

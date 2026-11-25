@@ -3528,8 +3528,12 @@ button.focus-avatar:focus-visible {
   font-size: var(--adm-text-size);
   grid-template-columns: var(--adm-rail-width) minmax(0, 1fr);
   line-height: var(--adm-leading);
-  min-height: 100svh;
+  /* Issue 435: the prototype's 8 px page margin on every side (its body keeps the browser's default
+     margin), in the page colour. As in the prototype, the frame is one screen high plus the two
+     margins. */
+  min-height: calc(100svh + 2 * var(--adm-page-margin));
   min-width: var(--adm-min-width);
+  padding: var(--adm-page-margin);
 }
 
 /* The app's 44 px tap size (DESIGN.md 6) does not apply to this desktop tool. */
@@ -3627,7 +3631,8 @@ button.focus-avatar:focus-visible {
   background: var(--adm-soft);
 }
 
-.admin-menu-link[aria-current="page"] {
+/* Issue 435: the current page, and on a detail page (a prompt, a story) the menu row it belongs to. */
+.admin-menu-link[aria-current] {
   background: var(--adm-accent-soft);
   color: var(--adm-accent);
   font-weight: 600;
@@ -3685,6 +3690,23 @@ button.focus-avatar:focus-visible {
 .admin-main h2 {
   font-size: var(--adm-h2-size);
   font-weight: 600;
+}
+
+/* Issue 435: the prototype's header row (.head): title and lede on the left, the page's actions
+   (Save draft, Publish ...) right-aligned beside them. */
+.admin-head {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-head-gap);
+  justify-content: space-between;
+  margin-bottom: var(--adm-head-after);
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-gap-small);
 }
 
 .admin-lede {

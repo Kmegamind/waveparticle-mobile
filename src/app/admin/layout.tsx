@@ -5,6 +5,7 @@ import { readContentRole } from "@/lib/admin/roles";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { AdminShell } from "./admin-shell";
+import { adminFontVariables } from "./fonts";
 
 // The content admin (#287). The proxy already answers 404 without a role; this server check is
 // the second gate, through the signed-in user's own client (no key with full database rights).
@@ -22,5 +23,5 @@ async function AdminGate({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser(client);
   const role = user ? await readContentRole(client) : null;
   if (!user || !role) notFound();
-  return <AdminShell>{children}</AdminShell>;
+  return <AdminShell fontClassName={adminFontVariables}>{children}</AdminShell>;
 }
