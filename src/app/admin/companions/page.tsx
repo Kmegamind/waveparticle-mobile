@@ -10,7 +10,7 @@ import {
   readPublishHistory,
 } from "@/lib/publish-history/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { Breadcrumb, KeyChip, StatePill } from "../admin-ui";
+import { Breadcrumb, KeyChip, PageHead, StatePill } from "../admin-ui";
 
 // ADM-03 Companions (#309): every Companion in display order with its mode and number of stories.
 // The layout already checked the role; the rows come through the signed-in user's own client.
@@ -20,12 +20,16 @@ export default function AdminCompanions() {
   return (
     <>
       <Breadcrumb items={[{ label: "Content" }]} />
-      <h1>Companions</h1>
-      <p className="admin-lede">
-        Open a Companion to edit his name, tags, &quot;Who I am&quot;, the names of his Life Path
-        periods and the fields of each story. A save makes a draft; the app keeps showing the
-        published text until an admin publishes.
-      </p>
+      <PageHead
+        title="Companions"
+        lede={
+          <>
+            Open a Companion to edit his name, tags, &quot;Who I am&quot;, the names of his Life
+            Path periods and the fields of each story. A save makes a draft; the app keeps showing
+            the published text until an admin publishes.
+          </>
+        }
+      />
       <Suspense fallback={null}>
         <CompanionTable />
       </Suspense>

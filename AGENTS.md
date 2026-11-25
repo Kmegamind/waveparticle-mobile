@@ -55,6 +55,7 @@ WaveParticle Mobile: A mobile-first web app where you do a real task while a his
 ## UI
 - All UI MUST use @DESIGN.md tokens. No hard-coded colors, fonts or spacing.
 - Controls (buttons, fields, switches, tab bar) follow `DESIGN.md` section 6. If code and `DESIGN.md` disagree, `DESIGN.md` wins; fix the code or raise it with a human.
+- Admin pages: every pull request that changes /admin must pass `e2e/admin-visual.spec.ts` (computed styles vs `docs/design/prototype/admin-prototype.html`, standards mode, 1024 and 1280 px; over 1 px or a different colour fails) and attach prototype vs live screenshots.
 
 ## When unsure
 - Look in docs/PRD.md, docs/DECISIONS.md and docs/ai/ first. If the spec says nothing, list the gap in detail for the owner. Change the spec first, then the prototype if screens change, then the product. Never patch only one place.

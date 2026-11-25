@@ -257,8 +257,9 @@
  * The content admin (#313, docs/DECISIONS.md ADMIN-DESKTOP): a desktop tool that follows the admin
  * prototype (content-admin/admin-prototype_2026-11-14_v1.html), not DESIGN.md. Its values are the
  * prototype's CSS, light and dark (the dark set follows the system unless Appearance is Day, and
- * Night). The fonts are the prototype's lists as written; none is loaded, so they render as the
- * prototype does.
+ * Night). The fonts are the prototype's lists, each led by the copy next/font serves for the admin
+ * (issue 435, src/app/admin/fonts.ts sets --font-adm-* on this element). The page margin is the 8 px the
+ * prototype gets from the browser's default body margin.
  */
 .admin-shell {
   --adm-bg: #f5f6f4;
@@ -277,10 +278,11 @@
   --adm-bad-soft: #f8e3e3;
   --adm-info: #3a5ea8;
   --adm-info-soft: #e4ebf8;
-  --adm-font-display: "Fraunces", Georgia, serif;
-  --adm-font-body: "IBM Plex Sans", system-ui, sans-serif;
-  --adm-font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --adm-font-display: var(--font-adm-display), "Fraunces", Georgia, serif;
+  --adm-font-body: var(--font-adm-body), "IBM Plex Sans", system-ui, sans-serif;
+  --adm-font-mono: var(--font-adm-mono), "IBM Plex Mono", ui-monospace, monospace;
   --adm-min-width: 1024px;
+  --adm-page-margin: 8px;
   --adm-rail-width: 232px;
   --adm-text-size: 14px;
   --adm-leading: 1.5;
@@ -318,6 +320,7 @@
   --adm-gap-hair: 2px;
   --adm-gap-title: 4px;
   --adm-head-after: 16px;
+  --adm-head-gap: 12px;
   --adm-lede-after: 18px;
   --adm-pill-dot: 6px;
   --adm-r-panel: 10px;

@@ -37,7 +37,17 @@ export default defineConfig({
   reporter: process.env.CI ? "github" : "list",
   use: { baseURL: deployed ?? `http://127.0.0.1:${port}` },
   projects: [
-    { name: "mobile", testIgnore: /\.live\.spec\.ts$/, use: { ...devices["iPhone 14"] } },
+    {
+      name: "mobile",
+      testIgnore: [/\.live\.spec\.ts$/, /admin-visual\.spec\.ts$/],
+      use: { ...devices["iPhone 14"] },
+    },
+    // #435: the admin visual gate runs in a desktop browser (the admin is desktop only).
+    {
+      name: "desktop",
+      testMatch: /admin-visual\.spec\.ts$/,
+      use: { ...devices["Desktop Chrome"] },
+    },
     ...(deployed
       ? []
       : [

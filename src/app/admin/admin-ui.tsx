@@ -21,6 +21,30 @@ export function Breadcrumb({ items }: { items: Crumb[] }) {
   );
 }
 
+/**
+ * #435: the prototype's header row (.head), under the breadcrumb: the title and lede on the left
+ * and the page's actions (for example Save draft and Publish) right-aligned beside them.
+ */
+export function PageHead({
+  title,
+  lede,
+  actions,
+}: {
+  title: React.ReactNode;
+  lede?: React.ReactNode;
+  actions?: React.ReactNode;
+}) {
+  return (
+    <div className="admin-head">
+      <div>
+        <h1>{title}</h1>
+        {lede ? <p className="admin-lede">{lede}</p> : null}
+      </div>
+      {actions ? <div className="admin-actions">{actions}</div> : null}
+    </div>
+  );
+}
+
 export type PillState = "published" | "draft" | "earlier" | "failed" | "passed" | "default";
 
 /** A state in words with the prototype's colour and dot; the word carries the meaning. */
