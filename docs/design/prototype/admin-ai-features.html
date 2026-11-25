@@ -1,0 +1,316 @@
+<!doctype html>
+<meta charset="utf-8">
+<!-- AI feature screens (#432, part of #430), drawn in the look of the owner's admin prototype, admin-prototype.html in this folder.
+     The CSS below is copied from that file unchanged (its token names --bg, --panel, --ink ... carry the same values as the
+     app's --adm-* tokens in src/app/tokens.css), minus its phone-width block: desktop only, 1024 px and wider.
+     Everything shown is sample data. Purpose text and pass questions are placeholders, never real wording. -->
+<title>WaveParticle Content Admin</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap">
+<style>
+/* Layout: a working tool. Left rail of pages, a dense main area; at phone width the rail becomes a scrolling strip. */
+:root{
+  --bg:#f5f6f4; --panel:#ffffff; --ink:#1d2421; --muted:#5f6b66; --line:#dde2df; --soft:#eef1ef;
+  --accent:#1f6f5c; --accent-soft:#e2f0eb; --ok:#2f7d4f; --ok-soft:#e3f2e8; --warn:#9a6a10; --warn-soft:#fbf0d9;
+  --bad:#b23b3b; --bad-soft:#f8e3e3; --info:#3a5ea8; --info-soft:#e4ebf8; --phone:#16191c; --phone-ink:#ece7dc;
+  --f-display:"Fraunces",Georgia,serif; --f-body:"IBM Plex Sans",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121615; --panel:#1a1f1e; --ink:#e4e9e6; --muted:#9aa6a1; --line:#2c3432; --soft:#212826;
+  --accent:#5fc0a3; --accent-soft:#1d3530; --ok:#6cc58f; --ok-soft:#1c3226; --warn:#e0b55a; --warn-soft:#3a2f17;
+  --bad:#ec8585; --bad-soft:#3d2121; --info:#8fb0f0; --info-soft:#1f2a40; --phone:#0b0d0e; --phone-ink:#ece7dc; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121615; --panel:#1a1f1e; --ink:#e4e9e6; --muted:#9aa6a1; --line:#2c3432; --soft:#212826;
+  --accent:#5fc0a3; --accent-soft:#1d3530; --ok:#6cc58f; --ok-soft:#1c3226; --warn:#e0b55a; --warn-soft:#3a2f17;
+  --bad:#ec8585; --bad-soft:#3d2121; --info:#8fb0f0; --info-soft:#1f2a40; --phone:#0b0d0e; --phone-ink:#ece7dc; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5}
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100%}
+.rail{background:var(--panel);border-right:1px solid var(--line);padding:18px 12px;position:sticky;top:env(safe-area-inset-top,0px);height:100vh;overflow:auto}
+.brand{font-family:var(--f-display);font-size:19px;font-weight:600;padding:0 8px 2px}
+.brand small{display:block;font-family:var(--f-body);font-size:11px;color:var(--muted);font-weight:400;letter-spacing:.04em;text-transform:uppercase;margin-top:2px}
+.proto{margin:12px 8px 14px;font-size:11.5px;background:var(--warn-soft);color:var(--warn);padding:6px 8px;border-radius:6px}
+.navgroup{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:12px 8px 4px}
+.rail a{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 8px;border-radius:6px;color:var(--ink);text-decoration:none}
+.rail a:hover{background:var(--soft)}
+.rail a.on{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.rail a .k{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);font-weight:400}
+main{padding-block:22px 60px;padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px));min-width:0}
+.crumb{font-size:12px;color:var(--muted);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.crumb a{color:var(--muted)}
+h1{font-family:var(--f-display);font-weight:600;font-size:26px;margin:4px 0 4px;text-wrap:balance}
+h2{font-size:15px;margin:0 0 10px;font-weight:600}
+.lede{color:var(--muted);max-width:68ch;margin:0 0 18px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+button,.btn{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 12px;border-radius:7px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--panel);font-weight:600}
+button.small{font-size:12px;padding:3px 9px}
+button:focus-visible,a:focus-visible,[contenteditable]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.key{font-family:var(--f-mono);font-size:11.5px;color:var(--muted);background:var(--soft);padding:1px 6px;border-radius:4px;white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:500;padding:2px 8px;border-radius:99px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.s-draft{background:var(--soft);color:var(--muted)}
+.s-gen{background:var(--info-soft);color:var(--info)}
+.s-fail{background:var(--bad-soft);color:var(--bad)}
+.s-checked{background:var(--warn-soft);color:var(--warn)}
+.s-read{background:var(--accent-soft);color:var(--accent)}
+.s-pub{background:var(--ok-soft);color:var(--ok)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--soft)}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.tile b{display:block;font-family:var(--f-display);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums}
+.tile span{font-size:12px;color:var(--muted)}
+/* status board */
+.board td.cell{padding:4px 3px;text-align:center}
+.dot{display:inline-block;width:18px;height:18px;border-radius:4px;border:1px solid var(--line);background:var(--soft)}
+.dot.d1{background:var(--info-soft);border-color:var(--info)}
+.dot.d2{background:var(--warn-soft);border-color:var(--warn)}
+.dot.d3{background:var(--accent-soft);border-color:var(--accent)}
+.dot.d4{background:var(--ok);border-color:var(--ok)}
+.dot.bad{background:var(--bad-soft);border-color:var(--bad)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin:8px 0 0}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+/* pipeline */
+.flow{display:grid;grid-template-columns:minmax(150px,1fr) 34px minmax(150px,1fr) 34px minmax(150px,1fr) 34px minmax(150px,1fr);align-items:stretch;min-width:820px}
+.flow .col{display:flex;flex-direction:column;gap:6px}
+.flow .colhead{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.node{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--panel)}
+.node .key{margin-right:4px}
+.arrow{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:18px}
+.lane{border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--panel);margin-bottom:14px}
+.lane h2{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lane p{color:var(--muted);margin:0 0 12px;max-width:80ch}
+.states{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:10px 0 0;font-size:12px}
+/* cards editor */
+.editor{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;align-items:start}
+.part{border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-bottom:12px}
+.part>header{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.cardrow{display:grid;grid-template-columns:86px minmax(0,1fr) auto;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);align-items:start}
+.cardrow:last-child{border-bottom:0}
+.cardrow .kind{font-size:12px;color:var(--muted);padding-top:2px}
+.cardrow .txt{border-radius:6px;padding:2px 4px;margin:-2px -4px}
+.cardrow .txt[contenteditable="true"]{background:var(--soft);outline:1px dashed var(--accent)}
+.cardrow .meta{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
+.fails{font-size:11.5px;color:var(--bad)}
+.phone{background:var(--phone);color:var(--phone-ink);border-radius:26px;padding:18px 16px 22px;position:sticky;top:16px}
+.phone .ph-top{font-size:11px;opacity:.6;display:flex;justify-content:space-between}
+.phone .ph-goal{font-size:11px;opacity:.7;margin:14px 0 4px;text-transform:uppercase;letter-spacing:.08em}
+.phone .ph-goaltext{font-family:var(--f-display);font-size:15px;margin-bottom:14px}
+.phone .slip{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px;font-size:13.5px;line-height:1.55;min-height:120px}
+.phone .slip small{display:block;opacity:.6;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.phone .ph-step{font-size:12px;opacity:.8;margin-top:12px}
+.phone .ph-clock{font-family:var(--f-mono);font-size:28px;text-align:center;margin-top:10px}
+/* prompts */
+.assembly{display:flex;flex-direction:column;gap:6px}
+.ppart{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;background:var(--panel)}
+.ppart.on{border-left-color:var(--accent);background:var(--accent-soft)}
+.ppart .top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+.ppart .plus{color:var(--muted);text-align:center;font-size:12px}
+pre.code{font-family:var(--f-mono);font-size:12px;background:var(--soft);border-radius:8px;padding:12px;white-space:pre-wrap;margin:0;line-height:1.55}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cmp .panel p{margin:0 0 8px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px;flex-wrap:wrap}
+.tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:8px 10px}
+.tabs button.on{border-bottom-color:var(--accent);color:var(--accent);font-weight:600}
+dl.fields{display:grid;grid-template-columns:170px minmax(0,1fr);gap:0;margin:0}
+dl.fields dt,dl.fields dd{padding:9px 0;border-bottom:1px solid var(--line);margin:0}
+dl.fields dt{color:var(--muted);font-size:12.5px;padding-right:12px}
+dl.fields dd .key{margin-left:6px}
+.note{font-size:12.5px;color:var(--muted)}
+.form{display:grid;gap:12px}
+.form label{display:grid;gap:4px;font-size:12.5px;color:var(--muted);font-weight:600}
+select,input[type=text],textarea{font:inherit;font-size:13.5px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:7px 9px;min-width:0;width:100%}
+textarea{min-height:64px;resize:vertical}
+select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+.check{display:flex!important;grid-template-columns:none;align-items:center;gap:8px;font-weight:400!important;color:var(--ink)!important}
+.check input{width:16px;height:16px;accent-color:var(--accent)}
+.est{background:var(--soft);border-radius:8px;padding:10px 12px;font-size:13px}
+dialog.sheet{border:1px solid var(--line);border-radius:12px;padding:0;background:var(--panel);color:var(--ink);width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 40px)}
+dialog.sheet::backdrop{background:rgba(0,0,0,.35)}
+dialog.sheet .sh-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
+dialog.sheet .sh-head h2{margin:0;font-size:16px}
+dialog.sheet .sh-body{padding:16px;overflow:auto}
+dialog.sheet .sh-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid var(--line)}
+.lock{font-size:11.5px;color:var(--accent);font-weight:600}
+.conn{display:inline-flex;align-items:center;gap:6px;font-size:12.5px}
+.conn i{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.conn.off i{background:var(--line)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:13px;z-index:20}
+.phase{display:grid;grid-template-columns:72px minmax(0,1fr);gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.phase:last-child{border-bottom:0}
+.phase .pn{font-family:var(--f-mono);font-size:12px;color:var(--accent);font-weight:500}
+.phase h3{margin:0 0 4px;font-size:15px}
+.phase p{margin:0 0 6px;color:var(--muted)}
+.phase ul{margin:4px 0 0;padding-left:18px}
+.idrow{display:grid;grid-template-columns:150px minmax(0,1fr) minmax(0,1.1fr);gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.idrow:last-child{border-bottom:0}
+.idrow code{font-family:var(--f-mono);font-size:12px}
+@media (prefers-reduced-motion:no-preference){.toast{animation:up .2s ease-out}@keyframes up{from{transform:translate(-50%,8px);opacity:0}}}
+/* Added for these screens only, from the same tokens. */
+.app{min-width:1008px}
+.sec{display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:start}
+.sec .sl{font-family:var(--f-mono);font-size:12px;color:var(--accent);font-weight:500;padding-top:1px}
+.panel>h2{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.src{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+.empty{font-size:13px;color:var(--muted);background:var(--soft);border-radius:8px;padding:10px 12px;margin:0}
+ol.qs{margin:0;padding-left:20px}
+ol.qs li{padding:4px 0}
+.diff{font-family:var(--f-mono);font-size:12px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+.diff div{padding:2px 10px;white-space:pre-wrap}
+.diff .add{background:var(--ok-soft);color:var(--ok)}
+.diff .del{background:var(--bad-soft);color:var(--bad)}
+.qrow{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.qrow:last-child{border-bottom:0}
+.qrow .n{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.ro{opacity:.6}
+</style>
+
+<div class="app">
+  <nav class="rail" id="rail" aria-label="Admin pages"></nav>
+  <main id="main"></main>
+</div>
+
+<script>
+/* Sample data only. Purpose text and pass questions are placeholders, never real wording. */
+let toastT, asWriter=false;
+function toast(m){document.querySelector(".toast")?.remove();const d=document.createElement("div");d.className="toast";d.setAttribute("role","status");d.textContent=m;document.body.appendChild(d);clearTimeout(toastT);toastT=setTimeout(()=>d.remove(),2400)}
+function head(crumbs,title,lede,btns=""){
+  return `<div class="crumb">${crumbs}</div><div class="head"><div><h1>${title}</h1>${lede?`<p class="lede">${lede}</p>`:""}</div><div class="btns">${btns}</div></div>`;
+}
+const P="admin-prototype.html";
+const PAGES=[
+ {g:"Overview"},{t:"Status board",k:"ADM-01",h:P+"#board"},{t:"Pipeline",k:"ADM-02",h:P+"#pipeline"},
+ {g:"Content"},{t:"Characters",k:"ADM-03",h:P+"#characters"},{t:"Character profile",k:"ADM-04",h:P+"#character"},{t:"Life path",k:"ADM-05",h:P+"#lifepath"},{t:"Story cards",k:"ADM-06",h:P+"#cards"},{t:"App text",k:"ADM-07",h:P+"#uitext"},
+ {g:"AI rules"},{t:"AI features",k:"ADM-16",h:"#index",ai:true},{t:"Prompts",k:"ADM-08",h:P+"#prompts"},{t:"Checks",k:"ADM-09",h:P+"#checks"},{t:"Models",k:"ADM-13",h:P+"#models"},
+ {g:"Review and logs"},{t:"Review queue",k:"ADM-10",h:P+"#review"},{t:"Live log",k:"ADM-11",h:P+"#live"},{t:"Publish history",k:"ADM-12",h:P+"#history"},
+ {g:"Screens in this drawing"},
+ {t:"AI features index",k:"AIF-1",h:"#index"},{t:"Feature page",k:"AIF-2",h:"#feature"},{t:"Published and draft",k:"AIF-3",h:"#prompt"},{t:"Test results",k:"AIF-4",h:"#tests"},
+ {t:"Status editor",k:"AIF-5",h:"#status"},{t:"Pass standard editor",k:"AIF-6",h:"#pass"},{t:"Purpose and approach",k:"AIF-7",h:"#purpose"},{t:"Feature and prompts",k:"AIF-8",h:"#mapping"}
+];
+const ST={ns:["Not started","s-draft"],ex:["Exploring","s-gen"],ps:["Passed","s-pub"],fz:["Frozen","s-read"]};
+const pill=s=>`<span class="pill ${ST[s][1]}">${ST[s][0]}</span>`;
+const F=[
+ {n:"Goal split",k:["plan_split"],s:"ex",v:"v3",d:true,run:"Sample date · stub"},
+ {n:"Step cards",k:["step_cards"],s:"ex",v:"v5",d:false,run:"Sample date · stub"},
+ {n:"Pause message",k:["stuck_story","pause_predicament"],s:"ex",v:"v2 · v1",d:true,run:"Sample date · stub"},
+ {n:"Rest reply",k:["rest_reply"],s:"ex",v:"v1",d:false,run:null},
+ {n:"Return pop-up",k:["return_popup"],s:"ex",v:"v1",d:false,run:"Sample date · stub"},
+ {n:"Closing line",k:["closing_line"],s:"ex",v:"v1",d:false,run:null},
+ {n:"Safety classifier",k:["safety_classifier"],s:"ex",v:"v1",d:false,run:"Sample date · stub"}
+];
+const keys=f=>f.k.map(k=>`<span class="key">${k}</span>`).join(" ");
+const title=f=>`${f.n} (${f.k.join(" + ")})`;
+const FAKE=`<span class="pill s-checked">Fake model (stub)</span>`;
+const DRAFT=`<span class="pill s-checked">Draft - owner to edit</span>`;
+const CR=`AI rules › <a href="#index">AI features</a>`;
+const PAUSE="Pause message (stuck_story + pause_predicament)";
+const V={};
+
+V.index=()=>head("AI rules","AI features","One page per AI feature: what it does for the user, how we judge it, how it works now, where it stands, its prompts and its test results. All rows on this page are sample data.")+
+ `<div class="panel scroll"><table><thead><tr><th>Feature</th><th>Purpose</th><th>Status</th><th>Active prompt</th><th>Last offline run</th></tr></thead><tbody>`+
+ F.map((f,i)=>`<tr class="click" onclick="location.hash='feature'"><td><b>${f.n}</b><br>${keys(f)}</td><td class="note">${i===5?"Not written yet":"Purpose text from the database"}</td><td>${pill(f.s)}</td><td><span class="key">${f.v}</span>${f.d?` <span class="pill s-draft">Draft exists</span>`:""}</td><td>${f.run?`<span class="note">${f.run}</span><br>${FAKE}`:`<span class="note">No real run yet (#413)</span>`}</td></tr>`).join("")+
+ `</tbody></table><div class="legend"><span>${pill("ns")}</span><span>${pill("ex")}</span><span>${pill("ps")}</span><span>${pill("fz")}</span><span>Status colours are a proposal for the owner.</span></div></div>
+ <p class="note" style="margin-top:10px">With no rows the table shows "No features yet".</p>`;
+
+V.feature=()=>head(CR+" › Pause message",PAUSE,"Every AI feature page has the same six sections, (a) to (f), in this order.",
+  `<a class="btn" href="#purpose">Edit purpose and approach</a><a class="btn" href="#pass">Edit pass standard</a>`)+
+ `<div class="stack">
+  <div class="panel"><h2>(a) Purpose</h2><p style="margin:0">Purpose text from the database, one or two sentences on what the feature does for the user.</p>
+   <p class="src">${DRAFT} Source: <span class="key">docs/ai/AI_xx_file.md:line</span> (sample of the label format)</p></div>
+  <div class="panel"><h2>(b) Pass standard</h2><ol class="qs"><li>Pass question 1 from the database (yes / no)</li><li>Pass question 2 from the database (yes / no)</li><li>Pass question 3 from the database (yes / no)</li></ol>
+   <p class="src">Passes with <b>2 of 3</b> yes. ${DRAFT} Source: <span class="key">docs/ai/AI_xx_file.md:line</span></p></div>
+  <div class="panel"><h2>(c) Current approach</h2><p class="empty">Not written yet</p><p class="src">Shown when no source exists. Never filled with made-up text.</p></div>
+  <div class="panel"><h2>(d) Status ${pill("ex")}</h2><p class="note" style="margin:0">Set to Exploring by the setup · sample date · <a href="#status">history and change (admin only)</a></p></div>
+  <div class="panel"><h2>(e) Prompt text</h2><div class="grid2">
+   <div><p style="margin:0 0 6px"><span class="key">stuck_story</span> <span class="key">v2</span> <span class="pill s-pub">Published</span> <span class="pill s-draft">Draft v3</span></p><pre class="code">Prompt text read live from public.prompts.
+(sample: the published version of stuck_story)</pre><p class="src"><a href="#prompt">Compare published and draft</a></p></div>
+   <div><p style="margin:0 0 6px"><span class="key">pause_predicament</span> <span class="key">v1</span> <span class="pill s-pub">Published</span></p><pre class="code">Prompt text read live from public.prompts.
+(sample: the published version of pause_predicament)</pre><p class="src">No draft.</p></div></div></div>
+  <div class="panel"><h2>Fix added after a rejected answer <span class="key">retry_hints</span></h2><pre class="code">Text read live from public.prompts (retry_hints).
+(sample: shared by every feature; sent with the reason when an answer fails a check)</pre><p class="src">The same text shows on every feature page. Edit it on the Prompts page.</p></div>
+  <div class="panel"><h2>(f) Test results</h2><table><thead><tr><th>When</th><th>Mode</th><th>Prompt versions</th><th>Result</th></tr></thead><tbody>
+   <tr><td class="note">Sample date</td><td>${FAKE}</td><td><span class="key">stuck_story v2</span> <span class="key">pause_predicament v1</span></td><td>Sample: 3 of 4 targets pass</td></tr></tbody></table>
+   <p class="empty" style="margin-top:10px">No real run yet (#413)</p><p class="src"><a href="#tests">All test results</a></p></div>
+ </div>`;
+
+V.prompt=()=>head(CR+` › <a href="#feature">Pause message</a>`,PAUSE,"Prompt text, published and draft side by side. A feature with two prompts shows one tab per prompt.",
+  `<button onclick="toast('Draft saved (prototype)')">Save draft</button><button class="primary" onclick="toast('Published v3 (prototype)')">Publish</button>`)+
+ `<div class="tabs" role="tablist"><button role="tab" class="on">stuck_story</button><button role="tab">pause_predicament</button></div>
+ <div class="cmp"><div class="panel"><h2>Published <span class="key">v2</span> <span class="pill s-pub">Published</span></h2><pre class="code">Sample line 1 of the published prompt.
+Sample line 2 of the published prompt.
+Sample line 3 of the published prompt.</pre></div>
+ <div class="panel"><h2>Draft <span class="key">v3</span> <span class="pill s-draft">Draft</span></h2><pre class="code" contenteditable="true" spellcheck="false">Sample line 1 of the published prompt.
+Sample line 2, changed in the draft.
+Sample line 3 of the published prompt.</pre></div></div>
+ <div class="grid2" style="margin-top:14px"><div class="panel"><h2>Changed lines</h2><div class="diff"><div>  Sample line 1 of the published prompt.</div><div class="del">- Sample line 2 of the published prompt.</div><div class="add">+ Sample line 2, changed in the draft.</div><div>  Sample line 3 of the published prompt.</div></div></div>
+ <div class="panel"><h2>Settings</h2><dl class="fields"><dt>Model</dt><dd>Sample model name</dd><dt>Temperature</dt><dd>0.8 (sample)</dd><dt>Tries</dt><dd>3 (sample)</dd><dt>Draft by</dt><dd>Writer · sample date</dd></dl></div></div>`;
+
+V.tests=()=>head(CR+` › <a href="#feature">Pause message</a>`,PAUSE+" · test results","Offline runs, imported into the admin. No page here calls the real model.")+
+ `<div class="panel" style="margin-bottom:14px"><h2>Real-model runs</h2><p class="empty">No real run yet (#413)</p></div>
+ <div class="panel" style="margin-bottom:14px"><h2>Offline run · sample date ${FAKE}</h2>
+  <dl class="fields" style="margin-bottom:12px"><dt>Mode</dt><dd>Fake model (stub): the answers are fixed test text, not written by a model</dd><dt>Model</dt><dd><span class="key">stub</span></dd><dt>Prompt versions</dt><dd><span class="key">stuck_story v2</span> <span class="key">pause_predicament v1</span></dd><dt>Scoring sheets</dt><dd class="note">Sample: 2 of 4 scored</dd></dl>
+  <table><thead><tr><th>Target</th><th>Story</th><th>Result</th><th>Issue</th></tr></thead><tbody>
+   <tr><td>Sample target A</td><td><span class="key">opp.sample-story</span></td><td><span class="pill s-pub">Pass</span></td><td class="note">—</td></tr>
+   <tr><td>Sample target B</td><td><span class="key">opp.sample-story</span></td><td><span class="pill s-fail">Fail</span></td><td><span class="key">#000</span></td></tr>
+   <tr><td>Sample target C</td><td><span class="key">opp.sample-story</span></td><td><span class="pill s-checked">Pending scoring</span></td><td class="note">—</td></tr>
+   <tr><td>Sample target D</td><td><span class="key">opp.sample-story</span></td><td><span class="pill s-draft">No data</span></td><td class="note">—</td></tr></tbody></table></div>
+ <div class="panel"><h2>Latest stub end-to-end test ${FAKE}</h2><p class="note" style="margin:0">Sample date · sample result: passed</p></div>`;
+
+V.status=()=>{const ro=asWriter;return head(CR+` › <a href="#feature">Pause message</a>`,PAUSE+" · status",ro?"You can see the status and its history. Only an admin can change it.":"Only an admin can change the status. Every change is kept with who, when and why.",
+  `<div class="seg" role="group" aria-label="View as"><button aria-pressed="${!ro}" onclick="asWriter=false;render()">View as admin</button><button aria-pressed="${ro}" onclick="asWriter=true;render()">View as writer</button></div>`)+
+ `<div class="grid2"><div class="panel${ro?" ro":""}"><h2>Change status ${ro?`<span class="lock">Admin only</span>`:""}</h2><div class="form">
+   <div class="seg" role="group" aria-label="Status">${["ns","ex","ps","fz"].map(s=>`<button aria-pressed="${s==="ex"}" ${ro?"disabled":""}>${ST[s][0]}</button>`).join("")}</div>
+   <label>Reason (one line)<input type="text" placeholder="Why the status changes" ${ro?"disabled":""}></label>
+   <div><button class="primary" ${ro?"disabled":""} onclick="toast('Status saved (prototype)')">Save status</button></div></div></div>
+  <div class="panel"><h2>Now ${pill("ex")}</h2><table><thead><tr><th>When</th><th>Who</th><th>From → to</th><th>Reason</th></tr></thead><tbody>
+   <tr><td class="note">Sample date</td><td>Setup</td><td>— → ${pill("ex")}</td><td class="note">Every status starts as Exploring</td></tr></tbody></table></div></div>`};
+
+V.pass=()=>head(CR+` › <a href="#feature">Pause message</a>`,PAUSE+" · pass standard","Loose yes or no questions. The feature passes when enough of them are yes. Versions as other admin content.",
+  `<button onclick="toast('Draft saved (prototype)')">Save draft</button><button class="primary" onclick="toast('Published (prototype)')">Publish</button>`)+
+ `<div class="editor"><div class="panel"><h2>Questions</h2>${[1,2,3].map(n=>`<div class="qrow"><span class="n">${n}</span><input type="text" value="Pass question ${n} from the database" aria-label="Question ${n}"><span class="btns"><button class="small" aria-label="Move up">↑</button><button class="small" aria-label="Move down">↓</button><button class="small">Remove</button></span></div>`).join("")}
+  <div style="margin-top:10px"><button class="small">Add question</button></div>
+  <div class="form" style="margin-top:14px"><label>Passes when this many are yes<select style="width:auto"><option>1 of 3</option><option selected>2 of 3</option><option>3 of 3</option></select></label>
+  <label>Red lines (any one fails the feature)<textarea>Red line text from the database</textarea></label></div>
+  <p class="src">${DRAFT} Source: <span class="key">docs/ai/AI_xx_file.md:line</span></p></div>
+  <div class="panel"><h2>Versions</h2><table><tbody><tr><td><span class="key">v2</span></td><td class="note">draft · sample date</td><td><span class="pill s-draft">Draft</span></td></tr><tr><td><span class="key">v1</span></td><td class="note">sample date</td><td><span class="pill s-pub">Published</span></td></tr></tbody></table></div></div>`;
+
+V.purpose=()=>head(CR+` › <a href="#feature">Pause message</a>`,PAUSE+" · purpose and approach","Two short texts, saved as a draft and published with versions.",
+  `<button onclick="toast('Draft saved (prototype)')">Save draft</button><button class="primary" onclick="toast('Published (prototype)')">Publish</button>`)+
+ `<div class="editor"><div class="panel"><div class="form">
+  <label>(a) Purpose: what the feature does for the user, one or two sentences<textarea>Purpose text from the database</textarea></label>
+  <p class="src" style="margin-top:-4px">${DRAFT} Source: <span class="key">docs/ai/AI_xx_file.md:line</span></p>
+  <label>(c) Current approach: prompts used, number of calls, checks<textarea placeholder="Not written yet"></textarea></label>
+  <p class="src" style="margin-top:-4px">Not written yet: no source was found. Saving text here removes the label.</p></div></div>
+  <div class="panel"><h2>Versions</h2><table><tbody><tr><td><span class="key">v1</span></td><td class="note">draft from specs · sample date</td><td><span class="pill s-draft">Draft</span></td></tr></tbody></table></div></div>`;
+
+V.mapping=()=>head("AI rules › <a href=\"#index\">AI features</a>","Features and their prompts","Which prompt keys each feature uses, and which feature each prompt key belongs to. The prompt page shows the same link.")+
+ `<div class="grid2"><div class="panel scroll"><h2>Feature → prompts</h2><table><thead><tr><th>Feature</th><th>Prompt keys</th></tr></thead><tbody>`+
+ F.map(f=>`<tr><td>${f.n}</td><td>${keys(f)} <span class="key">retry_hints</span></td></tr>`).join("")+
+ `</tbody></table></div><div class="panel scroll"><h2>Prompt → feature</h2><table><thead><tr><th>Prompt key</th><th>Feature</th></tr></thead><tbody>`+
+ F.flatMap(f=>f.k.map(k=>`<tr><td><span class="key">${k}</span></td><td>${f.n}</td></tr>`)).join("")+
+ `<tr><td><span class="key">retry_hints</span></td><td>Every feature, as "Fix added after a rejected answer"</td></tr></tbody></table></div></div>`;
+
+function render(){
+  const id=(location.hash||"#index").slice(1);const cur=V[id]?id:"index";
+  document.getElementById("rail").innerHTML=`<div class="brand">WaveParticle<small>Content admin</small></div><div class="proto">Prototype · sample data · nothing is saved</div>`+
+   PAGES.map(p=>p.g?`<div class="navgroup">${p.g}</div>`:`<a href="${p.h}" class="${(p.ai||p.h==="#"+cur)?"on":""}">${p.t}<span class="k">${p.k}</span></a>`).join("");
+  document.getElementById("main").innerHTML=V[cur]();
+}
+window.addEventListener("hashchange",()=>{render();window.scrollTo(0,0)});
+render();
+</script>
