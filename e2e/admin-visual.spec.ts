@@ -186,6 +186,9 @@ const LAYOUT = [
   "white-space",
   "text-decoration-line",
   "box-shadow",
+  // #439: how a long word breaks (the app's body breaks anywhere; the prototype does not).
+  "overflow-wrap",
+  "word-break",
 ] as const;
 const STYLE = [...FONT, ...LAYOUT, ...BOX] as const;
 
@@ -936,7 +939,34 @@ const COMPONENTS: Component[] = [
  * width of a pill, chip, button or menu label; the height of a cell, panel, lede or text box) are
  * never measured: only the sizes named in a component's `box` are.
  */
+/**
+ * #439: the components whose live text keeps the prototype's word breaking (overflow-wrap normal):
+ * the cells of the self-sized AI features index table and what sits in them. Every other component
+ * is listed in the overflow-wrap exception below.
+ */
+const WORD_BREAK_NORMAL = new Set([
+  "AI features: table head cell",
+  "AI features: feature cell",
+  "AI features: feature name",
+  "AI features: purpose cell",
+  "AI features: status pill (Exploring)",
+  "AI features: status pill dot",
+  "AI features: version chip",
+]);
+
 const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] = [
+  ...COMPONENTS.filter((component) => !WORD_BREAK_NORMAL.has(component.name)).map((component) => ({
+    component: component.name,
+    properties: ["overflow-wrap"],
+    reason:
+      "Live text breaks a word longer than its line anywhere (the app's body, issue 100, and " +
+      ".admin-code for the prompt text and retry_hints blocks); the prototype computes normal. " +
+      "Real prompt and table text holds long unbroken tokens (JSON, keys, emails) and the " +
+      "prototype's sample text does not: with normal they run out of their box and the page " +
+      "clips them (#439 review round 3: a 200-character token was 1313 px wide in a 348 px " +
+      "box). word-break is still compared everywhere, and overflow-wrap on the index table " +
+      "cells (WORD_BREAK_NORMAL), which keep normal inside their scrolling panel.",
+  })),
   {
     component: "page (body / frame)",
     properties: [

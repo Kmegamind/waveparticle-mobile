@@ -3919,6 +3919,14 @@ button.focus-avatar:focus-visible {
   white-space: nowrap;
 }
 
+/* Issue 439: in this self-sized table a cell is never squeezed below its longest word (the app's
+   body breaks anywhere, which split titles such as "pause_predicament" mid-word). The table sits in
+   .admin-scroll, so a token longer than the panel scrolls instead of being clipped. */
+.admin-table-nowrap-head th,
+.admin-table-nowrap-head td {
+  overflow-wrap: normal;
+}
+
 .admin-legend {
   color: var(--adm-muted);
   display: flex;
