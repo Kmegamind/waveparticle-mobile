@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from "react";
 import { useAppText } from "@/lib/app-text/provider";
 import { formatClock } from "@/lib/clock";
+import { deviceStorage } from "@/lib/me/prefs";
+import { timeUpHaptic } from "@/lib/me/time-up-haptic";
 import type { StepCardsRequest, StepCardsResponse } from "@/lib/prototype/focus-cards";
 import type { LineResponse } from "@/lib/prototype/rest-lines";
 import {
@@ -15,6 +17,7 @@ import {
   leaveSession,
   needsCards,
   loadSession,
+  markTimeUp,
   parseSpeed,
   remainingFor,
   returnOnOpen,
@@ -25,6 +28,7 @@ import {
   startRest,
   syncSession,
   tick,
+  timeUpDue,
   undoDone,
   visibleCards,
   type FocusSession,
@@ -95,15 +99,6 @@ function initialSession(host: FocusHost): FocusSession {
   // A frozen clock restarts at once after a short absence; after Back to step or 5 minutes or
   // more away, the return pop-up (F-RET) opens first and the clock waits for Start.
   return returnOnOpen(synced, currentTime());
-}
-
-/** A light haptic where the device has one (#25 AC3). Nothing happens without it. */
-function timeUpHaptic() {
-  try {
-    navigator.vibrate?.(10);
-  } catch {
-    // No haptics on this device.
-  }
 }
 
 export function FocusBody({ host }: { host: FocusHost }) {
@@ -235,14 +230,16 @@ export function FocusBody({ host }: { host: FocusHost }) {
   const holding = isHolding(session, now);
   const showFailure = !session.steps[index]?.cards && failed[index] === true;
 
-  // One polite "Step time reached" when the clock reaches 00:00 (F2).
+  // One polite "Step time reached" and one haptic when the clock reaches 00:00 (F2, #115). The
+  // session records it, so a Pause and return or a reload does not repeat it; the ref covers the
+  // render before that record lands (and React's development double run of effects).
   useEffect(() => {
-    if (remaining === 0 && session.steps[index]?.clock && !timeReached.current.has(index)) {
-      timeReached.current.add(index);
-      setAnnouncement("Step time reached");
-      timeUpHaptic();
-    }
-  }, [index, remaining, session.steps]);
+    if (!timeUpDue(session, index, now) || timeReached.current.has(index)) return;
+    timeReached.current.add(index);
+    setSession((current) => markTimeUp(current, index));
+    setAnnouncement("Step time reached");
+    timeUpHaptic(typeof navigator === "undefined" ? undefined : navigator, deviceStorage());
+  }, [index, now, session]);
 
   const undoOpen = toastHeldMs !== null || canUndo(session, now);
 

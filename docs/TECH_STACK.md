@@ -37,7 +37,7 @@ TypeScript 7.0.2 is published as the latest version, but the lint tooling does n
 | Item | Why it matters |
 |---|---|
 | Whether Vercel builds on Node 26 | Decides the Node line |
-| Vibration, lock-screen notifications and background timers on iPhone and Android for a web app installed to the home screen | Decision S2: the 00:00 light vibration and any later notification depend on it |
+| Vibration, lock-screen notifications and background timers on iPhone and Android for a web app installed to the home screen | Verified: decision S2 was resolved on 2026-11-24 by the product owner's device test (#153). How a lock-screen notification is delivered is still open (#116). |
 | The clock must come from timestamps, not from page timers | Browsers pause timers in the background |
 | Which model provider and model the live generation uses, and its data-retention terms | Decision A7b; cost, speed and the privacy notice depend on it |
 | Latency and cost of the live generation (cards, stuck story, return pop-up, chat) | The step cards must arrive on time without waiting for the model; needs a spike |

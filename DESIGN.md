@@ -249,7 +249,7 @@ A full spacing scale (for example 4, 8, 12, 16, 24) is not specified; it is an o
 | Numerals | Change directly, no tween | Same |
 | Glow | None by default | None |
 
-The red line is reward mechanics, not motion as such. Nothing flashes. Beats are the companion's action, never a reward for the user. Sound and haptics are off by default.
+The red line is reward mechanics, not motion as such. Nothing flashes. Beats are the companion's action, never a reward for the user. Sound is off by default. Haptics are off by default except one light haptic at 00:00 (the time-up signal), which is on by default where the device supports it and can be turned off on Signals (DECISIONS F5, US-GM-10).
 
 ### 3.11 Migration from the old token names
 
@@ -438,7 +438,7 @@ The baseline is **WCAG 2.2 level AA**. Failing a rule below blocks release. How 
 - **Errors:** described in words; typed content kept; no picture puzzle on any sign-in or save step (3.3.1, 3.3.3, 3.3.7, 3.3.8).
 - **Images:** portraits have the companion's name as alt text; scene and props have empty alt text.
 - **Decorative items** (tape, hand-drawn marks, hand labels that duplicate visible text, props) are hidden from assistive technology.
-- **User preferences:** light and dark follow the system and can be overridden; Plain text (section 7); reduced motion; increased contrast; larger text; sound and haptics off by default. No transparency setting because there are no translucent materials. Glow and grain have no switch (decided).
+- **User preferences:** light and dark follow the system and can be overridden; Plain text (section 7); reduced motion; increased contrast; larger text; sound off by default; haptics off by default except the time-up haptic at 00:00, which is on by default (DECISIONS F5, US-GM-10). No transparency setting because there are no translucent materials. Glow and grain have no switch (decided).
 
 **Test checklist**
 

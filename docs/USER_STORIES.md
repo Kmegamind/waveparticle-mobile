@@ -1482,7 +1482,7 @@ These rules come from the product principles and from decisions. They are repeat
 - Given the device does not support haptics, then nothing happens and no error appears.
 - Given the setting is changed to off, then no haptic occurs.
 
-**Priority:** Should · **Area:** Platform · **Screens:** F2, SIG · **Depends on:** US-FOC-4, US-GM-10 · **Size:** S · **Status:** **Blocked by decision S2** (the engineering check on what iPhone and Android allow is not done; iOS web may have no vibration support). · **Source:** DEC S2, F5; NF6v7 sections 4 and 9
+**Priority:** Should · **Area:** Platform · **Screens:** F2, SIG · **Depends on:** US-FOC-4, US-GM-10 · **Size:** S · **Source:** DEC S2 (resolved 2026-11-24), F5; NF6v7 sections 4 and 9
 
 ### US-PLAT-4 · An opt-in lock-screen notification at time-up
 
@@ -1494,7 +1494,7 @@ These rules come from the product principles and from decisions. They are repeat
 - Given the time is up and the screen is locked, then exactly one notification appears with the Step name and "Your time on this Step is up", never the Goal, the Companion's name or any card text, and no count, streak or running timer.
 - Given a server sends it, then on an iPhone it works only if the web app is installed to the home screen.
 
-**Priority:** Should · **Area:** Platform · **Screens:** N1, SIG · **Depends on:** US-GM-10, US-PLAT-2 · **Size:** L · **Status:** **Blocked by decision S2**. · **Source:** DEC F5, S2; NF6v7 section 4; NF1v2 section 3
+**Priority:** Should · **Area:** Platform · **Screens:** N1, SIG · **Depends on:** US-GM-10, US-PLAT-2 · **Size:** L · **Status:** S2 is resolved (2026-11-24); waiting on an owner decision on how a notification reaches a locked screen (#116). · **Source:** DEC F5, S2; NF6v7 section 4; NF1v2 section 3
 
 ---
 
@@ -1654,5 +1654,5 @@ The goal of M1 is that a real tester can create an account, type a Goal, get a P
 - **Home refinements:** US-HOME-11
 - **Settings and search:** US-GM-6, US-MAP-11
 - **Safety and compliance:** US-SAF-4, US-SAF-5, US-SAF-6, US-SAF-7, US-SAF-8, US-ACC-4, US-ACC-5, US-ACC-6, US-AI-11 (A7b)
-- **Platform checks:** US-PLAT-3 (S2), US-PLAT-4 (S2)
+- **Platform checks:** US-PLAT-3 (S2, resolved 2026-11-24 by the owner's device test, #153), US-PLAT-4 (S2 resolved; waits on an owner decision on delivery, #116)
 - **Accessibility audit:** US-A11Y-2, US-A11Y-4

@@ -72,7 +72,9 @@ test("#257 AC7 and #19 AC6 back on the return pop-up opens Home and the Plan sta
   expect(session.returnPending).toBe("rest");
 });
 
-test("#257 AC8 and #25 AC3 one light haptic when the clock reaches 00:00", async ({ page }) => {
+test("#257 AC8, #25 AC3 and #115 AC1 one light haptic when the clock reaches 00:00", async ({
+  page,
+}) => {
   await page.addInitScript(() => {
     const calls: unknown[] = [];
     (window as unknown as { haptics: unknown[] }).haptics = calls;
@@ -89,6 +91,47 @@ test("#257 AC8 and #25 AC3 one light haptic when the clock reaches 00:00", async
   await page.waitForTimeout(1_500);
   const calls = await page.evaluate(() => (window as unknown as { haptics: unknown[] }).haptics);
   expect(calls).toHaveLength(1);
+});
+
+test("#115 AC3 no haptic at 00:00 when the time-up signal is off", async ({ page }) => {
+  await page.addInitScript(() => {
+    const calls: unknown[] = [];
+    (window as unknown as { haptics: unknown[] }).haptics = calls;
+    Object.defineProperty(navigator, "vibrate", {
+      configurable: true,
+      value: (pattern: unknown) => {
+        calls.push(pattern);
+        return true;
+      },
+    });
+    window.localStorage.setItem(
+      "waveparticle.prefs",
+      JSON.stringify({
+        appearance: "system",
+        plainText: false,
+        signals: { timeUp: false, newCard: false, lockScreen: false },
+      }),
+    );
+  });
+  await seed(page, [{ title: "Short", description: "", minutes: 3 }]);
+  await expect(page.getByRole("timer")).toHaveText("00:00", { timeout: 10_000 });
+  await page.waitForTimeout(1_500);
+  const calls = await page.evaluate(() => (window as unknown as { haptics: unknown[] }).haptics);
+  expect(calls).toHaveLength(0);
+});
+
+test("#115 AC2 without haptics nothing happens at 00:00 and no error appears", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "vibrate", { configurable: true, value: undefined });
+  });
+  await seed(page, [{ title: "Short", description: "", minutes: 3 }]);
+  await expect(page.getByRole("timer")).toHaveText("00:00", { timeout: 10_000 });
+  await page.waitForTimeout(1_500);
+  expect(errors).toEqual([]);
+  // The page carries on as usual: the polite announcement is still made.
+  await expect(page.getByText("Step time reached")).toBeAttached();
 });
 
 test("#257 AC9 and #18 AC1 the seam shows one mark per Step with the current one on", async ({
