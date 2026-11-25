@@ -83,13 +83,15 @@ const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
 };
 
 type Side = { page: string; selector: string };
-type Metric = "x" | "y" | "width" | "contentWidth";
+type Metric = "x" | "y" | "width" | "height" | "contentWidth";
 type Component = {
   name: string;
   prototype: Side & { page: keyof typeof PROTOTYPE_PAGES };
   live: Side & { page: keyof typeof LIVE_PAGES };
-  /** Computed style properties; STYLE when not given. */
+  /** Computed style properties; STYLE when not given. Exceptions go in EXCEPTIONS, not here. */
   properties?: readonly string[];
+  /** Read the styles of a pseudo-element instead (the pill's dot). */
+  pseudo?: "::before";
   /** Box measurements in px (rounded); "contentWidth" is the width inside padding and border. */
   box?: readonly Metric[];
 };
@@ -118,14 +120,30 @@ const BOX = [
   "border-bottom-left-radius",
   "background-color",
 ] as const;
-const STYLE = [...FONT, ...BOX] as const;
+const LAYOUT = [
+  ...SIDES.map((side) => `margin-${side}`),
+  "display",
+  "align-items",
+  "justify-content",
+  "flex-wrap",
+  "row-gap",
+  "column-gap",
+  "min-width",
+  "max-width",
+  "min-height",
+  "text-align",
+  "vertical-align",
+  "white-space",
+  "text-decoration-line",
+  "box-shadow",
+] as const;
+const STYLE = [...FONT, ...LAYOUT, ...BOX] as const;
 
 const COMPONENTS: Component[] = [
   {
     name: "page (body / frame)",
     prototype: { page: "characters", selector: "body" },
     live: { page: "companions", selector: ".admin-shell" },
-    properties: [...FONT, "background-color"],
   },
   {
     name: "rail",
@@ -135,98 +153,106 @@ const COMPONENTS: Component[] = [
     box: ["x", "y", "width"],
   },
   {
+    name: "brand block",
+    prototype: { page: "characters", selector: ".brand" },
+    live: { page: "companions", selector: ".admin-brand" },
+    properties: [
+      ...SIDES.map((side) => `margin-${side}`),
+      ...SIDES.map((side) => `padding-${side}`),
+    ],
+    box: ["x", "y", "width"],
+  },
+  {
     name: "brand",
     prototype: { page: "characters", selector: ".brand" },
     live: { page: "companions", selector: ".admin-brand-name" },
-    properties: FONT,
   },
   {
     name: "brand line (Content admin)",
     prototype: { page: "characters", selector: ".brand small" },
     live: { page: "companions", selector: ".admin-brand-sub" },
-    properties: FONT,
   },
   {
     name: "menu group heading",
     prototype: { page: "characters", selector: ".navgroup" },
     live: { page: "companions", selector: ".admin-group-heading" },
+    box: ["height"],
   },
   {
     name: "menu row",
     prototype: { page: "characters", selector: ".rail a:not(.on)" },
     live: { page: "companions", selector: ".admin-menu-link:not([aria-current])" },
+    box: ["width", "height"],
   },
   {
     name: "menu row, current",
     prototype: { page: "characters", selector: ".rail a.on" },
     live: { page: "companions", selector: ".admin-menu-link[aria-current]" },
+    box: ["width", "height"],
   },
   {
     name: "menu row, current on a detail page",
     prototype: { page: "prompts", selector: ".rail a.on" },
     live: { page: "prompt", selector: ".admin-menu-link[aria-current]" },
+    box: ["width", "height"],
   },
   {
     name: "menu page id",
     prototype: { page: "characters", selector: ".rail a:not(.on) .k" },
     live: { page: "companions", selector: ".admin-menu-link:not([aria-current]) .admin-page-id" },
-    properties: FONT,
   },
   {
     name: "content column",
     prototype: { page: "characters", selector: "main" },
     live: { page: "companions", selector: ".admin-main" },
-    properties: BOX,
-    box: ["x", "width", "contentWidth"],
+    box: ["x", "y", "width", "contentWidth"],
   },
   {
     name: "breadcrumb",
     prototype: { page: "characters", selector: ".crumb" },
     live: { page: "companions", selector: ".admin-crumb" },
+    box: ["height"],
   },
   {
     name: "header row",
     prototype: { page: "characters", selector: ".head" },
     live: { page: "companions", selector: ".admin-head" },
-    properties: [
-      ...STYLE,
-      "display",
-      "justify-content",
-      "align-items",
-      "flex-wrap",
-      "column-gap",
-      "row-gap",
-      "margin-bottom",
-    ],
-    box: ["x", "width"],
+    box: ["x", "y", "width"],
   },
   {
     name: "page title",
     prototype: { page: "characters", selector: ".head h1" },
     live: { page: "companions", selector: ".admin-head h1" },
-    properties: [...STYLE, "margin-top", "margin-bottom"],
+    box: ["height"],
   },
   {
     name: "lede",
     prototype: { page: "characters", selector: ".head .lede" },
     live: { page: "companions", selector: ".admin-head .admin-lede" },
-    properties: [...STYLE, "margin-bottom"],
   },
   {
     name: "header action row",
     prototype: { page: "uitext", selector: ".head .btns" },
     live: { page: "actions", selector: ".admin-head .admin-actions" },
-    properties: ["display", "flex-wrap", "column-gap", "row-gap"],
   },
   {
     name: "panel",
     prototype: { page: "characters", selector: ".panel" },
     live: { page: "companions", selector: ".admin-panel" },
+    box: ["x", "width"],
+  },
+  {
+    name: "table",
+    prototype: { page: "characters", selector: "table" },
+    live: { page: "companions", selector: ".admin-table" },
+    properties: [...STYLE, "border-collapse", "table-layout"],
+    box: ["width"],
   },
   {
     name: "table head cell",
     prototype: { page: "characters", selector: "th" },
     live: { page: "companions", selector: ".admin-table th" },
+    box: ["height"],
   },
   {
     name: "table cell",
@@ -237,35 +263,123 @@ const COMPONENTS: Component[] = [
     name: "id chip",
     prototype: { page: "characters", selector: "td .key" },
     live: { page: "companions", selector: ".admin-table .admin-chip" },
+    box: ["height"],
   },
   {
     name: "pill (Published)",
     prototype: { page: "characters", selector: ".pill.s-pub" },
     live: { page: "companions", selector: ".admin-pill-published" },
+    box: ["height"],
+  },
+  {
+    name: "pill dot",
+    prototype: { page: "characters", selector: ".pill.s-pub" },
+    live: { page: "companions", selector: ".admin-pill-published" },
+    pseudo: "::before",
+    properties: [...STYLE, "width", "height", "content"],
   },
   {
     name: "main button",
     prototype: { page: "uitext", selector: ".head button.primary" },
     live: { page: "actions", selector: ".admin-actions .button-filled" },
+    properties: [...STYLE, "cursor"],
+    box: ["height"],
   },
   {
     name: "secondary button",
     prototype: { page: "character", selector: ".head .btns button:not(.primary)" },
     live: { page: "actions", selector: ".admin-actions .button-gray" },
+    properties: [...STYLE, "cursor"],
+    box: ["height"],
   },
   {
     name: "small secondary button",
     prototype: { page: "history", selector: "td button.small" },
     live: { page: "appText", selector: ".admin-table .button-gray.button-small" },
+    properties: [...STYLE, "cursor"],
+    box: ["height"],
   },
   {
     name: "text field",
     prototype: { page: "regenerate", selector: "dialog.sheet textarea" },
     live: { page: "appText", selector: ".admin-table textarea.admin-text-field" },
-    // Not the weight: both fields take it from around them (font: inherit). The prototype's only
-    // field sits inside a `.form label` (600); live fields have their label beside them (400).
-    // A page pull request that builds a form like the prototype's compares the weight there.
-    properties: STYLE.filter((name) => name !== "font-weight"),
+    properties: [...STYLE, "resize"],
+  },
+];
+
+/**
+ * Every deliberate gap in the comparison, in one place, each with its reason. A property listed
+ * here is not compared for that component; nothing else is skipped. Content-dependent sizes (the
+ * width of a pill, chip, button or menu label; the height of a cell, panel, lede or text box) are
+ * never measured: only the sizes named in a component's `box` are.
+ */
+const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] = [
+  {
+    component: "page (body / frame)",
+    properties: [
+      ...SIDES.map((side) => `margin-${side}`),
+      ...SIDES.map((side) => `padding-${side}`),
+      "display",
+      "min-width",
+      "min-height",
+    ],
+    reason:
+      "Same result, built differently. The prototype's 8 px is the browser's default body margin " +
+      "around a .app grid; the admin has no body of its own, so .admin-shell is the grid and " +
+      "carries the 8 px as padding, with the 1024 px minimum (ADMIN-DESKTOP). The result is " +
+      "compared: rail x/y/width, content column x/y/width and header row x/y.",
+  },
+  {
+    component: "rail",
+    properties: ["display"],
+    reason:
+      "The live rail is a flex column so Sign out (not in the prototype) sits at its foot. Its " +
+      "parts (brand, group headings, rows) are compared one by one, with their heights and widths.",
+  },
+  {
+    component: "brand",
+    properties: [...SIDES.map((side) => `padding-${side}`), "min-width", "min-height"],
+    reason:
+      "The prototype's .brand is one block; live splits it into the brand link (.admin-brand, " +
+      "which carries the padding, compared as `brand block`) and the name inside it, a flex item " +
+      "whose minimum size computes to auto instead of 0px. No minimum binds on either side.",
+  },
+  {
+    component: "brand line (Content admin)",
+    properties: ["min-width", "min-height"],
+    reason: "A flex item on live (auto) and a block in the prototype (0px); no minimum binds.",
+  },
+  ...["main button", "secondary button", "small secondary button"].map((component) => ({
+    component,
+    properties: ["min-width", "min-height"],
+    reason:
+      "Live sets 0 to switch off the phone app's 44 px tap minimum inside the admin " +
+      "(ADMIN-DESKTOP); the prototype has none (auto). Neither draws a minimum: the button's " +
+      "height is compared as `box height`.",
+  })),
+  {
+    component: "small secondary button",
+    properties: ["display"],
+    reason:
+      "Both are inline-flex. The live one sits in a flex row (.admin-text-actions), where the " +
+      "browser computes a flex item's inline-flex as flex; the prototype's sits in a table cell.",
+  },
+  {
+    component: "text field",
+    properties: ["font-weight"],
+    reason:
+      "Both fields inherit the weight (font: inherit). The prototype's only field sits inside a " +
+      ".form label (600); live fields have their label beside them (400). The page pull request " +
+      "that builds a form like the prototype's compares the weight there.",
+  },
+  {
+    component: "Companion name link (not in COMPONENTS)",
+    properties: ["(whole component)"],
+    reason:
+      "Live Companions shows each name as an underlined link (.admin-cell-name); the prototype " +
+      "shows bold text in a clickable row, so there is nothing to compare it with. Links look the " +
+      "same on both sides (the prototype keeps the browser's underline too). The Companions page " +
+      "pull request (#430 T8) decides the row and adds it here.",
   },
 ];
 
@@ -281,8 +395,8 @@ async function read(page: Page, component: Component, side: "prototype" | "live"
   const element = page.locator(selector).first();
   await expect(element, `${component.name}: ${side} ${selector}`).toBeAttached();
   return element.evaluate(
-    (node, { properties, box }) => {
-      const computed = getComputedStyle(node);
+    (node, { properties, box, pseudo }) => {
+      const computed = getComputedStyle(node, pseudo);
       const values: Record<string, string | number> = {};
       for (const name of properties) {
         let value = computed.getPropertyValue(name);
@@ -308,6 +422,7 @@ async function read(page: Page, component: Component, side: "prototype" | "live"
         x: rect.left + window.scrollX,
         y: rect.top + window.scrollY,
         width: rect.width,
+        height: rect.height,
         contentWidth:
           rect.width -
           px("padding-left") -
@@ -318,7 +433,11 @@ async function read(page: Page, component: Component, side: "prototype" | "live"
       for (const metric of box) values[`box ${metric}`] = Math.round(measures[metric] * 100) / 100;
       return values;
     },
-    { properties: [...properties], box: [...(component.box ?? [])] },
+    {
+      properties: [...properties],
+      box: [...(component.box ?? [])],
+      pseudo: component.pseudo ?? null,
+    },
   );
 }
 
@@ -327,7 +446,11 @@ const PX = /^-?\d+(\.\d+)?px$/;
 /** Differences between two readings: over 1 px, any other value (colours included) not equal. */
 function differences(name: string, prototype: Reading, live: Reading): string[] {
   const found: string[] = [];
+  const skipped = new Set(
+    EXCEPTIONS.filter((item) => item.component === name).flatMap((item) => item.properties),
+  );
   for (const key of Object.keys(prototype)) {
+    if (skipped.has(key)) continue;
     const a = prototype[key];
     const b = live[key];
     if (typeof a === "number" && typeof b === "number") {
@@ -439,6 +562,27 @@ for (const width of WIDTHS) {
 
     const live = await collect(page, "live", (key) => openLive(page, key));
     const prototype = await collect(page, "prototype", (key) => openPrototype(page, origin, key));
+
+    // AC1 "renders them": the live admin has drawn its three fonts at the weights it uses.
+    await openLive(page, "companions");
+    // fonts.load() answers the faces that serve a font; none means the browser falls back.
+    const missing = await page.evaluate(async () => {
+      const wanted = [
+        '500 19px "Fraunces"',
+        '600 26px "Fraunces"',
+        '400 14px "IBM Plex Sans"',
+        '500 11px "IBM Plex Sans"',
+        '600 14px "IBM Plex Sans"',
+        '400 10.5px "IBM Plex Mono"',
+        '500 12px "IBM Plex Mono"',
+      ];
+      const loaded = await Promise.all(wanted.map((font) => document.fonts.load(font, "Aa")));
+      return wanted.filter(
+        (_font, index) =>
+          loaded[index].length === 0 || loaded[index].some((face) => face.status !== "loaded"),
+      );
+    });
+    expect(missing, "admin fonts that did not load").toEqual([]);
 
     const found = COMPONENTS.flatMap((component) =>
       differences(

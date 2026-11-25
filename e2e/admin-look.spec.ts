@@ -75,7 +75,9 @@ test("test_313_the_shell_has_the_prototype_computed_styles", async ({ page, cont
   const title = await style(page, ".admin-main h1", ["font-size", "font-weight", "font-family"]);
   expect(title).toMatchObject({ "font-size": "26px", "font-weight": "600" });
   // #435: the list is led by the self-hosted copy of Fraunces (next/font), then the prototype's.
-  expect(title["font-family"]).toMatch(/^"?Fraunces"?, .*"?Fraunces"?, Georgia, serif$/);
+  expect(title["font-family"]).toMatch(
+    /^"?Fraunces"?, "?Fraunces Fallback"?, "?Fraunces"?, Georgia, serif$/,
+  );
   expect(await style(page, ".admin-crumb", ["font-size", "color"])).toMatchObject({
     "font-size": "12px",
     color: "rgb(95, 107, 102)",

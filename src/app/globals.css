@@ -3739,6 +3739,8 @@ button.focus-avatar:focus-visible {
   font-size: var(--adm-button-size);
   font-weight: 400;
   gap: var(--adm-gap-tiny);
+  /* Issue 435: the prototype's buttons keep the start alignment (the app's buttons centre). */
+  justify-content: normal;
   line-height: var(--adm-leading);
   min-height: 0;
   padding: var(--adm-button-pad);
