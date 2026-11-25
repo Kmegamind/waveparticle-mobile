@@ -54,6 +54,16 @@
 //   POST /rest/v1/rpc/save_hotline_draft | publish_hotline | roll_back_hotline   admin only, as
 //                                     20261128000000; publish and roll back write a history row
 //   POST /__hotlines  { reset: true }  puts the list and its history rows back
+//   GET  /rest/v1/ai_features | ai_feature_status_history | ai_feature_test_runs   the AI feature
+//                                     pages (#436), seeded from docs/ai/AI_11_feature-pages.md
+//                                     (scripts/ai-features/seed.mjs), every status exploring, no
+//                                     history and no test runs: content editors read every row,
+//                                     other accounts none, as the policies
+//   POST /rest/v1/rpc/save_ai_feature_sections (editors) | set_ai_feature_status (admin only,
+//                                     with a history row), as 20261130000000
+//   POST /__ai_features { reset?: true, testRuns?: [...] }   puts the features back (and removes
+//                                     their history and test runs); testRuns adds rows as the
+//                                     SQL of scripts/ai-features/import-runs.mjs would
 //   POST /__fail_reads { token, tables: ["profiles"] }   reads of those tables answer 500 for that
 //                                     account until set again (#118, a failed profile read);
 //                                     "auth" makes GET /auth/v1/user answer 500
@@ -68,6 +78,7 @@ import { readPromptDirectory } from "../../scripts/prompts/prompt-files.mjs";
 import { readAppTextSeed } from "../../scripts/app-text/import.mjs";
 import { appDocument, readContentRows } from "../../scripts/content/content-files.mjs";
 import { readStoryDecks, storyCardRows } from "../../scripts/story-cards/import.mjs";
+import { readFeatureSeed, STATUSES } from "../../scripts/ai-features/seed.mjs";
 
 const promptDirectory = fileURLToPath(new URL("../../docs/ai/prompts", import.meta.url));
 const promptReaderToken = process.env.STUB_PROMPTS_READ_TOKEN ?? "";
@@ -310,6 +321,37 @@ function setPublishedHotline(country, version, action, user) {
   });
   return null;
 }
+
+/** The AI feature rows (#436) as after the migration and the seed script: every status exploring. */
+const seededAiFeatures = () =>
+  readFeatureSeed().map((row) => ({
+    ...row,
+    status: "exploring",
+    created_at: "2026-11-25T00:00:00Z",
+    sections_updated_at: null,
+    sections_updated_by: null,
+  }));
+let aiFeatures = seededAiFeatures();
+let aiFeatureHistory = [];
+let aiFeatureRuns = [];
+let nextAiFeatureId = 1;
+
+/** The item check of private.ai_feature_items_valid (20261130000000). */
+const validItems = (items) =>
+  Array.isArray(items) &&
+  items.every(
+    (item) =>
+      item !== null &&
+      typeof item === "object" &&
+      !Array.isArray(item) &&
+      Object.keys(item).every((key) => ["text", "source", "draft"].includes(key)) &&
+      typeof item.text === "string" &&
+      item.text.trim().length > 0 &&
+      item.text.length <= 2000 &&
+      "source" in item &&
+      (item.source === null || (typeof item.source === "string" && item.source.length <= 300)) &&
+      typeof item.draft === "boolean",
+  );
 
 /** While on, get_story_cards fails as when the database cannot answer (#300, FAIL-PREMADE). */
 let storyCardsFailReads = false;
@@ -846,6 +888,114 @@ createServer(async (request, response) => {
       dataset.user,
     );
     return problem ? json(response, 400, { code: "P0001", message: problem }) : json(response, 204);
+  }
+
+  if (path === "/__ai_features" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    if (body.reset === true) {
+      aiFeatures = seededAiFeatures();
+      aiFeatureHistory = [];
+      aiFeatureRuns = [];
+    }
+    for (const row of Array.isArray(body.testRuns) ? body.testRuns : []) {
+      if (!aiFeatures.some((feature) => feature.slug === row.feature_slug)) {
+        return json(response, 400, { code: "23503", message: `no AI feature ${row.feature_slug}` });
+      }
+      if (!["fake_model", "real"].includes(row.kind)) {
+        return json(response, 400, { code: "23514", message: "kind is fake_model or real" });
+      }
+      aiFeatureRuns.push({
+        id: nextAiFeatureId++,
+        prompt_version: null,
+        imported_at: new Date().toISOString(),
+        ...row,
+      });
+    }
+    return json(response, 200, { ok: true });
+  }
+
+  // #436: content editors read the three AI feature tables; other accounts get no rows.
+  const aiFeatureTable = path.match(
+    /^\/rest\/v1\/(ai_features|ai_feature_status_history|ai_feature_test_runs)$/,
+  );
+  if (aiFeatureTable && request.method === "GET") {
+    const user = dataset && !dataset.deleted ? dataset : null;
+    if (!user) return json(response, 401, { code: "42501", message: "permission denied" });
+    const editor = ["admin", "writer"].includes(user.contentRole);
+    const all = {
+      ai_features: aiFeatures,
+      ai_feature_status_history: aiFeatureHistory,
+      ai_feature_test_runs: aiFeatureRuns,
+    }[aiFeatureTable[1]];
+    const params = [...url.searchParams.entries()];
+    const found = (editor ? all : []).filter((row) => matches(row, params));
+    let rows = ordered(found, url.searchParams.get("order"));
+    const limit = url.searchParams.get("limit");
+    if (limit) rows = rows.slice(0, Number(limit));
+    return json(response, 200, rows);
+  }
+
+  if (path === "/rest/v1/rpc/save_ai_feature_sections" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    const editor = dataset && !dataset.deleted && ["admin", "writer"].includes(dataset.contentRole);
+    if (!editor) {
+      return json(response, 403, {
+        code: "42501",
+        message: "only a content editor may change an AI feature",
+      });
+    }
+    const feature = aiFeatures.find((row) => row.slug === body.target_feature);
+    if (!feature) {
+      return json(response, 400, {
+        code: "P0002",
+        message: `no AI feature ${body.target_feature}`,
+      });
+    }
+    const sections = [body.new_purpose, body.new_pass_questions, body.new_approach];
+    if (!sections.every(validItems)) {
+      return json(response, 400, { code: "23514", message: "violates check constraint" });
+    }
+    feature.purpose = body.new_purpose;
+    feature.pass_questions = body.new_pass_questions;
+    feature.approach = body.new_approach;
+    feature.sections_updated_at = new Date().toISOString();
+    feature.sections_updated_by = dataset.user.id;
+    return json(response, 204);
+  }
+
+  if (path === "/rest/v1/rpc/set_ai_feature_status" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    if (!dataset || dataset.deleted || dataset.contentRole !== "admin") {
+      return json(response, 403, {
+        code: "42501",
+        message: "only an admin may change the status of an AI feature",
+      });
+    }
+    if (!STATUSES.includes(body.new_status)) {
+      return json(response, 400, { code: "22023", message: `unknown status ${body.new_status}` });
+    }
+    const feature = aiFeatures.find((row) => row.slug === body.target_feature);
+    if (!feature) {
+      return json(response, 400, {
+        code: "P0002",
+        message: `no AI feature ${body.target_feature}`,
+      });
+    }
+    if (feature.status === body.new_status) {
+      return json(response, 400, { code: "P0001", message: `already ${body.new_status}` });
+    }
+    const note = typeof body.change_note === "string" ? body.change_note.trim() : "";
+    aiFeatureHistory.push({
+      id: nextAiFeatureId++,
+      feature_slug: feature.slug,
+      from_status: feature.status,
+      to_status: body.new_status,
+      note: note || null,
+      changed_by: dataset.user.id,
+      changed_at: new Date().toISOString(),
+    });
+    feature.status = body.new_status;
+    return json(response, 204);
   }
 
   if (path === "/rest/v1/app_text" && request.method === "GET") {
