@@ -102,7 +102,7 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | Goals and Me | Goals (In progress, On hold, Done, History), Goal detail, New goal, and Me (appearance, signals, about, data, history calendar, session record) |
 | Safety | Two-tier safety page and responses (crisis and everyday stress) |
 | Accounts | Sign-up or sign-in when the product is first opened, privacy notice, account deletion |
-| Content admin | A website at `/admin` for writers and the product manager to edit Companions, stories, cards, app text, prompts and checks; changes go live only on Publish (ADMIN) |
+| Content admin | A website at `/admin` for writers and the product manager to edit Companions, stories, cards, app text, prompts and checks; changes go live only on Publish (ADMIN). It has one page per AI feature, with its purpose, pass standard, approach, status, prompt text and test results (AI-PAGES, `docs/ai/AI_11_feature-pages.md`) |
 
 ### 3.3 Explicitly out of release 1
 
