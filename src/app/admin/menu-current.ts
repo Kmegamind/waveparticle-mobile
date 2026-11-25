@@ -4,6 +4,8 @@
  */
 export function menuCurrent(pathname: string, href: string): "page" | "true" | undefined {
   if (pathname === href) return "page";
+  // #440: the Status board is the admin's root; every other page sits under /admin/ too.
+  if (href === "/admin") return undefined;
   if (pathname.startsWith(`${href}/`)) return "true";
   return undefined;
 }

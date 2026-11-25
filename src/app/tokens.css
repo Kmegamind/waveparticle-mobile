@@ -334,6 +334,15 @@
   --adm-track-th: 0.06em;
   --adm-lede-measure: 68ch;
   --adm-field-min: 64px;
+  /* Issue 440: the Status board's count tiles, Companion panels and stage dots. */
+  --adm-tile-gap: 12px;
+  --adm-tile-pad: 12px 14px;
+  --adm-tile-label-size: 12px;
+  --adm-panel-row-after: 16px;
+  --adm-h2-after: 10px;
+  --adm-stage-pad: 4px 3px;
+  --adm-dot-size: 18px;
+  --adm-legend-gap: 14px;
 }
 
 @media (prefers-color-scheme: dark) {

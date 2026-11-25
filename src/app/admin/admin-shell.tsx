@@ -10,6 +10,10 @@ import { menuCurrent } from "./menu-current";
 // menu in groups with each page's id (decision NAMING), and Sign out. Later issues add pages here.
 const GROUPS = [
   {
+    heading: "Overview",
+    pages: [{ href: "/admin", id: "ADM-01", label: "Status board" }],
+  },
+  {
     heading: "Content",
     pages: [
       { href: "/admin/companions", id: "ADM-03", label: "Companions" },
