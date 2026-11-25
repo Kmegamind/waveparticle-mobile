@@ -22,7 +22,8 @@ export type LogFeature =
   | "model-gateway"
   | "goal-dialogue"
   | "safety"
-  | "cost-cap";
+  | "cost-cap"
+  | "research";
 
 export type LogLevel = "warn" | "error";
 

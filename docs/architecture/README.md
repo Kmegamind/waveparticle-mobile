@@ -37,6 +37,7 @@ One file per component in this folder. To add one, create `docs/architecture/<co
 - [Offline runs](offline-runs.md): #42 (US-AI-12, `docs/decisions/0030`): measures the pause message, the rest reply and the goal split with the real prompts before users see them, and compares the results with targets set before the…
 - [Prompts (ADM-08)](prompts-adm-08.md): Every gateway prompt and its check limits, read from `public.prompts` through `getActivePrompt` (#282, `docs/decisions/0015`).
 - [Publish history](publish-history.md): #289 (`docs/decisions/0018`): every publish and roll back writes one `public.publish_history` row in the same transaction (kind, key, version, action, editor, time).
+- [Research flag](research-flag.md): #114 (US-MAP-11, decisions M4, RESEARCH-FLAG, STUDY-SESSION; `docs/decisions/0031`): the internal research flag that turns the Companion and the Story off for one participant, set by the team with…
 - [Root layout](root-layout.md): Page shell, install metadata and the phone viewport.
 - [Server progress](server-progress.md): Story binding on a session, step positions, and shown lines.
 - [Shared session screens](shared-session-screens.md): The focus page (seam with Step label, paired Step marks and clock; cards; Done, Undo, Pause; return pop-up; system back acts as Pause, and opens Home on the pop-up; one light haptic at 00:00) and the…
@@ -111,6 +112,11 @@ Prompts (#282) live in `public.prompts` (`key`, `version`, `active`, `body`, `pa
 Editors read every version through `list_prompt_versions()`; `save_prompt_draft` adds an
 inactive version, and `publish_prompt` and `roll_back_prompt` (admin only, #308) make a version
 active through `activate_prompt` and write a `prompt` history row in the same transaction.
+
+Research conditions (#114) live in `public.research_conditions` (`user_id`, `condition` `no_story`,
+`assigned_at`), closed to the API like content roles; `research_condition()` answers for `auth.uid()`
+only. A session played in the study condition has `sessions.story_off_at` (when the Story went off;
+it keeps its Companion and story), so it never counts as story progress.
 
 A Plan is the Goal's Steps. Story progress for a Companion is the completed
 sessions grouped by `companion_id` and `story_id`. A restarted session does

@@ -108,6 +108,49 @@ where user_id = (select id from auth.users where email = 'person@example.com');
 The migration `supabase/migrations/20261116000000_content_roles.sql` must run first. No key with full
 database rights is needed: the app asks `public.content_role()` with the signed-in user's session.
 
+## Research flag
+The study condition of US-MAP-11 (#114, `docs/decisions/0031`, decision M4: no switch in the app)
+turns the Companion and the Story off for one participant: the focus page is a plain timer. The
+account must already exist (signed up once). To put it in the study condition, run one command in
+the Supabase SQL editor:
+
+```sql
+insert into public.research_conditions (user_id, condition)
+select id, 'no_story' from auth.users where email = 'person@example.com'
+on conflict (user_id) do update set condition = excluded.condition, assigned_at = now();
+```
+
+To take it out again:
+
+```sql
+delete from public.research_conditions
+where user_id = (select id from auth.users where email = 'person@example.com');
+```
+
+To list who is in it: `select u.email, r.condition, r.assigned_at from public.research_conditions r
+join auth.users u on u.id = r.user_id;`. Assign a participant before their first session. The flag
+takes effect the next time the participant opens the focus page: an open Story session keeps its
+Companion, story and done Steps and gets `sessions.story_off_at` (the time the Story went off; a
+Step whose `done_at` is earlier was done with the Story on). A focus page already open when the flag
+is set keeps asking for cards and gets the failure screen, and its Pause says there is no Step to rest
+from, until the page is opened again. Taking the flag out leaves an open Story-off session as it is;
+the next session plays the Story again from where it was frozen. For analysis:
+`select * from public.sessions where story_off_at is not null`.
+
+Order of the steps:
+
+1. Run `supabase/migrations/20261129000000_research_conditions.sql` (dev, then prod). Until it runs,
+   the app reads every account as not in the study and logs one warning per server process
+   (`research_function_missing`, feature `research`).
+2. Before the first participant is assigned, set the server-only setting `RESEARCH_STUDY_ACTIVE=1`
+   in Vercel (Production, and Preview if participants use a preview) and redeploy. With it, a
+   missing `research_condition()` (a dropped function or a stale schema cache) is a failed read: the
+   focus page does not open (it says "Could not open this Goal. Try again.") and the server logs
+   `research_read_failed` at level error. Any other failure to read the flag does the same with or
+   without the setting, so a participant never falls back to the Story. Never give it the
+   `NEXT_PUBLIC_` prefix.
+3. Assign participants with the command above.
+
 ## App text
 The app's own words (#288, `docs/decisions/0017`) live in `public.app_text`. Run the migration
 `supabase/migrations/20261117000000_app_text.sql` (after the content roles migration), then load the
@@ -317,7 +360,7 @@ be read, and S1 shows the directory and the labelled US line (S1-0).
 ## Server logs
 The server writes log lines only through `logEvent` in `src/lib/logging/server-log.ts` (#135). Each
 line is one JSON object: `level`, `feature` (`app_text`, `prompts`, `story-content`, `story-cards`,
-`model-gateway`, `goal-dialogue`, `safety`), `event`, `requestId`, and for model calls `durationMs`, `call`, `reason`,
+`model-gateway`, `goal-dialogue`, `safety`, `research`), `event`, `requestId`, and for model calls `durationMs`, `call`, `reason`,
 `attempts` and `rejectedRules`. Lines are written for failed reads, failed model calls, and model
 calls that take 5 seconds or longer. They never hold a Goal, a Step, a chat message, a card or any
 other text: user-text field names are refused and every value must be a short identifier. A unit

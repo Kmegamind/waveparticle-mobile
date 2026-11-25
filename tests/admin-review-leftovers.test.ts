@@ -58,9 +58,14 @@ describe("#311 leftovers: prompt versions made active outside the admin", () => 
   it("test_317_ac5_the_migration_is_numbered_after_every_other_one", () => {
     expect(file).toBeDefined();
     // Was "the latest migration"; #117 adds a later one (the safety alarm days) and #118 the
-    // hotlines. It must still run after every migration that existed when it was written.
+    // hotlines, #114 the research flag. It must still run after every migration that existed when
+    // it was written.
     const after = migrations.filter((name) => name > file!);
-    expect(after).toEqual(["20261127000000_safety_alarm_days.sql", "20261128000000_hotlines.sql"]);
+    expect(after).toEqual([
+      "20261127000000_safety_alarm_days.sql",
+      "20261128000000_hotlines.sql",
+      "20261129000000_research_conditions.sql",
+    ]);
   });
 
   it("test_317_ac5_a_trigger_fills_activated_at_only_when_empty", () => {

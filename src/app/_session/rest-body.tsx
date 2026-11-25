@@ -59,6 +59,11 @@ export type RestHost = {
     stepCount?: number;
   }) => Promise<RestReplyResponse>;
   onProgress?: (session: FocusSession) => void;
+  /**
+   * The study condition (#114, R1-STUDY): the header only. No message of his, no text box and no
+   * model call; Back to step restarts the clock at once on the focus page.
+   */
+  storyOff?: boolean;
 };
 
 function focusHref(paths: SessionPaths, session: FocusSession): string {
@@ -67,6 +72,7 @@ function focusHref(paths: SessionPaths, session: FocusSession): string {
 
 export function RestBody({ host }: { host: RestHost }) {
   const { paths, plan, stored, storageKey, loadPauseMessage, loadRestReply, onProgress } = host;
+  const storyOff = host.storyOff === true;
   const failureText = useAppText("ui.R1.fail.body");
   const retryLabel = useAppText("ui.R1.fail.retry");
   // Arriving here without an open rest is a Pause; an open rest is shown again as it was.
@@ -96,7 +102,8 @@ export function RestBody({ host }: { host: RestHost }) {
   // the stuck story, then his words about it. The earlier Pauses go along so the code picks a new
   // category and prop.
   useEffect(() => {
-    if (!rest || hasFirstRestMessage(session) || firstFailed || firstRequested.current) return;
+    if (storyOff || !rest || hasFirstRestMessage(session) || firstFailed) return;
+    if (firstRequested.current) return;
     firstRequested.current = true;
     const lastCard = visibleCards(session, session.current, currentTime()).at(-1);
     Promise.all([
@@ -119,7 +126,7 @@ export function RestBody({ host }: { host: RestHost }) {
         setFirstFailed(true);
       }
     });
-  }, [firstFailed, loadPauseMessage, plan.storyId, rest, session, stepTitle]);
+  }, [firstFailed, loadPauseMessage, plan.storyId, rest, session, stepTitle, storyOff]);
 
   useEffect(() => {
     if (!waiting) return;
@@ -211,74 +218,78 @@ export function RestBody({ host }: { host: RestHost }) {
         </Link>
       </header>
 
-      <section aria-label="Conversation" aria-live="polite" className="rest-log">
-        {isTestData ? <p className="try-caption">Test data: chapter 8 rest lines</p> : null}
-        {firstFailed ? (
-          <div className="rest-failure">
-            <p>{failureText}</p>
-            <button
-              className="button-filled button-small"
-              onClick={() => setFirstFailed(false)}
-              type="button"
-            >
-              {retryLabel}
-            </button>
-          </div>
-        ) : null}
-        {rest?.stuckStory && hasFirstRestMessage(session) ? (
-          <figure className="rest-slip" data-testid="his-stuck-story">
-            <span aria-hidden="true" className="focus-tape" />
-            <p>{rest.stuckStory}</p>
-          </figure>
-        ) : null}
-        {messages.map((message, position) =>
-          message.from === "him" ? (
-            <figure className="rest-slip" data-testid="his-message" key={position}>
-              <span aria-hidden="true" className="focus-tape" />
-              <p>{message.text}</p>
-            </figure>
-          ) : (
-            <p className="rest-yours" data-testid="your-message" key={position}>
-              {message.text}
-            </p>
-          ),
-        )}
-        {waiting && showDots ? (
-          <p aria-hidden="true" className="rest-dots">
-            <span />
-            <span />
-            <span />
-          </p>
-        ) : null}
-        {replyFailed && !waiting ? (
-          <div className="rest-failure">
-            <p>{failureText}</p>
-            <button className="button-filled button-small" onClick={onRetryReply} type="button">
-              {retryLabel}
-            </button>
-          </div>
-        ) : null}
-      </section>
+      {storyOff ? null : (
+        <>
+          <section aria-label="Conversation" aria-live="polite" className="rest-log">
+            {isTestData ? <p className="try-caption">Test data: chapter 8 rest lines</p> : null}
+            {firstFailed ? (
+              <div className="rest-failure">
+                <p>{failureText}</p>
+                <button
+                  className="button-filled button-small"
+                  onClick={() => setFirstFailed(false)}
+                  type="button"
+                >
+                  {retryLabel}
+                </button>
+              </div>
+            ) : null}
+            {rest?.stuckStory && hasFirstRestMessage(session) ? (
+              <figure className="rest-slip" data-testid="his-stuck-story">
+                <span aria-hidden="true" className="focus-tape" />
+                <p>{rest.stuckStory}</p>
+              </figure>
+            ) : null}
+            {messages.map((message, position) =>
+              message.from === "him" ? (
+                <figure className="rest-slip" data-testid="his-message" key={position}>
+                  <span aria-hidden="true" className="focus-tape" />
+                  <p>{message.text}</p>
+                </figure>
+              ) : (
+                <p className="rest-yours" data-testid="your-message" key={position}>
+                  {message.text}
+                </p>
+              ),
+            )}
+            {waiting && showDots ? (
+              <p aria-hidden="true" className="rest-dots">
+                <span />
+                <span />
+                <span />
+              </p>
+            ) : null}
+            {replyFailed && !waiting ? (
+              <div className="rest-failure">
+                <p>{failureText}</p>
+                <button className="button-filled button-small" onClick={onRetryReply} type="button">
+                  {retryLabel}
+                </button>
+              </div>
+            ) : null}
+          </section>
 
-      <form className="rest-composer" onSubmit={onSend}>
-        <label className="sr-only" htmlFor="rest-message">
-          Message
-        </label>
-        <input
-          autoComplete="off"
-          className="rest-field"
-          id="rest-message"
-          onChange={(event) => {
-            const draft = event.target.value;
-            setSession((current) => setRestDraft(current, draft));
-          }}
-          type="text"
-          value={rest?.draft ?? ""}
-        />
-        <button aria-label="Send" className="rest-send" disabled={waiting} type="submit">
-          <span aria-hidden="true">↑</span>
-        </button>
-      </form>
+          <form className="rest-composer" onSubmit={onSend}>
+            <label className="sr-only" htmlFor="rest-message">
+              Message
+            </label>
+            <input
+              autoComplete="off"
+              className="rest-field"
+              id="rest-message"
+              onChange={(event) => {
+                const draft = event.target.value;
+                setSession((current) => setRestDraft(current, draft));
+              }}
+              type="text"
+              value={rest?.draft ?? ""}
+            />
+            <button aria-label="Send" className="rest-send" disabled={waiting} type="submit">
+              <span aria-hidden="true">↑</span>
+            </button>
+          </form>
+        </>
+      )}
     </main>
   );
 }

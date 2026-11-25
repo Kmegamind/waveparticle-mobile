@@ -4,7 +4,7 @@
 // Each test signs in with its own access token, so parallel tests never share data:
 //   POST /__seed   { token, user: { id, email }, tables: { profiles, goals, steps, sessions,
 //                  session_steps, session_lines }, missingFunctions?: ["delete_my_account"],
-//                  contentRole?: "admin" | "writer" }
+//                  contentRole?: "admin" | "writer", researchCondition?: "no_story" | "fail" }
 //   GET  /__tables?token=…   the dataset after the app's writes, with auth_users ([] once deleted)
 //   GET  /health
 //   GET  /auth/v1/user                (Authorization: Bearer <token>)
@@ -34,6 +34,8 @@
 //        { reset: true } puts the rows, the versions and their history back
 //   POST /rest/v1/rpc/content_role        the seeded contentRole ("admin", "writer") or null, as
 //                                          public.content_role() for the caller (#287)
+//   POST /rest/v1/rpc/research_condition  the seeded researchCondition ("no_story") or null, as
+//                                          public.research_condition() for the caller (#114)
 //   POST /rest/v1/rpc/delete_my_account   mirrors the migration (#103): the caller's rows, then
 //                                          the auth user
 //   POST /auth/v1/logout              204, also to the browser (cross-origin headers, #287)
@@ -458,6 +460,7 @@ createServer(async (request, response) => {
       deleted: false,
       missingFunctions: body.missingFunctions ?? [],
       contentRole: body.contentRole ?? null,
+      researchCondition: body.researchCondition ?? null,
     });
     return json(response, 200, { ok: true });
   }
@@ -736,6 +739,15 @@ createServer(async (request, response) => {
       dataset.user,
     );
     return problem ? json(response, 400, { code: "P0001", message: problem }) : json(response, 204);
+  }
+
+  if (path === "/rest/v1/rpc/research_condition" && request.method === "POST") {
+    if (!dataset || dataset.deleted) return json(response, 401, { message: "JWT required" });
+    // "fail" stands for a read that fails (#114): the app must not open the focus page.
+    if (dataset.researchCondition === "fail") {
+      return json(response, 500, { code: "XX000", message: "stub failure" });
+    }
+    return json(response, 200, dataset.researchCondition ?? null);
   }
 
   if (path === "/rest/v1/rpc/content_role" && request.method === "POST") {

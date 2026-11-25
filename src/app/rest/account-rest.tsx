@@ -2,7 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import {
-  accountSessionKey,
+  planStorageKey,
   seedFocusSession,
   sessionPlanOf,
   type AccountFocusPlan,
@@ -30,7 +30,7 @@ export function AccountRest({ plan }: { plan: AccountFocusPlan | null }) {
 
 /** This device's session for this Plan, or the one rebuilt from the account. */
 function deviceSession(plan: AccountFocusPlan): FocusSession {
-  const device = loadSession(window.localStorage, accountSessionKey(plan.sessionId));
+  const device = loadSession(window.localStorage, planStorageKey(plan));
   const speed = device?.speed ?? 1;
   return syncSession(
     device ?? seedFocusSession(plan, speed, Date.now()),
@@ -49,12 +49,14 @@ function AccountRestSession({ plan }: { plan: AccountFocusPlan }) {
     <RestBody
       host={{
         paths: ACCOUNT_PATHS,
-        storageKey: accountSessionKey(plan.sessionId),
+        storageKey: planStorageKey(plan),
         plan: sessionPlanOf(plan),
         stored,
         loadPauseMessage: loadAccountPauseMessage,
         loadRestReply: loadAccountRestReply,
         onProgress: record,
+        // #114: R1-STUDY, the header only.
+        storyOff: plan.storyOff,
       }}
     />
   );

@@ -5,6 +5,8 @@ import { AppTextProvider } from "@/lib/app-text/provider";
 import { readProfile } from "@/lib/me/supabase-profile";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
+import { NoPlan } from "../_session/focus-body";
+import { ACCOUNT_PATHS } from "../_session/paths";
 import { AccountFocus } from "./account-focus";
 import { loadFocusPlan } from "./account-progress";
 
@@ -23,18 +25,25 @@ async function FocusContent({ searchParams }: Pick<PageProps<"/focus">, "searchP
   if (!user) redirect("/auth/sign-in");
   const { goal } = await searchParams;
   const [loaded, profile] = await Promise.all([
-    loadFocusPlan(client, user.id, typeof goal === "string" ? goal : null, true).catch(() => null),
+    // A failed read (the research flag included, #114) opens nothing: the page says so.
+    loadFocusPlan(client, user.id, typeof goal === "string" ? goal : null, true).catch(
+      () => "failed" as const,
+    ),
     // #71: the saved "Keep the clock running when I leave"; off if it cannot be read.
     readProfile(client, user.id).catch(() => ({ keepClockRunning: false })),
   ]);
   return (
     <AppTextProvider texts={await getAppTexts()}>
-      <AccountFocus
-        goalLine={loaded?.goalLine ?? ""}
-        keepClockRunning={profile.keepClockRunning}
-        plan={loaded?.plan ?? null}
-        who={loaded?.who ?? ""}
-      />
+      {loaded === "failed" ? (
+        <NoPlan paths={ACCOUNT_PATHS} text="Could not open this Goal. Try again." />
+      ) : (
+        <AccountFocus
+          goalLine={loaded?.goalLine ?? ""}
+          keepClockRunning={profile.keepClockRunning}
+          plan={loaded?.plan ?? null}
+          who={loaded?.who ?? ""}
+        />
+      )}
     </AppTextProvider>
   );
 }

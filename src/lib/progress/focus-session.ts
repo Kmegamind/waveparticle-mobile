@@ -20,9 +20,41 @@ import type {
 
 export const COMPANION_ID = "oppenheimer";
 
+/**
+ * True when the Story was turned off for this session (#114, STUDY-SESSION): `sessions.story_off_at`
+ * is set. The session keeps its Companion and story, but never counts as story progress (no Life
+ * Path row, no summary, no Story record).
+ */
+export function isStoryOff(session: Pick<ProgressSession, "storyOffAt">): boolean {
+  return typeof session.storyOffAt === "string" && session.storyOffAt.length > 0;
+}
+
+/**
+ * Whether the Story was on when this Step was done (#114): a Step done before `story_off_at` was
+ * done with the Story on. Null for a Step not done.
+ */
+export function doneWithStory(
+  session: Pick<ProgressSession, "storyOffAt">,
+  step: Pick<SessionStep, "doneAt">,
+): boolean | null {
+  if (step.doneAt === null) return null;
+  if (!isStoryOff(session)) return true;
+  return Date.parse(step.doneAt) < Date.parse(session.storyOffAt!);
+}
+
 /** The browser key of one account session's device state. */
 export function accountSessionKey(sessionId: string): string {
   return `waveparticle.session.${sessionId}`;
+}
+
+/**
+ * The device key of a Plan. A session turned Story-off (#114) gets its own key, so the device
+ * state of its Story run is not reused: it is rebuilt from the account with its done Steps.
+ */
+export function planStorageKey(plan: Pick<AccountFocusPlan, "sessionId" | "storyOff">): string {
+  return plan.storyOff
+    ? `${accountSessionKey(plan.sessionId)}.study`
+    : accountSessionKey(plan.sessionId);
 }
 
 export type AccountFocusPlan = {
@@ -35,9 +67,15 @@ export type AccountFocusPlan = {
   done: boolean[];
   /** Per Step: the cards already shown, opening card first; empty when none was shown. */
   cards: string[][];
+  /** The study condition (#114, F1-STUDY): no Companion, no cards, no return pop-up. */
+  storyOff: boolean;
 };
 
-type Deps = { storyId: string; newId: () => string };
+/**
+ * `storyOff` is the account's research flag (#114): a new session is opened with the Story off,
+ * and an open session that plays the Story is turned Story-off in place (STUDY-SESSION).
+ */
+type Deps = { storyId: string; newId: () => string; storyOff?: boolean; now?: string };
 
 const byPosition = <T extends { position: number }>(items: T[]) =>
   [...items].sort((left, right) => left.position - right.position);
@@ -67,12 +105,18 @@ function planOf(goal: ProgressGoal, session: ProgressSession): AccountFocusPlan 
       minutes: step.minutes,
     })),
     done: sessionSteps.map((step) => step.doneAt !== null),
+    // #114: with the Story off no card goes back to the device, even one shown before.
     cards: sessionSteps.map((sessionStep) =>
-      session.lines
-        .filter((line) => line.sessionStepId === sessionStep.id && CARD_KINDS.includes(line.kind))
-        .sort((left, right) => left.seq - right.seq)
-        .map((line) => line.text),
+      isStoryOff(session)
+        ? []
+        : session.lines
+            .filter(
+              (line) => line.sessionStepId === sessionStep.id && CARD_KINDS.includes(line.kind),
+            )
+            .sort((left, right) => left.seq - right.seq)
+            .map((line) => line.text),
     ),
+    storyOff: isStoryOff(session),
   };
 }
 
@@ -91,18 +135,31 @@ export function openFocusSession(
   const goal = progress.goals.find((item) => item.id === id);
   if (!goal || goal.steps.length === 0 || goal.status === "done") return null;
 
-  const open = progress.sessions.find(
+  const found = progress.sessions.find(
     (session) => session.goalId === goal.id && session.state === "open",
   );
-  if (open && matchesPlan(open, goal)) return { plan: planOf(goal, open), writes: [] };
+  const now = deps.now ?? new Date().toISOString();
+  if (found && matchesPlan(found, goal)) {
+    // The Story freezes (#114): the open Story session keeps its Companion, story, done Steps and
+    // shown cards, and is marked Story-off from now, so it never finishes a story or makes a Life
+    // Path row. A Story-off session stays so when the flag is removed.
+    if (deps.storyOff && !isStoryOff(found)) {
+      const frozen = { ...found, storyOffAt: now };
+      return { plan: planOf(goal, frozen), writes: [frozen] };
+    }
+    return { plan: planOf(goal, found), writes: [] };
+  }
 
   const writes: ProgressSession[] = [];
-  if (open) writes.push({ ...open, state: "restarted" });
+  // A session for an older Plan is restarted as it was: its Story state is not changed.
+  if (found) writes.push({ ...found, state: "restarted" });
   const session: ProgressSession = {
     id: deps.newId(),
     goalId: goal.id,
     companionId: COMPANION_ID,
     storyId: deps.storyId,
+    // #114: the new session follows the account's research flag as read now.
+    storyOffAt: deps.storyOff ? now : null,
     state: "open",
     backgroundCard: null,
     backgroundCardSource: null,
@@ -143,7 +200,7 @@ export function snapshotOf(sessionId: string, session: FocusSession): FocusSnaps
   session.steps.forEach((step, index) => {
     // A Step's cards count as shown once its clock started; the next Step's cards that were asked
     // for ahead of time are not shown yet.
-    if (!step.cards || !step.clock) return;
+    if (!step.cards || !step.clock || step.cards.none) return;
     lines.push({
       step: index,
       kind: index === 0 ? "background" : "story_card",
@@ -224,7 +281,8 @@ export function applyFocusSnapshot(
   });
 
   const lines: SessionLine[] = [...session.lines];
-  const incoming = Array.isArray(snapshot.lines) ? snapshot.lines : [];
+  // #114: a session with the Story off stores no new line of his, whatever the browser sends.
+  const incoming = Array.isArray(snapshot.lines) && !isStoryOff(session) ? snapshot.lines : [];
   for (const line of incoming) {
     if (!line || !RECORDED_KINDS.includes(line.kind)) continue;
     if (!isWholeNumber(line.step, 0, total - 1)) continue;

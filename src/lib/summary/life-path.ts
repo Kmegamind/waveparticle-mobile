@@ -1,6 +1,7 @@
 import type { StoryContent } from "@/lib/content/types";
 import type { AccountProgress } from "@/lib/progress/account-progress";
 import { storyById, storyIds, storyProfile } from "@/lib/prototype/story-inputs";
+import { isStoryOff } from "@/lib/progress/focus-session";
 import { COMPANION_ID } from "./finish-run";
 
 /**
@@ -55,7 +56,9 @@ export function lifePath(
   const firstLine = new Map<string, string>();
   const firstRun = new Map<string, string>();
   for (const session of progress.sessions) {
+    // #114: a session with the Story turned off never finishes a story.
     if (session.state !== "completed" || session.companionId !== COMPANION_ID) continue;
+    if (isStoryOff(session)) continue;
     if (firstLine.has(session.storyId)) continue;
     firstLine.set(session.storyId, session.closingLine ?? "");
     firstRun.set(session.storyId, session.id);

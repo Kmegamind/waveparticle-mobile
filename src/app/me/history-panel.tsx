@@ -53,7 +53,11 @@ function Rows({ sessions }: { sessions: HistoryEntry[] }) {
         <li key={entry.sessionId}>
           <Link className="me-row-link" href={`/me/history/${encodeURIComponent(entry.sessionId)}`}>
             <span className="me-row-goal">{entry.goalTitle}</span>
-            <span className="me-row-meta">{`${entry.companion} · ${entry.minutes} min`}</span>
+            <span className="me-row-meta">
+              {entry.companion
+                ? `${entry.companion} · ${entry.minutes} min`
+                : `${entry.minutes} min`}
+            </span>
           </Link>
         </li>
       ))}

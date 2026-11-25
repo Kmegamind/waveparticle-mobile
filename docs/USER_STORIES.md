@@ -405,7 +405,9 @@ These rules come from the product principles and from decisions. They are repeat
 - Given the flag, then the Story freezes and does not advance silently; the Goal and Step are still recorded in History without a Life Path row.
 - Given a user, then no setting anywhere in the interface lets them turn the Story off.
 
-**Priority:** Could · **Area:** Story map and Companions (NF2) · **Screens:** F1 · **Depends on:** US-FOC-1 · **Size:** M · **Source:** DEC M4 (decided 2026-11-05: no user-facing switch; an internal research flag only); SM07 section 3
+**Priority:** Could · **Area:** Story map and Companions (NF2) · **Screens:** F1 (F1-STUDY, R1-STUDY) · **Depends on:** US-FOC-1 · **Size:** M · **Source:** DEC M4 (decided 2026-11-05: no user-facing switch; an internal research flag only); SM07 section 3
+
+How (proposed for #114, DECISIONS RESEARCH-FLAG and STUDY-SESSION): the team sets the flag with one SQL command (`docs/deploy.md`); a session in the study condition carries the time the Story went off (`sessions.story_off_at`), so it never makes a Life Path row; Pause opens a plain paused page with no message and no text box, and coming back restarts the clock with no return pop-up.
 
 ---
 

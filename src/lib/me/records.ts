@@ -1,6 +1,7 @@
 import type { Companion, StoryContent } from "@/lib/content/types";
 import { isStoryId, storyById } from "@/lib/prototype/story-inputs";
 import type { AccountProgress } from "@/lib/progress/account-progress";
+import { isStoryOff } from "@/lib/progress/focus-session";
 import { doneSteps, historyEntry } from "./me-view";
 
 /**
@@ -32,8 +33,9 @@ export function sessionRecord(
     firstDoneAt: entry.firstDoneAt,
     minutes: entry.minutes,
     doneSteps: doneSteps(progress, session).map((step) => step.title),
+    // #114: a session played with the Story off has no chapter of his.
     storyRecordHref:
-      session.state === "completed"
+      session.state === "completed" && !isStoryOff(session)
         ? `/me/history/${encodeURIComponent(session.id)}/chapter`
         : null,
   };
@@ -54,7 +56,8 @@ export function storyRecord(
   sessionId: string,
 ): StoryRecordView | null {
   const session = progress.sessions.find((item) => item.id === sessionId);
-  if (!session || session.state !== "completed") return null;
+  // #114: a session with the Story turned off has no chapter of his.
+  if (!session || session.state !== "completed" || isStoryOff(session)) return null;
   const goal = progress.goals.find((item) => item.id === session.goalId);
   if (!goal || !isStoryId(content, session.storyId)) return null;
   const story = storyById(content, session.storyId);
