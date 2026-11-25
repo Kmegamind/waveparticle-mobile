@@ -150,6 +150,9 @@ const LAYOUT = [
   "white-space",
   "text-decoration-line",
   "box-shadow",
+  // #439: how a long word breaks (the app's body breaks anywhere; the prototype does not).
+  "overflow-wrap",
+  "word-break",
 ] as const;
 const STYLE = [...FONT, ...LAYOUT, ...BOX] as const;
 
