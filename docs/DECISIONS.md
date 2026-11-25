@@ -14,7 +14,7 @@ The specification documents were brought in line with the decisions up to 2026-1
 |---|---|---|---|
 | S1 | 2026-11-04 | Release 1 contains everything in the current wireframes: Home, companion browsing, Life Path, goal dialogue, Goals and Me, focus page with story cards, rest conversation, summary. | This is larger than the recommended vertical slice. The backlog is split into milestones so that a testable core loop comes first. |
 | S3, G5 | 2026-11-04 | The text a user writes (goal names, step names, step descriptions) is stored on our server, tied to the account (Supabase). | History works across devices. A clear privacy notice and account deletion are required. |
-| S2 | 2026-11-05 | **Partially resolved:** mobile web background timers are not reliable, so the clock must use timestamps. iOS/iPadOS Home Screen web apps support Web Push from 16.4 onward, but notifications still require permission, a service worker and an installed eligible web app. Vibration is optional and is not promised across phones. Physical iPhone and Android installation tests remain open. | Keep haptics and lock-screen notifications capability-gated and opt-in. Do not use a page timer for elapsed time. See [`docs/research/2026-11-05-phone-features.md`](research/2026-11-05-phone-features.md). |
+| S2 | 2026-11-05, 2026-11-24 | **Resolved 2026-11-24:** the product owner tested on a real iPhone and a real Android phone (issue #153): vibration, notifications and the clock behave as expected. The test covered what the phones can do; it does not decide how a time-up notification is delivered to a locked screen, which waits on the owner (#116). Earlier finding (2026-11-05): mobile web background timers are not reliable, so the clock must use timestamps. iOS/iPadOS Home Screen web apps support Web Push from 16.4 onward, but notifications still require permission, a service worker and an installed eligible web app. Vibration is optional and is not promised across phones. | Keep haptics and lock-screen notifications capability-gated and opt-in. Do not use a page timer for elapsed time. The 00:00 haptic (US-PLAT-3, #115) is built and follows the time-up signal setting. See [`docs/research/2026-11-05-phone-features.md`](research/2026-11-05-phone-features.md). |
 
 ### Focus page and rest conversation
 
@@ -24,7 +24,7 @@ The specification documents were brought in line with the decisions up to 2026-1
 | F2 | 2026-11-04 | Leaving the app freezes the step clock. A setting named "Keep the clock running when I leave" is available. | A phone call is not quitting. |
 | F3 | 2026-11-04 | Done never asks a question and is always allowed. Every Done can be undone. | A short Undo is shown after each Done, as it already is after the last step. |
 | F4 | 2026-11-04 | Enforcement stops at level 1: when the user returns, the character shows a card about his own situation. Level 2 (one opt-in notification) is not built or tested. Level 3 (blocking apps) is never built. | No push notifications in Release 1 for this purpose. |
-| F5 | earlier | Signals: a light vibration at 00:00, no vibration for a new card by default, nothing on the lock screen by default. | Whether iPhone web apps can do this depends on home-screen install; verify with engineering. |
+| F5 | earlier | Signals: a light vibration at 00:00, no vibration for a new card by default, nothing on the lock screen by default. | Checked: S2 was resolved on 2026-11-24 by the product owner's test on a real iPhone and a real Android phone (#153). How a lock-screen notification reaches a locked screen is still for the owner to decide (#116). |
 | X3 | 2026-11-05 | After Done, the next step opens on the same page. The clock shows the new target, holds for 1.2 seconds, then starts without a tap. Done is greyed out during the hold. | There is no landing page (screens L1 and L2 are removed). |
 
 ### Story cards
@@ -84,7 +84,7 @@ Yue replied "use the defaults" to the following list.
 | H7 | After a long absence with nothing in progress, Home shows no "welcome back". | |
 | D5 | ~~For the 24 stories without pre-written cards, a few generic fallback lines in the character's voice are shown if generation fails or is slow.~~ **Withdrawn 2026-11-12 (decision NO-BACKUP): no stored lines are ever shown to the user.** | |
 | A7 | The end-of-story line is written by the model. Data retention by the model provider depends on the provider's terms and is not decided now. | |
-| S2 | Engineering checks which phone features (vibration, lock-screen alerts, background timers) a web app can use on iPhone and Android. | Not a product decision. |
+| S2 | Engineering checks which phone features (vibration, lock-screen alerts, background timers) a web app can use on iPhone and Android. | Not a product decision. Resolved on 2026-11-24 by the product owner's device test (#153); see S2 under Decided. |
 
 ### Goal dialogue order (2026-11-05)
 
@@ -386,7 +386,6 @@ Yue answered the blocking questions of issue #118 (US-SAF-5) on 2026-11-23. The 
 
 | Id | Topic |
 |---|---|
-| S2 | The engineering result on phone features (see above) |
 | A7b | Provider data retention terms |
 | M5, M6 | Original test data (issues B15 and B17, "low preference" definition); may be skipped |
 | TIME-LIMIT | The length of the waiting time limit for live generation and the wording of the failure message (FAIL-SCREEN); set by testing |

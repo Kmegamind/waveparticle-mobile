@@ -1,4 +1,11 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import path from "node:path";
 import type { StoryContent } from "@/lib/content/types";
 import type { PromptRow, PromptSource } from "@/lib/prompts/repository";
@@ -29,6 +36,9 @@ import { unitGatewayFactory } from "./unit";
  */
 
 export const SUITES = ["split", "rest", "pause"] as const;
+
+/** What the launcher watch writes into the stop file when the launcher's pipe closes. */
+export const LAUNCHER_GONE = "launcher gone";
 export type Suite = (typeof SUITES)[number];
 
 export const PROMPT_SOURCE = "the seed files in docs/ai/prompts, not the database's active rows";
@@ -62,7 +72,22 @@ export type RunOptions = {
    * made, the units in flight finish, and the partial report is written.
    */
   stopFile?: string;
+  /**
+   * The launcher's process id (run.mjs). The runner is detached, so if the launcher goes away (a
+   * closed terminal, or killed) the run stops in the same way as for the stop file.
+   */
+  parentPid?: number;
 };
+
+/** True while a process with this id exists (signal 0 only checks; it sends nothing). */
+export function processAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
 
 export async function runOffline(options: RunOptions): Promise<RunResults> {
   const now = options.now ?? (() => new Date());
@@ -74,6 +99,7 @@ export async function runOffline(options: RunOptions): Promise<RunResults> {
     maxCalls: options.maxCalls,
     maxCostUsd: options.maxCostUsd,
     prices: options.prices,
+    beforeRequest: () => checkForStop(),
   });
   const prompts: PromptSource = async (key) =>
     options.promptRows.find((row) => row.key === key) ?? null;
@@ -109,10 +135,38 @@ export async function runOffline(options: RunOptions): Promise<RunResults> {
     "retry_hints",
   ]);
   let incomplete: string | null = null;
+  let haltReason =
+    "the run was interrupted (Ctrl-C, SIGTERM or a closed terminal); the units in flight finished";
+  const launcherGone =
+    "the launcher went away (a closed terminal or a killed process); the units in flight finished";
+  /**
+   * A stop asked for from outside: the stop file (Ctrl-C, or the launcher's pipe closing, see
+   * scripts/offline-runs/launcher-watch.mjs) or the launcher's pid gone. Checked before every
+   * request and every 200 ms. Synchronous and cheap.
+   */
+  function checkForStop(): void {
+    if (budget.stopped) return;
+    const { stopFile, parentPid } = options;
+    if (stopFile && existsSync(stopFile)) {
+      let why = "";
+      try {
+        why = readFileSync(stopFile, "utf8");
+      } catch {
+        return; // Gone again or not readable yet: check again next time.
+      }
+      // The writers rename a finished file into place, so an empty file is not a stop yet.
+      if (why === "") return;
+      if (why.startsWith(LAUNCHER_GONE)) haltReason = launcherGone;
+      budget.halt();
+    } else if (parentPid && !processAlive(parentPid)) {
+      haltReason = launcherGone;
+      budget.halt();
+    }
+  }
   let written = false;
   const finish = (): RunResults => {
     if (!incomplete && budget.stopped === "interrupted") {
-      incomplete = "the run was interrupted (Ctrl-C); the units in flight finished";
+      incomplete = haltReason;
     } else if (!incomplete && budget.stopped) {
       incomplete = `the budget stop ended the run (${budget.stopped} limit)`;
     }
@@ -142,21 +196,22 @@ export async function runOffline(options: RunOptions): Promise<RunResults> {
     }
     return results;
   };
-  const stopFile = options.stopFile;
-  const watch = stopFile
-    ? setInterval(() => {
-        if (existsSync(stopFile)) budget.halt();
-      }, 200)
-    : null;
+  const watch =
+    options.stopFile || options.parentPid ? setInterval(() => checkForStop(), 200) : null;
   try {
     if (has("split")) await runSplitSuite(options.inputs.split, { ...deps, env: options.env });
     if (has("rest")) await runRestSuite(options.inputs.rest, deps);
     if (has("pause")) await runPauseSuite(options.inputs.pause, deps);
   } catch (error) {
     incomplete = `the run stopped on an error (${error instanceof Error ? error.message : String(error)})`;
+    // No unit may start, and no model call may be made, after the error (the other workers of the
+    // suite would otherwise carry on after the report is written).
+    budget.halt();
     throw error;
   } finally {
     if (watch) clearInterval(watch);
+    // A launcher that was killed cannot remove the stop file its pipe watch wrote; the run does.
+    if (options.stopFile) rmSync(options.stopFile, { force: true });
     finish();
   }
   return finish();

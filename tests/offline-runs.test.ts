@@ -36,7 +36,7 @@ import { NO_SHEETS } from "@/lib/offline-runs/scoring";
 import { unitGatewayFactory } from "@/lib/offline-runs/unit";
 import { stubAnswer } from "../e2e/support/stub-cards.mjs";
 import { STUB_ENV, stubFetch } from "../scripts/offline-runs/stub-fetch.mjs";
-import { parseArgs } from "../scripts/offline-runs/run.mjs";
+import { parseArgs, STOP_SIGNALS } from "../scripts/offline-runs/run.mjs";
 import {
   childEnv,
   confirmationGiven,
@@ -570,8 +570,14 @@ describe("the runner settings", () => {
     expect(confirmationGiven({ OFFLINE_RUN_CONFIRM: "a".repeat(64) })).toBe(false);
     const issued = issueConfirmation(mkdtempSync(path.join(tmpdir(), "wp-confirm-")));
     expect(confirmationGiven(issued.settings)).toBe(true);
-    issued.cleanup();
+    // Reading the token consumes it (#420): the same token never opens a second run.
+    expect(existsSync(issued.settings.OFFLINE_RUN_CONFIRM_FILE)).toBe(false);
     expect(confirmationGiven(issued.settings)).toBe(false);
+    issued.cleanup();
+  });
+
+  it("test_420_n2_a_closed_terminal_asks_for_the_same_stop_as_ctrl_c", () => {
+    expect(STOP_SIGNALS).toEqual(["SIGINT", "SIGTERM", "SIGHUP"]);
   });
 
   it("test_us_ai_12_i1_a_real_run_with_the_env_set_but_no_flag_refuses", () => {

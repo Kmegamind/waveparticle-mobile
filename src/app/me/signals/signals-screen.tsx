@@ -7,7 +7,7 @@ import { setKeepClockRunningAction } from "../actions";
 /**
  * SIG (#74): four signals, each an On or Off paper tag as in prototype v4. The first three belong
  * to this device; "Keep the clock running when I leave" (#71) is saved on the account. The focus
- * page does not read them yet (left for later); this page builds and stores the choices.
+ * page reads the time-up signal at 00:00 (#115); the others are not read yet.
  */
 
 type Permission = NotificationPermission | "unsupported";

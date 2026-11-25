@@ -17,7 +17,9 @@
     "test": "vitest run && python3 -I tests/test_guardrails.py",
     "test:e2e": "playwright test",
     "check:supabase": "node --env-file=.env scripts/check-supabase.mjs",
-    "check:providers": "node --env-file=.env scripts/check-providers.mjs"
+    "check:providers": "node --env-file=.env scripts/check-providers.mjs",
+    "check:deploy": "node scripts/check-deploy.mjs",
+    "check:pr": "node scripts/check-pr.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

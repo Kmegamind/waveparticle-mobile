@@ -103,9 +103,18 @@ export function PrivacyNotice({ back }: { back: "me" | "sign-in" }) {
         find help, your text is thrown away, and it never reaches the model that writes his lines.
       </p>
       <p>
-        The safety check keeps nothing you wrote, not even a copy. Our server log notes only that
-        the help page was shown or that the check could not run, with the time and the screen, never
-        your words.
+        The safety check keeps nothing you wrote, not even a copy. When the help page is shown or
+        the check could not run, our server log notes the time, the screen and field, the result
+        (crisis, everyday stress or none), which part of the check decided, how long it took, the
+        language the check ran in and the versions of the check. Separately, it notes which button
+        you chose next on the help page, or that you left it. These notes never hold a copy, a part,
+        the length or a hash of your words, and no number in them ties the two notes together.
+      </p>
+      <p>
+        Like every request to our app, each of these is also recorded by Vercel, which serves the
+        app, with the page address, the time, your IP address and your browser (see &ldquo;Who
+        stores it&rdquo;). So someone who can read that log could match the notes to each other and
+        to your visit.
       </p>
       <p>
         Our app does not keep a separate record of what is sent to the language model or of what it

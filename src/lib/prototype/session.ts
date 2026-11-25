@@ -67,6 +67,12 @@ export type StepRun = {
    * not by the cards, which use foreground time only (FLOW 3.1, F2).
    */
   awayMs?: number;
+  /**
+   * The time-up signal (the polite announcement and the haptic) has been given for this Step
+   * (#115). Stored with the session, so a re-render, a Pause and return or a reload never give it
+   * a second time.
+   */
+  timeUpSignalled?: true;
 };
 
 export type FocusSession = {
@@ -221,6 +227,20 @@ export function setStepCards(
     if (session.paused) next = { ...next, clock: pauseClock(next.clock!, nowMs) };
   }
   return replaceStep(session, index, next);
+}
+
+/** Whether this Step's clock has reached 00:00 and its time-up signal has not been given (#115). */
+export function timeUpDue(session: FocusSession, index: number, nowMs: number): boolean {
+  const step = session.steps[index];
+  if (!step?.clock || step.timeUpSignalled) return false;
+  return remainingFor(session, index, nowMs) === 0;
+}
+
+/** Records that this Step's time-up signal has been given (#115). */
+export function markTimeUp(session: FocusSession, index: number): FocusSession {
+  const step = session.steps[index];
+  if (!step || step.timeUpSignalled) return session;
+  return replaceStep(session, index, { ...step, timeUpSignalled: true });
 }
 
 export function remainingFor(session: FocusSession, index: number, nowMs: number): number {

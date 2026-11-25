@@ -91,6 +91,7 @@ it("offline run", async () => {
     concurrency: numberSetting("OFFLINE_RUN_CONCURRENCY", 4),
     outDir,
     stopFile: env.OFFLINE_RUN_STOP_FILE,
+    parentPid: Number(env.OFFLINE_RUN_PARENT_PID) || undefined,
   });
   const { budget } = results;
   console.log(

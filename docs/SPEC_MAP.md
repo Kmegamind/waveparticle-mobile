@@ -178,7 +178,7 @@ Settled since this register was written, and removed from the table: the conflic
 | Real planning prompt | Yue will send the prompt for splitting a goal; until then the gateway's prompt is used | #40 |
 | Benchmark run | Approve the 2 US dollar cap after the output limit is raised and provider retention is reviewed | #130 |
 | Provider data retention (decision log item A7b) | What the model provider keeps | #105 |
-| Phone features result (decision log item S2) | Engineering result on vibration, notifications and the clock | #153 |
+| Phone features result (decision log item S2) | Resolved on 2026-11-24 by the product owner's device test on a real iPhone and Android phone | #153 (closed) |
 | Original test data (decision log items M5 and M6) | May be skipped | None |
 | Key moments review (KEY-REVIEW) | Yue and the content owner review the machine-derived key moments, stored unconfirmed | #45 |
 | Period names (PERIOD-NAMES) | The named periods of each Life Path, drafted for Yue to approve | Life Path |

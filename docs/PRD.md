@@ -481,7 +481,7 @@ Targets are hypotheses: time from opening the app to a started Step as short as 
 ### 8.3 Platform
 
 - The product is a progressive web app (PWA, a website installable to the home screen), built with Next.js, TypeScript, Supabase and Vercel. Mobile first; desktop later.
-- Haptics and push notifications on iPhone depend on installation to the home screen and on what iOS web supports. Unverified: whether iOS web has a vibration option at all, and whether a locked screen can deliver a time-up signal. The check is postponed (S2 open). Until it is answered the Signals settings are specified but not promised on every phone.
+- Haptics and push notifications on iPhone depend on installation to the home screen and on what iOS web supports. The product owner tested vibration, notifications and the clock on a real iPhone and Android phone on 2026-11-24 (S2 resolved, #153). That test covered what the phones can do; how a time-up notification reaches a locked screen is still for the owner to decide (#116). The Signals settings stay capability-gated: nothing happens on a device that lacks the feature.
 - The clock is computed from timestamps because a page's timers stop when the screen locks.
 - The interface is English only.
 
@@ -507,7 +507,6 @@ Every decided row in `docs/DECISIONS.md`, up to 2026-11-17, is applied in sectio
 
 | Id | Question | Note |
 |---|---|---|
-| S2 | Engineering result on which phone features (vibration, lock-screen alerts, background timers) a web app can use on iPhone and Android. | Signals are specified but not promised on every phone. |
 | A7b | Provider data retention terms. | Not decided. |
 | M5, M6 | Original test data (issues B15 and B17, the definition of "low preference"). | May be skipped. |
 | TIME-LIMIT | The length of the waiting time limit for live generation and the wording of the failure message (FAIL-SCREEN). | Set by testing. |

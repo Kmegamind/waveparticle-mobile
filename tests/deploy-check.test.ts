@@ -1,0 +1,412 @@
+import { spawn } from "node:child_process";
+import { readdirSync, readFileSync } from "node:fs";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import type { AddressInfo } from "node:net";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { afterEach, describe, expect, it } from "vitest";
+import {
+  TABLES_QUERY,
+  bypassAllowed,
+  checkSite,
+  compareTables,
+  expectedTables,
+  readLiveTables,
+} from "../scripts/deploy-check.mjs";
+
+const root = fileURLToPath(new URL("..", import.meta.url));
+const migrationsDir = path.join(root, "supabase/migrations");
+const migrationTexts = () =>
+  readdirSync(migrationsDir)
+    .filter((n) => n.endsWith(".sql"))
+    .sort()
+    .map((n) => readFileSync(path.join(migrationsDir, n), "utf8"));
+
+type FakeAnswer = { status: number; location?: string };
+function fakeFetch(answers: Record<string, FakeAnswer | "down">) {
+  const calls: { url: string; init?: RequestInit }[] = [];
+  const impl = async (url: string, init?: RequestInit) => {
+    calls.push({ url, init });
+    const answer = answers[new URL(url).pathname];
+    if (!answer || answer === "down") throw new TypeError("fetch failed");
+    const headers = new Headers(answer.location ? { location: answer.location } : {});
+    return new Response(null, { status: answer.status, headers });
+  };
+  return { impl: impl as unknown as typeof fetch, calls };
+}
+
+describe("#189 AC5: tables and row-level security expected from the migrations", () => {
+  it("reads create, drop, rename and row-level security statements in order", () => {
+    const tables = expectedTables([
+      "create table public.a (id int); -- create table public.commented (id int);\n",
+      "create table if not exists public.b (id int);\nalter table public.b enable row level security;",
+      'create table "public"."c" (id int); alter table only public.c enable row level security;',
+      "create table public.d (id int); drop table public.d;",
+      "create table public.e (id int); alter table public.e rename to f;",
+      "create table private.p (id int); create table auth.ignored (id int);",
+      "/* create table public.block (id int); */ alter table public.a disable row level security;",
+    ]);
+    expect(Object.fromEntries(tables)).toEqual({
+      "public.a": { rls: false },
+      "public.b": { rls: true },
+      "public.c": { rls: true },
+      "public.f": { rls: false },
+      "private.p": { rls: false },
+    });
+  });
+
+  it("finds every table of the repository's migrations, with row-level security on every public one", () => {
+    const tables = expectedTables(migrationTexts());
+    expect(tables.get("public.goals")).toEqual({ rls: true });
+    expect(tables.get("public.hotlines")).toEqual({ rls: true });
+    expect(tables.has("private.prompt_reader")).toBe(true);
+    for (const [name, { rls }] of tables)
+      if (name.startsWith("public.")) expect(rls, name).toBe(true);
+  });
+
+  it("says in one sentence which table is missing and where row-level security is off", () => {
+    const expected = expectedTables([
+      "create table public.goals (id int); alter table public.goals enable row level security;" +
+        "create table public.hotlines (id int); alter table public.hotlines enable row level security;" +
+        "create table private.reader (id int);",
+    ]);
+    const errors = compareTables(expected, [
+      { schema: "public", name: "goals", rls: false },
+      { schema: "private", name: "reader", rls: false },
+    ]);
+    expect(errors).toEqual([
+      expect.stringMatching(
+        /^Row-level security is off on public\.goals, but the migrations turn it on\./,
+      ),
+      expect.stringMatching(/^The database has no table public\.hotlines\./),
+    ]);
+    expect(
+      compareTables(expected, [
+        { schema: "public", name: "goals", rls: true },
+        { schema: "public", name: "hotlines", rls: true },
+        { schema: "private", name: "reader", rls: false },
+      ]),
+    ).toEqual([]);
+  });
+});
+
+describe("#189 AC5: website checks", () => {
+  const base = "http://127.0.0.1:9";
+
+  it("passes a signed-out home page that redirects to sign-in", async () => {
+    const { impl, calls } = fakeFetch({
+      "/": { status: 307, location: "/auth/sign-in" },
+      "/auth/sign-in": { status: 200 },
+    });
+    const results = await checkSite(base, impl);
+    expect(results.every((r) => r.ok)).toBe(true);
+    expect(calls[0].init).toMatchObject({ redirect: "manual" });
+  });
+
+  it("accepts an absolute redirect with a query string", async () => {
+    const { impl } = fakeFetch({
+      "/": { status: 302, location: `${base}/auth/sign-in?next=%2F` },
+      "/auth/sign-in": { status: 200 },
+    });
+    expect((await checkSite(base, impl)).every((r) => r.ok)).toBe(true);
+  });
+
+  it("fails with a plain sentence when the site answers 5xx", async () => {
+    const { impl } = fakeFetch({ "/": { status: 500 }, "/auth/sign-in": { status: 503 } });
+    const failed = (await checkSite(base, impl)).filter((r) => !r.ok).map((r) => r.message);
+    expect(failed).toEqual([
+      "The site returned 500 on the home page. Look at the Vercel runtime logs and check the environment variables (docs/HUMAN_STEPS.md).",
+      "The site returned 503 on the sign-in page. Look at the Vercel runtime logs and check the environment variables (docs/HUMAN_STEPS.md).",
+    ]);
+  });
+
+  it("fails when the signed-out home page does not redirect to sign-in", async () => {
+    const shown = fakeFetch({ "/": { status: 200 }, "/auth/sign-in": { status: 200 } });
+    expect((await checkSite(base, shown.impl)).find((r) => !r.ok)?.message).toMatch(
+      /should redirect to \/auth\/sign-in, but the site answered 200\./,
+    );
+    const elsewhere = fakeFetch({
+      "/": { status: 307, location: "/welcome" },
+      "/auth/sign-in": { status: 200 },
+    });
+    expect((await checkSite(base, elsewhere.impl)).find((r) => !r.ok)?.message).toMatch(
+      /answered 307 with a redirect to \/welcome/,
+    );
+  });
+
+  it("fails when the site cannot be reached", async () => {
+    const { impl } = fakeFetch({ "/": "down" });
+    const [result] = await checkSite(base, impl);
+    expect(result.ok).toBe(false);
+    expect(result.message).toMatch(/could not be reached/);
+  });
+});
+
+describe("#189 review I5: Vercel Deployment Protection", () => {
+  const base = "http://127.0.0.1:9";
+
+  it("says the deployment is protected, not insecure, on a 401 without the bypass", async () => {
+    const { impl } = fakeFetch({ "/": { status: 401 }, "/auth/sign-in": { status: 401 } });
+    const results = await checkSite(base, impl);
+    expect(results).toHaveLength(1);
+    expect(results[0].ok).toBe(false);
+    expect(results[0].message).toMatch(/behind Vercel Deployment Protection \(status 401\)/);
+    expect(results[0].message).toMatch(/not a security failure/);
+    expect(results[0].message).toMatch(/VERCEL_AUTOMATION_BYPASS_SECRET/);
+    expect(results[0].message).toMatch(/Deployment Protection → Protection Bypass for Automation/);
+    expect(results[0].message).not.toMatch(/may see pages they should not/);
+  });
+
+  it("treats a redirect to Vercel's sign-in as protection", async () => {
+    const { impl } = fakeFetch({
+      "/": { status: 307, location: "https://vercel.com/sso-api?url=x" },
+    });
+    const [result] = await checkSite(base, impl);
+    expect(result.message).toMatch(
+      /behind Vercel Deployment Protection \(a redirect to vercel\.com\)/,
+    );
+  });
+
+  it("sends the bypass secret as a header and then checks the app", async () => {
+    const { impl, calls } = fakeFetch({
+      "/": { status: 307, location: "/auth/sign-in" },
+      "/auth/sign-in": { status: 200 },
+    });
+    const preview = "https://waveparticle-mobile-git-x-team.vercel.app";
+    const results = await checkSite(preview, impl, { bypassSecret: "bypass-123" });
+    expect(results.every((r) => r.ok)).toBe(true);
+    for (const call of calls) {
+      expect(call.init?.headers).toEqual({ "x-vercel-protection-bypass": "bypass-123" });
+    }
+    expect(JSON.stringify(results)).not.toContain("bypass-123");
+  });
+
+  it("says the secret was refused when the protection still answers 401", async () => {
+    const { impl } = fakeFetch({ "/": { status: 401 } });
+    const [result] = await checkSite("https://waveparticle-mobile-abc-team.vercel.app", impl, {
+      bypassSecret: "bypass-123",
+    });
+    expect(result.message).toMatch(/was not accepted/);
+    expect(result.message).not.toContain("bypass-123");
+  });
+});
+
+describe("#189 re-review N3: the bypass secret goes only to Vercel or listed hosts", () => {
+  it.each([
+    ["https://waveparticle-mobile.vercel.app", [], true],
+    ["https://waveparticle-mobile-git-x-team.vercel.app/", [], true],
+    ["http://waveparticle-mobile.vercel.app", [], false],
+    ["https://vercel.app.evil.example", [], false],
+    // Someone else's Vercel deployments (re-review N5).
+    ["https://waveparticle-mob1le.vercel.app", [], false],
+    ["https://other-project.vercel.app", [], false],
+    ["https://xwaveparticle-mobile.vercel.app", [], false],
+    ["https://waveparticle-mobilex.vercel.app", [], false],
+    ["https://waveparticle-mobile.vercel.app.evil.example", [], false],
+    ["https://waveparticle-mobile-d9ukq3jzo-kmegaminds-projects.vercel.app", [], true],
+    ["https://waveparticle-mobile-git-chore-189-kmegaminds-projects.vercel.app", [], true],
+    ["https://other-project.vercel.app", ["other-project.vercel.app"], true],
+    ["https://evil-vercel.app", [], false],
+    ["https://app.example.org", [], false],
+    ["https://app.example.org", ["app.example.org"], true],
+    ["https://APP.example.org", [" app.example.org "], true],
+    ["http://app.example.org", ["app.example.org"], false],
+    ["http://127.0.0.1:4100", [], false],
+    ["http://127.0.0.1:4100", ["127.0.0.1"], true],
+    ["not a url", ["not a url"], false],
+  ])("%s with hosts %j: %s", (url, hosts, allowed) => {
+    expect(bypassAllowed(url, hosts)).toBe(allowed);
+  });
+
+  it("refuses with a plain sentence and sends nothing to another host", async () => {
+    const { impl, calls } = fakeFetch({ "/": { status: 200 } });
+    const results = await checkSite("https://waveparticle-mob1le.vercel.app", impl, {
+      bypassSecret: "bypass-123",
+    });
+    expect(calls).toHaveLength(0);
+    expect(results).toHaveLength(1);
+    expect(results[0].ok).toBe(false);
+    expect(results[0].message).toMatch(
+      /^VERCEL_AUTOMATION_BYPASS_SECRET is set, but waveparticle-mob1le\.vercel\.app is not one of this project's Vercel addresses .* so the secret was not sent/,
+    );
+    expect(results[0].message).not.toContain("bypass-123");
+  });
+});
+
+describe("#189 AC5: reading the live tables", () => {
+  it("posts the read query with the token and returns the rows", async () => {
+    let seen: { url: string; init: RequestInit } | null = null;
+    const rows = [{ schema: "public", name: "goals", rls: true }];
+    const impl = async (url: string, init: RequestInit) => {
+      seen = { url, init };
+      return Response.json(rows, { status: 201 });
+    };
+    expect(
+      await readLiveTables(
+        { ref: "abc", token: "t0k", apiUrl: "http://127.0.0.1:1/" },
+        impl as unknown as typeof fetch,
+      ),
+    ).toEqual(rows);
+    expect(seen!.url).toBe("http://127.0.0.1:1/v1/projects/abc/database/query");
+    expect(seen!.init.method).toBe("POST");
+    expect((seen!.init.headers as Record<string, string>).Authorization).toBe("Bearer t0k");
+    expect(JSON.parse(String(seen!.init.body))).toEqual({ query: TABLES_QUERY });
+    expect(TABLES_QUERY).toMatch(/^select /);
+  });
+
+  it("explains a refused token without printing it or the answer", async () => {
+    const impl = async () => new Response("secret body", { status: 401 });
+    const error = await readLiveTables(
+      { ref: "abc", token: "t0k" },
+      impl as unknown as typeof fetch,
+    ).catch((e: Error) => e);
+    expect((error as Error).message).toMatch(/refused SUPABASE_ACCESS_TOKEN \(status 401\)/);
+    expect((error as Error).message).not.toMatch(/t0k|secret body/);
+  });
+});
+
+describe("#189 AC5: npm run check:deploy against local stand-ins", () => {
+  const servers: Server[] = [];
+  afterEach(() => servers.splice(0).forEach((s) => s.close()));
+
+  async function serve(
+    handler: (req: IncomingMessage, res: ServerResponse) => void,
+  ): Promise<string> {
+    const server = createServer(handler);
+    servers.push(server);
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    return `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  }
+
+  function run(env: Record<string, string>, args: string[] = []) {
+    return new Promise<{ code: number | null; out: string }>((resolve) => {
+      const child = spawn(
+        process.execPath,
+        [path.join(root, "scripts/check-deploy.mjs"), ...args],
+        {
+          env: { PATH: process.env.PATH ?? "", ...env } as unknown as NodeJS.ProcessEnv,
+        },
+      );
+      let out = "";
+      child.stdout.on("data", (d) => (out += d));
+      child.stderr.on("data", (d) => (out += d));
+      child.on("close", (code) => resolve({ code, out }));
+    });
+  }
+
+  const site = (homeStatus = 307) =>
+    serve((req, res) => {
+      if (req.url === "/" && homeStatus === 307)
+        res.writeHead(307, { location: "/auth/sign-in" }).end();
+      else res.writeHead(req.url === "/" ? homeStatus : 200).end("page");
+    });
+
+  const allTables = () =>
+    [...expectedTables(migrationTexts())].map(([key, { rls }]) => {
+      const [schema, name] = key.split(".");
+      return { schema, name, rls };
+    });
+
+  const api = (rows: object[], seen: string[] = []) =>
+    serve((req, res) => {
+      seen.push(`${req.method} ${req.url} ${req.headers.authorization}`);
+      res.writeHead(201, { "content-type": "application/json" }).end(JSON.stringify(rows));
+    });
+
+  it("passes against a healthy local site and database", async () => {
+    const seen: string[] = [];
+    const [siteUrl, apiUrl] = [await site(), await api(allTables(), seen)];
+    const { code, out } = await run({
+      E2E_BASE_URL: siteUrl,
+      SUPABASE_PROJECT_REF: "localref",
+      SUPABASE_ACCESS_TOKEN: "local-token-123",
+      SUPABASE_API_URL: apiUrl,
+    });
+    expect(out).not.toMatch(/FAIL/);
+    expect(out).toMatch(/OK: the database has all \d+ tables/);
+    expect(out).not.toContain("local-token-123");
+    expect(seen).toEqual(["POST /v1/projects/localref/database/query Bearer local-token-123"]);
+    expect(code).toBe(0);
+  });
+
+  it("fails with one sentence per problem: 5xx and a missing table", async () => {
+    const rows = allTables().filter((r) => r.name !== "hotlines");
+    const [siteUrl, apiUrl] = [await site(500), await api(rows)];
+    const { code, out } = await run({
+      E2E_BASE_URL: siteUrl,
+      SUPABASE_PROJECT_REF: "localref",
+      SUPABASE_ACCESS_TOKEN: "local-token-123",
+      SUPABASE_API_URL: apiUrl,
+    });
+    expect(out).toContain("FAIL: The site returned 500 on the home page.");
+    expect(out).toContain("FAIL: The database has no table public.hotlines.");
+    expect(code).toBe(1);
+  });
+
+  it("fails when the database settings are missing, and passes the website alone with --skip-db", async () => {
+    const siteUrl = await site();
+    const missing = await run({ E2E_BASE_URL: siteUrl });
+    expect(missing.out).toMatch(
+      /FAIL: the database was not checked: SUPABASE_PROJECT_REF and SUPABASE_ACCESS_TOKEN are not set/,
+    );
+    expect(missing.code).toBe(1);
+    const skipped = await run({ E2E_BASE_URL: siteUrl }, ["--skip-db"]);
+    expect(skipped.out).toContain("SKIPPED: database (--skip-db).");
+    expect(skipped.code).toBe(0);
+  });
+
+  it("passes the bypass secret to a protected local site and never prints it", async () => {
+    const seen: (string | undefined)[] = [];
+    const siteUrl = await serve((req, res) => {
+      const header = req.headers["x-vercel-protection-bypass"];
+      seen.push(Array.isArray(header) ? header[0] : header);
+      if (header !== "bypass-xyz-789") res.writeHead(401).end("protected");
+      else if (req.url === "/") res.writeHead(307, { location: "/auth/sign-in" }).end();
+      else res.writeHead(200).end("page");
+    });
+    const blocked = await run({ E2E_BASE_URL: siteUrl }, ["--skip-db"]);
+    expect(blocked.out).toMatch(/FAIL: This deployment is behind Vercel Deployment Protection/);
+    expect(blocked.code).toBe(1);
+    const through = await run(
+      {
+        E2E_BASE_URL: siteUrl,
+        VERCEL_AUTOMATION_BYPASS_SECRET: "bypass-xyz-789",
+        VERCEL_BYPASS_HOSTS: "example.org, 127.0.0.1",
+      },
+      ["--skip-db"],
+    );
+    expect(through.out).toMatch(/OK: a signed-out visit to the home page goes to \/auth\/sign-in/);
+    expect(through.out).not.toContain("bypass-xyz-789");
+    expect(through.code).toBe(0);
+    expect(seen).toContain("bypass-xyz-789");
+  });
+
+  it("refuses to send the bypass secret to a host that is not listed", async () => {
+    let requests = 0;
+    const siteUrl = await serve((_req, res) => {
+      requests += 1;
+      res.writeHead(200).end("page");
+    });
+    const { code, out } = await run(
+      { E2E_BASE_URL: siteUrl, VERCEL_AUTOMATION_BYPASS_SECRET: "bypass-xyz-789" },
+      ["--skip-db"],
+    );
+    expect(out).toMatch(
+      /FAIL: VERCEL_AUTOMATION_BYPASS_SECRET is set, but 127\.0\.0\.1:\d+ is not one of this project's Vercel addresses/,
+    );
+    expect(out).not.toContain("bypass-xyz-789");
+    expect(requests).toBe(0);
+    expect(code).toBe(1);
+  });
+
+  it("fails without E2E_BASE_URL and never sends the token to a stand-in off this machine", async () => {
+    const { code, out } = await run({
+      SUPABASE_PROJECT_REF: "localref",
+      SUPABASE_ACCESS_TOKEN: "local-token-123",
+      SUPABASE_API_URL: "https://example.com",
+    });
+    expect(out).toMatch(/FAIL: E2E_BASE_URL is not set/);
+    expect(out).toMatch(/FAIL: SUPABASE_API_URL may only point at this machine/);
+    expect(code).toBe(1);
+  });
+});

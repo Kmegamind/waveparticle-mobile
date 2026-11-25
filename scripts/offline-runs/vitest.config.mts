@@ -11,6 +11,8 @@ export default defineConfig({
     testTimeout: 0,
     hookTimeout: 0,
     fileParallelism: false,
+    // Watches the launcher's pipe and asks for a stop when it closes (#420).
+    globalSetup: ["scripts/offline-runs/launcher-watch.mjs"],
     // The runner prints where it wrote the report.
     silent: false,
   },
