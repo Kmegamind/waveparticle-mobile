@@ -1,8 +1,8 @@
 // The confirmation of a real offline run (#42): only the literal command-line flag `--confirm`
 // opens the real model. Nothing in the environment or in .env can: the launcher removes every
-// inherited OFFLINE_RUN_* setting, and for `--confirm` it writes a one-time random token to a
-// private file that the runner must find and match. A value of OFFLINE_RUN_CONFIRM alone (from the
-// shell or .env) has no matching file and is refused.
+// inherited OFFLINE_RUN_* setting, and for `--confirm` it writes a random token to a private file
+// that the runner must find and match. Reading it deletes the file, so a token opens one run only.
+// A value of OFFLINE_RUN_CONFIRM alone (from the shell or .env) has no matching file and is refused.
 import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -39,7 +39,8 @@ export function issueConfirmation(directory = tmpdir()) {
 }
 
 /**
- * True only when the launcher issued a token for `--confirm` in this run.
+ * True only when the launcher issued a token for `--confirm` in this run. The file is deleted when
+ * it is read, whatever the answer, so the same token never opens a second run.
  * @param {Record<string, string | undefined>} env
  */
 export function confirmationGiven(env) {
@@ -51,5 +52,7 @@ export function confirmationGiven(env) {
     return readFileSync(file, "utf8") === token;
   } catch {
     return false;
+  } finally {
+    rmSync(file, { force: true });
   }
 }

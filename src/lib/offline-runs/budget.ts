@@ -61,6 +61,11 @@ export function createBudget(options: {
   maxCalls: number;
   maxCostUsd: number;
   prices: Prices;
+  /**
+   * Runs before every request, synchronously: the run uses it to look for a stop (Ctrl-C, a gone
+   * launcher), so a stop works even when no timer gets a turn, as with the stub (#420).
+   */
+  beforeRequest?: () => void;
 }): Budget {
   let calls = 0;
   let spent = 0;
@@ -74,6 +79,7 @@ export function createBudget(options: {
 
   return {
     reserve(promptChars) {
+      if (!stopped) options.beforeRequest?.();
       if (stopped) throw new BudgetStop(stopped);
       const worst = costUsd(tokensOf(promptChars), MAX_OUTPUT_TOKENS, options.prices);
       if (calls + 1 > options.maxCalls) stopped = "calls";
