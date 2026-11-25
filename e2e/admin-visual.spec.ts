@@ -528,6 +528,13 @@ async function openLive(page: Page, key: string) {
   const target = LIVE_PAGES[key];
   await page.goto(target.path);
   await expect(page.locator(".admin-main h1")).toBeVisible();
+  // Wait until React has hydrated the shell and the page has settled: an element added before
+  // that (the stand-in buttons) can be thrown away by a late render.
+  await page.waitForLoadState("networkidle");
+  await page.waitForFunction(() => {
+    const shell = document.querySelector(".admin-shell");
+    return !!shell && Object.keys(shell).some((key) => key.startsWith("__reactFiber"));
+  });
   await page.evaluate(() => document.fonts.ready);
   await target.prepare?.(page);
 }
