@@ -419,3 +419,223 @@ test.describe("#439 AI feature pages", () => {
     await plain.close();
   });
 });
+
+// #453 (part of #430 T6; AI-PAGE-EDIT): writers and admins edit (a) to (c); only an admin changes
+// the status, and every change is kept with who, when, from, to and the note. Each test changes
+// one feature of its own and puts that one feature back afterwards (a per-feature reset), so it
+// never undoes another test's feature. Nothing here retries: a save is checked once, after it.
+test.describe("#453 editing an AI feature", () => {
+  test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
+  const section = (page: Page, name: string | RegExp) => page.getByRole("region", { name });
+  const reset = (slug: string) => stub("/__ai_features", null, { reset: slug });
+  const save = (page: Page) =>
+    page.locator(".admin-head").getByRole("button", { name: "Save", exact: true }).click();
+
+  test("test_453_ac1_a_writer_edits_purpose_and_approach_and_the_page_shows_it_at_once", async ({
+    page,
+    context,
+  }) => {
+    try {
+      await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+      await page.goto("/admin/ai-features/return_popup");
+      await page.getByRole("link", { name: "Edit purpose and approach" }).click();
+      await expect(page).toHaveURL(/\/admin\/ai-features\/return_popup\/purpose$/);
+      await expect(
+        page.getByRole("heading", {
+          level: 1,
+          name: "Return pop-up (return_popup) · purpose and approach",
+        }),
+      ).toBeVisible();
+      const purposeGroup = page.getByRole("group", { name: /^\(a\) Purpose/ });
+      // Each line shows its draft mark and source before the save.
+      await expect(purposeGroup).toContainText("Draft - owner to edit");
+      const purpose = page.getByRole("textbox", { name: "Purpose, line 1" });
+      await expect(purpose).toBeEnabled();
+      await purpose.fill("Owner purpose for #453.");
+      // An emptied line is removed; an added line has no source.
+      await page.getByRole("textbox", { name: "Approach, line 3" }).fill("");
+      await page.getByRole("button", { name: "Add an approach line" }).click();
+      await page.getByRole("textbox", { name: "Approach, line 4" }).fill("Owner approach line.");
+      await save(page);
+      await expect(page.getByRole("status")).toHaveText("Saved.");
+      // The editor shows the save at once: no draft mark, the source kept.
+      await expect(purposeGroup).not.toContainText("Draft - owner to edit");
+      await expect(purposeGroup.locator(".admin-chip")).toHaveText("docs/PRD.md:258");
+      await expect(page.getByRole("region", { name: "Last save" })).toContainText(
+        "@example.invalid",
+      );
+
+      await page.goto("/admin/ai-features/return_popup");
+      const a = section(page, "(a) Purpose").getByRole("listitem");
+      await expect(a).toHaveCount(1);
+      await expect(a.first()).toContainText("Owner purpose for #453.");
+      await expect(a.first()).not.toContainText("Draft - owner to edit");
+      await expect(a.first().locator(".admin-chip")).toHaveText("docs/PRD.md:258");
+      const c = section(page, "(c) Current approach").getByRole("listitem");
+      await expect(c).toHaveCount(3);
+      await expect(c.first().locator(".admin-chip")).toHaveText("docs/DECISIONS.md:69");
+      await expect(section(page, "(c) Current approach")).not.toContainText(
+        "Draft - owner to edit",
+      );
+      await expect(c.last()).toHaveText("Owner approach line.");
+      // (b) was not on this editor: still drafts.
+      await expect(section(page, "(b) Pass standard")).toContainText("Draft - owner to edit");
+    } finally {
+      await reset("return_popup");
+    }
+  });
+
+  test("test_453_ac1_an_admin_reorders_removes_and_adds_pass_questions", async ({
+    page,
+    context,
+  }) => {
+    try {
+      await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+      await page.goto("/admin/ai-features/closing_line");
+      const texts = await section(page, "(b) Pass standard")
+        .locator(".admin-question-text")
+        .allInnerTexts();
+      expect(texts).toHaveLength(4);
+      await page.getByRole("link", { name: "Edit pass standard" }).click();
+      await expect(page).toHaveURL(/\/admin\/ai-features\/closing_line\/pass$/);
+      await expect(page.getByRole("textbox", { name: /^Question \d$/ })).toHaveCount(4);
+      await page.getByRole("button", { name: "Move question 2 up" }).click();
+      await page.getByRole("button", { name: "Remove question 4" }).click();
+      await page.getByRole("button", { name: "Add question" }).click();
+      await page.getByRole("textbox", { name: "Question 4" }).fill("A new question for #453?");
+      await save(page);
+      await expect(page.getByRole("status")).toHaveText("Saved.");
+
+      await page.goto("/admin/ai-features/closing_line");
+      const pass = section(page, "(b) Pass standard");
+      await expect(pass.locator(".admin-question-text")).toHaveText([
+        texts[1],
+        texts[0],
+        texts[2],
+        "A new question for #453?",
+      ]);
+      await expect(pass).not.toContainText("Draft - owner to edit");
+      // Sources stay with their questions; the new one has none.
+      await expect(pass.getByRole("listitem").nth(1).locator(".admin-chip")).toHaveText(
+        "docs/PRD.md:294",
+      );
+      await expect(pass.getByRole("listitem").nth(3).locator(".admin-chip")).toHaveCount(0);
+      // (a) and (c) were not on this editor: still drafts.
+      await expect(section(page, "(a) Purpose")).toContainText("Draft - owner to edit");
+    } finally {
+      await reset("closing_line");
+    }
+  });
+
+  test("test_453_ac1_a_save_over_a_newer_save_is_refused_and_nothing_is_lost", async ({
+    page,
+    context,
+  }) => {
+    try {
+      const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+      await page.goto("/admin/ai-features/plan_split/purpose");
+      await page.getByRole("textbox", { name: "Purpose, line 1" }).fill("My edit.");
+      // Someone else saves the same feature after this page loaded.
+      const other = await stub("/rest/v1/rpc/save_ai_feature_sections", writer.token, {
+        target_feature: "plan_split",
+        new_purpose: [{ text: "The other save.", source: null, draft: false }],
+        new_pass_questions: [],
+        new_approach: [],
+      });
+      expect(other.status).toBe(204);
+      await save(page);
+      await expect(page.getByRole("status")).toContainText("Someone saved this feature");
+      // The typed text stays in the box, and the other save stays in the database.
+      await expect(page.getByRole("textbox", { name: "Purpose, line 1" })).toHaveValue("My edit.");
+      const [feature] = (await (
+        await stub("/rest/v1/ai_features?slug=eq.plan_split", writer.token)
+      ).json()) as Feature[];
+      expect(feature.purpose).toEqual([{ text: "The other save.", source: null, draft: false }]);
+    } finally {
+      await reset("plan_split");
+    }
+  });
+
+  test("test_453_ac2_ac3_an_admin_changes_the_status_and_the_history_shows_who_when_from_to_and_note", async ({
+    page,
+    context,
+  }) => {
+    try {
+      const admin = await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+      await page.goto("/admin/ai-features/safety_classifier");
+      await section(page, /^\(d\) Status/)
+        .getByRole("link", { name: "history and change (admin only)" })
+        .click();
+      await expect(page).toHaveURL(/\/admin\/ai-features\/safety_classifier\/status$/);
+      const history = page.getByRole("table", { name: "Status history" });
+      await expect(history.locator("tbody tr")).toHaveCount(1);
+      await expect(history.locator("tbody tr").first()).toContainText("Setup");
+      const group = page.getByRole("group", { name: "Status" });
+      await expect(group.getByRole("button", { name: "Exploring" })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      await group.getByRole("button", { name: "Passed" }).click();
+      await page.getByRole("textbox", { name: "Reason (one line)" }).fill("Crisis set passes");
+      await page.getByRole("button", { name: "Save status" }).click();
+      await expect(page.getByRole("status")).toHaveText("Status saved.");
+
+      const rows = history.locator("tbody tr");
+      await expect(rows).toHaveCount(2);
+      const newest = rows.first();
+      await expect(newest).toContainText(`${admin.userId}@example.invalid`);
+      await expect(newest.locator(".admin-pill-ai-exploring")).toHaveText("Exploring");
+      await expect(newest.locator(".admin-pill-ai-passed")).toHaveText("Passed");
+      await expect(newest).toContainText("Crisis set passes");
+      await expect(newest.locator("time")).toHaveAttribute("datetime", /^\d{4}-\d\d-\d\dT/);
+      await expect(page.getByRole("heading", { name: /^Now/ }).locator(".admin-pill")).toHaveText(
+        "Passed",
+      );
+
+      await page.goto("/admin/ai-features/safety_classifier");
+      const status = section(page, /^\(d\) Status/);
+      await expect(status.locator(".admin-pill-ai-passed")).toHaveText("Passed");
+      await expect(status).toContainText(`Set to Passed by ${admin.userId}@example.invalid`);
+    } finally {
+      await reset("safety_classifier");
+    }
+  });
+
+  test("test_453_ac2_ac4_a_writer_sees_the_status_read_only_and_a_direct_request_fails", async ({
+    page,
+    context,
+  }) => {
+    try {
+      const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+      await page.goto("/admin/ai-features/step_cards/status");
+      await expect(page.locator(".admin-head .admin-lede")).toHaveText(
+        "You can see the status and its history. Only an admin can change it.",
+      );
+      const panel = page.getByRole("region", { name: /^Change status/ });
+      await expect(panel).toContainText("Admin only");
+      for (const name of ["Not started", "Exploring", "Passed", "Frozen", "Save status"]) {
+        await expect(panel.getByRole("button", { name, exact: true }), name).toBeDisabled();
+      }
+      await expect(panel.getByRole("textbox", { name: "Reason (one line)" })).toBeDisabled();
+
+      // The writer's own request, straight to the database function, is refused too.
+      const refused = await stub("/rest/v1/rpc/set_ai_feature_status", writer.token, {
+        target_feature: "step_cards",
+        new_status: "passed",
+        change_note: "By hand",
+      });
+      expect(refused.status).toBe(403);
+      expect(((await refused.json()) as { code: string }).code).toBe("42501");
+      await page.reload();
+      await expect(page.getByRole("heading", { name: /^Now/ }).locator(".admin-pill")).toHaveText(
+        "Exploring",
+      );
+      await expect(
+        page.getByRole("table", { name: "Status history" }).locator("tbody tr"),
+      ).toHaveCount(1);
+    } finally {
+      await reset("step_cards");
+    }
+  });
+});

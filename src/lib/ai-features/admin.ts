@@ -22,6 +22,9 @@ export type AiFeatureRow = {
   approach: AiFeatureItem[];
   status: AiFeatureStatus;
   created_at?: string;
+  /** The last save of (a) to (c) in the admin, and who made it (#453). */
+  sections_updated_at?: string | null;
+  sections_updated_by?: string | null;
 };
 
 /** One row of public.ai_feature_test_runs. */

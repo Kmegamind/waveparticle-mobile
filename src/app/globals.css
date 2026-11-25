@@ -4017,6 +4017,131 @@ button.focus-avatar:focus-visible {
   white-space: pre-wrap;
 }
 
+/* Issue 453: the AI feature editors, as the drawing's AIF-5 (status), AIF-6 (pass standard) and
+   AIF-7 (purpose and approach): a form column and a narrow side panel. */
+.admin-editor {
+  align-items: start;
+  display: grid;
+  gap: var(--adm-editor-gap);
+  grid-template-columns: minmax(0, 1fr) var(--adm-editor-side);
+}
+
+.admin-form {
+  display: grid;
+  gap: var(--adm-form-gap);
+}
+
+/* The drawing's .form label: a muted bold label over its field. */
+.admin-form label,
+.admin-field-group {
+  color: var(--adm-muted);
+  display: grid;
+  font-size: var(--adm-note-size);
+  font-weight: 600;
+  gap: var(--adm-label-gap);
+}
+
+/* A field inherits the label's weight, as in the drawing (font: inherit); its source line does not.
+   The source line sits 8 px under its box, as the drawing's (a 12 px form gap less 4 px). */
+.admin-field-line {
+  display: grid;
+  gap: var(--adm-gap-small);
+}
+
+/* A link drawn as a button (the drawing's a.btn) has no underline. */
+.admin-shell a:is(.button-gray, .button-filled) {
+  text-decoration: none;
+}
+
+/* A box grows with its text (from the drawing's 64 px), so a long line is never cut off. */
+.admin-field-line textarea {
+  field-sizing: content;
+}
+
+/* Who changed a status: a short word ("Setup") stays whole; a long email still breaks. */
+.admin-history-person {
+  overflow-wrap: break-word;
+}
+
+.admin-field-line .admin-src {
+  font-weight: 400;
+  margin: 0;
+}
+
+.admin-add {
+  margin-top: var(--adm-h2-after);
+}
+
+.admin-form .admin-add {
+  margin-top: 0;
+}
+
+.admin-qrow {
+  align-items: center;
+  border-bottom: 1px solid var(--adm-line);
+  display: grid;
+  gap: var(--adm-qrow-gap);
+  grid-template-columns: var(--adm-qrow-number) minmax(0, 1fr) auto;
+  padding: var(--adm-qrow-pad);
+}
+
+.admin-qrow-n {
+  color: var(--adm-muted);
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-code-size);
+}
+
+.admin-qrow-text input {
+  display: block;
+}
+
+.admin-qrow-text .admin-src {
+  margin: var(--adm-gap-tiny) 0 0;
+}
+
+.admin-seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-gap-tiny);
+}
+
+.admin-shell .admin-seg [aria-pressed="true"] {
+  background: var(--adm-accent-soft);
+  border-color: var(--adm-accent);
+  color: var(--adm-accent);
+  font-weight: 600;
+}
+
+/* A writer's view of the status editor: the whole panel is dimmed, as the drawing's .ro, and its
+   disabled controls are not dimmed a second time. */
+.admin-ro {
+  opacity: var(--adm-ro-opacity);
+}
+
+.admin-shell .admin-ro :disabled {
+  opacity: 1;
+}
+
+.admin-lock {
+  color: var(--adm-accent);
+  font-size: var(--adm-chip-size);
+  font-weight: 600;
+}
+
+.admin-toast {
+  background: var(--adm-ink);
+  border-radius: var(--adm-r-code);
+  bottom: var(--adm-toast-bottom);
+  color: var(--adm-bg);
+  font-size: var(--adm-toast-size);
+  left: 50%;
+  margin: 0;
+  padding: var(--adm-toast-pad);
+  position: fixed;
+  transform: translateX(-50%);
+  z-index: var(--adm-toast-layer);
+}
+
 /* Item panels (App text cells, cards, fields, prompts). */
 .admin-text-list {
   display: grid;

@@ -62,9 +62,13 @@
 //                                     other accounts none, as the policies
 //   POST /rest/v1/rpc/save_ai_feature_sections (editors) | set_ai_feature_status (admin only,
 //                                     with a history row), as 20261130000000
-//   POST /__ai_features { reset?: true, testRuns?: [...] }   puts the features back (and removes
-//                                     their history and test runs); testRuns adds rows as the
-//                                     SQL of scripts/ai-features/import-runs.mjs would
+//   POST /rest/v1/rpc/list_ai_feature_people (editors) { target_feature }   the email of each
+//                                     account in that feature's status history or as its last
+//                                     editor, as 20261201000000 (#453)
+//   POST /__ai_features { reset?: true | "<slug>", testRuns?: [...] }   puts every feature (true)
+//                                     or one feature back (and removes its history and test runs);
+//                                     testRuns adds rows as the SQL of
+//                                     scripts/ai-features/import-runs.mjs would
 //   POST /__fail_reads { token, tables: ["profiles"] }   reads of those tables answer 500 for that
 //                                     account until set again (#118, a failed profile read);
 //                                     "auth" makes GET /auth/v1/user answer 500
@@ -907,6 +911,14 @@ createServer(async (request, response) => {
       aiFeatures = seededAiFeatures();
       aiFeatureHistory = [];
       aiFeatureRuns = [];
+    } else if (typeof body.reset === "string") {
+      // #453: one feature only, so a test never undoes another test's feature.
+      const slug = body.reset;
+      const seeded = seededAiFeatures().find((row) => row.slug === slug);
+      if (!seeded) return json(response, 400, { code: "P0002", message: `no AI feature ${slug}` });
+      aiFeatures = aiFeatures.map((row) => (row.slug === slug ? seeded : row));
+      aiFeatureHistory = aiFeatureHistory.filter((row) => row.feature_slug !== slug);
+      aiFeatureRuns = aiFeatureRuns.filter((row) => row.feature_slug !== slug);
     }
     for (const row of Array.isArray(body.testRuns) ? body.testRuns : []) {
       if (!aiFeatures.some((feature) => feature.slug === row.feature_slug)) {
@@ -972,6 +984,36 @@ createServer(async (request, response) => {
     feature.sections_updated_at = new Date().toISOString();
     feature.sections_updated_by = dataset.user.id;
     return json(response, 204);
+  }
+
+  if (path === "/rest/v1/rpc/list_ai_feature_people" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    const editor = dataset && !dataset.deleted && ["admin", "writer"].includes(dataset.contentRole);
+    if (!editor) {
+      return json(response, 403, {
+        code: "42501",
+        message: "only a content editor may read who changed an AI feature",
+      });
+    }
+    const feature = aiFeatures.find((row) => row.slug === body.target_feature);
+    const ids = new Set(
+      [
+        ...aiFeatureHistory
+          .filter((row) => row.feature_slug === body.target_feature)
+          .map((row) => row.changed_by),
+        feature?.sections_updated_by,
+      ].filter(Boolean),
+    );
+    // auth.users: each seeded account that is not deleted, once.
+    const found = new Map();
+    for (const item of datasets.values()) {
+      if (!item.deleted && ids.has(item.user.id)) found.set(item.user.id, item.user.email ?? null);
+    }
+    return json(
+      response,
+      200,
+      [...found].map(([user_id, email]) => ({ user_id, email })),
+    );
   }
 
   if (path === "/rest/v1/rpc/set_ai_feature_status" && request.method === "POST") {
