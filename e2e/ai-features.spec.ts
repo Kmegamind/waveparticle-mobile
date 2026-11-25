@@ -401,22 +401,31 @@ test.describe("#439 AI feature pages", () => {
   test("test_439_a_long_unbroken_token_stays_inside_its_panel_at_1024_px", async ({
     page,
     context,
+    browser,
   }) => {
     // #439 review round 3: real prompt and table text holds long tokens with no space. None may
     // run out of its panel, where the page would clip it; a self-sized table scrolls instead.
     await page.setViewportSize({ width: 1024, height: 800 });
     const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
     const token = "x".repeat(200);
-    const [feature] = (await (
-      await stub("/rest/v1/ai_features?slug=eq.pause_message", writer.token)
-    ).json()) as (Feature & { pass_questions: unknown[]; approach: unknown[] })[];
-    const saved = await stub("/rest/v1/rpc/save_ai_feature_sections", writer.token, {
-      target_feature: "pause_message",
-      new_purpose: [{ text: token, source: null, draft: false }],
-      new_pass_questions: feature.pass_questions,
-      new_approach: feature.approach,
+    // The purpose holding the token is shown to this account only. Saved into the shared features,
+    // it would widen the index table that the visual gate (another project, run in parallel)
+    // compares with the drawing (#439 review round 4).
+    const purpose = await stub("/__ai_features", null, {
+      token: writer.token,
+      purpose: { pause_message: [{ text: token, source: null, draft: false }] },
     });
-    expect(saved.status).toBe(204);
+    expect(purpose.status).toBe(200);
+    const elsewhere = await browser.newContext();
+    try {
+      const other = await signIn(elsewhere, baseUrlOf(page), undefined, { contentRole: "admin" });
+      const [shared] = (await (
+        await stub("/rest/v1/ai_features?slug=eq.pause_message", other.token)
+      ).json()) as Feature[];
+      expect(shared.purpose.map((item) => item.text)).not.toContain(token);
+    } finally {
+      await elsewhere.close();
+    }
     const stuck = await activePrompt(writer.token, "stuck_story");
 
     const overflow = () =>
@@ -490,6 +499,7 @@ test.describe("#439 AI feature pages", () => {
       expect(scroll.scrollWidth).toBeGreaterThan(scroll.clientWidth);
     } finally {
       await stub("/__prompts", null, { reset: "stuck_story" });
+      await stub("/__ai_features", null, { token: writer.token, purpose: null });
     }
   });
 
@@ -516,14 +526,17 @@ test.describe("#439 AI feature pages", () => {
 });
 
 // #453 (part of #430 T6; AI-PAGE-EDIT): writers and admins edit (a) to (c); only an admin changes
-// the status, and every change is kept with who, when, from, to and the note. Each test changes
-// one feature of its own and puts that one feature back afterwards (a per-feature reset), so it
-// never undoes another test's feature. Nothing here retries: a save is checked once, after it.
+// the status, and every change is kept with who, when, from, to and the note. Each test's account
+// gets its own copy of the features and their history (POST /__ai_features { token, own }), so its
+// saves and status changes never touch a row another test or the visual gate reads; it gives the
+// copy up afterwards. Nothing here retries: a save is checked once, after it.
 test.describe("#453 editing an AI feature", () => {
   test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
 
   const section = (page: Page, name: string | RegExp) => page.getByRole("region", { name });
-  const reset = (slug: string) => stub("/__ai_features", null, { reset: slug });
+  const own = async (token: string) =>
+    expect((await stub("/__ai_features", null, { token, own: true })).status).toBe(200);
+  const disown = (token: string) => stub("/__ai_features", null, { token, own: null });
   const save = (page: Page) =>
     page.locator(".admin-head").getByRole("button", { name: "Save", exact: true }).click();
 
@@ -531,8 +544,9 @@ test.describe("#453 editing an AI feature", () => {
     page,
     context,
   }) => {
+    const account = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+    await own(account.token);
     try {
-      await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
       await page.goto("/admin/ai-features/return_popup");
       await page.getByRole("link", { name: "Edit purpose and approach" }).click();
       await expect(page).toHaveURL(/\/admin\/ai-features\/return_popup\/purpose$/);
@@ -577,7 +591,7 @@ test.describe("#453 editing an AI feature", () => {
       // (b) was not on this editor: still drafts.
       await expect(section(page, "(b) Pass standard")).toContainText("Draft - owner to edit");
     } finally {
-      await reset("return_popup");
+      await disown(account.token);
     }
   });
 
@@ -585,8 +599,9 @@ test.describe("#453 editing an AI feature", () => {
     page,
     context,
   }) => {
+    const account = await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+    await own(account.token);
     try {
-      await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
       await page.goto("/admin/ai-features/closing_line");
       const texts = await section(page, "(b) Pass standard")
         .locator(".admin-question-text")
@@ -619,7 +634,7 @@ test.describe("#453 editing an AI feature", () => {
       // (a) and (c) were not on this editor: still drafts.
       await expect(section(page, "(a) Purpose")).toContainText("Draft - owner to edit");
     } finally {
-      await reset("closing_line");
+      await disown(account.token);
     }
   });
 
@@ -627,8 +642,9 @@ test.describe("#453 editing an AI feature", () => {
     page,
     context,
   }) => {
+    const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+    await own(writer.token);
     try {
-      const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
       await page.goto("/admin/ai-features/plan_split/purpose");
       await page.getByRole("textbox", { name: "Purpose, line 1" }).fill("My edit.");
       // Someone else saves the same feature after this page loaded.
@@ -648,7 +664,7 @@ test.describe("#453 editing an AI feature", () => {
       ).json()) as Feature[];
       expect(feature.purpose).toEqual([{ text: "The other save.", source: null, draft: false }]);
     } finally {
-      await reset("plan_split");
+      await disown(writer.token);
     }
   });
 
@@ -656,8 +672,9 @@ test.describe("#453 editing an AI feature", () => {
     page,
     context,
   }) => {
+    const admin = await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+    await own(admin.token);
     try {
-      const admin = await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
       await page.goto("/admin/ai-features/safety_classifier");
       await section(page, /^\(d\) Status/)
         .getByRole("link", { name: "history and change (admin only)" })
@@ -693,7 +710,7 @@ test.describe("#453 editing an AI feature", () => {
       await expect(status.locator(".admin-pill-ai-passed")).toHaveText("Passed");
       await expect(status).toContainText(`Set to Passed by ${admin.userId}@example.invalid`);
     } finally {
-      await reset("safety_classifier");
+      await disown(admin.token);
     }
   });
 
@@ -701,8 +718,9 @@ test.describe("#453 editing an AI feature", () => {
     page,
     context,
   }) => {
+    const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+    await own(writer.token);
     try {
-      const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
       await page.goto("/admin/ai-features/step_cards/status");
       await expect(page.locator(".admin-head .admin-lede")).toHaveText(
         "You can see the status and its history. Only an admin can change it.",
@@ -730,7 +748,7 @@ test.describe("#453 editing an AI feature", () => {
         page.getByRole("table", { name: "Status history" }).locator("tbody tr"),
       ).toHaveCount(1);
     } finally {
-      await reset("step_cards");
+      await disown(writer.token);
     }
   });
 });
