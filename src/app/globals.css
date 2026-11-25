@@ -4066,8 +4066,9 @@ button.focus-avatar:focus-visible {
   field-sizing: content;
 }
 
-/* Who changed a status: a short word ("Setup") stays whole; a long email still breaks. */
-.admin-history-person {
+/* Who changed a status: a short word ("Setup") stays whole; a long email still breaks (this table
+   is not in a scrolling panel, so normal would let an email run out of its box). */
+.admin-table td.admin-history-person {
   overflow-wrap: break-word;
 }
 
