@@ -357,6 +357,47 @@ seed step. Running it a second time stops with an error and changes nothing. No 
 needed. Until it runs, Me still shows but choosing a country fails, ADM-14 says the list could not
 be read, and S1 shows the directory and the labelled US line (S1-0).
 
+## AI feature pages
+The tables behind the per-feature admin pages (#436, part of #430, `docs/decisions/0032`). No
+page reads them yet and no setting is needed. In order, on dev first, then on prod; each step
+has a dry run and an undo.
+
+1. **Migration.** Run `supabase/migrations/20261130000000_ai_features.sql` (`docs/HUMAN_STEPS.md`,
+   Apply migrations; `supabase db push --dry-run` lists it first). Without the CLI, a dry run in
+   the SQL editor is the file between `begin;` and `rollback;`. Check:
+   `select tablename, rowsecurity from pg_tables where tablename like 'ai_feature%';` lists three
+   tables, each `true`. Running it a second time stops with an error and changes nothing.
+2. **Seed.** `node scripts/ai-features/seed.mjs --dry-run`, paste the output into the SQL editor and
+   **Run**: it lists the 7 features it would insert and ends in `ROLLBACK`. Then
+   `node scripts/ai-features/seed.mjs`, paste and **Run**. Check:
+   `select slug, status from public.ai_features order by position;` returns 7 rows, all
+   `exploring`. It inserts only features that are missing, so running it again (or after the owner
+   edited a feature in the admin) changes nothing.
+3. **Test runs (optional).** After an offline run (`docs/architecture/offline-runs.md`):
+   `node scripts/ai-features/import-runs.mjs --dry-run offline-runs/<name>` (paste and **Run**: it
+   lists the rows and ends in `ROLLBACK`), then the same without `--dry-run`. A stub run is stored
+   as `fake_model`. Importing the same run again updates its rows.
+
+Undo, in the SQL editor (the newest step first):
+
+```sql
+-- Test runs of one run (step 3):
+delete from public.ai_feature_test_runs where run_at = '<the run''s startedAt>';
+-- The seed (step 2): removes the features, their status history and their test runs.
+delete from public.ai_features;
+-- The migration (step 1): removes everything it created.
+drop function if exists public.set_ai_feature_status(text, text, text);
+drop function if exists public.save_ai_feature_sections(text, jsonb, jsonb, jsonb);
+drop table if exists public.ai_feature_test_runs;
+drop table if exists public.ai_feature_status_history;
+drop table if exists public.ai_features;
+drop function if exists private.ai_feature_keys_valid(text[]);
+drop function if exists private.ai_feature_items_valid(jsonb);
+```
+
+After undoing the migration with the CLI in use, also run
+`supabase migration repair --status reverted 20261130000000` so `db push` applies it again later.
+
 ## Server logs
 The server writes log lines only through `logEvent` in `src/lib/logging/server-log.ts` (#135). Each
 line is one JSON object: `level`, `feature` (`app_text`, `prompts`, `story-content`, `story-cards`,
