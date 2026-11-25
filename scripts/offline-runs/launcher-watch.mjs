@@ -3,6 +3,7 @@
 // even killed and left unreaped by its own parent (a zombie, which still answers a pid check), the
 // operating system closes its end and this side reads end-of-file. The watch then writes the stop
 // file, and the runner stops after the units in flight and writes the partial report.
+import { rmSync } from "node:fs";
 import net from "node:net";
 import { writeStopFile } from "./stop-file.mjs";
 
@@ -37,5 +38,13 @@ export default function setup() {
   return () => {
     done = true;
     pipe.destroy();
+    // The run removes the stop file when it ends, but it can see the launcher's pid gone and finish
+    // before this process reads the pipe's end and writes the file (#428). This teardown runs in the
+    // same process as that write and after the run, so the file never outlives the runner.
+    try {
+      rmSync(stopFile, { force: true });
+    } catch {
+      // Nothing to remove.
+    }
   };
 }
