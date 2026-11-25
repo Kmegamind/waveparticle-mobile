@@ -4079,6 +4079,7 @@ input.admin-text-field {
 .admin-tile-label {
   color: var(--adm-muted);
   font-size: var(--adm-tile-label-size);
+  overflow-wrap: anywhere;
 }
 
 .admin-grid3 {
@@ -4095,7 +4096,8 @@ input.admin-text-field {
 .admin-note {
   color: var(--adm-muted);
   font-size: var(--adm-note-size);
-  margin: 1em 0;
+  margin: var(--adm-note-gap) 0;
+  overflow-wrap: anywhere;
 }
 
 .admin-board {

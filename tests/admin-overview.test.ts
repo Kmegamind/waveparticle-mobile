@@ -9,7 +9,7 @@ import {
   draftKeys,
   statusBoard,
   type BoardInput,
-} from "@/lib/admin/status-board";
+} from "@/lib/story-cards/status-board";
 import type { StoryCardRow, StoryListRow } from "@/lib/story-cards/admin";
 
 // #440: the Overview (/admin) is the prototype's Status board (ADM-01), built only from data the

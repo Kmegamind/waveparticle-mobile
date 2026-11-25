@@ -343,6 +343,8 @@
   --adm-stage-pad: 4px 3px;
   --adm-dot-size: 18px;
   --adm-legend-gap: 14px;
+  /* The browser margin of the prototype's .note paragraph: one line of its own size. */
+  --adm-note-gap: 1em;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { BOARD_STAGES, DOT_LEGEND, statusBoard, type DotState } from "@/lib/admin/status-board";
+import {
+  BOARD_STAGES,
+  DOT_LEGEND,
+  statusBoard,
+  type DotState,
+} from "@/lib/story-cards/status-board";
 import { readCompanionsData } from "@/lib/content-fields/reader";
 import { promptList, readPromptVersions } from "@/lib/prompts/admin";
 import { storyList } from "@/lib/story-cards/admin";
@@ -78,7 +83,9 @@ async function Board() {
     storyRows,
     cards: cardData.cards,
     promptDrafts:
-      prompts === null ? null : promptList(prompts).filter((row) => row.draftVersion !== null).length,
+      prompts === null
+        ? null
+        : promptList(prompts).filter((row) => row.draftVersion !== null).length,
   });
 
   return (

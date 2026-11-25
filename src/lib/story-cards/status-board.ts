@@ -1,6 +1,6 @@
 import { parseFieldKey } from "@/lib/content-fields/fields";
-import type { StoryCardRow, StoryListRow } from "@/lib/story-cards/admin";
-import { companionRow } from "./companion-rows";
+import type { StoryCardRow, StoryListRow } from "./admin";
+import { companionRow } from "@/lib/admin/companion-rows";
 
 // ADM-01 Status board (#440): the admin's first page, as the prototype's Status board, built only
 // from data the admin already has: the Companions and their stories, the story cards with their
@@ -63,8 +63,7 @@ export type BoardRow = {
   published: boolean;
 };
 
-const plural = (count: number, one: string, many: string) =>
-  `${count} ${count === 1 ? one : many}`;
+const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
 /** One story's row: its three stages from its cards, their checks and their publish state. */
 export function boardRow(story: StoryListRow, cards: StoryCardRow[]): BoardRow {
@@ -159,7 +158,8 @@ export function statusBoard(input: BoardInput): StatusBoard {
       label: `${input.companions.length === 1 ? "Companion" : "Companions"} (${live} shown to users, ${input.companions.length - live} not ready)`,
     },
     {
-      value: input.storyRows === null ? null : rows.filter((row) => row.dots[0].state === "done").length,
+      value:
+        input.storyRows === null ? null : rows.filter((row) => row.dots[0].state === "done").length,
       label: `stories with cards, of ${input.stories.length}`,
     },
     { value: drafts, label: "drafts waiting for an admin to publish" },
