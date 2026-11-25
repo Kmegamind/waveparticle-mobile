@@ -26,7 +26,13 @@ export type ClassifierFailureReason = "timeout" | "request" | "parse" | "prompt"
 
 export type ClassifierOutcome =
   | { ok: true; tier: ClassifierTier; promptVersion: number; latencyMs: number }
-  | { ok: false; reason: ClassifierFailureReason; latencyMs: number };
+  | {
+      ok: false;
+      reason: ClassifierFailureReason;
+      latencyMs: number;
+      /** The prompt version that was asked, when the prompt was read before the failure (#119). */
+      promptVersion?: number | null;
+    };
 
 export type ClassifierInput = { text: string; previous: readonly string[] };
 
@@ -107,9 +113,12 @@ export function createSafetyClassifier(options: {
       }, limit);
     });
 
+    // Known once the prompt is read, so a failure can still name the version (#119 review M6).
+    let readVersion: number | null = null;
     const work = (async () => {
       const row = await options.prompts("safety_classifier");
       if (!row) throw new PromptMissing();
+      readVersion = Number.isInteger(row.version) ? row.version : null;
       let prompt: string;
       try {
         prompt = safetyClassifierPrompt(row, input);
@@ -136,7 +145,7 @@ export function createSafetyClassifier(options: {
             : error instanceof Unreadable
               ? "parse"
               : "request";
-      return { ok: false, reason, latencyMs: now() - started };
+      return { ok: false, reason, latencyMs: now() - started, promptVersion: readVersion };
     } finally {
       clearTimeout(timer);
     }

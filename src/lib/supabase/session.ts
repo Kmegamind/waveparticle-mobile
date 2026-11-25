@@ -71,6 +71,9 @@ export function sessionErrorKind(error: unknown): { kind: "none" } | { kind: "er
 /** Paths a signed-out visitor may open. /try is public only while the test path is enabled (#208). */
 export function isPublicPath(pathname: string, prototypeEnabled: boolean): boolean {
   if (pathname.startsWith("/auth/")) return true;
+  // #119: S1's next-action request comes from signed-out pages too (/try, /safety); named here so
+  // moving it out of /safety/ cannot send it to the sign-in redirect unnoticed.
+  if (pathname === "/safety/next-action") return true;
   if (pathname === "/safety" || pathname.startsWith("/safety/")) return true;
   // The privacy notice (#102) and the Terms (#104) can be read before an account exists.
   if (pathname === "/privacy" || pathname === "/terms") return true;

@@ -1,6 +1,6 @@
 import type { ClassifierFailureReason, ClassifierTier, SafetyClassifier } from "./classifier";
 import { SAFETY_CONTEXT_MESSAGES } from "./classifier";
-import { checkSafetyText } from "./keyword";
+import { checkSafetyText, KEYWORD_LIST_VERSION } from "./keyword";
 
 /**
  * The server's input check on one free-text submission (US-SAF-1, US-SAF-4 #117).
@@ -50,21 +50,39 @@ export type SafetyContext = { position: SafetyPosition; previous?: readonly stri
 
 export type SafetyCheck = (text: string, context: SafetyContext) => Promise<SafetyGate>;
 
-export type SafetyEvent =
-  | {
-      kind: "classifier_failed";
-      reason: ClassifierFailureReason;
-      position: SafetyPosition;
-      latencyMs: number;
-    }
-  | {
-      kind: "crisis";
-      layer: SafetyLayer;
-      position: SafetyPosition;
-      latencyMs: number;
-      promptVersion: number | null;
-    };
+/**
+ * The language the check ran in, for the log (US-SAF-6, #119). The keyword list and the classifier
+ * prompt are English only (L1), so this is the check's own language, never one detected from the
+ * text. When a second language ships, it becomes the interface language the user chose.
+ */
+export const SAFETY_CHECK_LANGUAGE = "en";
 
+/**
+ * What every safety log line holds (US-SAF-6 AC1, #119), and nothing else: never the text, its
+ * length, a part of it or a hash of it (AC2). What the user did next on S1 is a separate line,
+ * `safety_next_action` (`next-action.ts`), because it happens later, in the browser.
+ */
+export type SafetyEventFields = {
+  /** When the check ended, ISO 8601 in UTC. */
+  at: string;
+  position: SafetyPosition;
+  tier: ClassifierTier;
+  lang: typeof SAFETY_CHECK_LANGUAGE;
+  keywordListVersion: number;
+  /**
+   * The version of the `safety_classifier` prompt that was asked: the one that answered, or, on a
+   * failure, the one read before it failed. Null when no prompt was read (a keyword crisis, no
+   * classifier, or the prompt itself could not be read).
+   */
+  classifierPromptVersion: number | null;
+  layer: SafetyLayer;
+  /** The whole check, keyword layer and classifier, in milliseconds. */
+  latencyMs: number;
+};
+
+export type SafetyEvent =
+  | (SafetyEventFields & { kind: "classifier_failed"; reason: ClassifierFailureReason })
+  | (SafetyEventFields & { kind: "crisis" });
 const RANK: Record<ClassifierTier, number> = { none: 0, stress: 1, crisis: 2 };
 
 /** The keyword layer's answer in the two tiers of the first demo (A5b). */
@@ -83,7 +101,10 @@ const gate = (tier: ClassifierTier, layer: SafetyLayer): SafetyGate => ({
 export function createSafetyCheck(options: {
   classifier: SafetyClassifier | null;
   onEvent?: (event: SafetyEvent) => void;
+  /** The clock, for tests. */
+  now?: () => Date;
 }): SafetyCheck {
+  const now = options.now ?? (() => new Date());
   const emit = (event: SafetyEvent) => {
     try {
       options.onEvent?.(event);
@@ -94,9 +115,28 @@ export function createSafetyCheck(options: {
 
   return async (text, context) => {
     const { position } = context;
+    const started = now().getTime();
+    // Built only from identifiers, numbers and the clock: the text never goes in (AC2).
+    const fields = (
+      tier: ClassifierTier,
+      layer: SafetyLayer,
+      classifierPromptVersion: number | null,
+    ): SafetyEventFields => {
+      const ended = now();
+      return {
+        at: ended.toISOString(),
+        position,
+        tier,
+        lang: SAFETY_CHECK_LANGUAGE,
+        keywordListVersion: KEYWORD_LIST_VERSION,
+        classifierPromptVersion,
+        layer,
+        latencyMs: Math.max(0, ended.getTime() - started),
+      };
+    };
     const keyword = keywordTier(text);
     if (keyword === "crisis") {
-      emit({ kind: "crisis", layer: "keyword", position, latencyMs: 0, promptVersion: null });
+      emit({ kind: "crisis", ...fields("crisis", "keyword", null) });
       return gate("crisis", "keyword");
     }
     if (!options.classifier) return gate(keyword, "keyword_alone");
@@ -116,8 +156,7 @@ export function createSafetyCheck(options: {
       emit({
         kind: "classifier_failed",
         reason: outcome.reason,
-        position,
-        latencyMs: outcome.latencyMs,
+        ...fields(keyword, "keyword_alone", outcome.promptVersion ?? null),
       });
       return { ...gate(keyword, "keyword_alone"), classifierFailed: true };
     }
@@ -126,13 +165,7 @@ export function createSafetyCheck(options: {
     const tier = classifierWins ? outcome.tier : keyword;
     const layer: SafetyLayer = classifierWins ? "classifier" : "keyword";
     if (tier === "crisis") {
-      emit({
-        kind: "crisis",
-        layer,
-        position,
-        latencyMs: outcome.latencyMs,
-        promptVersion: outcome.promptVersion,
-      });
+      emit({ kind: "crisis", ...fields(tier, layer, outcome.promptVersion) });
     }
     return gate(tier, layer);
   };
