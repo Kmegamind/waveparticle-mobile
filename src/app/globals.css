@@ -3533,10 +3533,6 @@ button.focus-avatar:focus-visible {
      margins. */
   min-height: calc(100svh + 2 * var(--adm-page-margin));
   min-width: var(--adm-min-width);
-  /* Issue 439: words break as in the prototype (overflow-wrap normal everywhere, tables included),
-     not anywhere as the phone app's body does: a self-sized admin table never squeezes a column
-     below its longest word. Item panels that hold long keys set their own value below. */
-  overflow-wrap: normal;
   padding: var(--adm-page-margin);
 }
 
@@ -3923,6 +3919,14 @@ button.focus-avatar:focus-visible {
   white-space: nowrap;
 }
 
+/* Issue 439: in this self-sized table a cell is never squeezed below its longest word (the app's
+   body breaks anywhere, which split titles such as "pause_predicament" mid-word). The table sits in
+   .admin-scroll, so a token longer than the panel scrolls instead of being clipped. */
+.admin-table-nowrap-head th,
+.admin-table-nowrap-head td {
+  overflow-wrap: normal;
+}
+
 .admin-legend {
   color: var(--adm-muted);
   display: flex;
@@ -4016,6 +4020,7 @@ button.focus-avatar:focus-visible {
   font-size: var(--adm-code-size);
   line-height: var(--adm-code-leading);
   margin: 0;
+  overflow-wrap: anywhere;
   padding: var(--adm-code-pad);
   white-space: pre-wrap;
 }

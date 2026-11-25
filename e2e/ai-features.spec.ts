@@ -398,6 +398,101 @@ test.describe("#439 AI feature pages", () => {
     }
   });
 
+  test("test_439_a_long_unbroken_token_stays_inside_its_panel_at_1024_px", async ({
+    page,
+    context,
+  }) => {
+    // #439 review round 3: real prompt and table text holds long tokens with no space. None may
+    // run out of its panel, where the page would clip it; a self-sized table scrolls instead.
+    await page.setViewportSize({ width: 1024, height: 800 });
+    const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+    const token = "x".repeat(200);
+    const [feature] = (await (
+      await stub("/rest/v1/ai_features?slug=eq.pause_message", writer.token)
+    ).json()) as (Feature & { pass_questions: unknown[]; approach: unknown[] })[];
+    const saved = await stub("/rest/v1/rpc/save_ai_feature_sections", writer.token, {
+      target_feature: "pause_message",
+      new_purpose: [{ text: token, source: null, draft: false }],
+      new_pass_questions: feature.pass_questions,
+      new_approach: feature.approach,
+    });
+    expect(saved.status).toBe(204);
+    const stuck = await activePrompt(writer.token, "stuck_story");
+
+    const overflow = () =>
+      page.evaluate(() => {
+        const scrolls = (element: Element) => {
+          const value = getComputedStyle(element).overflowX;
+          return value === "auto" || value === "scroll";
+        };
+        const outside: string[] = [];
+        for (const element of document.querySelectorAll(".admin-main *")) {
+          const panel = element.closest(".admin-panel");
+          if (!panel || panel === element) continue;
+          // Inside a scrolling box (the index table's panel), text is reached by scrolling.
+          let box = element.parentElement;
+          let scrolling = false;
+          while (box && box !== panel.parentElement) {
+            if (scrolls(box)) scrolling = true;
+            box = box.parentElement;
+          }
+          if (scrolling) continue;
+          const right = element.getBoundingClientRect().right;
+          const edge = panel.getBoundingClientRect().right;
+          if (right > edge + 0.5) {
+            outside.push(
+              `${element.tagName.toLowerCase()}.${element.className}: ${right} > ${edge}`,
+            );
+          }
+        }
+        const main = document.querySelector(".admin-main")!.getBoundingClientRect().right;
+        const panels = [...document.querySelectorAll(".admin-main .admin-panel")]
+          .filter((panel) => panel.getBoundingClientRect().right > main + 0.5)
+          .map((panel) => panel.className);
+        const root = document.documentElement;
+        return { outside, panels, scrollWidth: root.scrollWidth, clientWidth: root.clientWidth };
+      });
+
+    try {
+      const draft = await stub("/rest/v1/rpc/save_prompt_draft", writer.token, {
+        prompt_key: "stuck_story",
+        prompt_body: `${stuck}\n${token}`,
+        prompt_params: {},
+        prompt_note: "#439 long token",
+      });
+      expect(draft.status).toBe(200);
+
+      await page.goto("/admin/ai-features/pause_message");
+      const prompt = section(page, "(e) Prompt text").getByRole("region", {
+        name: "stuck_story",
+      });
+      await expect(prompt.getByLabel(/^Draft v\d+ of stuck_story$/)).toContainText(token);
+      await expect(section(page, "(a) Purpose")).toContainText(token);
+      const featurePage = await overflow();
+      expect(featurePage.outside).toEqual([]);
+      expect(featurePage.panels).toEqual([]);
+      expect(featurePage.scrollWidth).toBe(featurePage.clientWidth);
+
+      // The index's purpose cell: the table keeps whole words and scrolls inside its panel.
+      await page.goto("/admin/ai-features");
+      const table = page.getByRole("table", { name: "AI features" });
+      await expect(table).toContainText(token);
+      const index = await overflow();
+      expect(index.outside).toEqual([]);
+      expect(index.panels).toEqual([]);
+      expect(index.scrollWidth).toBe(index.clientWidth);
+      const panel = page.locator(".admin-panel.admin-scroll");
+      const scroll = await panel.evaluate((element) => ({
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+      }));
+      // The token is reachable: the panel scrolls rather than clipping it.
+      expect(scroll.scrollWidth).toBeGreaterThan(scroll.clientWidth);
+    } finally {
+      await stub("/__prompts", null, { reset: "stuck_story" });
+    }
+  });
+
   test("test_439_who_can_see_admins_and_writers_only", async ({ page, context, browser }) => {
     await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
     expect((await page.goto("/admin/ai-features"))?.status()).toBe(200);
