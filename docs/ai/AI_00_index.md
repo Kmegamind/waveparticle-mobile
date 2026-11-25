@@ -34,7 +34,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 
 **Offline authoring (not a user-facing AI feature)**: (a) drafting candidates for the AI-2 pools with the canvas blocks (start / complete signals) → NF5 script → human read; (b) the story re-split into N tasks (runtime design decision 1, pre-generated for N = 3, 4, 5, lazily for others). Both are listed so nobody mistakes them for runtime calls.
 
-Specs: [AI-1](AI_01_goal-split.md) · [AI-2](AI_02_status-and-landing-lines.md) · [AI-3](AI_03_stuck-story-layer.md) · [AI-4](AI_04_rest-chat.md) · [AI-5](AI_05_safety.md) · [AI-6](AI_06_check-and-fallback.md) · [AI-7](AI_07_end-feeling-line.md) · [per-screen notes](AI_08_screen-notes.md)
+Specs: [AI-1](AI_01_goal-split.md) · [AI-2](AI_02_status-and-landing-lines.md) · [AI-3](AI_03_stuck-story-layer.md) · [AI-4](AI_04_rest-chat.md) · [AI-5](AI_05_safety.md) · [AI-6](AI_06_check-and-fallback.md) · [AI-7](AI_07_end-feeling-line.md) · [per-screen notes](AI_08_screen-notes.md) · [one admin page per AI feature](AI_11_feature-pages.md) (AI_11, 2026-11-25: the 7 feature pages, sections (a) to (f), and the drafts of purpose, pass standard and approach; AI-PAGES)
 
 ---
 
