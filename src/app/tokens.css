@@ -334,6 +334,19 @@
   --adm-track-th: 0.06em;
   --adm-lede-measure: 68ch;
   --adm-field-min: 64px;
+  /* Issue 439: the AI feature pages (docs/design/prototype/admin-ai-features.html). */
+  --adm-h2-after: 10px;
+  --adm-empty-size: 13px;
+  --adm-empty-pad: 10px 12px;
+  --adm-legend-size: 12px;
+  --adm-list-indent: 20px;
+  --adm-list-item-pad: 4px 0;
+  --adm-code-leading: 1.55;
+  --adm-col-feature: 29%;
+  --adm-col-purpose: 20%;
+  --adm-col-status: 12%;
+  --adm-col-prompt: 17%;
+  --adm-col-run: 22%;
 }
 
 @media (prefers-color-scheme: dark) {

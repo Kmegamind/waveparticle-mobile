@@ -1,10 +1,13 @@
-import { expect, test } from "@playwright/test";
-import { signIn, STUB_SUPABASE } from "./support/account";
+import { execFileSync } from "node:child_process";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import { expect, test, type Page } from "@playwright/test";
+import { baseUrlOf, signIn, STUB_SUPABASE } from "./support/account";
 
 // #436 (part of #430): the local Supabase stand-in supports the AI feature tables of
-// 20261130000000_ai_features.sql, as the later admin pages will call them. No page exists yet
-// (no UI in this pull request), so these tests call the stub's REST endpoints directly with each
-// role's token. The features are shared by every test, so this file runs in order and resets them.
+// 20261130000000_ai_features.sql, as the admin pages call them. These first tests call the stub's
+// REST endpoints directly with each role's token; the #439 pages are tested at the end of the
+// file. The features are shared by every test, so this file runs in order and resets them.
 
 test.describe.configure({ mode: "serial" });
 
@@ -176,4 +179,240 @@ test("#436 AC3: imported test runs are read back, a fake-model run marked as suc
   expect(runs[0]).toMatchObject({ kind: "fake_model", prompt_version: 2, pass_count: 6 });
   const none = await stub("/rest/v1/ai_feature_test_runs?kind=eq.real", writer.token);
   expect(await none.json()).toEqual([]);
+});
+
+// #439 (part of #430): the AI features index and one read-only page per feature. They run in this
+// file so they share its order with the #436 tests above (both reset the features). The features
+// are the seed of scripts/ai-features/seed.mjs; the test runs are one fake-model run imported with
+// scripts/ai-features/import-runs.mjs from e2e/fixtures/offline-run-stub.
+test.describe("#439 AI feature pages", () => {
+  // The admin is a desktop tool (#313).
+  test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
+  const TITLES = [
+    "Goal split (plan_split)",
+    "Step cards (step_cards)",
+    "Pause message (stuck_story + pause_predicament)",
+    "Rest reply (rest_reply)",
+    "Return pop-up (return_popup)",
+    "Closing line (closing_line)",
+    "Safety classifier (safety_classifier)",
+  ];
+
+  async function importFakeRun() {
+    // The import script is an ES module that the test runner cannot load, so a separate node
+    // process turns the run folder into the rows its SQL would insert.
+    const script = pathToFileURL(
+      path.join(__dirname, "..", "scripts", "ai-features", "import-runs.mjs"),
+    ).href;
+    const folder = path.join(__dirname, "fixtures", "offline-run-stub");
+    const code =
+      `const { readRunFolder, testRunRows } = await import(${JSON.stringify(script)});` +
+      `console.log(JSON.stringify(testRunRows(readRunFolder(${JSON.stringify(folder)}),` +
+      ` { reportPath: "e2e/fixtures/offline-run-stub/report.md" })));`;
+    const rows = JSON.parse(
+      execFileSync(process.execPath, ["--input-type=module", "-e", code], { encoding: "utf8" }),
+    ) as unknown[];
+    expect(rows).toHaveLength(2);
+    const answer = await stub("/__ai_features", null, { testRuns: rows });
+    expect(answer.status).toBe(200);
+  }
+
+  async function activePrompt(token: string, key: string): Promise<string> {
+    const answer = await stub("/rest/v1/rpc/list_prompt_versions", token, {});
+    const rows = (await answer.json()) as { key: string; active: boolean; body: string }[];
+    const row = rows.find((item) => item.key === key && item.active);
+    if (!row) throw new Error(`no active ${key}`);
+    return row.body;
+  }
+
+  const section = (page: Page, name: string | RegExp) => page.getByRole("region", { name });
+
+  test("test_439_ac1_the_menu_opens_the_index_of_the_7_features_with_status_pills", async ({
+    page,
+    context,
+  }) => {
+    await importFakeRun();
+    await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+    await page.goto("/admin");
+    const menu = page.getByRole("navigation", { name: "Admin pages" });
+    await menu.getByRole("link", { name: /AI features/ }).click();
+    await expect(page).toHaveURL(/\/admin\/ai-features$/);
+    await expect(page.getByRole("heading", { level: 1, name: "AI features" })).toBeVisible();
+    await expect(menu.getByRole("link", { name: /AI features/ })).toContainText("ADM-16");
+    await expect(menu.getByRole("link", { name: /AI features/ })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    const table = page.getByRole("table", { name: "AI features" });
+    const rows = table.locator("tbody tr");
+    await expect(rows).toHaveCount(7);
+    for (const [index, title] of TITLES.entries()) {
+      const row = rows.nth(index);
+      await expect(row.getByRole("link", { name: title, exact: true })).toBeVisible();
+      await expect(row.locator(".admin-pill-ai-exploring")).toHaveText("Exploring");
+    }
+    // The imported run is the pause message's last run, marked as the fake model.
+    await expect(rows.nth(2)).toContainText("2026-11-25 20:15");
+    await expect(rows.nth(2)).toContainText("Fake model (stub)");
+    await expect(rows.nth(3)).toContainText("No run yet");
+    await expect(rows.nth(0)).toContainText(
+      "Turn the goal the person typed and the minutes they gave into steps they can start.",
+    );
+
+    await rows.nth(2).getByRole("link").click();
+    await expect(page).toHaveURL(/\/admin\/ai-features\/pause_message$/);
+    await expect(page.getByRole("heading", { level: 1, name: TITLES[2] })).toBeVisible();
+    // A detail page marks its menu row.
+    await expect(menu.getByRole("link", { name: /AI features/ })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+  });
+
+  test("test_439_ac2_sections_a_to_d_show_each_draft_with_its_source", async ({
+    page,
+    context,
+  }) => {
+    await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+    await page.goto("/admin/ai-features/pause_message");
+    const purpose = section(page, "(a) Purpose");
+    const first = purpose.getByRole("listitem").first();
+    await expect(first).toContainText("Pause opens the rest page");
+    await expect(first).toContainText("Draft - owner to edit");
+    await expect(first.locator(".admin-chip")).toHaveText("docs/PRD.md:271");
+    const questions = section(page, "(b) Pass standard").getByRole("listitem");
+    await expect(questions).toHaveCount(9);
+    for (const item of await questions.all()) {
+      await expect(item).toContainText("Draft - owner to edit");
+      await expect(item).toContainText("Source:");
+    }
+    await expect(section(page, "(c) Current approach").getByRole("listitem")).toHaveCount(5);
+    const status = section(page, /^\(d\) Status/);
+    await expect(status.locator(".admin-pill-ai-exploring")).toHaveText("Exploring");
+    // Read view: no editor and no status change here (#430 T6).
+    await expect(page.getByRole("button")).toHaveText(["Sign out"]);
+    await expect(page.getByRole("textbox")).toHaveCount(0);
+  });
+
+  test("test_439_ac2_an_empty_section_reads_not_written_yet", async ({ page, context }) => {
+    const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+    const saved = await stub("/rest/v1/rpc/save_ai_feature_sections", writer.token, {
+      target_feature: "closing_line",
+      new_purpose: [{ text: "Owner text.", source: null, draft: false }],
+      new_pass_questions: [],
+      new_approach: [],
+    });
+    expect(saved.status).toBe(204);
+    await page.goto("/admin/ai-features/closing_line");
+    const purpose = section(page, "(a) Purpose");
+    await expect(purpose).toContainText("Owner text.");
+    // Owner text is no draft and has no source.
+    await expect(purpose).not.toContainText("Draft - owner to edit");
+    await expect(purpose).not.toContainText("Source:");
+    await expect(section(page, "(b) Pass standard")).toContainText("Not written yet");
+    await expect(section(page, "(c) Current approach")).toContainText("Not written yet");
+  });
+
+  test("test_439_ac3_prompt_text_is_read_live_published_and_draft", async ({ page, context }) => {
+    const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+    const stuck = await activePrompt(writer.token, "stuck_story");
+    const predicament = await activePrompt(writer.token, "pause_predicament");
+    const draftBody = `${stuck}\nA draft line for #439.`;
+    await page.goto("/admin/ai-features/pause_message");
+    const prompts = section(page, "(e) Prompt text");
+    await expect(prompts.getByRole("region", { name: "stuck_story" })).toBeVisible();
+    await expect(
+      prompts
+        .getByRole("region", { name: "pause_predicament" })
+        .getByLabel("Published pause_predicament"),
+    ).toHaveText(predicament);
+    // A draft saved in Prompts shows here at the next page load. The prompts are shared with
+    // e2e/prompts-admin.spec.ts, which puts them back, so the draft is saved again if it went.
+    await expect(async () => {
+      const versions = (await (
+        await stub("/rest/v1/rpc/list_prompt_versions", writer.token, {})
+      ).json()) as { key: string; body: string; active: boolean }[];
+      if (!versions.some((row) => row.key === "stuck_story" && row.body === draftBody)) {
+        const saved = await stub("/rest/v1/rpc/save_prompt_draft", writer.token, {
+          prompt_key: "stuck_story",
+          prompt_body: draftBody,
+          prompt_params: {},
+          prompt_note: "#439 e2e draft",
+        });
+        expect(saved.status).toBe(200);
+      }
+      await page.reload();
+      const key = section(page, "(e) Prompt text").getByRole("region", { name: "stuck_story" });
+      await expect(key.getByLabel("Published stuck_story")).toHaveText(stuck, { timeout: 2_000 });
+      await expect(key.getByLabel(/^Draft v\d+ of stuck_story$/)).toHaveText(draftBody, {
+        timeout: 2_000,
+      });
+    }).toPass({ timeout: 30_000 });
+    await expect(
+      section(page, "(e) Prompt text").getByRole("region", { name: "pause_predicament" }),
+    ).toContainText("No draft.");
+  });
+
+  test("test_439_ac4_test_results_mark_the_fake_model_and_no_real_run_yet", async ({
+    page,
+    context,
+  }) => {
+    await importFakeRun();
+    await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+    await page.goto("/admin/ai-features/pause_message");
+    const results = section(page, "(f) Test results");
+    const rows = results.locator("tbody tr");
+    await expect(rows).toHaveCount(1);
+    await expect(rows.first()).toContainText("2026-11-25 20:15");
+    await expect(rows.first().locator(".admin-pill-mark")).toHaveText("Fake model (stub)");
+    await expect(rows.first()).toContainText("stuck_story v3");
+    await expect(rows.first()).toContainText("pause_predicament v1");
+    await expect(rows.first()).toContainText("2 of 4 targets pass, 1 fail");
+    await expect(results).toContainText("No real run yet (#413)");
+
+    await page.goto("/admin/ai-features/rest_reply");
+    await expect(section(page, "(f) Test results")).toContainText("No run yet");
+    await expect(section(page, "(f) Test results")).toContainText("No real run yet (#413)");
+  });
+
+  test("test_439_ac5_every_page_shows_the_retry_hints_fix", async ({ page, context }) => {
+    const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+    const hints = await activePrompt(writer.token, "retry_hints");
+    for (const slug of [
+      "plan_split",
+      "step_cards",
+      "pause_message",
+      "rest_reply",
+      "return_popup",
+      "closing_line",
+      "safety_classifier",
+    ]) {
+      await page.goto(`/admin/ai-features/${slug}`);
+      const fix = section(page, /^Fix added after a rejected answer/);
+      await expect(fix, slug).toContainText("retry_hints");
+      await expect(fix.getByLabel("Published retry_hints"), slug).toHaveText(hints);
+    }
+  });
+
+  test("test_439_who_can_see_admins_and_writers_only", async ({ page, context, browser }) => {
+    await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+    expect((await page.goto("/admin/ai-features"))?.status()).toBe(200);
+    expect((await page.goto("/admin/ai-features/plan_split"))?.status()).toBe(200);
+    // An unknown feature is the normal not-found page (a soft 404: the admin layout streams first,
+    // as test_293_an_unknown_story_shows_page_not_found).
+    await page.goto("/admin/ai-features/no_such_feature");
+    await expect(
+      page.getByRole("heading", { name: "This page could not be found." }),
+    ).toBeVisible();
+    await expect(page.getByRole("region", { name: "(a) Purpose" })).toHaveCount(0);
+
+    const plain = await browser.newContext({ baseURL: baseUrlOf(page) });
+    const other = await plain.newPage();
+    await signIn(plain, baseUrlOf(page));
+    for (const target of ["/admin/ai-features", "/admin/ai-features/plan_split"]) {
+      expect((await other.goto(target))?.status(), target).toBe(404);
+    }
+    await plain.close();
+  });
 });

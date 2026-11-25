@@ -3879,6 +3879,156 @@ button.focus-avatar:focus-visible {
   color: var(--adm-info);
 }
 
+/* Issue 439: the AI feature pages, drawn in docs/design/prototype/admin-ai-features.html. The four
+   statuses (AI-PAGE-STATUS) in the drawing's colours, and the mark for "Draft - owner to edit"
+   and "Fake model (stub)". */
+.admin-pill-ai-not_started {
+  background: var(--adm-soft);
+  color: var(--adm-muted);
+}
+
+.admin-pill-ai-exploring {
+  background: var(--adm-info-soft);
+  color: var(--adm-info);
+}
+
+.admin-pill-ai-passed {
+  background: var(--adm-ok-soft);
+  color: var(--adm-ok);
+}
+
+.admin-pill-ai-frozen {
+  background: var(--adm-accent-soft);
+  color: var(--adm-accent);
+}
+
+.admin-pill-mark {
+  background: var(--adm-warn-soft);
+  color: var(--adm-warn);
+}
+
+.admin-scroll {
+  overflow-x: auto;
+}
+
+.admin-col-feature {
+  width: var(--adm-col-feature);
+}
+
+.admin-col-purpose {
+  width: var(--adm-col-purpose);
+}
+
+.admin-col-status {
+  width: var(--adm-col-status);
+}
+
+.admin-col-prompt {
+  width: var(--adm-col-prompt);
+}
+
+.admin-col-run {
+  width: var(--adm-col-run);
+}
+
+.admin-legend {
+  color: var(--adm-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--adm-legend-size);
+  gap: var(--adm-gap);
+  margin: var(--adm-gap-small) 0 0;
+}
+
+.admin-legend > span {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--adm-gap-tiny);
+}
+
+.admin-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--adm-gap);
+}
+
+.admin-main .admin-section > h2 {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-gap-small);
+  margin: 0 0 var(--adm-h2-after);
+}
+
+.admin-items {
+  display: grid;
+  gap: var(--adm-gap-small);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-item-text {
+  margin: 0;
+}
+
+.admin-questions {
+  list-style: decimal;
+  margin: 0;
+  padding-left: var(--adm-list-indent);
+}
+
+.admin-questions > li {
+  padding: var(--adm-list-item-pad);
+}
+
+.admin-src {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: var(--adm-gap-tiny) 0 0;
+}
+
+.admin-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: 0;
+}
+
+.admin-empty {
+  background: var(--adm-soft);
+  border-radius: var(--adm-r-code);
+  color: var(--adm-muted);
+  font-size: var(--adm-empty-size);
+  margin: 0;
+  padding: var(--adm-empty-pad);
+}
+
+.admin-after-table {
+  margin-top: var(--adm-h2-after);
+}
+
+.admin-grid2 {
+  display: grid;
+  gap: var(--adm-gap);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-prompt-meta {
+  margin: 0 0 var(--adm-gap-tiny);
+}
+
+.admin-code {
+  background: var(--adm-soft);
+  border-radius: var(--adm-r-code);
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-code-size);
+  line-height: var(--adm-code-leading);
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding: var(--adm-code-pad);
+  white-space: pre-wrap;
+}
+
 /* Item panels (App text cells, cards, fields, prompts). */
 .admin-text-list {
   display: grid;

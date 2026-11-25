@@ -11,3 +11,7 @@ Scripts (print SQL, connect to nothing, never call a model):
 - `scripts/ai-features/import-runs.mjs [--dry-run] <offline-run folder>`: `readRunFolder(folder)` reads `results.json` (its `meta`), `targets.json` and `report.md` of a #42 run; `summaryStatuses(report)` reads the summary table; `testRunRows(run, { reportPath })` gives one row per feature and prompt key of each suite that ran (`SUITE_FEATURES`: `split` → `plan_split`, `rest` → `rest_reply`, `pause` → `pause_message`), kind `fake_model` unless `meta.mode` is `real`; `importSql(rows, { dryRun })` upserts on (`feature_slug`, `prompt_key`, `kind`, `run_at`). `reportPathOf(folder, root?)` stores the report path relative to the repository when it is inside it.
 
 The e2e Supabase stand-in (`e2e/support/stub-supabase.mjs`) serves the three tables, both functions and `POST /__ai_features { reset?, testRuns? }`.
+
+## The admin pages (#439)
+
+`/admin/ai-features` (ADM-16) lists the 7 features and `/admin/ai-features/<slug>` shows one, read only, to admins and writers (the admin layout's role check and the tables' policies). Both read `public.ai_features` and `public.ai_feature_test_runs` through the signed-in user's own client, and section (e) and the retry_hints fix through `public.list_prompt_versions` at page load, the call of ADM-08 Prompts (`readPromptVersions`, `promptDetail`). The logic is in `src/lib/ai-features/admin.ts`. Editing (a) to (c) and changing the status come with #430 T6 (AI-PAGE-EDIT).
