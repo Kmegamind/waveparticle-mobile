@@ -40,6 +40,15 @@ The app screenshots were taken from `npm run dev` with `PROTOTYPE_ENABLED=1` and
 ## The admin prototype
 `prototype/admin-prototype.html` is the owner's admin prototype, copied byte for byte from `2_Areas/Product/content-admin/admin-prototype_2026-11-14_v1.html` (dated 2026-11-14, SHA-256 `4579c320d93192bd3df1907574e8cc0ff52bbc1a5a1f19626577014fa77b58bf`). Only the HTML was copied, none of the planning notes in that folder. Do not edit it here; a new version from the owner replaces it as a whole.
 
-The file has no doctype and no charset. Opened as it is, the browser uses quirks mode and may show broken quotes and arrows. Screenshots and computed-style checks therefore add `<!doctype html><meta charset=utf-8>` in front of the file at capture time (for example with a Playwright route that rewrites the response); the file itself stays unchanged. Serve it as in step 1 above and open `http://127.0.0.1:3200/admin-prototype.html`; each page has a hash, for example `#prompts`.
+The file has no doctype and no charset. Opened as it is, the browser uses quirks mode and may show broken quotes and arrows. Screenshots and computed-style checks therefore add `<!doctype html><meta charset=utf-8>` in front of the file at capture time (for example with a Playwright route that rewrites the response); the file itself stays unchanged.
+
+**Rule for the visual gate (coordinator, 2026-11-25): the reference is the standards-mode render**, that is the prototype with `<!doctype html><meta charset=utf-8>` added at capture time, as the artifact host does. The live Next.js admin always renders in standards mode. This is not neutral: quirks mode changes how tables look. Measured in Chromium on 2026-11-25 (`#history` page, 1280 px):
+
+| | Quirks mode (file opened as it is) | Standards mode (doctype added, the reference) |
+|---|---|---|
+| Table text (`table`, plain `td`) | 16 px, line height `normal` | 14 px, line height 1.5 (21 px) |
+| `th`, `td.note` | 11 px and 12.5 px, line height `normal` | 11 px and 12.5 px, line height 1.5 |
+
+Owner to confirm: standards mode (the default above) or keep the 16 px table look. Serve it as in step 1 above and open `http://127.0.0.1:3200/admin-prototype.html`; each page has a hash, for example `#prompts`.
 
 `prototype/admin-ai-features.html` draws the AI feature screens the prototype lacks (#430, #432). Its CSS is the prototype's CSS unchanged (the prototype's `--bg`, `--panel`, `--ink` ... tokens have the same values as the app's `--adm-*` tokens in `src/app/tokens.css`), without the phone-width block, plus a few rules built from the same tokens. It starts with a doctype and charset, so it renders like the prototype does with them added. Screens: `#index`, `#feature`, `#prompt`, `#tests`, `#status`, `#pass`, `#purpose`, `#mapping`. The pictures in `reference/admin/ai-features-<screen>.png` were taken at 1280 by 1200 pixels, full page; `ai-features-status-writer.png` is the status editor seen by a writer (read-only). Purpose text, pass questions and source lines are placeholders, never real wording.

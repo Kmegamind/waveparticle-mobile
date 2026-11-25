@@ -218,12 +218,12 @@ const title=f=>`${f.n} (${f.k.join(" + ")})`;
 const FAKE=`<span class="pill s-checked">Fake model (stub)</span>`;
 const DRAFT=`<span class="pill s-checked">Draft - owner to edit</span>`;
 const CR=`AI rules › <a href="#index">AI features</a>`;
-const PAUSE="Pause message (stuck_story + pause_predicament)";
+const PAUSE=title(F[2]);
 const V={};
 
 V.index=()=>head("AI rules","AI features","One page per AI feature: what it does for the user, how we judge it, how it works now, where it stands, its prompts and its test results. All rows on this page are sample data.")+
  `<div class="panel scroll"><table><thead><tr><th>Feature</th><th>Purpose</th><th>Status</th><th>Active prompt</th><th>Last offline run</th></tr></thead><tbody>`+
- F.map((f,i)=>`<tr class="click" onclick="location.hash='feature'"><td><b>${f.n}</b><br>${keys(f)}</td><td class="note">${i===5?"Not written yet":"Purpose text from the database"}</td><td>${pill(f.s)}</td><td><span class="key">${f.v}</span>${f.d?` <span class="pill s-draft">Draft exists</span>`:""}</td><td>${f.run?`<span class="note">${f.run}</span><br>${FAKE}`:`<span class="note">No real run yet (#413)</span>`}</td></tr>`).join("")+
+ F.map((f,i)=>`<tr class="click" onclick="location.hash='feature'"><td><b>${title(f)}</b></td><td class="note">${i===5?"Not written yet":"Purpose text from the database"}</td><td>${pill(f.s)}</td><td><span class="key">${f.v}</span>${f.d?` <span class="pill s-draft">Draft exists</span>`:""}</td><td>${f.run?`<span class="note">${f.run}</span><br>${FAKE}`:`<span class="note">No run yet</span>`}</td></tr>`).join("")+
  `</tbody></table><div class="legend"><span>${pill("ns")}</span><span>${pill("ex")}</span><span>${pill("ps")}</span><span>${pill("fz")}</span><span>Status colours are a proposal for the owner.</span></div></div>
  <p class="note" style="margin-top:10px">With no rows the table shows "No features yet".</p>`;
 
@@ -300,9 +300,9 @@ V.purpose=()=>head(CR+` › <a href="#feature">Pause message</a>`,PAUSE+" · pur
 
 V.mapping=()=>head("AI rules › <a href=\"#index\">AI features</a>","Features and their prompts","Which prompt keys each feature uses, and which feature each prompt key belongs to. The prompt page shows the same link.")+
  `<div class="grid2"><div class="panel scroll"><h2>Feature → prompts</h2><table><thead><tr><th>Feature</th><th>Prompt keys</th></tr></thead><tbody>`+
- F.map(f=>`<tr><td>${f.n}</td><td>${keys(f)} <span class="key">retry_hints</span></td></tr>`).join("")+
+ F.map(f=>`<tr><td>${title(f)}</td><td>${keys(f)} <span class="key">retry_hints</span></td></tr>`).join("")+
  `</tbody></table></div><div class="panel scroll"><h2>Prompt → feature</h2><table><thead><tr><th>Prompt key</th><th>Feature</th></tr></thead><tbody>`+
- F.flatMap(f=>f.k.map(k=>`<tr><td><span class="key">${k}</span></td><td>${f.n}</td></tr>`)).join("")+
+ F.flatMap(f=>f.k.map(k=>`<tr><td><span class="key">${k}</span></td><td>${title(f)}</td></tr>`)).join("")+
  `<tr><td><span class="key">retry_hints</span></td><td>Every feature, as "Fix added after a rejected answer"</td></tr></tbody></table></div></div>`;
 
 function render(){
