@@ -4675,3 +4675,99 @@ input.admin-text-field {
   white-space: nowrap;
   width: 1px;
 }
+
+/* Issue 445, ADM-07 App text: one line per key, as the prototype's table. The text is edited in
+   place like the prototype's contenteditable cell; stored line breaks and double spaces stay
+   visible and are read back exactly (pre-wrap; the prototype computes normal). */
+.admin-app-text-field {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.admin-app-text-field:focus-visible {
+  outline: 2px solid var(--adm-accent);
+  outline-offset: 2px;
+}
+
+/* A note or status under one key's text. Empty, it takes no room (a live region must exist before
+   its text arrives). */
+.admin-app-text-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The stored text changed under unsaved typing: the typing was kept (review I1). */
+.admin-app-text-kept {
+  color: var(--adm-warn);
+}
+
+.admin-app-text-versions {
+  margin-top: var(--adm-gap-tiny);
+}
+
+/* The prototype's dialog (dialog.sheet): Publish changes lists each key it publishes. */
+.admin-sheet {
+  background: var(--adm-panel);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-sheet-radius);
+  color: var(--adm-ink);
+  font-family: var(--adm-font-body);
+  font-size: var(--adm-text-size);
+  line-height: var(--adm-leading);
+  max-height: calc(100vh - var(--adm-sheet-room));
+  padding: 0;
+  width: min(var(--adm-sheet-width), calc(100vw - var(--adm-sheet-gutter)));
+}
+
+.admin-sheet::backdrop {
+  background: var(--adm-shade);
+}
+
+.admin-sheet-head {
+  align-items: center;
+  border-bottom: 1px solid var(--adm-line);
+  display: flex;
+  justify-content: space-between;
+  padding: var(--adm-sheet-head-pad);
+}
+
+.admin-sheet-head h2 {
+  font-size: var(--adm-sheet-title-size);
+  margin: 0;
+}
+
+.admin-sheet-body {
+  display: grid;
+  gap: var(--adm-gap-small);
+  overflow: auto;
+  padding: var(--adm-sheet-body-pad);
+}
+
+.admin-sheet-foot {
+  border-top: 1px solid var(--adm-line);
+  display: flex;
+  gap: var(--adm-gap-small);
+  justify-content: flex-end;
+  padding: var(--adm-sheet-foot-pad);
+}
+
+.admin-sheet-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-sheet-list {
+  display: grid;
+  gap: var(--adm-gap-small);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-sheet-list p {
+  margin: 0;
+}

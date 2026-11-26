@@ -2,7 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { readContentRole } from "@/lib/admin/roles";
-import { writeAppText, type AppTextWrite, type AppTextWriteResult } from "@/lib/app-text/admin";
+import {
+  publishAppTextChanges,
+  writeAppText,
+  type AppTextWrite,
+  type AppTextWriteResult,
+  type PublishChangesResult,
+} from "@/lib/app-text/admin";
 import { clearAppTextCache } from "@/lib/app-text/repository";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
@@ -11,19 +17,23 @@ import { getCurrentUser } from "@/lib/supabase/session";
 // the server before anything is written; the database functions check the role again. No key with
 // full database rights: every call runs as the signed-in user.
 
-async function run(write: AppTextWrite): Promise<AppTextWriteResult> {
+async function signedIn() {
   const client = await createSupabaseServerClient();
   const user = await getCurrentUser(client);
   const role = user ? await readContentRole(client) : null;
-  const result = await writeAppText(write, {
+  return {
     userId: user?.id ?? null,
     role,
-    rpc: async (name, args) => {
+    rpc: async (name: string, args: Record<string, unknown>) => {
       const { data, error } = await client.rpc(name, args);
       return { data, error };
     },
     clearCache: clearAppTextCache,
-  });
+  };
+}
+
+async function run(write: AppTextWrite): Promise<AppTextWriteResult> {
+  const result = await writeAppText(write, await signedIn());
   if (result.ok) revalidatePath("/admin/app-text");
   return result;
 }
@@ -41,4 +51,14 @@ export async function publishAppTextAction(key: string, version: number) {
 /** Publishes an earlier published version again. */
 export async function rollBackAppTextAction(key: string, version: number) {
   return run({ kind: "roll_back", key, version });
+}
+
+/** #445 "Publish changes": publishes the listed draft versions, admin only, one key at a time
+ * through the same publish as the per-key button. */
+export async function publishAppTextChangesAction(
+  items: { key: string; version: number }[],
+): Promise<PublishChangesResult> {
+  const result = await publishAppTextChanges(items, await signedIn());
+  if (result.ok) revalidatePath("/admin/app-text");
+  return result;
 }
