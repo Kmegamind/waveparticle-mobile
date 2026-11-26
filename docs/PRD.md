@@ -102,7 +102,7 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | Goals and Me | Goals (In progress, On hold, Done, History), Goal detail, New goal, and Me (appearance, signals, about, data, history calendar, session record) |
 | Safety | Two-tier safety page and responses (crisis and everyday stress) |
 | Accounts | Sign-up or sign-in when the product is first opened, privacy notice, account deletion |
-| Content admin | A website at `/admin` for writers and the product manager to edit Companions, stories, cards, app text, prompts and checks; changes go live only on Publish (ADMIN). It has one page per AI feature, with its purpose, pass standard, approach, status, prompt text and test results (AI-PAGES, `docs/ai/AI_11_feature-pages.md`) |
+| Content admin | A website at `/admin` for writers and the product manager to edit Companions, stories, cards, app text, hotlines, prompts and checks; changes go live only on Publish (ADMIN). It has **one registry of all AI features**, from book to dialogue, each with its requirement, prompt, output format, design rationale, room to improve, confirmed example and notes (AI-REGISTRY), and a **prompt lab** where a prompt version is run through the model on a stored sample and two versions are compared side by side (AI-LAB-SAMPLES, AI-RUN-PERMISSION). Sections 4.14 and 4.15; `docs/ai/AI_11_feature-pages.md` |
 
 ### 3.3 Explicitly out of release 1
 
@@ -356,7 +356,83 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | FR-DATA-7 | Analytics events never contain Goal titles, Step text or user messages. | Must | |
 | FR-DATA-8 | The user must create an account or sign in as soon as the product is opened; there is no sign-up after the first finished Step. Authentication has a way to sign out. | Must | ACC |
 
-### 4.14 Removed requirements
+### 4.14 AI feature registry (FR-AIREG)
+
+One place in the content admin that shows every use of AI in the product, why it exists, what exactly is sent to the model, what comes back, and how good it is (AI-REGISTRY). It replaces the "one page for each of 7 runtime features" rule (AI-PAGES-7, superseded).
+
+**Rows.** Each AI feature is one row. Categories:
+
+- **Pipeline**: offline, run from the admin in batches; the app never reads them. Find episodes, select stories, cut source, plan (historical), plan (fictional), merged titles, story cards.
+- **Quality gate**: judge plan, fix plan, judge cards, fix cards, simulated user.
+- **Runtime**: read live by the app. Goal split, step cards, pause message (two calls), rest reply, return pop-up, closing line, safety classifier. `retry_hints` has no row; each Runtime row shows it in a section "Fix added after a rejected answer".
+
+The 19 initial rows are listed by id, name, category and prompt in `docs/ai/AI_11_feature-pages.md` section 5. Their full text is in the owner's `registry-seed.json` (planning folder `story-pipeline/admin-handoff_2026-11-26/`), which is not copied into the repository; the seed script reads it from there.
+
+**Where the rows live (AI-REGISTRY-STORE).** The registry extends the existing AI feature tables of #437 and #454 (`public.ai_features`, `public.ai_feature_status_history`, `public.ai_feature_test_runs`; migrations `20261130000000_ai_features.sql` and `20261201000000_ai_feature_people.sql`). There is no second registry table. The 7 Runtime rows already in production keep their slugs and their edited sections (a) to (c); the 12 Pipeline and Quality gate rows are added. The migration and the seed are a production step for the owner, each with a dry run, a check query and an undo.
+
+**How the Pipeline and Quality gate prompt texts reach the database.** Today `public.prompts` holds the runtime keys only and has no category column (`20261115000000_prompts.sql`, `20261125000000_prompt_editing.sql`). The Pipeline and Quality gate prompt texts get into the database by a migration (which adds what FR-AIREG-5 needs) plus an import that prints SQL from the owner's prompt files; the owner runs both as a production step, with a dry run, a check query and an undo. The app keeps reading only the runtime keys. The proposed prompt versions in `prompt-table-source/proposed4/` are not imported or published in this work (AI-PROPOSED4-HOLD). The points of this path that are not decided yet are in section 10.4.
+
+**Fields.**
+
+| Field | Content | Edited by |
+|---|---|---|
+| Feature ID | Stable id, for example `P-05`, `G-01`, `R-04` (letter = category) | fixed at creation |
+| Name | Short name | admin, writer |
+| Category | Pipeline, Quality gate or Runtime | admin |
+| Where it appears | The screen or the pipeline step | admin, writer |
+| Requirement | What the feature must do, in plain sentences | admin, writer |
+| Prompt | The full current text of each prompt key, published and draft, read live from `public.prompts` (never copied); the version number | via the existing prompt editor |
+| Output format | The JSON shape and the rules the answer is checked against (words, sentences, banned patterns) | admin, writer |
+| Design rationale | Why the prompt is written this way | admin, writer |
+| Room to improve | Known weak points and ideas | admin, writer |
+| Confirmed example | The current best output for a stored sample, with its state **candidate** or **confirmed**; confirmation records who and when; replaced confirmed examples stay in history | any role (AI-EXAMPLE-CONFIRM) |
+| Notes | Free text | admin, writer |
+| Status | not started, exploring, passed, frozen (as AI-PAGE-STATUS) | admin only |
+| Pass standard | Loose yes/no questions a person answers on a small batch (as AI-11 section (b)) | admin, writer |
+| Version history | Every change to any field above, who, when | automatic |
+
+| ID | Requirement | Priority | Decision |
+|---|---|---|---|
+| FR-AIREG-1 | `/admin/ai-features` shows all rows in one table with the columns above; the table can be filtered by category and status and sorted by id. | Must | AI-REGISTRY, AI-REGISTRY-FIELDS |
+| FR-AIREG-2 | A row opens a detail page with every field; the prompt text is shown in full with its `{{variables}}` highlighted, the published version and the draft side by side, and the diff (existing). | Must | AI-REGISTRY-FIELDS, AI-PAGE-STORE |
+| FR-AIREG-3 | The admin text, the field labels and all seeded content are English only. There is no translation view. | Must | AI-ENGLISH-ONLY |
+| FR-AIREG-4 | Fields that have no source show "Not written yet", never filler (as AI-11 rule 2). | Must | AI-PAGES |
+| FR-AIREG-5 | The seven runtime features keep their prompt keys; Pipeline and Quality gate rows get new keys in `public.prompts` with category `pipeline` or `gate`. The app reads only `runtime` keys. | Must | AI-REGISTRY, AI-REGISTRY-STORE |
+| FR-AIREG-6 | A prompt contains no information about one character: names, places and example scenes of a specific Companion are inputs (a sample), not prompt text. A check on publish warns when a prompt contains a Companion name from the sample library. | Should | AI-CHARACTER-NEUTRAL |
+| FR-AIREG-7 | Every change to a registry field is kept in its history; only a status change is admin only (AI-PAGE-STATUS). | Must | AI-PAGE-EDIT, AI-PAGE-STATUS |
+
+### 4.15 Prompt lab and run log (FR-AILAB)
+
+**Samples (AI-LAB-SAMPLES, AI-SOURCE-EXCERPTS, AI-SAMPLES-LOCAL).**
+
+- A **sample** is the set of inputs that fills a prompt's `{{variables}}`: the Companion's persona, the story's source excerpt with its source named, the facts, the world record and the standing task, and the finished plan when a later step needs it.
+- A fixed **sample library** is seeded with 3 samples: Oppenheimer story 1 ("The Trade of a Theorist"), Snape chapter 7, and one dialogue scene. A button adds a finished story as a new sample later.
+- Source text is stored only as the excerpt each story actually uses, in a table readable by admin and writer only, never by the app or users.
+- Source excerpts and sample texts from books are never committed to the repository. An import script reads them from the local story-pipeline folder and prints SQL for the owner to run. Test fixtures use short invented text.
+
+**Running (AI-RUN-PERMISSION, AI-LAB-STUB).** The Run route uses the fake model in every test and end-to-end run, and the stub marker shows. Only the owner presses Run on the live admin.
+
+| ID | Requirement | Priority | Decision |
+|---|---|---|---|
+| FR-AILAB-1 | On a registry row, a user with the admin or writer role can press **Run**: pick a prompt version (published, draft, or a pasted text), a sample and a model (DeepSeek first), and see the answer, the checks that apply, the tokens and the cost. | Must | AI-RUN-PERMISSION, AI-LAB-SAMPLES |
+| FR-AILAB-2 | The model key stays on the server; it is never sent to the browser. | Must | AI-RUN-PERMISSION |
+| FR-AILAB-3 | There is no spending cap. Every run is recorded: who, when, feature, prompt version, sample, model, input, output, tokens, cost, and whether the model was a stub. The Runs page shows today's total spend and the total by user. | Must | AI-RUN-PERMISSION |
+| FR-AILAB-4 | The **comparison lab** (a separate page) runs the same sample through two prompt versions, or two models, and shows the two answers side by side. A blind option hides which side is which until the user has answered the pass questions. | Must | AI-LAB-SAMPLES |
+| FR-AILAB-5 | In the comparison lab the user answers the feature's pass questions (yes or no) for each side; the answers are saved with the run. | Must | AI-REGISTRY-FIELDS |
+| FR-AILAB-6 | From any run, **Set as candidate example** puts that output into the row's example field with the state candidate; **Confirm** makes it confirmed (AI-EXAMPLE-CONFIRM). | Must | AI-EXAMPLE-CONFIRM |
+| FR-AILAB-7 | A **simulated user** (Quality gate row G-05) can be run on a batch of outputs: it answers the pass questions and lists the problems, each marked matters, does not matter or unsure; the result is a run record. | Should | AI-REGISTRY |
+| FR-AILAB-8 | A multi-step run (for example three drafts, a critique and a rewrite) is one run with its steps listed, so that "best version" experiments can be compared with a one-call version. | Should | AI-RUN-PERMISSION |
+| FR-AILAB-9 | Pipeline batch runs (many stories through a Pipeline row) use the same run log and the same permission; they run in small batches (at most 3 at the same time). | Could (phase 4) | AI-RUN-PERMISSION |
+
+**Non-goals.**
+
+- No access for end users. No user text is ever sent through the lab.
+- No automatic publishing of a lab result into a prompt: a person copies a version into the prompt editor and publishes it as today.
+- No storage of whole books.
+
+**Roles (sections 4.14 and 4.15).** Admin and writer both: edit registry fields (except status), press Run, use the comparison lab, mark examples candidate or confirmed. Admin only: status, categories, publish. The sample library and the source excerpts are readable by admin and writer only.
+
+### 4.16 Removed requirements
 
 These ids are retired and are not reused.
 
@@ -501,7 +577,7 @@ Measurement will be designed later. No success measures or north star are set fo
 
 ### 10.1 Decided rows that changed this document
 
-Every decided row in `docs/DECISIONS.md`, up to 2026-11-17, is applied in sections 3 to 8 (issues #295 and #298). The decisions of 2026-11-21 are applied in issue #369. Where this document and that file disagree, that file wins.
+Every decided row in `docs/DECISIONS.md`, up to 2026-11-17, is applied in sections 3 to 8 (issues #295 and #298). The decisions of 2026-11-21 are applied in issue #369. The decisions of 2026-11-26 on the AI feature registry and the prompt lab (AI-REGISTRY to AI-ROLEPLAY-FORMAT, and the owner's additions AI-REGISTRY-STORE to AI-PROPOSED4-HOLD) are applied in sections 3.2, 4.14 and 4.15 (issue #466). Where this document and that file disagree, that file wins.
 
 ### 10.2 Open decisions, copied from the decision log
 
@@ -514,6 +590,11 @@ Every decided row in `docs/DECISIONS.md`, up to 2026-11-17, is applied in sectio
 | KEY-REVIEW | The review of the machine-derived key moments (KEY-MOMENTS-DRAFT). | Stored unconfirmed. |
 | PERIOD-NAMES | The named periods of each character's Life Path (PERIODS). | Drafted for Yue to approve. |
 | MORIARTY-READ | Yue's reading of the 31 cards of Moriarty story 1 (MORIARTY-6). | Stories 2 to 7 wait for it. |
+| AI-SPEND-WARNING | The read-only "today's spend" line (FR-AILAB-3) is not a cap. If a runaway loop becomes a worry, a soft warning at a chosen amount can be added later without blocking. | Not decided. |
+| AI-EXAMPLE-RECHECK | Whether confirmed examples need a second look when a prompt is published again. | Not decided. |
+| AI-SEED-STATUS | The seed gives some new rows a status other than exploring (P-03 passed, P-04 frozen, G-03 and G-04 not started), while AI-PAGE-STATUS says every feature starts as exploring. | Owner to decide before the seed runs. |
+| AI-RUN-LIVE | AI-RUN-PERMISSION lets admin and writer press Run; AI-LAB-STUB says only the owner presses Run on the live admin. Whether that limits writers on the live admin, or only tests and agents. | Owner to decide. |
+| AI-PROMPT-CATEGORY | How FR-AIREG-5 fits the current `public.prompts` (section 10.4, row 3). | Owner to decide before the migration is written. |
 
 ### 10.3 Items that need the original test data
 
@@ -530,6 +611,7 @@ Every decided row in `docs/DECISIONS.md`, up to 2026-11-17, is applied in sectio
 |---|---|---|
 | 1 | The prototype and wireframes disagree with the decision log: four cards at step start, a landing page after each step, a third-pause warning and timer reset, the old note field, a Language row, a Reminders row, a weekly total and a time-limited Home state. The prototype must be aligned before it is used as a screen specification. | Open |
 | 2 | Master PRD F-SA-4 says goal text is also used for the dialogue responses; the later goal-dialogue spec limits it to classification and split. This document follows the later one; since GOAL-SHAPE-LOCAL the shape is decided by a local rule, so goal text goes to one model call, the split. | Confirm |
+| 3 | FR-AIREG-5 and the current schema (AI-PROMPT-CATEGORY). (a) `public.prompts` has no category column, so `pipeline`, `gate` and `runtime` need a migration. (b) `get_active_prompts` returns every active row to the server; the app looks prompts up by key, so it uses only runtime keys, but it would still receive active Pipeline and Quality gate rows unless the function filters by category or those rows are never active. (c) A prompt key must match `^[a-z][a-z0-9_]*$`; the seed's prompt names (for example `S1_find-episodes`, `scripts/deepseek_cards`) do not, so each new row needs a key name. (d) `public.ai_features.slug` has the same pattern, so the Feature ID (`P-01`) is a new column beside the slug, and every row needs at least one prompt key. (e) The seed text of some Runtime rows names proposed versions (for example "step_cards v2 (v4 proposed)") that are not imported (AI-PROPOSED4-HOLD); the row shows the seed text only. (f) For the 7 Runtime rows, how the seed's "requirement" relates to the edited section (a) purpose, which they keep. | Open |
 
 Risks that remain:
 - **The magic may not carry over to English or to Oppenheimer.** Only characters from the founder's own culture were validated (constitution section 5).
