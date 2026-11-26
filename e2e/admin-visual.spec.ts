@@ -1912,8 +1912,9 @@ const WORD_BREAK_NORMAL = new Set([
   "AI features: status pill (Exploring)",
   "AI features: status pill dot",
   "AI features: version chip",
-  // #448: the Versions table's headings keep whole words (normal on both sides).
+  // #448: the Versions and list headings keep whole words (normal on both sides).
   "hotline: Versions head cell",
+  "hotlines: head cell",
   // #447: the Publish history table, also self-sized in a scrolling panel (.panel.scroll).
   "history: table head cell",
   "history: When cell",

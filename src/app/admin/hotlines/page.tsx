@@ -61,12 +61,14 @@ export default async function AdminHotlines({ searchParams }: PageProps<"/admin/
           <table className="admin-table">
             <thead>
               <tr>
+                {/* Each heading is one unbreakable phrase (a no-break space), so a long cell
+                    never squeezes it onto two lines; the prototype's headings are one line. */}
                 <th scope="col">Country</th>
-                <th scope="col">Service name</th>
-                <th scope="col">Main contact</th>
+                <th scope="col">Service&nbsp;name</th>
+                <th scope="col">Main&nbsp;contact</th>
                 <th scope="col">State</th>
-                <th scope="col">Last checked</th>
-                <th scope="col">Checked by</th>
+                <th scope="col">Last&nbsp;checked</th>
+                <th scope="col">Checked&nbsp;by</th>
               </tr>
             </thead>
             <tbody>

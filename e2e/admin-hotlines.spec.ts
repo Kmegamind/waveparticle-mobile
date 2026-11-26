@@ -158,3 +158,29 @@ test("test_448_roll_back_sits_in_the_versions_table", async ({ page, context, ba
   expect(rows.find((row) => row.version === 1)).toMatchObject({ published: true });
   expect(rows.find((row) => row.version === 2)).toMatchObject({ published: false });
 });
+
+// CI of #465: at 1024 px the seed row fills the panel to within a few px, and CI's font metrics
+// pushed it over, so the list's headings wrapped to two lines. With wider cells the headings still
+// stay on one line (the extra text is added in the browser only; nothing is saved).
+test("test_448_list_headings_stay_on_one_line_when_cells_are_wider", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await page.setViewportSize({ width: 1024, height: 800 });
+  const account = await signIn(context, baseURL!, undefined, { contentRole: "admin" });
+  await useOwnHotlines(account.token, "seeded");
+  await page.goto("/admin/hotlines");
+  const heads = page.locator(".admin-hotline-list .admin-table th");
+  const oneLine = await heads.first().evaluate((cell) => cell.getBoundingClientRect().height);
+  await page
+    .locator(".admin-hotline-list .admin-table tbody tr")
+    .first()
+    .evaluate((row) => {
+      for (const cell of Array.from(row.querySelectorAll("td"))) cell.append(" wider cell text");
+    });
+  const heights = await heads.evaluateAll((cells) =>
+    cells.map((cell) => cell.getBoundingClientRect().height),
+  );
+  expect(heights).toEqual(heights.map(() => oneLine));
+});

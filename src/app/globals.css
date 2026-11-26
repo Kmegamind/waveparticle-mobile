@@ -5105,3 +5105,9 @@ textarea.admin-prompt-code {
 .admin-hotline-grid .admin-table th {
   overflow-wrap: normal;
 }
+
+/* The list's headings too, as the prototype's (normal). With anywhere, a few px of extra cell text
+   at 1024 px (the seed's "the product owner"; CI's font metrics) squeezed them to two lines. */
+.admin-hotline-list .admin-table th {
+  overflow-wrap: normal;
+}
