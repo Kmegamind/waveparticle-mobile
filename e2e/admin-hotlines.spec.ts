@@ -8,6 +8,39 @@ import { hotlineRows, useOwnHotlines } from "./support/hotlines";
 
 test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
 
+// Review of #465, I-1: the country list starts with no country, so Add an entry opens nothing
+// until one is chosen (the browser's required check), and the server refuses an empty country.
+test("test_448_add_an_entry_without_a_country_opens_nothing", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const account = await signIn(context, baseURL!, undefined, { contentRole: "admin" });
+  await useOwnHotlines(account.token, "seeded");
+  await page.goto("/admin/hotlines");
+  const list = page.getByLabel("Add an entry for a country with none");
+  await expect(list).toHaveValue("");
+  await expect(list.locator("option:checked")).toHaveText("Choose a country");
+  await page
+    .locator(".admin-head .admin-actions")
+    .getByRole("button", { name: "Add an entry" })
+    .click();
+  // The browser stops the submit and names the missing value.
+  expect(await list.evaluate((field: HTMLSelectElement) => field.validity.valueMissing)).toBe(true);
+  expect(await list.evaluate((field: HTMLSelectElement) => field.validationMessage)).not.toBe("");
+  await expect(page).toHaveURL(/\/admin\/hotlines$/);
+
+  // Sent without the browser's check, the server opens no entry either.
+  await page.goto("/admin/hotlines?add=");
+  await expect(page).toHaveURL(/\/admin\/hotlines\?add=$/);
+  const refused = page.getByRole("alert").filter({ hasText: "Choose a country" });
+  await expect(refused).toHaveText("Choose a country from the list first. No entry was opened.");
+  await expect(page.getByLabel("Add an entry for a country with none")).toHaveAccessibleDescription(
+    "Choose a country from the list first. No entry was opened.",
+  );
+  await expect(page.getByRole("heading", { name: "Hotlines", level: 1 })).toBeVisible();
+});
+
 test("test_448_ac1_list_has_a_full_size_add_an_entry_in_the_header_row", async ({
   page,
   context,

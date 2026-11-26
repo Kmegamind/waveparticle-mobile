@@ -5,7 +5,7 @@ import { Breadcrumb, KeyChip, PageHead, StatePill } from "@/app/admin/admin-ui";
 import { readContentRole } from "@/lib/admin/roles";
 import { hotlineList } from "@/lib/hotlines/admin";
 import { readHotlineVersions } from "@/lib/hotlines/repository";
-import { contactLabel, countryList, DIRECTORY } from "@/lib/safety/help-lines";
+import { contactLabel, countryList, DIRECTORY, isCountryCode } from "@/lib/safety/help-lines";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const instant = false;
@@ -22,7 +22,10 @@ export default async function AdminHotlines({ searchParams }: PageProps<"/admin/
     readContentRole(client),
   ]);
   const { add } = await searchParams;
-  if (typeof add === "string" && role === "admin") redirect(`/admin/hotlines/${add.toUpperCase()}`);
+  // #448 review I-1: an empty or unknown country opens nothing; the list says to choose one.
+  const chosen = typeof add === "string" ? add.trim().toUpperCase() : null;
+  const noCountry = chosen !== null && role === "admin" && !isCountryCode(chosen);
+  if (chosen && !noCountry && role === "admin") redirect(`/admin/hotlines/${chosen}`);
   const list = hotlineList(rows, new Date());
   const listed = new Set(list.map((row) => row.country));
   const free = countryList().filter((country) => !listed.has(country.code));
@@ -110,7 +113,16 @@ export default async function AdminHotlines({ searchParams }: PageProps<"/admin/
         <form action="/admin/hotlines" className="admin-form admin-hotline-add" id="hotline-add">
           <label>
             Add an entry for a country with none
-            <select className="admin-text-field" name="add">
+            {/* No country is chosen until the admin picks one (review I-1): Add an entry with
+                nothing chosen is stopped by the browser, and by the server above. */}
+            <select
+              aria-describedby={noCountry ? "hotline-add-none" : undefined}
+              className="admin-text-field"
+              defaultValue=""
+              name="add"
+              required
+            >
+              <option value="">Choose a country</option>
               {free.map((country) => (
                 <option key={country.code} value={country.code}>
                   {country.name} ({country.code})
@@ -118,6 +130,11 @@ export default async function AdminHotlines({ searchParams }: PageProps<"/admin/
               ))}
             </select>
           </label>
+          {noCountry ? (
+            <p className="admin-notice" id="hotline-add-none" role="alert">
+              Choose a country from the list first. No entry was opened.
+            </p>
+          ) : null}
         </form>
       ) : null}
     </>
