@@ -2,7 +2,7 @@
 
 > **Date**: 2026-11-25 · **Status**: rule decided by the owner (decisions AI-PAGES to AI-PAGE-TITLES in `docs/DECISIONS.md`, 2026-11-25); the per-feature texts in section 3 are **drafts for the owner to edit**. Issue #431, part of #430. The decision log wins where this file disagrees with it.
 > **What this file is for**: the rule for the admin page of each AI feature (section 1), and the first values of sections (a) purpose, (b) pass standard and (c) current approach for each of the 7 features (section 3). The database table of #430 (AI-PAGE-STORE) is seeded from section 3. After that, the owner edits the texts in the admin, and the admin, not this file, holds the current text.
-> **Extended 2026-11-26** (issue #466): the 7 pages are now the Runtime rows of **one registry of all AI features** (AI-REGISTRY, which supersedes AI-PAGES-7). Each row has the fields of AI-REGISTRY-FIELDS, which extend sections (a) to (f) below; the requirements are `docs/PRD.md` sections 4.14 (FR-AIREG) and 4.15 (FR-AILAB, the prompt lab and run log); the related decisions are AI-REGISTRY to AI-PROPOSED4-HOLD in `docs/DECISIONS.md`. Section 5 lists the 19 rows. The rules of section 1 still hold for every row.
+> **Extended 2026-11-26** (issue #466): the 7 pages are now the Runtime rows of **one registry of all AI features** (AI-REGISTRY, which supersedes AI-PAGES-7). Each row has the fields of AI-REGISTRY-FIELDS, which extend sections (a) to (f) below; the requirements are `docs/PRD.md` sections 4.14 (FR-AIREG) and 4.15 (FR-AILAB, the prompt lab and run log); the related decisions are AI-REGISTRY to AI-REQUIREMENT-FIELD in `docs/DECISIONS.md`. Section 5 lists the 19 rows. The rules of section 1 still hold for every row.
 
 ## 1. The rule for an AI feature page
 
@@ -253,14 +253,17 @@ These parts have no source and show "Not written yet":
 
 ## 5. The registry of all AI features (2026-11-26)
 
-The owner's decisions of 2026-11-26 (AI-REGISTRY to AI-ROLEPLAY-FORMAT, and the owner's additions AI-REGISTRY-STORE, AI-LAB-STUB, AI-SAMPLES-LOCAL and AI-PROPOSED4-HOLD in `docs/DECISIONS.md`) turn the 7 pages into one registry. The requirements are `docs/PRD.md` sections 4.14 and 4.15.
+The owner's decisions of 2026-11-26 (AI-REGISTRY to AI-ROLEPLAY-FORMAT, and the owner's additions AI-REGISTRY-STORE, AI-LAB-STUB, AI-SAMPLES-LOCAL and AI-PROPOSED4-HOLD, and the owner's answers AI-RUN-LIVE, AI-SEED-STATUS, AI-PROMPT-CATEGORY and AI-REQUIREMENT-FIELD in `docs/DECISIONS.md`) turn the 7 pages into one registry. The requirements are `docs/PRD.md` sections 4.14 and 4.15.
 
 ### 5.1 What changes for the rules above
 
 - The rules of section 1.2 (never invented, "Not written yet", pass questions, status, test results, titles) hold for every row, Pipeline and Quality gate rows included (FR-AIREG-4).
 - The fields of a row are those of AI-REGISTRY-FIELDS (PRD section 4.14, Fields). They add to sections (a) to (f); they do not replace them.
 - Writers edit every field except the status and the category (AI-PAGE-EDIT, extended 2026-11-26). Any role may mark an example candidate or confirmed (AI-EXAMPLE-CONFIRM).
-- The rows live in the existing tables (`public.ai_features` and its status history and test runs). There is no second registry table (AI-REGISTRY-STORE).
+- The rows live in the existing tables (`public.ai_features` and its status history and test runs). There is no second registry table (AI-REGISTRY-STORE). The Feature ID is a new column next to the slug (AI-PROMPT-CATEGORY).
+- Rule 4 of section 1.2 ("every feature starts as exploring") applied to the first 7. The 12 new rows take the status given in the seed; the 7 Runtime rows keep their current status (AI-SEED-STATUS).
+- The Runtime rows keep section (a) purpose as it is and get the requirement as a separate field, filled from the seed (AI-REQUIREMENT-FIELD).
+- Admin and writer both may press Run on the live admin; agents and tests never do (AI-RUN-LIVE).
 - A run from the admin or a test uses the fake model in every test and end-to-end run, and the stub marker shows (AI-LAB-STUB, as rule 5 of section 1.2).
 - Source excerpts and sample texts from books are never committed; test fixtures use short invented text (AI-SAMPLES-LOCAL).
 - A prompt holds no information about one character (AI-CHARACTER-NEUTRAL; the code fix of `checks.ts` is #468).
@@ -268,28 +271,28 @@ The owner's decisions of 2026-11-26 (AI-REGISTRY to AI-ROLEPLAY-FORMAT, and the 
 
 ### 5.2 The 19 rows
 
-From the owner's `registry-seed.json` (`story-pipeline/admin-handoff_2026-11-26/`, 2026-11-26). Only the id, name, category, where it appears and the prompt named by the seed are listed here; the other fields (requirement, output format, rationale, room to improve, example, notes, status) stay in the seed file and reach the database through the seed script, run by the owner (AI-REGISTRY-STORE, AI-SAMPLES-LOCAL). The seed's prompt names are the owner's file names, not keys of `public.prompts`; the keys of the Pipeline and Quality gate rows are open (AI-PROMPT-CATEGORY).
+From the owner's `registry-seed.json` (`story-pipeline/admin-handoff_2026-11-26/`, 2026-11-26). Only the id, name, category, where it appears and the prompt named by the seed are listed here; the other fields (requirement, output format, rationale, room to improve, example, notes, status) stay in the seed file and reach the database through the seed script, run by the owner (AI-REGISTRY-STORE, AI-SAMPLES-LOCAL). The seed's prompt names are the owner's file names, not keys of `public.prompts`. The last column gives the key in `public.prompts` and its category (AI-PROMPT-CATEGORY): the Runtime rows keep their keys; the Pipeline and Quality gate keys are new, made from the Feature ID and the name in the existing key format, and reach the database by the owner's migration and import.
 
-| ID | Name | Category | Where it appears | Prompt named in the seed |
-|---|---|---|---|---|
-| P-01 | Find episodes | Pipeline | Book to story library, first step | S1_find-episodes v1.0 |
-| P-02 | Select stories | Pipeline | After find episodes | S2_select-stories v1.0 |
-| P-03 | Cut source | Pipeline | After selection | S3_cut-source v1.0 |
-| P-04 | Plan (historical) | Pipeline | Story library, historical Companions | S4_notebook-historical v4-final |
-| P-05 | Plan (fictional) | Pipeline | Story library, fictional Companions | S4_notebook-fictional v3.5 |
-| P-06 | Merged titles | Pipeline | Plan page when the user has fewer than five steps | S4e_merged-titles v0.4 |
-| P-07 | Story cards | Pipeline | Focus page, one by one while the user works | scripts/deepseek_cards v0.5 (DeepSeek, one call) |
-| G-01 | Judge plan | Quality gate | After two plan runs | S5_judge-two-runs v1.0 |
-| G-02 | Fix plan | Quality gate | After judging | S6_fix-entry v1.0 |
-| G-03 | Judge cards | Quality gate | After two card runs | S5c_judge-cards v0.1 |
-| G-04 | Fix cards | Quality gate | After judging cards | S6c_fix-cards v0.1 |
-| G-05 | Simulated user | Quality gate | End of each round, before the owner reads | S7_simulated-user v0.1 |
-| R-01 | Goal split | Runtime | Goal dialogue, after the user types a goal and minutes | plan_split v2 |
-| R-02 | Step cards | Runtime | Focus page, per step | step_cards v2 (v4 proposed) |
-| R-03 | Pause message | Runtime | When the user pauses (two calls) | stuck_story v3 + pause_predicament v1 |
-| R-04 | Rest reply | Runtime | Rest chat | rest_reply v1 |
-| R-05 | Return pop-up | Runtime | After Back or a long absence | return_popup v1 |
-| R-06 | Closing line | Runtime | Summary at the end of a story | closing_line v1 |
-| R-07 | Safety classifier | Runtime | Every free-text message | safety_classifier v1 |
+| ID | Name | Category | Where it appears | Prompt named in the seed | Key in `public.prompts` (category) |
+|---|---|---|---|---|---|
+| P-01 | Find episodes | Pipeline | Book to story library, first step | S1_find-episodes v1.0 | `p01_find_episodes` (pipeline) |
+| P-02 | Select stories | Pipeline | After find episodes | S2_select-stories v1.0 | `p02_select_stories` (pipeline) |
+| P-03 | Cut source | Pipeline | After selection | S3_cut-source v1.0 | `p03_cut_source` (pipeline) |
+| P-04 | Plan (historical) | Pipeline | Story library, historical Companions | S4_notebook-historical v4-final | `p04_plan_historical` (pipeline) |
+| P-05 | Plan (fictional) | Pipeline | Story library, fictional Companions | S4_notebook-fictional v3.5 | `p05_plan_fictional` (pipeline) |
+| P-06 | Merged titles | Pipeline | Plan page when the user has fewer than five steps | S4e_merged-titles v0.4 | `p06_merged_titles` (pipeline) |
+| P-07 | Story cards | Pipeline | Focus page, one by one while the user works | scripts/deepseek_cards v0.5 (DeepSeek, one call) | `p07_story_cards` (pipeline) |
+| G-01 | Judge plan | Quality gate | After two plan runs | S5_judge-two-runs v1.0 | `g01_judge_plan` (gate) |
+| G-02 | Fix plan | Quality gate | After judging | S6_fix-entry v1.0 | `g02_fix_plan` (gate) |
+| G-03 | Judge cards | Quality gate | After two card runs | S5c_judge-cards v0.1 | `g03_judge_cards` (gate) |
+| G-04 | Fix cards | Quality gate | After judging cards | S6c_fix-cards v0.1 | `g04_fix_cards` (gate) |
+| G-05 | Simulated user | Quality gate | End of each round, before the owner reads | S7_simulated-user v0.1 | `g05_simulated_user` (gate) |
+| R-01 | Goal split | Runtime | Goal dialogue, after the user types a goal and minutes | plan_split v2 | `plan_split` (runtime) |
+| R-02 | Step cards | Runtime | Focus page, per step | step_cards v2 (v4 proposed) | `step_cards` (runtime) |
+| R-03 | Pause message | Runtime | When the user pauses (two calls) | stuck_story v3 + pause_predicament v1 | `stuck_story`, `pause_predicament` (runtime) |
+| R-04 | Rest reply | Runtime | Rest chat | rest_reply v1 | `rest_reply` (runtime) |
+| R-05 | Return pop-up | Runtime | After Back or a long absence | return_popup v1 | `return_popup` (runtime) |
+| R-06 | Closing line | Runtime | Summary at the end of a story | closing_line v1 | `closing_line` (runtime) |
+| R-07 | Safety classifier | Runtime | Every free-text message | safety_classifier v1 | `safety_classifier` (runtime) |
 
 R-01 to R-07 are the 7 pages of section 3, in the same order. The seed's version numbers are the owner's; the published version of each Runtime key is read live from `public.prompts` (section (e)) and may differ (for example `rest_reply` is version 2 in `docs/ai/prompts/rest_reply.md`, and `return_popup` version 2 in `docs/ai/prompts/return_popup.md`).

@@ -368,9 +368,9 @@ One place in the content admin that shows every use of AI in the product, why it
 
 The 19 initial rows are listed by id, name, category and prompt in `docs/ai/AI_11_feature-pages.md` section 5. Their full text is in the owner's `registry-seed.json` (planning folder `story-pipeline/admin-handoff_2026-11-26/`), which is not copied into the repository; the seed script reads it from there.
 
-**Where the rows live (AI-REGISTRY-STORE).** The registry extends the existing AI feature tables of #437 and #454 (`public.ai_features`, `public.ai_feature_status_history`, `public.ai_feature_test_runs`; migrations `20261130000000_ai_features.sql` and `20261201000000_ai_feature_people.sql`). There is no second registry table. The 7 Runtime rows already in production keep their slugs and their edited sections (a) to (c); the 12 Pipeline and Quality gate rows are added. The migration and the seed are a production step for the owner, each with a dry run, a check query and an undo.
+**Where the rows live (AI-REGISTRY-STORE).** The registry extends the existing AI feature tables of #437 and #454 (`public.ai_features`, `public.ai_feature_status_history`, `public.ai_feature_test_runs`; migrations `20261130000000_ai_features.sql` and `20261201000000_ai_feature_people.sql`). There is no second registry table. The 7 Runtime rows already in production keep their slugs and their edited sections (a) to (c); the 12 Pipeline and Quality gate rows are added. The Feature ID (`P-01` and so on) is a new column of `public.ai_features` next to the slug (AI-PROMPT-CATEGORY). The Runtime rows keep section (a) purpose as it is and get the requirement as a separate field, filled from the seed (AI-REQUIREMENT-FIELD). The 12 new rows take the status given in the seed; the 7 Runtime rows keep their current status (AI-SEED-STATUS). The migration and the seed are a production step for the owner, each with a dry run, a check query and an undo.
 
-**How the Pipeline and Quality gate prompt texts reach the database.** Today `public.prompts` holds the runtime keys only and has no category column (`20261115000000_prompts.sql`, `20261125000000_prompt_editing.sql`). The Pipeline and Quality gate prompt texts get into the database by a migration (which adds what FR-AIREG-5 needs) plus an import that prints SQL from the owner's prompt files; the owner runs both as a production step, with a dry run, a check query and an undo. The app keeps reading only the runtime keys. The proposed prompt versions in `prompt-table-source/proposed4/` are not imported or published in this work (AI-PROPOSED4-HOLD). The points of this path that are not decided yet are in section 10.4.
+**How the Pipeline and Quality gate prompt texts reach the database.** Today `public.prompts` holds the runtime keys only and has no category column (`20261115000000_prompts.sql`, `20261125000000_prompt_editing.sql`). A migration adds a `category` column to `public.prompts` with the values `runtime`, `pipeline` and `gate` (the existing keys are `runtime`), and the app's prompt reader (`get_active_prompts` and its callers) returns runtime keys only (AI-PROMPT-CATEGORY). The Pipeline and Quality gate prompt texts then get into the database by an import that prints SQL from the owner's prompt files. The owner runs the migration and the import as a production step, with a dry run, a check query and an undo. The new keys follow the existing key format and are made from the row's Feature ID and name; they are listed in `docs/ai/AI_11_feature-pages.md` section 5.2 (for example `p01_find_episodes`). The proposed prompt versions in `prompt-table-source/proposed4/` are not imported or published in this work (AI-PROPOSED4-HOLD); what that means for the seed text of some Runtime rows is open (section 10.4, row 3).
 
 **Fields.**
 
@@ -410,7 +410,7 @@ The 19 initial rows are listed by id, name, category and prompt in `docs/ai/AI_1
 - Source text is stored only as the excerpt each story actually uses, in a table readable by admin and writer only, never by the app or users.
 - Source excerpts and sample texts from books are never committed to the repository. An import script reads them from the local story-pipeline folder and prints SQL for the owner to run. Test fixtures use short invented text.
 
-**Running (AI-RUN-PERMISSION, AI-LAB-STUB).** The Run route uses the fake model in every test and end-to-end run, and the stub marker shows. Only the owner presses Run on the live admin.
+**Running (AI-RUN-PERMISSION, AI-LAB-STUB, AI-RUN-LIVE).** The Run route uses the fake model in every test and end-to-end run, and the stub marker shows. Agents and tests never press Run on the live admin; there, admin and writer both may press Run (FR-AILAB-1).
 
 | ID | Requirement | Priority | Decision |
 |---|---|---|---|
@@ -577,7 +577,7 @@ Measurement will be designed later. No success measures or north star are set fo
 
 ### 10.1 Decided rows that changed this document
 
-Every decided row in `docs/DECISIONS.md`, up to 2026-11-17, is applied in sections 3 to 8 (issues #295 and #298). The decisions of 2026-11-21 are applied in issue #369. The decisions of 2026-11-26 on the AI feature registry and the prompt lab (AI-REGISTRY to AI-ROLEPLAY-FORMAT, and the owner's additions AI-REGISTRY-STORE to AI-PROPOSED4-HOLD) are applied in sections 3.2, 4.14 and 4.15 (issue #466). Where this document and that file disagree, that file wins.
+Every decided row in `docs/DECISIONS.md`, up to 2026-11-17, is applied in sections 3 to 8 (issues #295 and #298). The decisions of 2026-11-21 are applied in issue #369. The decisions of 2026-11-26 on the AI feature registry and the prompt lab (AI-REGISTRY to AI-ROLEPLAY-FORMAT, and the owner's additions and answers AI-REGISTRY-STORE to AI-REQUIREMENT-FIELD) are applied in sections 3.2, 4.14 and 4.15 (issue #466). Where this document and that file disagree, that file wins.
 
 ### 10.2 Open decisions, copied from the decision log
 
@@ -592,9 +592,7 @@ Every decided row in `docs/DECISIONS.md`, up to 2026-11-17, is applied in sectio
 | MORIARTY-READ | Yue's reading of the 31 cards of Moriarty story 1 (MORIARTY-6). | Stories 2 to 7 wait for it. |
 | AI-SPEND-WARNING | The read-only "today's spend" line (FR-AILAB-3) is not a cap. If a runaway loop becomes a worry, a soft warning at a chosen amount can be added later without blocking. | Not decided. |
 | AI-EXAMPLE-RECHECK | Whether confirmed examples need a second look when a prompt is published again. | Not decided. |
-| AI-SEED-STATUS | The seed gives some new rows a status other than exploring (P-03 passed, P-04 frozen, G-03 and G-04 not started), while AI-PAGE-STATUS says every feature starts as exploring. | Owner to decide before the seed runs. |
-| AI-RUN-LIVE | AI-RUN-PERMISSION lets admin and writer press Run; AI-LAB-STUB says only the owner presses Run on the live admin. Whether that limits writers on the live admin, or only tests and agents. | Owner to decide. |
-| AI-PROMPT-CATEGORY | How FR-AIREG-5 fits the current `public.prompts` (section 10.4, row 3). | Owner to decide before the migration is written. |
+| AI-PROPOSED-SEED-TEXT | The seed text of R-02 to R-06 names proposed prompt versions that are not imported (AI-PROPOSED4-HOLD; section 10.4, row 3). | Not decided. |
 
 ### 10.3 Items that need the original test data
 
@@ -611,7 +609,7 @@ Every decided row in `docs/DECISIONS.md`, up to 2026-11-17, is applied in sectio
 |---|---|---|
 | 1 | The prototype and wireframes disagree with the decision log: four cards at step start, a landing page after each step, a third-pause warning and timer reset, the old note field, a Language row, a Reminders row, a weekly total and a time-limited Home state. The prototype must be aligned before it is used as a screen specification. | Open |
 | 2 | Master PRD F-SA-4 says goal text is also used for the dialogue responses; the later goal-dialogue spec limits it to classification and split. This document follows the later one; since GOAL-SHAPE-LOCAL the shape is decided by a local rule, so goal text goes to one model call, the split. | Confirm |
-| 3 | FR-AIREG-5 and the current schema (AI-PROMPT-CATEGORY). (a) `public.prompts` has no category column, so `pipeline`, `gate` and `runtime` need a migration. (b) `get_active_prompts` returns every active row to the server; the app looks prompts up by key, so it uses only runtime keys, but it would still receive active Pipeline and Quality gate rows unless the function filters by category or those rows are never active. (c) A prompt key must match `^[a-z][a-z0-9_]*$`; the seed's prompt names (for example `S1_find-episodes`, `scripts/deepseek_cards`) do not, so each new row needs a key name. (d) `public.ai_features.slug` has the same pattern, so the Feature ID (`P-01`) is a new column beside the slug, and every row needs at least one prompt key. (e) The seed text of some Runtime rows names proposed versions (for example "step_cards v2 (v4 proposed)") that are not imported (AI-PROPOSED4-HOLD); the row shows the seed text only. (f) For the 7 Runtime rows, how the seed's "requirement" relates to the edited section (a) purpose, which they keep. | Open |
+| 3 | The registry and the current schema. Resolved by the owner on 2026-11-26: the `category` column of `public.prompts`, the runtime-only prompt reader, the key names and the Feature ID column (AI-PROMPT-CATEGORY); the start status of the new rows (AI-SEED-STATUS); the requirement field of the Runtime rows (AI-REQUIREMENT-FIELD). Still open: the seed text of R-02 to R-06 names proposed versions (for example "step_cards v2 (v4 proposed)") that are not imported (AI-PROPOSED4-HOLD, AI-PROPOSED-SEED-TEXT). | Open (proposed versions only) |
 
 Risks that remain:
 - **The magic may not carry over to English or to Oppenheimer.** Only characters from the founder's own culture were validated (constitution section 5).
