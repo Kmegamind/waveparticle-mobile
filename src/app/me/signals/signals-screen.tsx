@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { changePrefs, DEFAULT_PREFS, readPrefs, type Prefs, deviceStorage } from "@/lib/me/prefs";
 import { setKeepClockRunningAction } from "../actions";
 
@@ -77,25 +77,31 @@ export function SignalsScreen({ keepClockRunning }: { keepClockRunning: boolean 
   const [lockReason, setLockReason] = useState<string | null>(null);
   const [clockReason, setClockReason] = useState<string | null>(null);
 
-  // This visit's last change; a change starts from it or from storage, never from `prefs`, which
-  // is still the defaults until the effect below has run, so Appearance and Plain text are kept (#490).
+  // This visit's last change. A change starts from it or from storage, never from `prefs`, so
+  // Appearance and Plain text are kept and a toggle flips the stored value (#490).
   const held = useRef<Prefs | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    // Device settings are read after hydration so the server HTML stays the same everywhere. A
+    // layout effect runs inside the hydration commit, before any tap is handled, so the switches
+    // never accept a tap while they still show the defaults (#490).
     setPrefs(held.current ?? readPrefs(deviceStorage()));
   }, []);
 
-  function setSignal(key: keyof Prefs["signals"], value: boolean) {
+  function changeSignal(key: keyof Prefs["signals"], value: (current: boolean) => boolean) {
     const next = changePrefs(deviceStorage(), held.current, (current) => ({
       ...current,
-      signals: { ...current.signals, [key]: value },
+      signals: { ...current.signals, [key]: value(current.signals[key]) },
     }));
     held.current = next;
     setPrefs(next);
   }
 
+  const toggleSignal = (key: keyof Prefs["signals"]) => changeSignal(key, (on) => !on);
+  const setSignal = (key: keyof Prefs["signals"], on: boolean) => changeSignal(key, () => on);
+
   async function toggleLockScreen() {
-    if (prefs.signals.lockScreen) {
+    if ((held.current ?? readPrefs(deviceStorage())).signals.lockScreen) {
       setLockReason(null);
       setSignal("lockScreen", false);
       return;
@@ -131,14 +137,14 @@ export function SignalsScreen({ keepClockRunning }: { keepClockRunning: boolean 
         <Row
           id="sig-time-up"
           on={prefs.signals.timeUp}
-          onToggle={() => setSignal("timeUp", !prefs.signals.timeUp)}
+          onToggle={() => toggleSignal("timeUp")}
           text="One light vibration at 00:00, on phones that support it."
           title="Time-up signal"
         />
         <Row
           id="sig-new-card"
           on={prefs.signals.newCard}
-          onToggle={() => setSignal("newCard", !prefs.signals.newCard)}
+          onToggle={() => toggleSignal("newCard")}
           text="A light vibration when a new card arrives."
           title="New-card signal"
         />

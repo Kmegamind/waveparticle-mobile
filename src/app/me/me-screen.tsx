@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import {
   applyPrefs,
   changePrefs,
@@ -59,11 +59,12 @@ const sinceDate = (iso: string) =>
 
 function usePrefs(): [Prefs, (change: (current: Prefs) => Prefs) => Prefs] {
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
-  // This visit's last change. A change starts from it or from storage, never from `prefs`, which
-  // is still the defaults until the effect below has run (#490).
+  // This visit's last change. A change starts from it or from storage, never from `prefs` (#490).
   const held = useRef<Prefs | null>(null);
-  useEffect(() => {
-    // Device settings are read after hydration so the server HTML stays the same everywhere.
+  useLayoutEffect(() => {
+    // Device settings are read after hydration so the server HTML stays the same everywhere. A
+    // layout effect runs inside the hydration commit, before any tap is handled, so the controls
+    // never accept a tap while they still show the defaults (#490).
     setPrefs(held.current ?? readPrefs(deviceStorage()));
   }, []);
   function update(change: (current: Prefs) => Prefs) {
