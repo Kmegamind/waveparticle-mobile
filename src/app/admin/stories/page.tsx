@@ -1,39 +1,41 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { readCompanionsData } from "@/lib/content-fields/reader";
 import { storyList } from "@/lib/story-cards/admin";
 import { leaksForStory } from "@/lib/story-cards/checks";
-import { readStageZeros, readStoryCardsData, sceneCheckFor } from "@/lib/story-cards/reader";
+import { lifePath } from "@/lib/story-cards/life-path";
+import {
+  COMPANION_ID,
+  readStageZeros,
+  readStoryCardsData,
+  sceneCheckFor,
+} from "@/lib/story-cards/reader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PublishFirstNotice } from "./publish-first-notice";
-import { Breadcrumb } from "@/app/admin/admin-ui";
+import { Breadcrumb, KeyChip, PageHead, StatePill } from "@/app/admin/admin-ui";
 
-// ADM-06 Stories (#293, #304): Oppenheimer's stories in story order with their number of parts and
-// cards, and how many cards fail a check. The layout already checked the role; the rows come
-// through the signed-in user's own client, whose policies show the cards to content editors only.
+// ADM-06 Stories (#293, #304), drawn as the prototype's Life path table (#443): Oppenheimer's
+// stories grouped by Life Path period, each with its number, title, key, Life path description and
+// the state of that description, plus its part and card counts and how many cards fail a check.
+// The layout already checked the role; the rows come through the signed-in user's own client,
+// whose policies show the cards and the field versions to content editors only.
 export default function AdminStories() {
   return (
-    <>
-      <Breadcrumb items={[{ label: "Content" }]} />
-      <h1>Stories</h1>
-      <p className="admin-lede">
-        Oppenheimer&apos;s stories in story order. Open a story to read and edit its background
-        card, its cards and its part titles. A card that fails a check (its length, a year, date or
-        age, a word from a later part, a person not in the scene table, a banned word, or a repeat
-        of another card of its story) is counted as failing.
-      </p>
-      <PublishFirstNotice />
-      <Suspense fallback={null}>
-        <StoryTable />
-      </Suspense>
-    </>
+    <Suspense fallback={null}>
+      <LifePathPage />
+    </Suspense>
   );
 }
 
-async function StoryTable() {
+async function LifePathPage() {
   await connection();
   const client = await createSupabaseServerClient();
-  const [data, zeros] = await Promise.all([readStoryCardsData(client), readStageZeros()]);
+  const [data, zeros, fields] = await Promise.all([
+    readStoryCardsData(client),
+    readStageZeros(),
+    readCompanionsData(client, COMPANION_ID),
+  ]);
   const rows = storyList(
     data.stories,
     data.parts,
@@ -45,45 +47,99 @@ async function StoryTable() {
       ),
     (storyId) => sceneCheckFor(zeros, storyId),
   );
+  const companion = fields.companions.find((row) => row.id === COMPANION_ID);
+  const periods = companion
+    ? lifePath(companion.key_code, fields.stories, data.ok ? rows : [], fields.fields)
+    : [];
   return (
     <>
+      <Breadcrumb
+        items={[
+          { label: "Companions", href: "/admin/companions" },
+          {
+            label: companion?.name ?? "Companion",
+            href: `/admin/companions/${COMPANION_ID}`,
+          },
+        ]}
+      />
+      <PageHead
+        title="Stories"
+        lede={
+          <>
+            Oppenheimer&apos;s stories in story order, by Life Path period. Periods are named, never
+            dated. Open a story to edit its cards and part titles. Description state is the state of
+            the Life path description only (Published, a draft not published yet, or Not written),
+            not of the story&apos;s cards; the description and the period names are edited on the
+            Companion&apos;s page.
+          </>
+        }
+      />
+      <PublishFirstNotice />
       {data.ok ? null : (
         <p className="admin-notice" role="alert">
           The stories or their cards could not be read. Try again later.
         </p>
       )}
-      <ol aria-label="Stories" className="admin-text-list admin-story-list">
-        {rows.map((row) => (
-          <li key={row.id}>
-            <article aria-label={row.title} className="admin-text">
-              <header className="admin-text-head">
-                <h2 className="admin-story-title">
-                  <span className="admin-page-id">{row.sequence}</span>{" "}
-                  <Link href={`/admin/stories/${row.id}`}>{row.title}</Link>
-                </h2>
-                <p className="admin-text-key">{row.key}</p>
-              </header>
-              <dl className="admin-history-facts">
-                <dt>Parts</dt>
-                <dd data-testid="parts">{row.parts}</dd>
-                <dt>Cards</dt>
-                <dd data-testid="cards">
-                  {row.cards} part {row.cards === 1 ? "card" : "cards"}
-                  {row.background ? " and a background card" : ", no background card"}
-                </dd>
-                {row.failing > 0 ? (
-                  <>
-                    <dt>Failing</dt>
-                    <dd>
-                      {row.failing} {row.failing === 1 ? "card fails" : "cards fail"} a check
-                    </dd>
-                  </>
-                ) : null}
-              </dl>
-            </article>
-          </li>
-        ))}
-      </ol>
+      {fields.ok && companion ? null : (
+        <p className="admin-notice" role="alert">
+          The Life Path periods and descriptions could not be read. Try again later.
+        </p>
+      )}
+      <div className="admin-panel admin-scroll">
+        <table aria-label="Stories" className="admin-table admin-life-path">
+          <thead>
+            <tr>
+              <th className="admin-num" scope="col">
+                #
+              </th>
+              <th scope="col">Story</th>
+              <th scope="col">Life path description</th>
+              <th scope="col">Description state</th>
+            </tr>
+          </thead>
+          {periods.map((period) => (
+            <tbody aria-label={`Period ${period.number}: ${period.name}`} key={period.number}>
+              <tr className="admin-period-row">
+                <td colSpan={4}>
+                  {period.name} <KeyChip>{period.key}</KeyChip>
+                </td>
+              </tr>
+              {period.stories.map((story) => (
+                <tr aria-label={story.title} key={story.id}>
+                  <td className="admin-num">{story.sequence}</td>
+                  <td>
+                    <Link className="admin-cell-name" href={`/admin/stories/${story.id}`}>
+                      {story.title}
+                    </Link>
+                    <br />
+                    <KeyChip>{story.key}</KeyChip>
+                    {story.counts ? (
+                      <>
+                        <br />
+                        <span className="admin-cell-note">
+                          <span data-testid="parts">{story.counts.parts}</span> ·{" "}
+                          <span data-testid="cards">{story.counts.cards}</span>
+                          {story.counts.failing ? ` · ${story.counts.failing}` : null}
+                        </span>
+                      </>
+                    ) : null}
+                  </td>
+                  <td>
+                    {story.description.text ?? (
+                      <span className="admin-cell-note admin-path-note">
+                        {story.description.note}
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    <StatePill state={story.state.pill}>{story.state.label}</StatePill>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          ))}
+        </table>
+      </div>
     </>
   );
 }

@@ -4495,7 +4495,6 @@ input.admin-text-field {
 }
 
 /* ADM-06 Stories (issue 293). */
-.admin-story-title,
 .admin-story-part {
   font-size: var(--adm-h2-size);
   font-weight: 600;
@@ -4732,6 +4731,27 @@ input.admin-text-field {
   position: absolute;
   white-space: nowrap;
   width: 1px;
+}
+
+/* ADM-06 Stories as the prototype's Life path table (issue 443). It scrolls sideways in
+   .admin-scroll, defined above. */
+.admin-life-path td {
+  overflow-wrap: anywhere;
+}
+
+.admin-period-row td {
+  background: var(--adm-soft);
+  font-weight: 600;
+}
+
+/* The prototype's period key takes the row's weight, as its chip sets none. */
+.admin-period-row .admin-chip {
+  font-weight: inherit;
+}
+
+/* The prototype's story title is <b> (bolder: 700). */
+.admin-life-path .admin-cell-name {
+  font-weight: 700;
 }
 
 /* Issue 446: ADM-08 Prompts in the prototype's layout. The prompt page is two equal panels 14 px apart
