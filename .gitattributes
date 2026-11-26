@@ -3,3 +3,7 @@
 # (`--check` fails on a duplicate or out-of-order line).
 docs/api/README.md merge=union
 docs/architecture/README.md merge=union
+
+# docs/DECISIONS.md: two branches that each add a row merge without a conflict (#482). GitHub's
+# web merge ignores this; merge on the command line and look for a duplicated row (docs/testing.md).
+docs/DECISIONS.md merge=union
