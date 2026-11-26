@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import Link from "next/link";
 import {
+  AI_FEATURE_STATUS_LABEL,
   featureName,
   featurePrompts,
   readAiFeatures,
@@ -10,10 +11,12 @@ import {
   type AiFeatureItem,
   type FeaturePrompt,
 } from "@/lib/ai-features/admin";
+import { statusHistory } from "@/lib/ai-features/edit";
 import { readPromptVersions } from "@/lib/prompts/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Breadcrumb, KeyChip, PageHead, StatePill } from "../../admin-ui";
 import { FeatureStatusPill, ItemSource, MarkPill, NotWrittenYet } from "../feature-ui";
+import { readPeople, readStatusHistory } from "../load";
 
 export const instant = false;
 
@@ -23,13 +26,14 @@ export const instant = false;
 // "Draft - owner to edit" mark, "Not written yet" for an empty section; (d) the status; (e) each
 // prompt key's published text and its draft, read live from public.prompts at page load with the
 // call of ADM-08 Prompts; the retry_hints fix; (f) the imported test runs, fake-model runs marked.
-// Editing (a) to (c) and changing the status come with #430 T6 (AI-PAGE-EDIT). An unknown feature
-// shows the normal not-found page.
+// #453 (#430 T6, AI-PAGE-EDIT): the header links to the editors of (a) and (c) and of (b), for
+// admins and writers; (d) says who set the status and when, and links to its history and editor
+// (admin only). An unknown feature shows the normal not-found page.
 export default async function AdminAiFeature({ params }: PageProps<"/admin/ai-features/[slug]">) {
   await connection();
   const { slug } = await params;
   const client = await createSupabaseServerClient();
-  const [features, runs, versions] = await Promise.all([
+  const [features, runs, versions, history, people] = await Promise.all([
     readAiFeatures(async (table, order) => {
       const { data, error } = await client.from(table).select("*").order(order);
       return { data, error };
@@ -46,6 +50,8 @@ export default async function AdminAiFeature({ params }: PageProps<"/admin/ai-fe
       const { data, error } = await client.rpc(name, args);
       return { data, error };
     }),
+    readStatusHistory(client, slug),
+    readPeople(client, slug),
   ]);
   const feature = features?.find((row) => row.slug === slug) ?? null;
   if (features !== null && !feature) notFound();
@@ -70,6 +76,8 @@ export default async function AdminAiFeature({ params }: PageProps<"/admin/ai-fe
   const prompts = versions === null ? null : featurePrompts(feature.prompt_keys, versions);
   const [retryHints] = versions === null ? [null] : featurePrompts(["retry_hints"], versions);
   const groups = testRunGroups(runs ?? []);
+  const [latest] = statusHistory(feature, history ?? [], people);
+  const base = `/admin/ai-features/${feature.slug}`;
 
   return (
     <>
@@ -77,6 +85,16 @@ export default async function AdminAiFeature({ params }: PageProps<"/admin/ai-fe
       <PageHead
         title={feature.title}
         lede="Every AI feature page has the same six sections, (a) to (f), in this order."
+        actions={
+          <>
+            <Link className="button-gray" href={`${base}/purpose`}>
+              Edit purpose and approach
+            </Link>
+            <Link className="button-gray" href={`${base}/pass`}>
+              Edit pass standard
+            </Link>
+          </>
+        }
       />
       <div className="admin-sections">
         <Section id="purpose" title="(a) Purpose">
@@ -90,7 +108,7 @@ export default async function AdminAiFeature({ params }: PageProps<"/admin/ai-fe
             <ol className="admin-questions">
               {feature.pass_questions.map((item, index) => (
                 <li key={index}>
-                  {item.text}
+                  <span className="admin-question-text">{item.text}</span>
                   <ItemSource item={item} />
                 </li>
               ))}
@@ -111,7 +129,22 @@ export default async function AdminAiFeature({ params }: PageProps<"/admin/ai-fe
           }
         >
           <p className="admin-note">
-            Only an admin changes the status; every change is kept with who, when and why.
+            {history === null ? (
+              "Who set it could not be read"
+            ) : (
+              <>
+                Set to {AI_FEATURE_STATUS_LABEL[latest.to]} by{" "}
+                {latest.person === "Setup" ? "the setup" : latest.person}
+                {latest.dateTime ? (
+                  <>
+                    {" · "}
+                    <time dateTime={latest.dateTime}>{latest.time}</time>
+                  </>
+                ) : null}
+              </>
+            )}
+            {" · "}
+            <Link href={`${base}/status`}>history and change (admin only)</Link>
           </p>
         </Section>
 
