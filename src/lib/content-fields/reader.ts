@@ -12,6 +12,8 @@ export type CompanionRow = {
   name: string;
   short_name: string;
   tags: string;
+  /** The one line under his name on the Companions screen (#442 shows it, read only). */
+  line: string;
   who: string;
   key_code: string;
   mode: string;
@@ -29,7 +31,7 @@ export type StoryFieldsRow = {
   path: string;
 };
 
-const COMPANION_COLUMNS = "id, position, name, short_name, tags, who, key_code, mode";
+const COMPANION_COLUMNS = "id, position, name, short_name, tags, line, who, key_code, mode";
 const STORY_COLUMNS = "id, companion_id, sequence, title, period, goal_short, who, opening, path";
 const FIELD_COLUMNS = "key, version, body, published, published_at";
 
