@@ -74,7 +74,7 @@ export type StoryCardsData = {
 };
 
 /** The Companion whose stories have cards. */
-const COMPANION_ID = "oppenheimer";
+export const COMPANION_ID = "oppenheimer";
 
 export async function readStoryCardsData(
   client: SupabaseClient,
