@@ -1,0 +1,8 @@
+{
+  "targets": [
+    { "id": "pause.shown_event", "suite": "pause" },
+    { "id": "pause.repeat_first_attempt", "suite": "pause" },
+    { "id": "pause.failure_rate", "suite": "pause" },
+    { "id": "pause.retry_rate", "suite": "pause" }
+  ]
+}

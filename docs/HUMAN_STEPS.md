@@ -34,42 +34,76 @@ is one run; write the two project refs into the table below once they are known.
   secret.
 - **Vercel and GitHub:** the owner's own accounts. Agents have no Vercel access.
 
-## Open now (2026-11-24)
+## Open now (2026-11-25)
 
 Steps that are waiting today. Tick them off by deleting the line in a pull request once done.
 
-1. **[dev, prod] Apply to dev, then prod: `supabase/migrations/20261128000000_hotlines.sql`**
-   (#118, `docs/deploy.md`, Help lines by region). #118 is already merged and deployed, so this is
-   due now: until it runs, choosing a country on Me fails. It goes after
-   `20261125000000_prompt_editing.sql`. Running it a second time stops with an error and changes
-   nothing. Check: `select count(*) from public.hotlines;` in the SQL editor returns 1 (the US
-   entry), and `npm run check:deploy` no longer says "no table public.hotlines". Also confirm
-   (with the queries in "Confirm that a migration ran", below) that the two migrations before it
-   ran: `20261126000000_prompt_activated_at.sql` (#317, a trigger on `public.prompts`) and
-   `20261127000000_safety_alarm_days.sql` (#117, the table `private.safety_alarm_days`). Their
-   state is not recorded anywhere.
-2. **[prod] Fix the published story cards that fail the checks** (#377, #46): follow
-   `docs/deploy.md`, Story cards, "Fixing the published cards that fail the checks (#377)", steps 1
-   to 9: give your account the `admin` role (pull request #394 with the script is already merged,
-   so use an up-to-date `main`), run the dry run, read the
-   list (expect 25 cards to publish and none skipped), run the fix, run the check again, then look
-   at `/admin/stories` (no story "Failing") and `/admin/publish-history`. Run it on dev first if dev
-   is a separate project.
-3. **[prod] Set `MODEL_CALL_LIMIT_ENABLED` to `0` in Vercel, scope Production** (TEST-NO-CAP,
-   #256): Vercel → the project → **Settings** → **Environment Variables** → **Add New** (or the
-   existing row → **Edit**), key `MODEL_CALL_LIMIT_ENABLED`, value `0` (no quotes), environment
-   **Production** only, server only (no `NEXT_PUBLIC_` prefix) → **Save**. Then redeploy (below).
-   Before public release, set it back to `1` or remove it.
-4. **[prod] Publish `plan_split` version 2** (PLAN-PROMPT, issue #40, commit 2edcbb4). Either way
-   below; run it on dev first if dev is a separate project.
-   - Admin (records who published): sign in on the live site with an `admin` account →
-     `/admin/prompts` → **plan_split** → paste the settings and the prompt of
-     `docs/ai/prompts/plan_split.md` (version 2) → **Save draft** → read the diff against the
-     active version → **Publish**.
-   - Import (no Publish history row): `node scripts/prompts/import.mjs > prompts-import.sql`, paste
-     the file into the SQL editor (Supabase dashboard → the project → **SQL Editor**) and press
-     **Run**. It adds a version only for prompts whose file changed and makes it active.
-   The app uses the new version within one minute.
+1. **[dev, prod] Confirm that three migrations ran: `20261126000000_prompt_activated_at.sql`,
+   `20261127000000_safety_alarm_days.sql` and `20261129000000_research_conditions.sql`** (#317,
+   #117, #114). Their state is not recorded anywhere. Each query below only reads the catalog; run
+   it in the SQL editor (Supabase dashboard → the project → **SQL Editor** → **New query**). Every
+   column must be `true`. A `false` means that migration did not run (fully): see "Confirm that a
+   migration ran", below, before running it.
+   - `20261126000000_prompt_activated_at.sql` (#317, a trigger on `public.prompts`):
+
+     ```sql
+     select
+       exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+               where n.nspname = 'private' and p.proname = 'fill_prompt_activated_at') as fn,
+       exists (select 1 from pg_trigger
+               where tgrelid = 'public.prompts'::regclass
+                 and tgname = 'prompts_fill_activated_at') as trg;
+     ```
+
+   - `20261127000000_safety_alarm_days.sql` (#117, the table `private.safety_alarm_days`):
+
+     ```sql
+     select
+       to_regclass('private.safety_alarm_days') is not null as tbl,
+       exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+               where n.nspname = 'public'
+                 and p.proname = 'record_safety_classifier_failure') as fn;
+     ```
+
+   - `20261129000000_research_conditions.sql` (#114, `docs/deploy.md`, the research flag):
+
+     ```sql
+     select
+       to_regclass('public.research_conditions') is not null as tbl,
+       exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+               where n.nspname = 'public' and p.proname = 'research_condition') as fn,
+       exists (select 1 from information_schema.columns
+               where table_schema = 'public' and table_name = 'sessions'
+                 and column_name = 'story_off_at') as col,
+       exists (select 1 from pg_trigger
+               where tgrelid = 'public.sessions'::regclass
+                 and tgname = 'sessions_keep_story_off_at') as trg;
+     ```
+
+### Later, by owner decision
+
+- **[prod] Fix the published story cards that fail the checks** (#377, #46): Later, by owner
+  decision (2026-11-25). The cards stay published as they are. The steps stay in
+  `docs/deploy.md`, Story cards, "Fixing the published cards that fail the checks (#377)", for
+  when the owner moves #377 back.
+
+### Done
+
+Done by the owner in prod, reported on 2026-11-25 (#449), with the owner's check results.
+
+- 2026-11-25: applied `supabase/migrations/20261128000000_hotlines.sql` (#118). Check:
+  `select count(*) from public.hotlines;` returned 1, the US entry (988).
+- 2026-11-25: prompt import (`node scripts/prompts/import.mjs`, pasted into the SQL editor) for
+  `pause_predicament`, `plan_split`, `rest_reply`, `retry_hints`, `safety_classifier` and
+  `stuck_story`. This publishes `plan_split` version 2 (PLAN-PROMPT, issue #40), the step that was
+  open here. `return_popup`, `step_cards` and `closing_line` were left untouched. No check result
+  was reported.
+- 2026-11-25: applied `supabase/migrations/20261130000000_ai_features.sql` (#436, `docs/deploy.md`,
+  AI feature pages, step 1). No check result was reported.
+- 2026-11-25: ran the `ai_features` seed (`docs/deploy.md`, AI feature pages, step 2). Check: 7
+  rows.
+- Before 2026-11-25 (date not recorded): set `MODEL_CALL_LIMIT_ENABLED` to `0` in Vercel, scope
+  Production (TEST-NO-CAP, #256). Before public release, set it back to `1` or remove it.
 
 ## Apply migrations
 

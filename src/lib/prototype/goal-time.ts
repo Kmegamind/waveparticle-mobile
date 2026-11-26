@@ -70,13 +70,18 @@ function locateTime(goal: string): TimeHit | null {
       hyphen: false,
     });
   }
-  const pattern = new RegExp(`\\b${AMOUNT}(\\s*|-)${UNIT}\\b`, "g");
+  // "an hour and a half" and "one and a half hours" add half a unit (#416, NF7 v7 section 3.1).
+  const pattern = new RegExp(
+    `\\b${AMOUNT}(\\s+and\\s+a\\s+half)?(\\s*|-)${UNIT}(\\s+and\\s+a\\s+half)?\\b`,
+    "g",
+  );
   for (const match of text.matchAll(pattern)) {
-    const amount = WORD_NUMBERS[match[1]] ?? Number(match[1]);
-    const minutes = wholeMinutes(toMinutes(amount, match[3]));
+    const half = match[2] !== undefined || match[5] !== undefined ? 0.5 : 0;
+    const amount = (WORD_NUMBERS[match[1]] ?? Number(match[1])) + half;
+    const minutes = wholeMinutes(toMinutes(amount, match[4]));
     if (minutes === null) continue;
     const start = match.index;
-    candidates.push({ minutes, start, end: start + match[0].length, hyphen: match[2] === "-" });
+    candidates.push({ minutes, start, end: start + match[0].length, hyphen: match[3] === "-" });
   }
   candidates.sort((x, y) => x.start - y.start);
   for (const hit of candidates) {
