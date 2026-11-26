@@ -1,10 +1,13 @@
-import { expect, test } from "@playwright/test";
-import { signIn, STUB_SUPABASE } from "./support/account";
+import { execFileSync } from "node:child_process";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import { expect, test, type Page } from "@playwright/test";
+import { baseUrlOf, signIn, STUB_SUPABASE } from "./support/account";
 
 // #436 (part of #430): the local Supabase stand-in supports the AI feature tables of
-// 20261130000000_ai_features.sql, as the later admin pages will call them. No page exists yet
-// (no UI in this pull request), so these tests call the stub's REST endpoints directly with each
-// role's token. The features are shared by every test, so this file runs in order and resets them.
+// 20261130000000_ai_features.sql, as the admin pages call them. These first tests call the stub's
+// REST endpoints directly with each role's token; the #439 pages are tested at the end of the
+// file. The features are shared by every test, so this file runs in order and resets them.
 
 test.describe.configure({ mode: "serial" });
 
@@ -176,4 +179,348 @@ test("#436 AC3: imported test runs are read back, a fake-model run marked as suc
   expect(runs[0]).toMatchObject({ kind: "fake_model", prompt_version: 2, pass_count: 6 });
   const none = await stub("/rest/v1/ai_feature_test_runs?kind=eq.real", writer.token);
   expect(await none.json()).toEqual([]);
+});
+
+// #439 (part of #430): the AI features index and one read-only page per feature. They run in this
+// file so they share its order with the #436 tests above (both reset the features). The features
+// are the seed of scripts/ai-features/seed.mjs; the test runs are one fake-model run imported with
+// scripts/ai-features/import-runs.mjs from e2e/fixtures/offline-run-stub.
+test.describe("#439 AI feature pages", () => {
+  // The admin is a desktop tool (#313).
+  test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
+  const TITLES = [
+    "Goal split (plan_split)",
+    "Step cards (step_cards)",
+    "Pause message (stuck_story + pause_predicament)",
+    "Rest reply (rest_reply)",
+    "Return pop-up (return_popup)",
+    "Closing line (closing_line)",
+    "Safety classifier (safety_classifier)",
+  ];
+
+  async function importFakeRun() {
+    // The import script is an ES module that the test runner cannot load, so a separate node
+    // process turns the run folder into the rows its SQL would insert.
+    const script = pathToFileURL(
+      path.join(__dirname, "..", "scripts", "ai-features", "import-runs.mjs"),
+    ).href;
+    const folder = path.join(__dirname, "fixtures", "offline-run-stub");
+    const code =
+      `const { readRunFolder, testRunRows } = await import(${JSON.stringify(script)});` +
+      `console.log(JSON.stringify(testRunRows(readRunFolder(${JSON.stringify(folder)}),` +
+      ` { reportPath: "e2e/fixtures/offline-run-stub/report.md" })));`;
+    const rows = JSON.parse(
+      execFileSync(process.execPath, ["--input-type=module", "-e", code], { encoding: "utf8" }),
+    ) as unknown[];
+    expect(rows).toHaveLength(2);
+    const answer = await stub("/__ai_features", null, { testRuns: rows });
+    expect(answer.status).toBe(200);
+  }
+
+  async function activePrompt(token: string, key: string): Promise<string> {
+    const answer = await stub("/rest/v1/rpc/list_prompt_versions", token, {});
+    const rows = (await answer.json()) as { key: string; active: boolean; body: string }[];
+    const row = rows.find((item) => item.key === key && item.active);
+    if (!row) throw new Error(`no active ${key}`);
+    return row.body;
+  }
+
+  const section = (page: Page, name: string | RegExp) => page.getByRole("region", { name });
+
+  test("test_439_ac1_the_menu_opens_the_index_of_the_7_features_with_status_pills", async ({
+    page,
+    context,
+  }) => {
+    await importFakeRun();
+    await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+    await page.goto("/admin");
+    const menu = page.getByRole("navigation", { name: "Admin pages" });
+    await menu.getByRole("link", { name: /AI features/ }).click();
+    await expect(page).toHaveURL(/\/admin\/ai-features$/);
+    await expect(page.getByRole("heading", { level: 1, name: "AI features" })).toBeVisible();
+    await expect(menu.getByRole("link", { name: /AI features/ })).toContainText("ADM-16");
+    await expect(menu.getByRole("link", { name: /AI features/ })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    const table = page.getByRole("table", { name: "AI features" });
+    const rows = table.locator("tbody tr");
+    await expect(rows).toHaveCount(7);
+    for (const [index, title] of TITLES.entries()) {
+      const row = rows.nth(index);
+      await expect(row.getByRole("link", { name: title, exact: true })).toBeVisible();
+      await expect(row.locator(".admin-pill-ai-exploring")).toHaveText("Exploring");
+    }
+    // The imported run is the pause message's last run, marked as the fake model.
+    await expect(rows.nth(2)).toContainText("2026-11-25 20:15");
+    await expect(rows.nth(2)).toContainText("Fake model (stub)");
+    await expect(rows.nth(3)).toContainText("No run yet");
+    await expect(rows.nth(0)).toContainText(
+      "Turn the goal the person typed and the minutes they gave into steps they can start.",
+    );
+
+    await rows.nth(2).getByRole("link").click();
+    await expect(page).toHaveURL(/\/admin\/ai-features\/pause_message$/);
+    await expect(page.getByRole("heading", { level: 1, name: TITLES[2] })).toBeVisible();
+    // A detail page marks its menu row.
+    await expect(menu.getByRole("link", { name: /AI features/ })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+  });
+
+  test("test_439_ac2_sections_a_to_d_show_each_draft_with_its_source", async ({
+    page,
+    context,
+  }) => {
+    await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+    await page.goto("/admin/ai-features/pause_message");
+    const purpose = section(page, "(a) Purpose");
+    const first = purpose.getByRole("listitem").first();
+    await expect(first).toContainText("Pause opens the rest page");
+    await expect(first).toContainText("Draft - owner to edit");
+    await expect(first.locator(".admin-chip")).toHaveText("docs/PRD.md:271");
+    const questions = section(page, "(b) Pass standard").getByRole("listitem");
+    await expect(questions).toHaveCount(9);
+    for (const item of await questions.all()) {
+      await expect(item).toContainText("Draft - owner to edit");
+      await expect(item).toContainText("Source:");
+    }
+    await expect(section(page, "(c) Current approach").getByRole("listitem")).toHaveCount(5);
+    const status = section(page, /^\(d\) Status/);
+    await expect(status.locator(".admin-pill-ai-exploring")).toHaveText("Exploring");
+    // Read view: no editor and no status change here (#430 T6).
+    await expect(page.getByRole("button")).toHaveText(["Sign out"]);
+    await expect(page.getByRole("textbox")).toHaveCount(0);
+  });
+
+  test("test_439_ac2_an_empty_section_reads_not_written_yet", async ({ page, context }) => {
+    const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+    const saved = await stub("/rest/v1/rpc/save_ai_feature_sections", writer.token, {
+      target_feature: "closing_line",
+      new_purpose: [{ text: "Owner text.", source: null, draft: false }],
+      new_pass_questions: [],
+      new_approach: [],
+    });
+    expect(saved.status).toBe(204);
+    await page.goto("/admin/ai-features/closing_line");
+    const purpose = section(page, "(a) Purpose");
+    await expect(purpose).toContainText("Owner text.");
+    // Owner text is no draft and has no source.
+    await expect(purpose).not.toContainText("Draft - owner to edit");
+    await expect(purpose).not.toContainText("Source:");
+    await expect(section(page, "(b) Pass standard")).toContainText("Not written yet");
+    await expect(section(page, "(c) Current approach")).toContainText("Not written yet");
+  });
+
+  test("test_439_ac3_prompt_text_is_read_live_published_and_draft", async ({ page, context }) => {
+    const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+    const stuck = await activePrompt(writer.token, "stuck_story");
+    const predicament = await activePrompt(writer.token, "pause_predicament");
+    const draftBody = `${stuck}\nA draft line for #439.`;
+    await page.goto("/admin/ai-features/pause_message");
+    const prompts = section(page, "(e) Prompt text");
+    await expect(prompts.getByRole("region", { name: "stuck_story" })).toBeVisible();
+    await expect(
+      prompts
+        .getByRole("region", { name: "pause_predicament" })
+        .getByLabel("Published pause_predicament"),
+    ).toHaveText(predicament);
+    await expect(prompts.getByRole("region", { name: "stuck_story" })).toContainText("No draft.");
+    // A draft saved in Prompts shows at the very next page load: saved once, reloaded once, and
+    // read once, so a page that kept the prompt text from an earlier load fails here. Only this
+    // test touches stuck_story; the stub puts that one key back afterwards.
+    try {
+      const saved = await stub("/rest/v1/rpc/save_prompt_draft", writer.token, {
+        prompt_key: "stuck_story",
+        prompt_body: draftBody,
+        prompt_params: {},
+        prompt_note: "#439 e2e draft",
+      });
+      expect(saved.status).toBe(200);
+      const version = (await saved.json()) as number;
+      await page.reload();
+      const key = section(page, "(e) Prompt text").getByRole("region", { name: "stuck_story" });
+      await expect(key).toBeVisible();
+      expect(await key.getByLabel("Published stuck_story").textContent()).toBe(stuck);
+      expect(
+        await key.getByLabel(`Draft v${version} of stuck_story`, { exact: true }).textContent(),
+      ).toBe(draftBody);
+      expect(
+        await section(page, "(e) Prompt text")
+          .getByRole("region", { name: "pause_predicament" })
+          .textContent(),
+      ).toContain("No draft.");
+    } finally {
+      await stub("/__prompts", null, { reset: "stuck_story" });
+    }
+  });
+
+  test("test_439_ac4_test_results_mark_the_fake_model_and_no_real_run_yet", async ({
+    page,
+    context,
+  }) => {
+    await importFakeRun();
+    await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+    await page.goto("/admin/ai-features/pause_message");
+    const results = section(page, "(f) Test results");
+    const rows = results.locator("tbody tr");
+    await expect(rows).toHaveCount(1);
+    await expect(rows.first()).toContainText("2026-11-25 20:15");
+    await expect(rows.first().locator(".admin-pill-mark")).toHaveText("Fake model (stub)");
+    await expect(rows.first()).toContainText("stuck_story v3");
+    await expect(rows.first()).toContainText("pause_predicament v1");
+    await expect(rows.first()).toContainText("2 of 4 targets pass, 1 fail");
+    await expect(results).toContainText("No real run yet (#413)");
+
+    await page.goto("/admin/ai-features/rest_reply");
+    await expect(section(page, "(f) Test results")).toContainText("No run yet");
+    await expect(section(page, "(f) Test results")).toContainText("No real run yet (#413)");
+  });
+
+  test("test_439_ac5_every_page_shows_the_retry_hints_fix", async ({ page, context }) => {
+    const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+    const hints = await activePrompt(writer.token, "retry_hints");
+    for (const slug of [
+      "plan_split",
+      "step_cards",
+      "pause_message",
+      "rest_reply",
+      "return_popup",
+      "closing_line",
+      "safety_classifier",
+    ]) {
+      await page.goto(`/admin/ai-features/${slug}`);
+      const fix = section(page, /^Fix added after a rejected answer/);
+      await expect(fix, slug).toContainText("retry_hints");
+      await expect(fix.getByLabel("Published retry_hints"), slug).toHaveText(hints);
+    }
+  });
+
+  test("test_439_a_long_unbroken_token_stays_inside_its_panel_at_1024_px", async ({
+    page,
+    context,
+    browser,
+  }) => {
+    // #439 review round 3: real prompt and table text holds long tokens with no space. None may
+    // run out of its panel, where the page would clip it; a self-sized table scrolls instead.
+    await page.setViewportSize({ width: 1024, height: 800 });
+    const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+    const token = "x".repeat(200);
+    // The purpose holding the token is shown to this account only. Saved into the shared features,
+    // it would widen the index table that the visual gate (another project, run in parallel)
+    // compares with the drawing (#439 review round 4).
+    const purpose = await stub("/__ai_features", null, {
+      token: writer.token,
+      purpose: { pause_message: [{ text: token, source: null, draft: false }] },
+    });
+    expect(purpose.status).toBe(200);
+    const elsewhere = await browser.newContext();
+    try {
+      const other = await signIn(elsewhere, baseUrlOf(page), undefined, { contentRole: "admin" });
+      const [shared] = (await (
+        await stub("/rest/v1/ai_features?slug=eq.pause_message", other.token)
+      ).json()) as Feature[];
+      expect(shared.purpose.map((item) => item.text)).not.toContain(token);
+    } finally {
+      await elsewhere.close();
+    }
+    const stuck = await activePrompt(writer.token, "stuck_story");
+
+    const overflow = () =>
+      page.evaluate(() => {
+        const scrolls = (element: Element) => {
+          const value = getComputedStyle(element).overflowX;
+          return value === "auto" || value === "scroll";
+        };
+        const outside: string[] = [];
+        for (const element of document.querySelectorAll(".admin-main *")) {
+          const panel = element.closest(".admin-panel");
+          if (!panel || panel === element) continue;
+          // Inside a scrolling box (the index table's panel), text is reached by scrolling.
+          let box = element.parentElement;
+          let scrolling = false;
+          while (box && box !== panel.parentElement) {
+            if (scrolls(box)) scrolling = true;
+            box = box.parentElement;
+          }
+          if (scrolling) continue;
+          const right = element.getBoundingClientRect().right;
+          const edge = panel.getBoundingClientRect().right;
+          if (right > edge + 0.5) {
+            outside.push(
+              `${element.tagName.toLowerCase()}.${element.className}: ${right} > ${edge}`,
+            );
+          }
+        }
+        const main = document.querySelector(".admin-main")!.getBoundingClientRect().right;
+        const panels = [...document.querySelectorAll(".admin-main .admin-panel")]
+          .filter((panel) => panel.getBoundingClientRect().right > main + 0.5)
+          .map((panel) => panel.className);
+        const root = document.documentElement;
+        return { outside, panels, scrollWidth: root.scrollWidth, clientWidth: root.clientWidth };
+      });
+
+    try {
+      const draft = await stub("/rest/v1/rpc/save_prompt_draft", writer.token, {
+        prompt_key: "stuck_story",
+        prompt_body: `${stuck}\n${token}`,
+        prompt_params: {},
+        prompt_note: "#439 long token",
+      });
+      expect(draft.status).toBe(200);
+
+      await page.goto("/admin/ai-features/pause_message");
+      const prompt = section(page, "(e) Prompt text").getByRole("region", {
+        name: "stuck_story",
+      });
+      await expect(prompt.getByLabel(/^Draft v\d+ of stuck_story$/)).toContainText(token);
+      await expect(section(page, "(a) Purpose")).toContainText(token);
+      const featurePage = await overflow();
+      expect(featurePage.outside).toEqual([]);
+      expect(featurePage.panels).toEqual([]);
+      expect(featurePage.scrollWidth).toBe(featurePage.clientWidth);
+
+      // The index's purpose cell: the table keeps whole words and scrolls inside its panel.
+      await page.goto("/admin/ai-features");
+      const table = page.getByRole("table", { name: "AI features" });
+      await expect(table).toContainText(token);
+      const index = await overflow();
+      expect(index.outside).toEqual([]);
+      expect(index.panels).toEqual([]);
+      expect(index.scrollWidth).toBe(index.clientWidth);
+      const panel = page.locator(".admin-panel.admin-scroll");
+      const scroll = await panel.evaluate((element) => ({
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+      }));
+      // The token is reachable: the panel scrolls rather than clipping it.
+      expect(scroll.scrollWidth).toBeGreaterThan(scroll.clientWidth);
+    } finally {
+      await stub("/__prompts", null, { reset: "stuck_story" });
+      await stub("/__ai_features", null, { token: writer.token, purpose: null });
+    }
+  });
+
+  test("test_439_who_can_see_admins_and_writers_only", async ({ page, context, browser }) => {
+    await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+    expect((await page.goto("/admin/ai-features"))?.status()).toBe(200);
+    expect((await page.goto("/admin/ai-features/plan_split"))?.status()).toBe(200);
+    // An unknown feature is the normal not-found page (a soft 404: the admin layout streams first,
+    // as test_293_an_unknown_story_shows_page_not_found).
+    await page.goto("/admin/ai-features/no_such_feature");
+    await expect(
+      page.getByRole("heading", { name: "This page could not be found." }),
+    ).toBeVisible();
+    await expect(page.getByRole("region", { name: "(a) Purpose" })).toHaveCount(0);
+
+    const plain = await browser.newContext({ baseURL: baseUrlOf(page) });
+    const other = await plain.newPage();
+    await signIn(plain, baseUrlOf(page));
+    for (const target of ["/admin/ai-features", "/admin/ai-features/plan_split"]) {
+      expect((await other.goto(target))?.status(), target).toBe(404);
+    }
+    await plain.close();
+  });
 });

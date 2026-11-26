@@ -1,0 +1,11 @@
+{
+  "meta": {
+    "mode": "stub",
+    "startedAt": "2026-11-25T20:15:34.722Z",
+    "suites": ["pause"],
+    "prompts": [
+      { "key": "stuck_story", "version": 3 },
+      { "key": "pause_predicament", "version": 1 }
+    ]
+  }
+}
