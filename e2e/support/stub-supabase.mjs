@@ -16,7 +16,8 @@
 //        STUB_PROMPTS_READ_TOKEN, otherwise no rows, as the real function (#282)
 //   POST /rest/v1/rpc/list_prompt_versions (editors), save_prompt_draft (editors),
 //        publish_prompt | roll_back_prompt (admin only), as 20261124000000 (#308);
-//        POST /__prompts { reset: true } puts the prompts and their history back
+//        POST /__prompts { reset: true } puts the prompts and their history back;
+//        { reset: true, key } only that prompt's versions and history (#446)
 //   POST /rest/v1/rpc/get_story_content  { reader_key } → the seed story content (src/content,
 //        docs/demo) when the key is STUB_CONTENT_READ_KEY, otherwise null, as the real function (#284)
 //   GET  /rest/v1/stories | story_parts | story_cards   the seed rows (#293): stories for any
@@ -579,7 +580,17 @@ createServer(async (request, response) => {
 
   if (path === "/__prompts" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
-    if (body.reset === true) {
+    if (body.reset === true && typeof body.key === "string") {
+      // #446: one prompt only, so a test never puts back rows another test (or the visual gate)
+      // is reading.
+      promptVersions = [
+        ...promptVersions.filter((row) => row.key !== body.key),
+        ...seededPrompts().filter((row) => row.key === body.key),
+      ];
+      publishHistory = publishHistory.filter(
+        (row) => !(row.kind === "prompt" && row.item_key === body.key),
+      );
+    } else if (body.reset === true) {
       promptVersions = seededPrompts();
       publishHistory = publishHistory.filter((row) => row.kind !== "prompt");
     }

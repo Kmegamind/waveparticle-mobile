@@ -334,6 +334,11 @@
   --adm-track-th: 0.06em;
   --adm-lede-measure: 68ch;
   --adm-field-min: 64px;
+  /* #446: the prompt page (prototype pre.code line height, h2 and .note spacing). */
+  --adm-code-leading: 1.55;
+  --adm-h2-after: 10px;
+  --adm-note-before: 10px;
+  --adm-note-after: 1em;
 }
 
 @media (prefers-color-scheme: dark) {
