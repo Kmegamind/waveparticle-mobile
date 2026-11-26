@@ -398,6 +398,23 @@ drop function if exists private.ai_feature_items_valid(jsonb);
 After undoing the migration with the CLI in use, also run
 `supabase migration repair --status reverted 20261130000000` so `db push` applies it again later.
 
+### Who changed a feature (#453)
+The editors of the AI feature pages show who changed a status and who last saved (a) to (c) by
+email, through one read function. On dev first, then on prod, after `20261130000000_ai_features.sql`:
+
+1. **Dry run.** `supabase db push --dry-run` lists `20261201000000_ai_feature_people.sql` (and no
+   other file). Without the CLI: in the SQL editor, run `begin;`, the file, then
+   `select proname from pg_proc where proname = 'list_ai_feature_people';` (one row), then
+   `rollback;`.
+2. **Apply.** `supabase db push` (`docs/HUMAN_STEPS.md`, Apply migrations), or paste the file into
+   the SQL editor and **Run**. Check: the select above returns one row. It changes no table or row;
+   running it a second time stops with an error and changes nothing.
+
+Until it runs, the pages still work: the history and the last save show "Account" and the start
+of the account id instead of the email. Undo, in the SQL editor:
+`drop function if exists public.list_ai_feature_people(text);` (with the CLI, then
+`supabase migration repair --status reverted 20261201000000`).
+
 ## Server logs
 The server writes log lines only through `logEvent` in `src/lib/logging/server-log.ts` (#135). Each
 line is one JSON object: `level`, `feature` (`app_text`, `prompts`, `story-content`, `story-cards`,
