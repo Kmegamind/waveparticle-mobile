@@ -4104,6 +4104,135 @@ input.admin-text-field {
   margin: 0;
 }
 
+/* ADM-06 Story cards (issue 444): the prototype's cards editor (.editor, .part, .cardrow, .meta,
+   .fails) and its phone preview (.phone, .ph-top), which holds the app's own story card. */
+.admin-cards-editor {
+  align-items: start;
+  display: grid;
+  gap: var(--adm-editor-gap);
+  grid-template-columns: minmax(0, 1fr) var(--adm-preview-width);
+}
+
+.admin-cards-part {
+  background: var(--adm-panel);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-r-panel);
+  margin-bottom: var(--adm-part-after);
+}
+
+.admin-cards-part > header {
+  align-items: center;
+  border-bottom: 1px solid var(--adm-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-gap-small);
+  justify-content: space-between;
+  padding: var(--adm-part-pad);
+}
+
+.admin-main .admin-cards-part > header h2 {
+  display: inline;
+  font-size: var(--adm-text-size);
+  font-weight: 700;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-cards-rename {
+  border-bottom: 1px solid var(--adm-line);
+  padding: var(--adm-part-pad);
+}
+
+.admin-cards-row {
+  align-items: start;
+  border-bottom: 1px solid var(--adm-line);
+  display: grid;
+  gap: var(--adm-row-gap);
+  grid-template-columns: var(--adm-kind-width) minmax(0, 1fr) auto;
+  padding: var(--adm-part-pad);
+}
+
+.admin-cards-row:last-child {
+  border-bottom: 0;
+}
+
+.admin-cards-kind {
+  color: var(--adm-muted);
+  font-size: var(--adm-kind-size);
+  padding-top: var(--adm-gap-hair);
+}
+
+.admin-cards-text {
+  display: grid;
+  gap: var(--adm-gap-tiny);
+  min-width: 0;
+}
+
+.admin-cards-body {
+  border-radius: var(--adm-r-menu);
+  cursor: pointer;
+  margin: calc(-1 * var(--adm-gap-hair)) calc(-2 * var(--adm-gap-hair));
+  overflow-wrap: anywhere;
+  padding: var(--adm-gap-hair) calc(2 * var(--adm-gap-hair));
+}
+
+.admin-cards-fails {
+  color: var(--adm-bad);
+  font-size: var(--adm-chip-size);
+  list-style: none;
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding: 0;
+}
+
+.admin-cards-facts,
+.admin-cards-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: 0;
+}
+
+.admin-cards-meta {
+  align-items: flex-end;
+  display: flex;
+  flex-direction: column;
+  gap: var(--adm-gap-dot);
+}
+
+.admin-cards-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-gap-small);
+}
+
+.admin-phone {
+  background: var(--adm-phone);
+  border-radius: var(--adm-r-phone);
+  color: var(--adm-phone-ink);
+  padding: var(--adm-phone-pad);
+  position: sticky;
+  top: var(--adm-editor-gap);
+}
+
+.admin-phone-top {
+  display: flex;
+  font-size: var(--adm-brand-sub-size);
+  justify-content: space-between;
+  opacity: var(--adm-phone-dim);
+}
+
+/* The app's own card, in the app's own ink (as the focus page draws it), not the phone's. */
+.admin-phone .focus-stack {
+  color: var(--ink);
+  margin-top: var(--adm-gap);
+}
+
+.admin-phone-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: var(--adm-gap-small) 0 0;
+}
+
 /* ADM-08 Prompts (issue 308): settings lines, the prompt text and the line diff. */
 .admin-prompt-settings {
   font-family: var(--adm-font-mono);

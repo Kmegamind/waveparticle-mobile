@@ -39,6 +39,7 @@ import {
 } from "@/lib/prototype/session";
 import { fullPageLoad } from "../try/full-page-load";
 import { cardLabel } from "./card-label";
+import { StoryCardSlip } from "./story-card-slip";
 import { COMPANION } from "./companion";
 import type { SessionPaths } from "./paths";
 import { WhoIAmSheet } from "./who-i-am-sheet";
@@ -491,20 +492,16 @@ export function FocusBody({ host }: { host: FocusHost }) {
                   role="group"
                   tabIndex={0}
                 >
-                  <figure
-                    aria-current={shown === cards.length - 1 ? "true" : undefined}
-                    className={cards.length > 1 ? "focus-slip focus-slip-stacked" : "focus-slip"}
-                    data-testid="story-card"
+                  <StoryCardSlip
+                    current={shown === cards.length - 1}
+                    label={cardLabel(index, shown, cards.length)}
+                    position={
+                      /* #101 AC1: the position in words; the dots are decoration only. */
+                      <span className="sr-only">{`, Card ${shown + 1} of ${cards.length}`}</span>
+                    }
+                    stacked={cards.length > 1}
+                    text={cards[shown]}
                   >
-                    <span aria-hidden="true" className="focus-tape" />
-                    <span className="focus-card-label">
-                      {cardLabel(index, shown, cards.length)}
-                    </span>
-                    {/* #101 AC1: the position in words; the dots are decoration only. */}
-                    <span className="sr-only">{`, Card ${shown + 1} of ${cards.length}`}</span>
-                    <div className="focus-card-text">
-                      <p>{cards[shown]}</p>
-                    </div>
                     <span aria-hidden="true" className="focus-dots">
                       {cards.map((card, position) => (
                         <span
@@ -531,7 +528,7 @@ export function FocusBody({ host }: { host: FocusHost }) {
                         ›
                       </button>
                     </div>
-                  </figure>
+                  </StoryCardSlip>
                 </div>
               ) : null}
             </section>

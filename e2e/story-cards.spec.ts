@@ -39,14 +39,18 @@ test("test_293_ac3_opening_a_story_shows_its_background_card_and_cards_by_part",
   await page.goto("/admin/stories");
   await page.getByRole("link", { name: "The Canyon and the Mesa" }).click();
   await expect(page).toHaveURL(/\/admin\/stories\/site-search$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("The Canyon and the Mesa");
+  // #444: the title is the prototype's "Story cards"; the story is named in the breadcrumb.
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Story cards");
+  await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toContainText(
+    "Story 8 · The Canyon and the Mesa",
+  );
   await expect(page.getByRole("note")).toBeVisible();
 
   const background = page.getByRole("region", { name: "Background card" });
   await expect(background.getByRole("article", { name: "crd.opp.site-search.bg" })).toContainText(
     "v1, published",
   );
-  const part1 = page.getByRole("region", { name: /^Part 1: / });
+  const part1 = page.getByRole("region", { name: /^Part 1 · / });
   await expect(part1).toBeVisible();
   const first = part1.getByRole("article", { name: "crd.opp.site-search.p1.c1" });
   await expect(first).toContainText("v1, published");
