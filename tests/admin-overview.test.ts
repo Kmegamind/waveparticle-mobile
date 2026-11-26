@@ -37,16 +37,24 @@ const card = (
   published_at,
 });
 
-const listRow = (id: string, sequence: number, failing = 0): StoryListRow => ({
+const listRow = (
+  id: string,
+  sequence: number,
+  failing = 0,
+  over: Partial<StoryListRow> = {},
+): StoryListRow => ({
   id,
   key: `opp.${id}`,
   title: `Story ${sequence}`,
   sequence,
   parts: 1,
   cards: 1,
-  background: false,
+  background: true,
   failing,
+  ...over,
 });
+
+const inPart = (row: StoryCardRow, part: number): StoryCardRow => ({ ...row, part });
 
 describe("Status board data (#440)", () => {
   it("test_440_a_draft_is_a_never_published_version_above_the_published_one", () => {
@@ -76,21 +84,64 @@ describe("Status board data (#440)", () => {
   it("test_440_a_story_with_every_card_published_and_passing_is_done", () => {
     const row = boardRow(listRow("s", 1), [card("s", "a", 1, true), card("s", "b", 1, true)]);
     expect(row.dots.map((dot) => dot.state)).toEqual(["done", "passed", "done"]);
+    expect(row.dots[0].words).toBe("1 of 1 part has cards, background card made");
     expect(row.dots[2].words).toBe("2 of 2 cards published");
     expect(row.published).toBe(true);
   });
 
-  it("test_440_a_failing_card_and_a_waiting_draft_show_in_the_dots", () => {
+  it("test_440_a_draft_waiting_above_published_cards_keeps_the_story_published", () => {
+    // Users see every card; the draft is said in the words and counted with the drafts.
     const row = boardRow(listRow("s", 1, 1), [card("s", "a", 1, true), card("s", "a", 2, false)]);
-    expect(row.dots.map((dot) => dot.state)).toEqual(["done", "failed", "none"]);
+    expect(row.dots.map((dot) => dot.state)).toEqual(["done", "failed", "done"]);
     expect(row.dots[1].words).toBe("1 card fails a check");
     expect(row.dots[2].words).toBe("1 of 1 card published, 1 draft waiting");
+    expect(row.published).toBe(true);
+  });
+
+  it("test_440_a_card_never_published_keeps_the_story_unpublished", () => {
+    const row = boardRow(listRow("s", 1), [card("s", "a", 1, true), card("s", "b", 1, false)]);
+    expect(row.dots[2]).toEqual({
+      stage: "Published",
+      state: "none",
+      words: "1 of 2 cards published, 1 draft waiting",
+    });
     expect(row.published).toBe(false);
   });
 
+  it("test_440_cards_made_needs_every_part_and_the_background_card", () => {
+    // CARDS-PER-PART and SHARED-STORY: cards for every part, one background card per story.
+    const some = boardRow(listRow("s", 1, 0, { parts: 3, background: false }), [
+      inPart(card("s", "a", 1, true), 1),
+    ]);
+    expect(some.dots[0]).toEqual({
+      stage: "Cards made",
+      state: "none",
+      words: "1 of 3 parts have cards, no background card",
+    });
+    const noBackground = boardRow(listRow("s", 1, 0, { parts: 2, background: false }), [
+      inPart(card("s", "a", 1, true), 1),
+      inPart(card("s", "b", 1, true), 2),
+    ]);
+    expect(noBackground.dots[0].state).toBe("none");
+    const missingPart = boardRow(listRow("s", 1, 0, { parts: 2 }), [
+      inPart(card("s", "a", 1, true), 1),
+    ]);
+    expect(missingPart.dots[0]).toEqual({
+      stage: "Cards made",
+      state: "none",
+      words: "1 of 2 parts have cards, background card made",
+    });
+    const all = boardRow(listRow("s", 1, 0, { parts: 2 }), [
+      inPart(card("s", "a", 1, true), 1),
+      inPart(card("s", "b", 1, true), 2),
+    ]);
+    expect(all.dots[0].state).toBe("done");
+  });
+
   it("test_440_a_story_without_cards_is_not_started", () => {
-    const row = boardRow(listRow("s", 1), []);
+    const row = boardRow(listRow("s", 1, 0, { background: false }), []);
     expect(row.dots.map((dot) => dot.state)).toEqual(["none", "none", "none"]);
+    expect(row.dots[0].words).toBe("no cards yet");
   });
 
   const input = (over: Partial<BoardInput> = {}): BoardInput => ({
@@ -129,10 +180,12 @@ describe("Status board data (#440)", () => {
     const board = statusBoard(input());
     expect(board.tiles).toEqual([
       { value: 2, label: "Companions (1 shown to users, 1 not ready)" },
-      { value: 1, label: "stories with cards, of 2" },
+      // Story one has its background card and cards for its one part; story two has none.
+      { value: 1, label: "stories with all their cards made, of 2" },
       // One card draft, two field drafts, one prompt draft.
       { value: 4, label: "drafts waiting for an admin to publish" },
-      { value: 0, label: "stories with every card published" },
+      // Story one's card is published (a draft waits above it); story two has no cards.
+      { value: 1, label: "stories with every card published" },
     ]);
   });
 

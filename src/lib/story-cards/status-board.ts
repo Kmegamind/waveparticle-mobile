@@ -59,11 +59,35 @@ export type BoardRow = {
   title: string;
   sequence: number;
   dots: BoardDot[];
-  /** Every card of the story has a published version and none has a newer draft. */
+  /**
+   * Every card of the story has a published version, so users see all of it. A draft waiting
+   * above a published version does not change that; it is said in the dot's words and counted
+   * with the drafts.
+   */
   published: boolean;
 };
 
 const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
+
+/**
+ * "Cards made" is done when the story has its background card and every part has its cards:
+ * one background card per story (docs/DECISIONS.md SHARED-STORY, T4) and story cards made for
+ * each part (CARDS-PER-PART). The parts are the story's part titles and card parts, as on the
+ * Stories page (`StoryListRow.parts`).
+ */
+function cardsMade(story: StoryListRow, own: StoryCardRow[]): BoardDot {
+  const partsWithCards = new Set(
+    own.filter((card) => card.kind === "part" && card.part !== null).map((card) => card.part),
+  ).size;
+  if (partsWithCards === 0 && !story.background) {
+    return { stage: "Cards made", state: "none", words: "no cards yet" };
+  }
+  const words =
+    `${partsWithCards} of ${plural(story.parts, "part has", "parts have")} cards, ` +
+    (story.background ? "background card made" : "no background card");
+  const done = story.background && story.parts > 0 && partsWithCards >= story.parts;
+  return { stage: "Cards made", state: done ? "done" : "none", words };
+}
 
 /** One story's row: its three stages from its cards, their checks and their publish state. */
 export function boardRow(story: StoryListRow, cards: StoryCardRow[]): BoardRow {
@@ -72,12 +96,9 @@ export function boardRow(story: StoryListRow, cards: StoryCardRow[]): BoardRow {
   const total = keys.size;
   const published = new Set(own.filter((card) => card.published).map((card) => card.key)).size;
   const drafts = draftKeys(own).size;
-  const allPublished = total > 0 && published === total && drafts === 0;
+  const allPublished = total > 0 && published === total;
 
-  const made: BoardDot =
-    total > 0
-      ? { stage: "Cards made", state: "done", words: plural(total, "card", "cards") }
-      : { stage: "Cards made", state: "none", words: "no cards yet" };
+  const made = cardsMade(story, own);
   const checks: BoardDot =
     total === 0
       ? { stage: "Checks", state: "none", words: "no cards to check" }
@@ -160,7 +181,7 @@ export function statusBoard(input: BoardInput): StatusBoard {
     {
       value:
         input.storyRows === null ? null : rows.filter((row) => row.dots[0].state === "done").length,
-      label: `stories with cards, of ${input.stories.length}`,
+      label: `stories with all their cards made, of ${input.stories.length}`,
     },
     { value: drafts, label: "drafts waiting for an admin to publish" },
     {

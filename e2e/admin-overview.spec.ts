@@ -22,11 +22,11 @@ test("test_440_ac1_the_overview_is_the_status_board", async ({ page, context }) 
   // Only the Status board row is current: the other rows do not sit "under" /admin.
   await expect(menu.locator("[aria-current]")).toHaveCount(1);
 
-  // Four count tiles from the seed: two Companions (Oppenheimer has stories), 26 stories with cards.
+  // Four count tiles from the seed: two Companions (Oppenheimer has stories), 26 stories with all their cards.
   const tiles = page.getByRole("region", { name: "Counts" }).locator(".admin-tile");
   await expect(tiles).toHaveCount(4);
   await expect(tiles.nth(0)).toHaveText("2Companions (1 shown to users, 1 not ready)");
-  await expect(tiles.nth(1)).toHaveText("26stories with cards, of 26");
+  await expect(tiles.nth(1)).toHaveText("26stories with all their cards made, of 26");
   await expect(tiles.nth(2)).toContainText(/^\d+drafts waiting for an admin to publish$/);
   await expect(tiles.nth(3)).toContainText(/^\d+stories with every card published$/);
 
@@ -55,7 +55,7 @@ test("test_440_ac1_the_overview_is_the_status_board", async ({ page, context }) 
   await expect(first.getByRole("img")).toHaveCount(3);
   await expect(first.getByRole("img").first()).toHaveAttribute(
     "aria-label",
-    /^Cards made: done, \d+ cards$/,
+    /^Cards made: done, (\d+) of \1 parts have cards, background card made$/,
   );
   await expect(first.getByRole("img").nth(1)).toHaveAttribute(
     "aria-label",
