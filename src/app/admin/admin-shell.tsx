@@ -24,7 +24,11 @@ const GROUPS = [
   },
   {
     heading: "AI rules",
-    pages: [{ href: "/admin/prompts", id: "ADM-08", label: "Prompts" }],
+    pages: [
+      // #439: one page per AI feature (AI-PAGES-7), above Prompts as in the drawing.
+      { href: "/admin/ai-features", id: "ADM-16", label: "AI features" },
+      { href: "/admin/prompts", id: "ADM-08", label: "Prompts" },
+    ],
   },
   {
     heading: "Review and logs",

@@ -6,7 +6,8 @@ test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: fa
 
 // #308: ADM-08 Prompts. The Supabase stub keeps one set of prompt versions for every test (and the
 // server reads the active ones for live calls), so these tests run one after the other, change
-// only rest_reply with a harmless extra line, and put the prompts back before and after each test.
+// only rest_reply with a harmless extra line, and put rest_reply back before and after each test.
+// #439: only that key is reset, so other files that change another prompt are never undone here.
 
 test.describe.configure({ mode: "serial" });
 
@@ -17,7 +18,7 @@ async function resetPrompts() {
   const answer = await fetch(`${STUB_SUPABASE}/__prompts`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ reset: true }),
+    body: JSON.stringify({ reset: KEY }),
   });
   if (!answer.ok) throw new Error(`stub prompts failed: ${answer.status}`);
 }

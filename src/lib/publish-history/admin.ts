@@ -82,10 +82,18 @@ export function formatHistoryTime(value: string): string {
   return `${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`;
 }
 
-function personOf(row: PublishHistoryRow): string {
-  if (row.acted_by_email) return row.acted_by_email;
-  if (row.acted_by) return `Account ${row.acted_by.slice(0, 8)}`;
+/**
+ * How the admin names a person (#289): the email, or the start of the account id when the email
+ * is not known, or "Deleted account". The AI feature pages use the same words (#453).
+ */
+export function personName(userId: string | null, email: string | null): string {
+  if (email) return email;
+  if (userId) return `Account ${userId.slice(0, 8)}`;
   return "Deleted account";
+}
+
+function personOf(row: PublishHistoryRow): string {
+  return personName(row.acted_by, row.acted_by_email);
 }
 
 /**

@@ -1,6 +1,6 @@
 # src/lib/prototype/goal-time.ts
 
-`src/lib/prototype/goal-time.ts`: `parseTypedTime(text)` (5 to 300 minutes, rounded to 15, otherwise `null`), `findTimeInGoal(goal)` (GOAL-TIME; whole minutes as written, NO-ROUNDING; a duration that describes the thing, such as "a 2 hour lecture", is skipped), `removeTimePhrase(goal)` (the goal without its time phrase, for the Goal title), `formatMinutes(minutes)` and `TIME_HINT`.
+`src/lib/prototype/goal-time.ts`: `parseTypedTime(text)` (5 to 300 minutes, rounded to 15, otherwise `null`), `findTimeInGoal(goal)` (GOAL-TIME; whole minutes as written, NO-ROUNDING; a duration that describes the thing, such as "a 2 hour lecture", is skipped; "an hour and a half", "one and a half hours" and "1.5h" are 90 minutes, NF7 v7 section 3.1, #416), `removeTimePhrase(goal)` (the goal without its time phrase, for the Goal title), `formatMinutes(minutes)` and `TIME_HINT`.
 
 ## Cap on a time read from the goal text (#351)
 

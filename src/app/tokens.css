@@ -345,6 +345,26 @@
   --adm-legend-gap: 14px;
   /* The browser margin of the prototype's .note paragraph: one line of its own size. */
   --adm-note-gap: 1em;
+  /* Issue 439: the AI feature pages (docs/design/prototype/admin-ai-features.html). */
+  --adm-empty-size: 13px;
+  --adm-empty-pad: 10px 12px;
+  --adm-legend-size: 12px;
+  --adm-list-indent: 20px;
+  --adm-list-item-pad: 4px 0;
+  --adm-code-leading: 1.55;
+  /* Issue 453: the AI feature editors (drawing screens AIF-5, AIF-6, AIF-7). */
+  --adm-editor-side: 300px;
+  --adm-editor-gap: 16px;
+  --adm-form-gap: 12px;
+  --adm-label-gap: 4px;
+  --adm-qrow-number: 30px;
+  --adm-qrow-gap: 10px;
+  --adm-qrow-pad: 8px 0;
+  --adm-ro-opacity: 0.6;
+  --adm-toast-pad: 9px 16px;
+  --adm-toast-size: 13px;
+  --adm-toast-bottom: 20px;
+  --adm-toast-layer: 20;
 }
 
 @media (prefers-color-scheme: dark) {
