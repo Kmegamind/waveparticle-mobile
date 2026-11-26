@@ -29,10 +29,13 @@ export function PageHead({
   title,
   lede,
   actions,
+  actionsLabel,
 }: {
   title: React.ReactNode;
   lede?: React.ReactNode;
   actions?: React.ReactNode;
+  /** #446: names the action row as a group for assistive technology, e.g. "Prompt actions". */
+  actionsLabel?: string;
 }) {
   return (
     <div className="admin-head">
@@ -40,7 +43,15 @@ export function PageHead({
         <h1>{title}</h1>
         {lede ? <p className="admin-lede">{lede}</p> : null}
       </div>
-      {actions ? <div className="admin-actions">{actions}</div> : null}
+      {actions ? (
+        <div
+          aria-label={actionsLabel}
+          className="admin-actions"
+          role={actionsLabel ? "group" : undefined}
+        >
+          {actions}
+        </div>
+      ) : null}
     </div>
   );
 }
