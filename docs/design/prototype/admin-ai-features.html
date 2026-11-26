@@ -178,6 +178,27 @@ ol.qs li{padding:4px 0}
 .qrow:last-child{border-bottom:0}
 .qrow .n{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
 .ro{opacity:.6}
+/* #467: the AI feature registry, run panel, comparison lab, runs and samples. Same tokens. */
+table.reg{min-width:1480px}
+table.reg th:nth-child(1),table.reg td:nth-child(1){position:sticky;left:0;z-index:1;background:var(--panel);width:64px;min-width:64px}
+table.reg th:nth-child(2),table.reg td:nth-child(2){position:sticky;left:64px;z-index:1;background:var(--panel);min-width:170px;box-shadow:inset -1px 0 0 var(--line)}
+table.reg tr.click:hover td{background:var(--soft)}
+table.reg td.wide{min-width:260px}
+.filters{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:12px}
+.filters label{display:grid;gap:4px;font-size:12.5px;color:var(--muted);font-weight:600}
+.filters select{width:auto}
+.filters input[type=text]{width:240px}
+.var{font-family:var(--f-mono);background:var(--accent-soft);color:var(--accent);border-radius:3px;padding:0 2px}
+.skel{background:var(--soft);border-radius:6px;height:12px;margin:10px 0}
+.skel.w60{width:60%}.skel.w80{width:80%}
+.errbox{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:0}
+.bar{height:6px;background:var(--soft);border-radius:99px;overflow:hidden;margin:8px 0}
+.bar i{display:block;height:100%;width:40%;background:var(--accent)}
+.side{display:flex;flex-direction:column;gap:10px}
+.yn{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.yn:last-child{border-bottom:0}
+tr.sel td{background:var(--accent-soft)}
+body[data-reg] button:disabled{opacity:.5;cursor:not-allowed}
 </style>
 
 <div class="app">
@@ -305,11 +326,223 @@ V.mapping=()=>head("AI rules › <a href=\"#index\">AI features</a>","Features a
  F.flatMap(f=>f.k.map(k=>`<tr><td><span class="key">${k}</span></td><td>${title(f)}</td></tr>`)).join("")+
  `<tr><td><span class="key">retry_hints</span></td><td>Every feature, as "Fix added after a rejected answer"</td></tr></tbody></table></div></div>`;
 
+/* #467: the AI feature registry, the run panel, the comparison lab, runs and samples.
+   Row text (id, name, category, where, requirement, prompt, output format, rationale, room to
+   improve, example state, example or notes, status) comes only from the owner's registry-seed.json
+   of 2026-11-26. An example that quotes story text is left out ("QUOTED"). Prompt texts, excerpts,
+   people, dates, tokens and costs are invented placeholders, marked as sample. No model key. */
+const REG=[
+ {"id": "P-01", "name": "Find episodes", "category": "Pipeline", "where": "Book to story library, first step", "requirement": "From a block of chapters, find passages with real tension that can become one story of his goal and tasks; return a candidate card for each.", "prompt": "S1_find-episodes v1.0", "output_format": "One candidate card per passage: slug, title, chapter, goal, why hard, own tasks, turn, notes.", "rationale": "Merged from two earlier prompts used on the Oppenheimer book. For fiction it reports only what the text shows; inventing happens later.", "room_to_improve": "Not tuned since the merge. The finished moment of each task is often too detailed.", "example_state": "candidate", "example_or_notes": "Run on the Snape novel: 28 candidates, 17 climaxes picked.", "status": "exploring"},
+ {"id": "P-02", "name": "Select stories", "category": "Pipeline", "where": "After find episodes", "requirement": "Score candidates (his own want, pressure, turn, would it work for anyone else) and let a person choose.", "prompt": "S2_select-stories v1.0", "output_format": "Score table per candidate and the three cutting rules.", "rationale": "Scores separate stories with a turn from stories where things only happen; a person decides.", "room_to_improve": "Method used once; the prompt was written afterwards from the record. For fiction, add: choose fights and decisions, not life coverage.", "example_state": "confirmed", "example_or_notes": "Snape: 12 core stories (chapters 7, 25, 28, 36, 45, 48, 59-60, 60, 69, 70, 72-73, 77).", "status": "exploring"},
+ {"id": "P-03", "name": "Cut source", "category": "Pipeline", "where": "After selection", "requirement": "Give each story its source passage as line ranges only; never change a word.", "prompt": "S3_cut-source v1.0", "output_format": "JSON: slug, citation, source ranges (chapter, from, to), background lines, persona date.", "rationale": "The source never goes through the model, so it stays faithful and checkable.", "room_to_improve": "Background selection sometimes too thin.", "example_state": "candidate", "example_or_notes": "Chapter 7: lines 43 to 158, background lines 33 and 35.", "status": "passed"},
+ {"id": "P-04", "name": "Plan (historical)", "category": "Pipeline", "where": "Story library, historical Companions", "requirement": "Write his goal, 2 to 5 tasks, private notes and the hidden detail layer for the AI.", "prompt": "S4_notebook-historical v4-final", "output_format": "JSON: story, notebook (goal, tasks with title, note, timebox), detail (per task: done_when, steps, obstacle, if_then, knowledge, happened, anchors, tone), review.", "rationale": "Every fact and quotation must be in the book.", "room_to_improve": "Finished. A plan-first version for historical figures is not written.", "example_state": "confirmed", "example_or_notes": "QUOTED", "status": "frozen"},
+ {"id": "P-05", "name": "Plan (fictional)", "category": "Pipeline", "where": "Story library, fictional Companions", "requirement": "Write the plan he makes at the moment the problem appears: his goal and exactly five aims (stages of one purpose, neighbours can merge), with how and what-if, plus how it really went.", "prompt": "S4_notebook-fictional v3.5", "output_format": "Same JSON as P-04; notebook.tasks has exactly 5 tasks; added_later is always false; the standing task is background only.", "rationale": "The plan page mirrors the user's number of steps, hence five aims; the opponent is named because he knows it when the story opens.", "room_to_improve": "Aim titles often start with the same verb; some happened items run long.", "example_state": "candidate", "example_or_notes": "QUOTED", "status": "exploring"},
+ {"id": "P-06", "name": "Merged titles", "category": "Pipeline", "where": "Plan page when the user has fewer than five steps", "requirement": "Write one title for each run of two to five neighbouring aims (10 titles), each one aim with its reason.", "prompt": "S4e_merged-titles v0.4", "output_format": "JSON: merged[ {from, to, title} ] for the 10 runs; at most 22 words each; no two actions joined by 'and'.", "rationale": "Titles must be written ahead of time and reviewed; the app does not write them live.", "room_to_improve": "Still wordy; short names are not always used.", "example_state": "candidate", "example_or_notes": "QUOTED", "status": "exploring"},
+ {"id": "P-07", "name": "Story cards", "category": "Pipeline", "where": "Focus page, one by one while the user works", "requirement": "Write about 18 live entries for the whole story in order; one moment each; roleplay format; a short background entry first.", "prompt": "scripts/deepseek_cards v0.5 (DeepSeek, one call)", "output_format": "Plain text list, numbered entries; later parsed into cards tagged with the aim they serve.", "rationale": "Roleplay models already know the format, so the prompt is one short paragraph; limits are checks, not prompt text. One call beat a five-call version 3 to 0 in a blind read.", "room_to_improve": "Background entry too long and sometimes gives away a later turn; unfamiliar terms are explained clumsily.", "example_state": "candidate", "example_or_notes": "QUOTED", "status": "exploring"},
+ {"id": "G-01", "name": "Judge plan", "category": "Quality gate", "where": "After two plan runs", "requirement": "Pick the better of two plans against the plan prompt's rules.", "prompt": "S5_judge-two-runs v1.0", "output_format": "JSON: choice X or Y, margin, scores, reason, problems for each, fix.", "rationale": "The rules in the plan prompt are the scoring standard, not the judge's taste.", "room_to_improve": "New rules (opening moment, five aims) are added by a line in the brief, not in the prompt.", "example_state": "candidate", "example_or_notes": "", "status": "exploring"},
+ {"id": "G-02", "name": "Fix plan", "category": "Quality gate", "where": "After judging", "requirement": "Apply the judge's fixes to the chosen plan, minimal and logged before and after.", "prompt": "S6_fix-entry v1.0", "output_format": "JSON: applied (field, before, after, why), skipped, check flags left, left for the owner.", "rationale": "Every change is traceable; model output is never edited by hand.", "room_to_improve": "Sometimes makes a sentence harder to read.", "example_state": "candidate", "example_or_notes": "", "status": "exploring"},
+ {"id": "G-03", "name": "Judge cards", "category": "Quality gate", "where": "After two card runs", "requirement": "Pick the better set of cards on clarity, three parts, voice, only what he knows, completeness.", "prompt": "S5c_judge-cards v0.1", "output_format": "JSON: choice, margin, scores, reason, problems, fix by card number.", "rationale": "Same shape as G-01 for cards.", "room_to_improve": "Written for JSON cards; cards are now plain text, so it needs a text version.", "example_state": "none", "example_or_notes": "", "status": "not started"},
+ {"id": "G-04", "name": "Fix cards", "category": "Quality gate", "where": "After judging cards", "requirement": "Apply the judge's fixes to the chosen cards, logged.", "prompt": "S6c_fix-cards v0.1", "output_format": "JSON: applied (card, before, after, why), skipped, flags left.", "rationale": "Same as G-02.", "room_to_improve": "Same as G-03.", "example_state": "none", "example_or_notes": "", "status": "not started"},
+ {"id": "G-05", "name": "Simulated user", "category": "Quality gate", "where": "End of each round, before the owner reads", "requirement": "A reader who has not read the source judges a plan and cards, rules on the builders' list of problems (matters, does not matter, unsure) and adds its own.", "prompt": "S7_simulated-user v0.1", "output_format": "Prose with fixed headings: first impressions, rulings per problem, other findings, the one thing to fix first.", "rationale": "The owner pointed out that a user who has not read the source does not mind natural lines; this reader filters the list so the owner only judges what it cannot.", "room_to_improve": "A fixed template for batches and a short yes/no answer form.", "example_state": "confirmed", "example_or_notes": "Round 1: cards weakest, plan page strongest.", "status": "exploring"},
+ {"id": "R-01", "name": "Goal split", "category": "Runtime", "where": "Goal dialogue, after the user types a goal and minutes", "requirement": "Turn the user's goal and minutes into steps they can start.", "prompt": "plan_split v2", "output_format": "JSON: title (max 40 characters), steps [title, description, minutes]; minutes add up to the total.", "rationale": "Concrete verbs, real order, a first step that starts in a minute.", "room_to_improve": "Language handling and very short goals.", "example_state": "candidate", "example_or_notes": "'Write the quarterly report', 60 minutes: nine steps from 'Open the report document' to the final read.", "status": "exploring"},
+ {"id": "R-02", "name": "Step cards", "category": "Runtime", "where": "Focus page, per step", "requirement": "His cards for one step, with the background card on step 1.", "prompt": "step_cards v2 (v4 proposed)", "output_format": "JSON: {cards:[...]}; each 1 to 3 sentences, at most 45 words; background card at most 70 words.", "rationale": "Cards carry no introduction phrases; no user text.", "room_to_improve": "Proposed v4: present tense, roleplay format, no character name.", "example_state": "candidate", "example_or_notes": "QUOTED", "status": "exploring"},
+ {"id": "R-03", "name": "Pause message", "category": "Runtime", "where": "When the user pauses (two calls)", "requirement": "Call one: what has just gone wrong in his own work (prop and story). Call two: his own words about it and how he feels; from the third pause he fears he may fail.", "prompt": "stuck_story v3 + pause_predicament v1", "output_format": "Call one JSON {prop, story}; call two plain text, at most 30 words.", "rationale": "Two calls keep the invented snag separate from his voice.", "room_to_improve": "Never write 'pause' or count; roleplay format proposed.", "example_state": "candidate", "example_or_notes": "QUOTED", "status": "exploring"},
+ {"id": "R-04", "name": "Rest reply", "category": "Runtime", "where": "Rest chat", "requirement": "One to three first-person sentences in his voice, from his situation and what he could know; no advice; at most one question; end by returning to his situation.", "prompt": "rest_reply v1", "output_format": "JSON {reply}.", "rationale": "He may answer questions about the world as a person of his time would.", "room_to_improve": "Must not retell his story's events; roleplay format proposed.", "example_state": "candidate", "example_or_notes": "QUOTED", "status": "exploring"},
+ {"id": "R-05", "name": "Return pop-up", "category": "Runtime", "where": "After Back or a long absence", "requirement": "One or two first-person sentences, at most 30 words: what he did in that time and how he felt.", "prompt": "return_popup v1", "output_format": "JSON {returnLine}.", "rationale": "His situation returns to what it was before his snag.", "room_to_improve": "Too general; roleplay format proposed.", "example_state": "candidate", "example_or_notes": "QUOTED", "status": "exploring"},
+ {"id": "R-06", "name": "Closing line", "category": "Runtime", "where": "Summary at the end of a story", "requirement": "His closing line and one line he carries about what is still unresolved.", "prompt": "closing_line v1", "output_format": "JSON {closing_line, carry_line}.", "rationale": "Nothing after this moment has happened; no lesson, no praise.", "room_to_improve": "Sometimes names events too exactly.", "example_state": "candidate", "example_or_notes": "QUOTED", "status": "exploring"},
+ {"id": "R-07", "name": "Safety classifier", "category": "Runtime", "where": "Every free-text message", "requirement": "Classify one message and up to two earlier ones: crisis, stress, none or unsure.", "prompt": "safety_classifier v1", "output_format": "One JSON object {tier}.", "rationale": "If it could be a crisis it answers crisis; unsure when it cannot tell.", "room_to_improve": "Not tested beyond a few samples.", "example_state": "candidate", "example_or_notes": "'I won't be around after tonight' gave crisis; 'this deadline is killing me' gave stress.", "status": "exploring"}
+];
+const RST={"not started":"ns",exploring:"ex",passed:"ps",frozen:"fz"};
+const EXS={none:["None","s-draft"],candidate:["Candidate","s-checked"],confirmed:["Confirmed","s-pub"]};
+const expill=s=>`<span class="pill ${EXS[s][1]}">${EXS[s][0]}</span>`;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
+const NWY=`<span class="note">Not written yet</span>`;
+const val=s=>s?esc(s):NWY;
+const SAMPLE=`<span class="pill s-draft">Sample text</span>`;
+const QUOTED=`<span class="note">Placeholder: the seed example quotes story text, so the drawing leaves it out.</span>`;
+const exText=r=>r.example_or_notes==="QUOTED"?QUOTED:val(r.example_or_notes);
+const hv=s=>esc(s).replace(/\{\{(\w+)\}\}/g,`<span class="var">{{$1}}</span>`);
+const STATES=[["admin","Admin"],["writer","Writer"],["empty","Empty"],["loading","Loading"],["error","Model error"],["running","Run in progress"]];
+const RSCREENS=[["reg-registry","AI features registry","AIR-1"],["reg-feature","Feature detail","AIR-2"],["reg-run","Run panel","AIR-3"],["reg-lab","Comparison lab","AIR-4"],["reg-runs","Runs","AIR-5"],["reg-samples","Samples","AIR-6"]];
+const SAMPLES=[
+ {n:'Oppenheimer story 1 ("The Trade of a Theorist")',c:"Oppenheimer"},
+ {n:"Snape chapter 7",c:"Snape"},
+ {n:"One dialogue scene",c:""}
+];
+const RUNS=[
+ {who:"Admin (sample)",f:"R-03",v:"Draft",s:0,m:"Stub model"},
+ {who:"Writer (sample)",f:"P-05",v:"Published",s:1,m:"Stub model"},
+ {who:"Admin (sample)",f:"R-01",v:"Pasted text",s:2,m:"Stub model"},
+ {who:"Admin (sample)",f:"G-05",v:"Published",s:0,m:"Stub model"}
+];
+let regF={cat:"",st:"",q:"",desc:false},blind=true,runSel=0,sampleSel=0;
+const findRow=id=>REG.find(r=>r.id===id)||REG.find(r=>r.id==="R-03");
+const roleOf=st=>st==="writer"?"writer":"admin";
+const roleTag=st=>(st==="writer"?`<span class="pill s-draft">Viewing as writer</span>`:`<span class="pill s-read">Viewing as admin</span>`)+
+ (st==="admin"||st==="writer"?"":` <span class="pill s-draft">State: ${STATES.find(x=>x[0]===st)[1]}</span>`);
+const CRR=st=>`AI rules › <a href="#reg-registry/${roleOf(st)}">AI features</a>`;
+const LOADING=what=>`<div class="panel" role="status" aria-busy="true"><h2>Loading ${what}…</h2><div class="skel w80"></div><div class="skel"></div><div class="skel w60"></div></div>`;
+const MODEL_ERR=`<p class="errbox" role="alert"><span><b>The model did not answer.</b> Sample reason: no answer within the time limit. Nothing was saved and nothing was charged.</span><button class="small" onclick="toast('Retry (prototype)')">Retry</button></p>`;
+const LOAD_ERR=what=>`<p class="errbox" role="alert"><span><b>${what} could not be read.</b> This page calls no model.</span><button class="small" onclick="toast('Retry (prototype)')">Retry</button></p>`;
+const RUNNING=(what,stub=true)=>`<div role="status"><p style="margin:0"><span class="pill s-gen">Run in progress</span> ${what} · started by you${stub?" · "+FAKE:""}</p><div class="bar"><i></i></div><button class="small" onclick="toast('Cancelled (prototype)')">Cancel</button></div>`;
+const PUB=["Sample text: a stand-in for the published prompt, not its wording.","You write for {{persona}}.","Use only {{source_excerpt}} and {{facts}}.","Answer in the output format of this row."];
+const DRF=["Sample text: a stand-in for the published prompt, not its wording.","You write for {{persona}}.","Use only {{source_excerpt}}, {{facts}} and {{world_record}}.","Answer in the output format of this row."];
+const ANSWER="Sample text: the stub model's fixed answer, not real output.";
+const PASSQ=[1,2,3].map(n=>`Pass question ${n} from the database`);
+const ynRow=(q,i,side)=>`<div class="yn"><span>${q}</span><div class="seg" role="group" aria-label="${side}, question ${i+1}"><button class="small" aria-pressed="false">Yes</button><button class="small" aria-pressed="false">No</button></div></div>`;
+
+V["reg-registry"]=st=>{
+ const writer=st==="writer";
+ const h=head("AI rules","AI features",`One table of every AI feature, from book to dialogue (<span class="key">/admin/ai-features</span>). Rows from the owner's seed of 2026-11-26.`,roleTag(st));
+ if(st==="loading")return h+LOADING("the registry");
+ const cats=["Pipeline","Quality gate","Runtime"];
+ const filters=`<div class="filters"><label>Category<select onchange="regF.cat=this.value;render()"><option value="">All</option>${cats.map(c=>`<option ${regF.cat===c?"selected":""}>${c}</option>`).join("")}</select></label>
+  <label>Status<select onchange="regF.st=this.value;render()"><option value="">All</option>${Object.keys(RST).map(s=>`<option value="${s}" ${regF.st===s?"selected":""}>${ST[RST[s]][0]}</option>`).join("")}</select></label>
+  <label>Search<input type="text" value="${esc(regF.q)}" placeholder="ID, name or any text" onchange="regF.q=this.value;render()"></label>
+  <button onclick="regF.desc=!regF.desc;render()">Sort by ID ${regF.desc?"↓":"↑"}</button></div>`;
+ const q=regF.q.toLowerCase();
+ let rows=st==="empty"||st==="error"?[]:REG.filter(r=>(!regF.cat||r.category===regF.cat)&&(!regF.st||r.status===regF.st)&&(!q||Object.values(r).join(" ").toLowerCase().includes(q)));
+ if(regF.desc)rows=[...rows].reverse();
+ const head8=`<tr><th>ID</th><th>Name</th><th>Category</th><th>Where it appears</th><th>Requirement</th><th>Prompt</th><th>Status</th><th>Example</th></tr>`;
+ const body=rows.length?rows.map(r=>`<tr class="click" onclick="location.hash='reg-feature/${roleOf(st)}/${r.id}'"><td><span class="key">${r.id}</span></td><td><b>${esc(r.name)}</b>${st==="running"&&r.id==="R-03"?`<br><span class="pill s-gen">Run in progress</span>`:""}</td><td>${r.category}</td><td class="note">${val(r.where)}</td><td class="wide">${val(r.requirement)}</td><td><span class="key">${esc(r.prompt)}</span> <a href="#reg-feature/${roleOf(st)}/${r.id}" onclick="event.stopPropagation()">view</a></td><td>${pill(RST[r.status])}${writer?"":` <button class="small" onclick="event.stopPropagation();location.hash='reg-feature/admin/${r.id}'">Change</button>`}</td><td>${expill(r.example_state)}</td></tr>`).join("")
+  :`<tr><td colspan="8"><p class="empty">${st==="empty"?"No features yet":st==="error"?"Nothing to show":"No feature matches these filters"}</p></td></tr>`;
+ return h+(st==="error"?LOAD_ERR("The registry")+`<div style="height:12px"></div>`:"")+filters+
+  `<div class="panel scroll"><table class="reg"><thead>${head8}</thead><tbody>${body}</tbody></table></div>
+  <div class="legend"><span>Example: ${expill("none")} ${expill("candidate")} ${expill("confirmed")}</span><span>Status: ${pill("ns")} ${pill("ex")} ${pill("ps")} ${pill("fz")}</span><span>${writer?"Status is admin only: a writer sees no Change button.":"Change opens the status control on the feature page (admin only)."}</span></div>
+  <p class="note" style="margin-top:10px">The table scrolls sideways inside its panel; ID and Name stay visible. ID order follows the seed: P (Pipeline), G (Quality gate), R (Runtime).</p>`;
+};
+
+V["reg-feature"]=(st,id)=>{
+ const r0=findRow(id),writer=st==="writer",empty=st==="empty";
+ const r=empty?{...r0,where:"",requirement:"",prompt:"",output_format:"",rationale:"",room_to_improve:"",example_state:"none",example_or_notes:"",status:"not started"}:r0;
+ const h=head(CRR(st)+` › ${r.id}`,`${r.id} ${esc(r.name)}`,`${r.category} · Where it appears: ${val(r.where)}`,
+  roleTag(st)+`<a class="btn" href="#reg-run/${roleOf(st)}/${r.id}">Run</a>`);
+ if(st==="loading")return h+LOADING("this feature");
+ const latest=st==="error"?MODEL_ERR:st==="running"?RUNNING("Run of the draft on Oppenheimer story 1"):empty?`<p class="empty">No runs yet</p>`:
+  `<p class="note" style="margin:0">Sample date · Admin (sample) · Draft · Oppenheimer story 1 · ${FAKE} · result set as ${expill("candidate")}</p>`;
+ const prompt=empty?`<p class="empty">Not written yet</p>`:
+  `<p style="margin:0 0 8px"><span class="key">${esc(r.prompt)}</span> <span class="pill s-pub">Published</span> <span class="pill s-draft">Draft</span> ${SAMPLE}</p>
+  <div class="cmp"><div><p class="note" style="margin:0 0 6px">Published</p><pre class="code">${PUB.map(hv).join("\n")}</pre></div>
+  <div><p class="note" style="margin:0 0 6px">Draft</p><pre class="code">${DRF.map(hv).join("\n")}</pre></div></div>
+  <p class="note" style="margin:12px 0 6px">Changed lines</p><div class="diff"><div>  ${hv(PUB[1])}</div><div class="del">- ${hv(PUB[2])}</div><div class="add">+ ${hv(DRF[2])}</div><div>  ${hv(PUB[3])}</div></div>
+  <p class="src">The real text is read live from <span class="key">public.prompts</span>, never copied. <span class="var">{{variables}}</span> are filled from a sample.</p>`;
+ const exHist=r.example_state==="none"?`<p class="empty" style="margin-top:10px">No earlier examples</p>`:
+  `<table style="margin-top:10px"><thead><tr><th>When</th><th>Who</th><th>Change</th></tr></thead><tbody><tr><td class="note">Sample date</td><td>Setup</td><td>Seeded as ${expill(r.example_state)}</td></tr></tbody></table>`;
+ const example=r.example_state==="none"?`<p class="empty">Not written yet</p>`:
+  `<p style="margin:0 0 6px">${expill(r.example_state)} ${r.example_state==="confirmed"?`<span class="note">Confirmed by Setup (sample) · sample date</span>`:`<span class="note">From a run · sample date</span> <button class="small" onclick="toast('Confirmed (prototype)')">Confirm</button>`}</p><p style="margin:0">${exText(r)}</p>${exHist}`;
+ const status=writer?`<div class="panel ro"><h2>Status ${pill(RST[r.status])} <span class="lock">Admin only</span></h2><p class="note" style="margin:0">You can see the status. Only an admin can change it.</p></div>`:
+  `<div class="panel"><h2>Status ${pill(RST[r.status])}</h2><div class="form"><div class="seg" role="group" aria-label="Status">${Object.keys(RST).map(s=>`<button aria-pressed="${s===r.status}">${ST[RST[s]][0]}</button>`).join("")}</div>
+  <label>Reason (one line)<input type="text" placeholder="Why the status changes"></label><div><button class="primary" onclick="toast('Status saved (prototype)')">Save status</button></div></div></div>`;
+ const runtime=r.category==="Runtime"?`<div class="panel"><h2>Fix added after a rejected answer <span class="key">retry_hints</span></h2><pre class="code">${hv("Sample text: a stand-in for retry_hints. It is sent with {{reason}} when an answer fails a check.")}</pre><p class="src">Read live from <span class="key">public.prompts</span>; the same text shows on every Runtime row.</p></div>`:"";
+ const hist=empty?`<p class="empty">No changes yet</p>`:`<table><thead><tr><th>When</th><th>Who</th><th>Field</th></tr></thead><tbody><tr><td class="note">Sample date</td><td>Setup</td><td>Every field, from the seed of 2026-11-26</td></tr></tbody></table>`;
+ const sec=(t,b)=>`<div class="panel"><h2>${t}</h2>${b}</div>`;
+ const p=s=>`<p style="margin:0">${val(s)}</p>`;
+ return h+`<div class="stack">`+sec("Latest run",latest)+sec("Requirement",p(r.requirement))+sec("Prompt",prompt)+sec("Output format and rules",p(r.output_format))+
+  sec("Design rationale",p(r.rationale))+sec("Room to improve",p(r.room_to_improve))+sec("Confirmed example",example)+sec("Notes",`<p class="empty">Not written yet</p>`)+
+  sec("Pass standard",`<p class="empty">Not written yet</p>`)+status+sec("Version history",hist)+runtime+`</div>`;
+};
+
+V["reg-run"]=(st,id)=>{
+ const r=findRow(id);
+ const h=head(CRR(st)+` › <a href="#reg-feature/${roleOf(st)}/${r.id}">${r.id}</a> › Run`,`Run ${r.id} ${esc(r.name)}`,"A panel on the feature page. Admin and writer can both run. The model key stays on the server; there is no spending cap and every run is recorded.",roleTag(st));
+ if(st==="loading")return h+`<div class="grid2">${LOADING("prompt versions and samples")}${LOADING("the answer")}</div>`;
+ const busy=st==="running";
+ const form=`<div class="panel"><h2>Run settings</h2><div class="form">
+  <label>Prompt version<div class="seg" role="group" aria-label="Prompt version"><button aria-pressed="false">Published</button><button aria-pressed="true">Draft</button><button aria-pressed="false">Pasted text</button></div></label>
+  <label>Pasted text (only with Pasted text)<textarea placeholder="Paste a prompt to try. It is not saved as a version." disabled></textarea></label>
+  <label>Sample<select>${SAMPLES.map(s=>`<option>${esc(s.n)}</option>`).join("")}</select></label>
+  <label>Model<select><option>Stub model (fake, no charge)</option><option>DeepSeek (sample name)</option></select></label>
+  <div><button class="primary" ${busy?"disabled":""} onclick="toast('Run (prototype)')">${busy?"Running…":"Run"}</button></div>
+  <p class="note" style="margin:0">Today's spend: $0.00 (sample). Not a cap.</p></div></div>`;
+ const result=st==="empty"?`<p class="empty">No runs yet</p>`:st==="error"?MODEL_ERR:busy?RUNNING("Draft on Oppenheimer story 1"):
+  `<p style="margin:0 0 8px">${FAKE} <span class="note">The answer is fixed test text, not written by a model.</span></p><pre class="code">${ANSWER}</pre>
+  <table style="margin-top:12px"><thead><tr><th>Check that applies</th><th>Result</th></tr></thead><tbody>
+   <tr><td>Output format of this row</td><td><span class="pill s-pub">Pass</span></td></tr>
+   <tr><td>Sample check 2</td><td><span class="pill s-pub">Pass</span></td></tr>
+   <tr><td>Sample check 3</td><td><span class="pill s-fail">Fail</span></td></tr></tbody></table>
+  <dl class="fields" style="margin-top:12px"><dt>Tokens</dt><dd>Sample: 0 in · 0 out</dd><dt>Cost</dt><dd>$0.00 (stub, no charge)</dd><dt>Prompt version</dt><dd>Draft</dd><dt>Sample</dt><dd>${esc(SAMPLES[0].n)}</dd></dl>
+  <div class="btns" style="margin-top:12px"><button onclick="toast('Set as candidate (prototype)')">Set as candidate example</button><button onclick="toast('Confirmed (prototype)')">Confirm</button></div>
+  <p class="src">Confirm records who and when; a replaced confirmed example stays in history.</p>`;
+ return h+`<div class="grid2">${form}<div class="panel"><h2>Answer</h2>${result}</div></div>
+  <p class="note" style="margin-top:10px">${st==="writer"?"A writer has the same panel: run, set a candidate and confirm. Only the status is admin only.":"An admin and a writer see the same panel."}</p>`;
+};
+
+V["reg-lab"]=st=>{
+ const h=head("AI rules","Comparison lab",`The same sample through two prompt versions or two models, side by side (<span class="key">/admin/ai-lab</span>). No user text is ever sent through the lab.`,roleTag(st));
+ if(st==="loading")return h+LOADING("features, samples and versions");
+ const busy=st==="running";
+ const form=`<div class="panel" style="margin-bottom:14px"><div class="grid2"><div class="form">
+  <label>Feature<select>${REG.map(r=>`<option ${r.id==="R-03"?"selected":""}>${r.id} ${esc(r.name)}</option>`).join("")}</select></label>
+  <label>Sample (the same for both sides)<select>${SAMPLES.map(s=>`<option>${esc(s.n)}</option>`).join("")}</select></label></div>
+  <div class="form"><label>Side A<select><option>Published version</option><option>Draft version</option><option>Stub model</option><option>DeepSeek (sample name)</option></select></label>
+  <label>Side B<select><option>Draft version</option><option>Published version</option><option>Stub model</option><option>DeepSeek (sample name)</option></select></label></div></div>
+  <div class="btns" style="margin-top:12px;align-items:center"><label class="check"><input type="checkbox" ${blind?"checked":""} onchange="blind=this.checked;render()"> Blind: hide which side is which until the pass questions are answered</label>
+  <button class="primary" ${busy?"disabled":""} onclick="toast('Run both (prototype)')">${busy?"Running…":"Run both"}</button></div></div>`;
+ if(st==="empty")return h+form+`<p class="empty">No runs yet</p>`;
+ const side=(n,label)=>{
+  const name=blind?`Side ${n}`:label;
+  const body=busy?RUNNING(blind?`Side ${n}`:label):st==="error"&&n===2?MODEL_ERR:
+   `<p style="margin:0">${FAKE}</p><pre class="code">${ANSWER}</pre>
+   <div><p class="note" style="margin:0 0 4px">Pass questions (yes or no). The pass standard of this row is not written yet; these are placeholders.</p>${PASSQ.map((q,i)=>ynRow(q,i,name)).join("")}</div>`;
+  return `<div class="panel side"><h2>${name} ${blind?`<span class="pill s-draft">Hidden until answered</span>`:""}</h2>${body}</div>`;
+ };
+ return h+form+`<div class="cmp">${side(1,"Side A · Published version")}${side(2,"Side B · Draft version")}</div>
+  <div class="btns" style="margin-top:14px"><button class="primary" ${busy||st==="error"?"disabled":""} onclick="toast('Result saved (prototype)')">Save result</button></div>
+  <p class="note" style="margin-top:10px">${st==="error"?"Save result waits until both sides have an answer. ":""}The answers are saved with the run.${st==="writer"?" A writer uses the lab like an admin.":""}</p>`;
+};
+
+V["reg-runs"]=st=>{
+ const h=head("AI rules","Runs",`Every run: who, when, feature, prompt version, sample, model, tokens, cost and whether the model was a stub (<span class="key">/admin/ai-runs</span>). There is no spending cap.`,roleTag(st));
+ if(st==="loading")return h+LOADING("the run log");
+ const none=st==="empty";
+ const rows=none?[]:RUNS.map((x,i)=>({...x,state:i===0&&st==="running"?"running":i===0&&st==="error"?"error":"done"}));
+ const tiles=`<div class="tiles"><div class="tile"><b>$0.00</b><span>Today's spend (sample)</span></div><div class="tile"><b>${rows.length}</b><span>Runs today (sample)</span></div><div class="tile"><b>${rows.length}</b><span>Stub runs</span></div><div class="tile"><b>0</b><span>Real model runs</span></div></div>`;
+ const byUser=none?`<p class="empty">No runs yet</p>`:`<table><thead><tr><th>User</th><th class="num">Runs</th><th class="num">Spend today</th></tr></thead><tbody><tr><td>Admin (sample)</td><td class="num">3</td><td class="num">$0.00</td></tr><tr><td>Writer (sample)</td><td class="num">1</td><td class="num">$0.00</td></tr></tbody></table>`;
+ const filter=`<div class="filters"><label>Feature<select><option>All</option>${REG.map(r=>`<option>${r.id} ${esc(r.name)}</option>`).join("")}</select></label><label>User<select><option>All</option><option>Admin (sample)</option><option>Writer (sample)</option></select></label><label>Model<select><option>All</option><option>Stub model</option><option>DeepSeek (sample name)</option></select></label><label class="check"><input type="checkbox"> Stub runs only</label></div>`;
+ const sel=Math.min(runSel,Math.max(rows.length-1,0));
+ const res=x=>x.state==="running"?`<span class="pill s-gen">Run in progress</span>`:x.state==="error"?`<span class="pill s-fail">Model error</span>`:`<span class="pill s-pub">Answered</span>`;
+ const table=none?`<p class="empty">No runs yet</p>`:`<table><thead><tr><th>When</th><th>Who</th><th>Feature</th><th>Version</th><th>Sample</th><th>Model</th><th class="num">Tokens</th><th class="num">Cost</th><th>Stub</th><th>Result</th></tr></thead><tbody>`+
+  rows.map((x,i)=>`<tr class="click${i===sel?" sel":""}" onclick="runSel=${i};render()"><td class="note">Sample date</td><td>${x.who}</td><td><span class="key">${x.f}</span> ${esc(findRow(x.f).name)}</td><td>${x.v}</td><td class="note">${esc(SAMPLES[x.s].n)}</td><td>${x.m}</td><td class="num">0</td><td class="num">$0.00</td><td><span class="pill s-checked">Stub</span></td><td>${res(x)}</td></tr>`).join("")+`</tbody></table>`;
+ const x=rows[sel];
+ const detail=!x?"":`<div class="panel" style="margin-top:14px"><h2>Run detail <span class="key">${x.f}</span> ${FAKE}</h2>
+  <dl class="fields" style="margin-bottom:12px"><dt>Who and when</dt><dd>${x.who} · sample date</dd><dt>Prompt version</dt><dd>${x.v}</dd><dt>Sample</dt><dd>${esc(SAMPLES[x.s].n)}</dd><dt>Model</dt><dd>${x.m} · tokens 0 · $0.00</dd></dl>
+  <div class="grid2"><div><p class="note" style="margin:0 0 6px">Input</p><pre class="code">${hv("Sample text: the prompt as sent, with {{persona}} and {{source_excerpt}} filled from the sample.")}</pre></div>
+  <div><p class="note" style="margin:0 0 6px">Output</p>${x.state==="error"?MODEL_ERR:x.state==="running"?RUNNING("This run"):`<pre class="code">${ANSWER}</pre>`}</div></div></div>`;
+ return h+tiles+`<div class="grid2" style="margin-bottom:14px"><div class="panel"><h2>Total by user, today</h2>${byUser}</div><div class="panel"><h2>Filter</h2>${filter}</div></div>
+  <div class="panel scroll">${table}</div>${detail}
+  <p class="note" style="margin-top:10px">${st==="writer"?"A writer sees the same log (owner to confirm).":"Today's spend is a read-only line, not a cap."}</p>`;
+};
+
+V["reg-samples"]=st=>{
+ const busy=st==="running";
+ const h=head("AI rules","Samples",`The sample library that fills a prompt's <span class="var">{{variables}}</span> (<span class="key">/admin/ai-samples</span>). <span class="lock">Admin and writer only</span>: never read by the app or users.`,
+  roleTag(st)+`<button class="primary" ${busy?"disabled":""} onclick="toast('Add (prototype)')">Add a finished story as a sample</button>`);
+ if(st==="loading")return h+LOADING("the sample library");
+ const none=st==="empty"||st==="error";
+ const top=st==="error"?LOAD_ERR("The sample library")+`<div style="height:12px"></div>`:busy?`<div class="panel" style="margin-bottom:14px">${RUNNING("Adding a finished story as a sample",false)}</div>`:"";
+ const list=none?`<p class="empty">No samples yet</p>`:`<table><thead><tr><th>Name</th><th>Companion</th><th>Source named</th><th>Words</th></tr></thead><tbody>`+
+  SAMPLES.map((s,i)=>`<tr class="click${i===sampleSel?" sel":""}" onclick="sampleSel=${i};render()"><td><b>${esc(s.n)}</b></td><td>${val(s.c)}</td><td>${NWY}</td><td class="note">Not counted yet</td></tr>`).join("")+`</tbody></table>`;
+ const s=SAMPLES[sampleSel];
+ const f=(t,v)=>`<dt>${t}</dt><dd>${SAMPLE} ${v}</dd>`;
+ const detail=none?"":`<div class="panel" style="margin-top:14px"><h2>${esc(s.n)}</h2><dl class="fields">
+  ${f("Persona","Placeholder for the Companion's persona.")}
+  <dt>Source excerpt</dt><dd>${SAMPLE} Placeholder for the excerpt this story uses. Only the excerpt is stored, never a whole book.<p class="src">Source: ${NWY}</p></dd>
+  ${f("Facts","Placeholder for the facts.")}${f("World record","Placeholder for the world record.")}${f("Standing task","Placeholder for the standing task.")}${f("Finished plan","Placeholder, used when a later step needs it.")}</dl></div>`;
+ return h+top+`<div class="panel">${list}</div>${detail}
+  <p class="note" style="margin-top:10px">${st==="writer"?"A writer reads the library and may add a finished story (owner to confirm).":"Seeded with three samples (AI-LAB-SAMPLES)."}</p>`;
+};
+
 function render(){
-  const id=(location.hash||"#index").slice(1);const cur=V[id]?id:"index";
+  // A hash is a screen, or for the #467 screens "screen/state" or "screen/state/row id".
+  const [id,s,rid]=(location.hash||"#index").slice(1).split("/");const cur=V[id]?id:"index";
+  const reg=cur.startsWith("reg-"),st=reg&&STATES.some(x=>x[0]===s)?s:"admin";
+  const link=(h,t,k,on)=>`<a href="${h}" class="${on?"on":""}">${t}<span class="k">${k}</span></a>`;
   document.getElementById("rail").innerHTML=`<div class="brand">WaveParticle<small>Content admin</small></div><div class="proto">Prototype · sample data · nothing is saved</div>`+
-   PAGES.map(p=>p.g?`<div class="navgroup">${p.g}</div>`:`<a href="${p.h}" class="${(p.ai||p.h==="#"+cur)?"on":""}">${p.t}<span class="k">${p.k}</span></a>`).join("");
-  document.getElementById("main").innerHTML=V[cur]();
+   PAGES.map(p=>p.g?`<div class="navgroup">${p.g}</div>`:link(p.h,p.t,p.k,p.ai||p.h==="#"+cur)).join("")+
+   `<div class="navgroup">Registry screens (#467)</div>`+RSCREENS.map(([h,t,k])=>link(`#${h}/${st}${rid?"/"+rid:""}`,t,k,h===cur)).join("")+
+   (reg?`<div class="navgroup">State (#467)</div>`+STATES.map(([k,t])=>link(`#${cur}/${k}${rid?"/"+rid:""}`,t,"",k===st)).join(""):"");
+  if(reg)document.body.dataset.reg="";else delete document.body.dataset.reg;
+  document.getElementById("main").innerHTML=reg?V[cur](st,rid):V[cur]();
 }
 window.addEventListener("hashchange",()=>{render();window.scrollTo(0,0)});
 render();
