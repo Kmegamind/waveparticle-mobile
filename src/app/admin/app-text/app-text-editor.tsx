@@ -3,9 +3,11 @@
 import { useEffect, useId, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import {
   APP_TEXT_PROBLEMS,
-  appTextCanSave,
+  appTextEditState,
   appTextStartText,
+  appTextStoredKey,
   type AppTextAdminRow,
+  type AppTextTyping,
   type AppTextWriteResult,
 } from "@/lib/app-text/admin";
 import { KeyChip, StatePill } from "../admin-ui";
@@ -35,16 +37,22 @@ function insertPlainText(field: HTMLElement, text: string) {
  * text edited in place and its state. Save draft appears only when the text differs exactly from
  * the stored one; Publish vN beside a newer draft; Versions and Roll back under the text once a
  * key has more than one version.
+ *
+ * Unsaved typing is tied to the stored state it started from. While there is typing, Publish vN
+ * and Roll back wait (they act on the stored text, not on what the field shows). If the stored
+ * text changes under the typing (Publish changes, or another editor), the field keeps showing the
+ * typing, and a notice says so, with Discard.
  */
 export function AppTextEditor({ row }: { row: AppTextAdminRow }) {
   const id = useId();
   const [status, setStatus] = useState("");
-  // What the field holds now; null until something is typed (or after a save or Cancel).
-  const [typed, setTyped] = useState<string | null>(null);
-  // Bumped by Cancel, so the field is drawn again from the stored text.
+  // The field's unsaved typing; null until something is typed (and after a save or a discard).
+  const [typing, setTyping] = useState<AppTextTyping | null>(null);
+  // Bumped by Cancel and Discard, so the field is drawn again from the stored text.
   const [resets, setResets] = useState(0);
   const [pending, startTransition] = useTransition();
   const start = appTextStartText(row);
+  const storedKey = appTextStoredKey(row);
   // False in the server HTML and until React has hydrated: the buttons stay off until then.
   const ready = useSyncExternalStore(
     noSubscription,
@@ -53,16 +61,31 @@ export function AppTextEditor({ row }: { row: AppTextAdminRow }) {
   );
   const busy = pending || !ready;
   const field = useRef<HTMLSpanElement>(null);
+  const { edited, stale, canSave } = appTextEditState(row, typing);
+
+  /** Records what the field holds now, against the stored state the typing started from. */
+  function type(text: string) {
+    setTyping((now) => ({
+      key: now?.key ?? storedKey,
+      base: now?.base ?? start,
+      text,
+    }));
+  }
+
+  function discard() {
+    setTyping(null);
+    setStatus("");
+    setResets((count) => count + 1);
+  }
+
   // The field is editable from the server HTML on. Text typed before React hydrated is kept (the
   // span suppresses the hydration check of its own text) and picked up here.
   useEffect(() => {
     const now = field.current?.textContent;
-    if (typeof now === "string" && now !== start) setTyped(now);
+    if (typeof now === "string" && now !== start) type(now);
     // Once, after hydration: later changes arrive through onInput.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const canSave = appTextCanSave(row, typed);
-  const edited = typed !== null && typed !== start;
 
   function run(action: () => Promise<AppTextWriteResult>, done: string, after?: () => void) {
     setStatus("");
@@ -72,6 +95,12 @@ export function AppTextEditor({ row }: { row: AppTextAdminRow }) {
       if (result.ok) after?.();
     });
   }
+
+  // While there is typing, the field keeps its element and its first text (the key and text it was
+  // drawn with when the typing began): React never redraws it under the user. Without typing, it
+  // is drawn again whenever the stored text changes.
+  const fieldKey = `${typing?.key ?? storedKey}:${resets}`;
+  const waitId = `${id}-wait`;
 
   return (
     <tr aria-labelledby={`${id}-key`}>
@@ -84,17 +113,15 @@ export function AppTextEditor({ row }: { row: AppTextAdminRow }) {
         </span>
       </td>
       <td>
-        {/* Remounted when the stored text changes (after a save) or on Cancel. */}
         <span
           aria-label={`Text for ${row.key}`}
           className="admin-app-text-field"
           contentEditable
-          ref={field}
           data-testid={row.draft ? "draft-text" : row.published ? "published-text" : undefined}
-          key={`${row.draft?.version ?? 0}:${row.published?.version ?? 0}:${start}:${resets}`}
+          key={fieldKey}
           // Read back exactly (textContent): with pre-wrap a stored line break, a double space or
           // a no-break space stays as it is, and nothing else is inserted.
-          onInput={(event) => setTyped(event.currentTarget.textContent ?? "")}
+          onInput={(event) => type(event.currentTarget.textContent ?? "")}
           // App text is one line: Enter adds no line break.
           onKeyDown={(event) => {
             if (event.key === "Enter") event.preventDefault();
@@ -104,16 +131,26 @@ export function AppTextEditor({ row }: { row: AppTextAdminRow }) {
             event.preventDefault();
             const text = event.clipboardData.getData("text/plain");
             insertPlainText(event.currentTarget, text.replace(/\s*[\r\n]+\s*/g, " "));
-            setTyped(event.currentTarget.textContent ?? "");
+            type(event.currentTarget.textContent ?? "");
           }}
           onDrop={(event) => event.preventDefault()}
+          ref={field}
           role="textbox"
           spellCheck={false}
           suppressContentEditableWarning
           suppressHydrationWarning
         >
-          {start}
+          {typing ? typing.base : start}
         </span>
+        {stale ? (
+          <p className="admin-app-text-note admin-app-text-kept" role="alert">
+            The stored text changed; your unsaved text was kept. It is now:{" "}
+            <span className="admin-text-body">{start}</span>{" "}
+            <button className="button-gray button-small" onClick={discard} type="button">
+              Discard
+            </button>
+          </p>
+        ) : null}
         {row.draft ? (
           <p className="admin-app-text-note" data-testid="published-text">
             {row.published
@@ -122,6 +159,11 @@ export function AppTextEditor({ row }: { row: AppTextAdminRow }) {
           </p>
         ) : !row.published ? (
           <p className="admin-app-text-note">Not in the database. The app shows this default.</p>
+        ) : null}
+        {edited && (row.draft || row.versions.some((version) => version.canRollBack)) ? (
+          <p className="admin-app-text-note" id={waitId}>
+            Save or cancel your edit first: Publish and Roll back use the stored text.
+          </p>
         ) : null}
         {row.versions.length > 1 ? (
           <details className="admin-text-versions admin-app-text-versions">
@@ -136,8 +178,9 @@ export function AppTextEditor({ row }: { row: AppTextAdminRow }) {
                   <p className="admin-text-body">{version.body}</p>
                   {version.canRollBack ? (
                     <button
+                      aria-describedby={edited ? waitId : undefined}
                       className="button-gray button-small"
-                      disabled={busy}
+                      disabled={busy || edited}
                       onClick={() =>
                         run(
                           () => rollBackAppTextAction(row.key, version.version),
@@ -175,9 +218,9 @@ export function AppTextEditor({ row }: { row: AppTextAdminRow }) {
               disabled={busy}
               onClick={() =>
                 run(
-                  () => saveAppTextDraftAction(row.key, typed ?? start),
+                  () => saveAppTextDraftAction(row.key, typing?.text ?? start),
                   "Draft saved.",
-                  () => setTyped(null),
+                  () => setTyping(null),
                 )
               }
               type="button"
@@ -186,19 +229,10 @@ export function AppTextEditor({ row }: { row: AppTextAdminRow }) {
             </button>
           </>
         ) : null}
-        {edited ? (
+        {edited && !stale ? (
           <>
             {" "}
-            <button
-              className="button-gray button-small"
-              disabled={busy}
-              onClick={() => {
-                setTyped(null);
-                setStatus("");
-                setResets((count) => count + 1);
-              }}
-              type="button"
-            >
+            <button className="button-gray button-small" onClick={discard} type="button">
               Cancel
             </button>
           </>
@@ -207,8 +241,9 @@ export function AppTextEditor({ row }: { row: AppTextAdminRow }) {
           <>
             {" "}
             <button
+              aria-describedby={edited ? waitId : undefined}
               className="button-filled button-small"
-              disabled={busy}
+              disabled={busy || edited}
               onClick={() =>
                 run(
                   () => publishAppTextAction(row.key, row.draft!.version),

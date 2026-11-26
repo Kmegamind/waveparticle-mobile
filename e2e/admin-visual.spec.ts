@@ -91,9 +91,24 @@ const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
       await expect(page.locator(".admin-table .button-gray.button-small").first()).toBeVisible();
     },
   },
-  // #445: App text no longer has a text box (its texts are edited in place, as the prototype's);
-  // a story's cards still do.
-  storyCards: { path: "/admin/stories/eagle-hill-garden" },
+  // #445: App text no longer has a text box (its texts are edited in place, as the prototype's),
+  // and the pages that still have one are being rebuilt. The row checks the shared field class, so
+  // a stand-in field of that class is put into a panel of a page that no test writes, as `actions`
+  // does for the header buttons. A page that builds a form like the prototype's adds its own row.
+  textField: {
+    path: "/admin/companions",
+    prepare: async (page) => {
+      await page
+        .locator(".admin-panel")
+        .first()
+        .evaluate((panel) => {
+          const field = document.createElement("textarea");
+          field.className = "admin-text-field";
+          field.rows = 3;
+          panel.append(field);
+        });
+    },
+  },
   // A detail page: its menu row (Prompts) is marked as current.
   prompt: { path: "/admin/prompts/plan_split" },
 };
@@ -318,11 +333,11 @@ const COMPONENTS: Component[] = [
   {
     name: "text field",
     prototype: { page: "regenerate", selector: "dialog.sheet textarea" },
-    live: { page: "storyCards", selector: "textarea.admin-text-field" },
+    live: { page: "textField", selector: ".admin-panel textarea.admin-text-field" },
     properties: [...STYLE, "resize"],
   },
   // #445: App text (ADM-07), the prototype's `uitext` screen: the header with Publish changes, and
-  // one line per key with its text edited in place. Read on the seed, which no gate test writes.
+  // one line per key with its text edited in place. Rows read the first line (ui.F3.fail.body), which no test writes.
   {
     name: "header row (App text)",
     prototype: { page: "uitext", selector: ".head" },
@@ -439,7 +454,7 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
     properties: ["font-weight"],
     reason:
       "Both fields inherit the weight (font: inherit). The prototype's only field sits inside a " +
-      ".form label (600); live fields have their label beside them (400). The page pull request " +
+      ".form label (600); the live stand-in field sits in a panel (400). The page pull request " +
       "that builds a form like the prototype's compares the weight there.",
   },
   {

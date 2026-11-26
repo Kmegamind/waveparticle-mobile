@@ -5,7 +5,9 @@ import {
   appTextAdminRows,
   appTextCanSave,
   appTextChanges,
+  appTextEditState,
   appTextStartText,
+  appTextStoredKey,
   publishAppTextChanges,
   publishChangesMessage,
   type AppTextVersionRow,
@@ -178,5 +180,35 @@ describe("the page follows the prototype (#445)", () => {
     for (const text of ["Save draft", "Publish v", "Versions (", "Roll back to v"]) {
       expect(editor).toContain(text);
     }
+  });
+});
+
+describe("unsaved typing when the stored text changes (#445 review I1)", () => {
+  const before = rowsOf([
+    row("ui.S1.back", 1, "Back to my Goal", true),
+    row("ui.S1.back", 2, "Back to my Step", false),
+  ])["ui.S1.back"];
+  // v2 published (by Publish vN, Publish changes or another editor).
+  const after = rowsOf([
+    row("ui.S1.back", 1, "Back to my Goal", false, "2026-11-15T10:00:00Z"),
+    row("ui.S1.back", 2, "Back to my Step", true),
+  ])["ui.S1.back"];
+
+  it("test_445_typing_is_tied_to_the_stored_version_it_started_from", () => {
+    expect(appTextStoredKey(before)).not.toBe(appTextStoredKey(after));
+    const typing = { key: appTextStoredKey(before), base: "Back to my Step", text: "Back home" };
+    expect(appTextEditState(before, typing)).toEqual({ edited: true, stale: false, canSave: true });
+    // The stored text changed under the typing: it is kept, and the page must say so.
+    expect(appTextEditState(after, typing)).toEqual({ edited: true, stale: true, canSave: true });
+  });
+
+  it("test_445_no_typing_or_typing_back_to_the_stored_text_is_not_an_edit", () => {
+    expect(appTextEditState(before, null)).toEqual({ edited: false, stale: false, canSave: false });
+    const back = {
+      key: appTextStoredKey(before),
+      base: "Back to my Step",
+      text: "Back to my Step",
+    };
+    expect(appTextEditState(after, back)).toEqual({ edited: false, stale: false, canSave: false });
   });
 });

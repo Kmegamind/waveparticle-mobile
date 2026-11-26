@@ -153,6 +153,32 @@ export function appTextCanSave(row: AppTextAdminRow, typed: string | null): bool
   return typed !== null && typed !== appTextStartText(row);
 }
 
+/** Names the stored state of one key: its draft and published versions and the start text. */
+export function appTextStoredKey(row: AppTextAdminRow): string {
+  return `${row.draft?.version ?? 0}:${row.published?.version ?? 0}:${appTextStartText(row)}`;
+}
+
+/** Unsaved typing in one field: the stored state it started from, its start text, and the text. */
+export type AppTextTyping = { key: string; base: string; text: string };
+
+/**
+ * What the page shows for a field's typing. `edited`: the text differs exactly from the stored
+ * start text (Publish vN and Roll back wait until it is saved or cancelled). `stale`: the stored
+ * text changed after the typing began (a publish, a roll back or another editor's change); the
+ * typing is kept and the page says so, with Discard.
+ */
+export function appTextEditState(
+  row: AppTextAdminRow,
+  typing: AppTextTyping | null,
+): { edited: boolean; stale: boolean; canSave: boolean } {
+  const edited = typing !== null && typing.text !== appTextStartText(row);
+  return {
+    edited,
+    stale: edited && typing.key !== appTextStoredKey(row),
+    canSave: appTextCanSave(row, typing?.text ?? null),
+  };
+}
+
 export type AppTextChange = { key: AppTextKey; version: number; body: string };
 
 /** What "Publish changes" publishes: every key with a newer draft, with that draft's version. */

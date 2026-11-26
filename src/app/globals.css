@@ -4190,6 +4190,11 @@ input.admin-text-field {
   overflow-wrap: anywhere;
 }
 
+/* The stored text changed under unsaved typing: the typing was kept (review I1). */
+.admin-app-text-kept {
+  color: var(--adm-warn);
+}
+
 .admin-app-text-versions {
   margin-top: var(--adm-gap-tiny);
 }

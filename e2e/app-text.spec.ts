@@ -216,27 +216,42 @@ test("test_445_admin_publishes_changes_naming_each_key", async ({ page, context 
   // The per-key publish stays beside the draft.
   await expect(greeting.getByRole("button", { name: "Publish v2" })).toBeVisible();
 
+  // Unsaved typing in the row: Publish v2 waits, and says why (it publishes the stored v2).
+  const text = greeting.getByLabel(`Text for ${KEY}`);
+  await text.fill("Typed and not saved.");
+  const publishOne = greeting.getByRole("button", { name: "Publish v2" });
+  await expect(publishOne).toBeDisabled();
+  await expect(publishOne).toHaveAccessibleDescription(
+    "Save or cancel your edit first: Publish and Roll back use the stored text.",
+  );
+
+  // The files that write app text never run at the same time (playwright.config.ts, project
+  // "app-text"), so this file's draft is the only one.
+  const open = page.getByRole("button", { name: /^Publish changes/ });
+  // The button states its count.
+  await expect(open).toHaveText("Publish changes (1)");
+  await open.click();
   const dialog = page.getByRole("dialog", { name: "Publish changes" });
   const listed = dialog.getByRole("list", { name: "Drafts to publish" }).getByRole("listitem");
-  // publish-history.spec.ts holds a draft of its own key for a moment. The dialog publishes only
-  // what it lists, so this waits (reading only) until it lists this file's draft alone.
-  await expect(async () => {
-    await page.reload();
-    const open = page.getByRole("button", { name: /^Publish changes \(\d+\)$/ });
-    // The button states its count.
-    await expect(open).toHaveText("Publish changes (1)", { timeout: 2000 });
-    await open.click();
-    await expect(listed).toHaveCount(1, { timeout: 2000 });
-  }).toPass({ timeout: 20_000 });
+  await expect(listed).toHaveCount(1);
   await expect(listed).toHaveText(`${KEY} v2Let’s start your first wave.`);
   await dialog.getByRole("button", { name: "Publish 1 draft" }).click();
   await expect(dialog.getByRole("status")).toHaveText(`Published ${KEY} v2.`);
   await dialog.getByRole("button", { name: "Close" }).last().click();
   await expect(dialog).toBeHidden();
 
-  await expect(card(page, KEY).getByTestId("published-text")).toHaveText(
-    "Let’s start your first wave.",
+  // The stored text changed under the typing: it is kept, shown, and said so (#445 review I1).
+  await expect(greeting.getByText("Published", { exact: true })).toBeVisible();
+  await expect(greeting.getByRole("alert")).toContainText(
+    "The stored text changed; your unsaved text was kept.",
   );
+  await expect(text).toHaveText("Typed and not saved.");
+  await expect(greeting.getByRole("button", { name: "Save draft" })).toBeVisible();
+  await greeting.getByRole("button", { name: "Discard" }).click();
+  await expect(text).toHaveText("Let’s start your first wave.");
+  await expect(greeting.getByRole("alert")).toHaveCount(0);
+  await expect(greeting.getByRole("button", { name: "Save draft" })).toHaveCount(0);
+  await expect(greeting.getByTestId("published-text")).toHaveText("Let’s start your first wave.");
   await expect(await homeGreeting(page)).toHaveText("Let’s start your first wave.");
   await rollBackToFirst(page);
 });
