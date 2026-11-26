@@ -305,6 +305,31 @@ const COMPONENTS: Component[] = [
     live: { page: "appText", selector: ".admin-table textarea.admin-text-field" },
     properties: [...STYLE, "resize"],
   },
+  // #441: the Companions list (the prototype's Characters).
+  {
+    name: "Companion name",
+    prototype: { page: "characters", selector: "tr.click td b" },
+    live: { page: "companions", selector: ".admin-table .admin-row-link" },
+    properties: [...STYLE, "cursor"],
+  },
+  {
+    name: "clickable row",
+    prototype: { page: "characters", selector: "tr.click" },
+    live: { page: "companions", selector: ".admin-table tr.admin-row-click" },
+    properties: ["cursor", "background-color"],
+  },
+  {
+    name: "pill (Draft)",
+    prototype: { page: "characters", selector: ".pill.s-draft" },
+    live: { page: "companions", selector: ".admin-table .admin-pill-draft" },
+    box: ["height"],
+  },
+  {
+    name: "panel that scrolls sideways",
+    prototype: { page: "characters", selector: ".panel.scroll" },
+    live: { page: "companions", selector: ".admin-panel.admin-panel-scroll" },
+    properties: [...STYLE, "overflow-x", "overflow-y"],
+  },
 ];
 
 /**
@@ -371,15 +396,6 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
       "Both fields inherit the weight (font: inherit). The prototype's only field sits inside a " +
       ".form label (600); live fields have their label beside them (400). The page pull request " +
       "that builds a form like the prototype's compares the weight there.",
-  },
-  {
-    component: "Companion name link (not in COMPONENTS)",
-    properties: ["(whole component)"],
-    reason:
-      "Live Companions shows each name as an underlined link (.admin-cell-name); the prototype " +
-      "shows bold text in a clickable row, so there is nothing to compare it with. Links look the " +
-      "same on both sides (the prototype keeps the browser's underline too). The Companions page " +
-      "pull request (#430 T8) decides the row and adds it here.",
   },
 ];
 
@@ -630,6 +646,70 @@ test("test_435_frame_pictures_prototype_vs_live", async ({ page, context }) => {
     );
     writeFileSync(
       path.join(REFERENCE_DIR, `frame-${width}-side-by-side.png`),
+      await page.screenshot({ fullPage: true }),
+    );
+  }
+});
+
+// #441: a Companions row under the mouse (the prototype's `tr.click:hover td`). Compared in its own
+// test so the mouse left over a row never changes a reading of the main gate.
+for (const width of WIDTHS) {
+  test(`test_441_hovered_companion_row_matches_the_prototype_at_${width}_px`, async ({
+    page,
+    context,
+  }) => {
+    test.setTimeout(60_000);
+    await page.setViewportSize({ width, height: HEIGHT });
+    await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+    await page.goto("/admin/companions");
+    const origin = new URL(page.url()).origin;
+    await servePrototype(page, await adminFontFaces(page));
+    const hovered: Component = {
+      name: "clickable row cell, hovered",
+      prototype: { page: "characters", selector: "tr.click:hover td" },
+      live: { page: "companions", selector: ".admin-table tr.admin-row-click:hover td" },
+      properties: [...STYLE, "cursor"],
+    };
+
+    // force: the name's link is stretched over its row, so it, not the cell, takes the pointer.
+    await openLive(page, "companions");
+    await page.locator(".admin-table tr.admin-row-click td").nth(1).hover({ force: true });
+    const live = await read(page, hovered, "live");
+    await openPrototype(page, origin, "characters");
+    await page.locator("tr.click td").nth(1).hover({ force: true });
+    const prototype = await read(page, hovered, "prototype");
+
+    expect(differences(hovered.name, prototype, live), `hovered row at ${width} px`).toEqual([]);
+  });
+}
+
+// #441: the Companions pictures for the pull request, prototype (Characters) on the left and live
+// on the right, at each width. Written only on request (ADMIN_VISUAL_SCREENSHOTS=1).
+test("test_441_companions_pictures_prototype_vs_live", async ({ page, context }) => {
+  test.skip(!process.env.ADMIN_VISUAL_SCREENSHOTS, "Set ADMIN_VISUAL_SCREENSHOTS=1 to write them.");
+  test.setTimeout(120_000);
+  mkdirSync(REFERENCE_DIR, { recursive: true });
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto("/admin/companions");
+  const origin = new URL(page.url()).origin;
+  await servePrototype(page, await adminFontFaces(page));
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: HEIGHT });
+    await openPrototype(page, origin, "characters");
+    const prototype = await page.screenshot();
+    await openLive(page, "companions");
+    const live = await page.screenshot();
+    writeFileSync(path.join(REFERENCE_DIR, `companions-${width}-prototype.png`), prototype);
+    writeFileSync(path.join(REFERENCE_DIR, `companions-${width}-live.png`), live);
+    const image = (png: Buffer) => `data:image/png;base64,${png.toString("base64")}`;
+    await page.setViewportSize({ width: width * 2 + 48, height: HEIGHT + 56 });
+    await page.setContent(
+      `<!doctype html><meta charset=utf-8><body style="margin:0;padding:16px;background:#888;display:flex;gap:16px;font:14px system-ui;color:#fff">` +
+        `<figure style="margin:0"><figcaption>Prototype (standards mode), ${width} px</figcaption><img src="${image(prototype)}"></figure>` +
+        `<figure style="margin:0"><figcaption>Live admin, ${width} px</figcaption><img src="${image(live)}"></figure></body>`,
+    );
+    writeFileSync(
+      path.join(REFERENCE_DIR, `companions-${width}-side-by-side.png`),
       await page.screenshot({ fullPage: true }),
     );
   }
