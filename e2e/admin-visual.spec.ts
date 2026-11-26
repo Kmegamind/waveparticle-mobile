@@ -2,6 +2,7 @@ import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { baseUrlOf, signIn } from "./support/account";
+import { useSeededPrompts } from "./support/prompts";
 
 // #435: the admin visual gate. It opens the repository copy of the owner's admin prototype
 // (docs/design/prototype/admin-prototype.html) and the live admin side by side, at 1024 and
@@ -105,8 +106,9 @@ const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
   // A detail page: its menu row (Prompts) is marked as current.
   prompt: { path: "/admin/prompts/plan_split" },
   // #446: the prompts list (no prototype screen; drawn with the prototype's table components).
-  // plan_split is the first row and no test writes it (prompt tests change rest_reply only and
-  // put back only that key), so neither page depends on what other tests publish.
+  // Other tests save prompt drafts while the gate runs (rest_reply, stuck_story ...), and a draft
+  // changes the list's column widths, so the gate's account reads the seeded prompts only
+  // (useSeededPrompts): neither prompt page depends on what other tests write.
   promptList: { path: "/admin/prompts" },
   // #439: the AI features index and the Pause message page, as the drawing's AIF-1 and AIF-2.
   aiIndex: { path: "/admin/ai-features" },
@@ -1472,7 +1474,10 @@ for (const width of WIDTHS) {
   }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width, height: HEIGHT });
-    await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+    const account = await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+    // #446: this account reads the seeded prompts only, so drafts other tests save while the gate
+    // runs never change the prompt pages it measures.
+    await useSeededPrompts(account.token);
     await page.goto("/admin/companions");
     const origin = new URL(page.url()).origin;
     await servePrototype(page, await adminFontFaces(page));

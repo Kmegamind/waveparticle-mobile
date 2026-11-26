@@ -17,7 +17,10 @@
 //   POST /rest/v1/rpc/list_prompt_versions (editors), save_prompt_draft (editors),
 //        publish_prompt | roll_back_prompt (admin only), as 20261124000000 (#308);
 //        POST /__prompts { reset: true | "<key>" } puts every prompt (true) or one key back,
-//        with the matching history rows (#439)
+//        with the matching history rows (#439);
+//        POST /__prompts { token, seededView: true | null }   (#446) that account's
+//        list_prompt_versions answers the seed prompts only (no drafts), and its prompt writes are
+//        refused, so the visual gate reads no row another test writes
 //   POST /rest/v1/rpc/get_story_content  { reader_key } → the seed story content (src/content,
 //        docs/demo) when the key is STUB_CONTENT_READ_KEY, otherwise null, as the real function (#284)
 //   GET  /rest/v1/stories | story_parts | story_cards   the seed rows (#293): stories for any
@@ -599,6 +602,15 @@ createServer(async (request, response) => {
 
   if (path === "/__prompts" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
+    if (typeof body.token === "string" && "seededView" in body) {
+      // #446: that account's list_prompt_versions answers the seeded prompts (version 1 of each,
+      // no drafts), whatever other tests save meanwhile; null gives it up. Read only: a write from
+      // the account is refused, so its view never mixes with the shared rows.
+      const account = datasets.get(body.token);
+      if (!account) return json(response, 404, { message: "no such account" });
+      account.promptsSeededView = body.seededView === true ? true : undefined;
+      return json(response, 200, { ok: true });
+    }
     if (body.reset === true) {
       promptVersions = seededPrompts();
       publishHistory = publishHistory.filter((row) => row.kind !== "prompt");
@@ -627,8 +639,12 @@ createServer(async (request, response) => {
     if (needsAdmin ? role !== "admin" : !["admin", "writer"].includes(role)) {
       return json(response, 403, { code: "42501", message: "not allowed" });
     }
+    if (promptRpc[1] !== "list_prompt_versions" && dataset.promptsSeededView) {
+      return json(response, 409, { message: "this account reads the seeded prompts only" });
+    }
     if (promptRpc[1] === "list_prompt_versions") {
-      const rows = [...promptVersions].sort((left, right) =>
+      const source = dataset.promptsSeededView ? seededPrompts() : promptVersions;
+      const rows = [...source].sort((left, right) =>
         left.key === right.key ? right.version - left.version : left.key < right.key ? -1 : 1,
       );
       return json(response, 200, rows);

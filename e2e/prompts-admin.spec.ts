@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { STUB_SUPABASE, baseUrlOf, signIn } from "./support/account";
+import { useSeededPrompts } from "./support/prompts";
 
 // #313: the admin is a desktop tool (minimum width 1024 px), so its journeys run at 1280 px.
 test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
@@ -229,4 +230,28 @@ test("test_446_writer_has_no_roll_back_in_the_versions_table", async ({ page, co
   await page.reload();
   await expect(versions(page).getByRole("row", { name: /^v1 / })).toContainText("Earlier version");
   await expect(versions(page).getByRole("button")).toHaveCount(0);
+});
+
+// #446 review: the visual gate's account reads the seeded prompts only, so a draft another test
+// saves while the gate runs never changes the list's columns or the prompt page it measures.
+test("test_446_gate_account_never_sees_other_tests_drafts", async ({ page, context }) => {
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+  await page.goto(`/admin/prompts/${KEY}`);
+  await saveBody(page, (body) => `${body}\n${EXTRA}`);
+  await expect(editor(page).getByRole("status")).toContainText("Draft v2 saved.");
+  await page.goto("/admin/prompts");
+  const list = page.getByRole("table", { name: "Prompts" });
+  const row = list
+    .getByRole("row")
+    .filter({ has: page.getByRole("link", { name: KEY, exact: true }) });
+  await expect(row.getByRole("cell").nth(3)).toHaveText("v2 Draft");
+
+  const gate = await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await useSeededPrompts(gate.token);
+  await page.reload();
+  await expect(row.getByRole("cell").nth(3)).toHaveText("None");
+  await expect(list.getByRole("cell", { name: /Draft$/ })).toHaveCount(0);
+  await page.goto(`/admin/prompts/${KEY}`);
+  await expect(page.getByRole("region", { name: /^Draft v/ })).toHaveCount(0);
+  await expect(versions(page).getByRole("row")).toHaveCount(1);
 });
