@@ -435,6 +435,36 @@
   color-scheme: dark;
 }
 
+/*
+ * Issue 444: the Story cards page (ADM-06), from the prototype's cards editor and phone preview
+ * (.editor, .part, .cardrow, .phone): the 300 px preview, the 86 px kind column, the phone's
+ * colours, radius and padding. The 16 px between the cards and the preview is the AI feature
+ * editors' --adm-editor-gap (issue 453), defined once above.
+ */
+.admin-shell {
+  --adm-phone: #16191c;
+  --adm-phone-ink: #ece7dc;
+  --adm-phone-pad: 18px 16px 22px;
+  --adm-phone-dim: 0.6;
+  --adm-r-phone: 26px;
+  --adm-preview-width: 300px;
+  --adm-kind-width: 86px;
+  --adm-kind-size: 12px;
+  --adm-part-pad: 10px 14px;
+  --adm-part-after: 12px;
+  --adm-row-gap: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.theme-light) .admin-shell {
+    --adm-phone: #0b0d0e;
+  }
+}
+
+.theme-dark .admin-shell {
+  --adm-phone: #0b0d0e;
+}
+
 @theme inline {
   --color-background: var(--bg);
   --color-surface: var(--surface);
