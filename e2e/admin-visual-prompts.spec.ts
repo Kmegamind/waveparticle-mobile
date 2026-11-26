@@ -1,11 +1,18 @@
 import { test } from "@playwright/test";
-import { ADMIN_VISUAL_USE, type Gate, STYLE, gateTests } from "./support/admin-visual";
+import {
+  ADMIN_VISUAL_USE,
+  type Gate,
+  STYLE,
+  gateTests,
+  skipGateOutsideCi,
+} from "./support/admin-visual";
 
 // #446: ADM-08 Prompts. The prompt page against the prototype's Prompts screen; the list against
 // the prototype's table components (it has no list screen). Part of the admin visual gate
 // (e2e/support/admin-visual.ts, #483).
 
 test.use(ADMIN_VISUAL_USE);
+skipGateOutsideCi();
 
 const PROTOTYPE_PAGES: Gate["prototypePages"] = {
   characters: { hash: "characters" },

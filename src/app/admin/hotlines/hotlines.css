@@ -1,7 +1,6 @@
 /* The Hotlines pages' styles (issue 483: moved from src/app/globals.css, in their order there).
-   Imported by the Hotlines list and the Hotline entry page, so it loads after
-   src/app/admin/admin.css. Every selector here names a class of this page only, so the rules stay
-   inert on other admin pages after a client-side navigation. */
+   Loaded by the admin layout through src/app/admin/styles.ts, after src/app/admin/admin.css. Every
+   selector here names a class of this page only, so the rules do nothing on other admin pages. */
 
 /* Issue 448, ADM-14 Hotlines and ADM-15 Hotline entry, as drawn in
    docs/design/prototype/admin-hotlines_2026-11-23_v1.html. The list: the table in a scrolling

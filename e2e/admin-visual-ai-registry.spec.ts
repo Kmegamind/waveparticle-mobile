@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { baseUrlOf, signIn } from "./support/account";
 import {
   ADMIN_VISUAL_USE,
+  skipGateOutsideCi,
   FRAME_COMPONENTS,
   FRAME_GATE,
   FRAME_PROTOTYPE_PAGES,
@@ -26,6 +27,7 @@ import path from "node:path";
 // of the admin visual gate (e2e/support/admin-visual.ts, #483).
 
 test.use(ADMIN_VISUAL_USE);
+skipGateOutsideCi();
 
 /**
  * #467: the AI feature registry screens of admin-ai-features.html (registry, feature detail, run

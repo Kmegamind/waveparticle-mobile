@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { baseUrlOf, signIn } from "./support/account";
 import {
   ADMIN_VISUAL_USE,
+  skipGateOutsideCi,
   HEIGHT,
   WIDTHS,
   type Component,
@@ -22,6 +23,7 @@ import {
 // cell, pills) are compared in e2e/admin-visual.spec.ts.
 
 test.use(ADMIN_VISUAL_USE);
+skipGateOutsideCi();
 
 const PROTOTYPE_PAGES: Gate["prototypePages"] = {
   characters: { hash: "characters" },

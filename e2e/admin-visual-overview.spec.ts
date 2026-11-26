@@ -2,6 +2,7 @@ import { test } from "@playwright/test";
 import { baseUrlOf, signIn } from "./support/account";
 import {
   ADMIN_VISUAL_USE,
+  skipGateOutsideCi,
   type Gate,
   type Metric,
   SIDES,
@@ -16,6 +17,7 @@ import {
 // visual gate (e2e/support/admin-visual.ts, #483).
 
 test.use(ADMIN_VISUAL_USE);
+skipGateOutsideCi();
 
 /** The shape of a stage dot, without its colours (which state a dot shows is data). */
 const DOT_SHAPE = [

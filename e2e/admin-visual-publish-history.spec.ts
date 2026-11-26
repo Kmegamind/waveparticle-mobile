@@ -2,6 +2,7 @@ import { test } from "@playwright/test";
 import { baseUrlOf, signIn, useSeededPublishHistory } from "./support/account";
 import {
   ADMIN_VISUAL_USE,
+  skipGateOutsideCi,
   type Gate,
   STYLE,
   gateTests,
@@ -14,6 +15,7 @@ import {
 // account's fixed, seeded history. Part of the admin visual gate (e2e/support/admin-visual.ts, #483).
 
 test.use(ADMIN_VISUAL_USE);
+skipGateOutsideCi();
 
 const PROTOTYPE_PAGES: Gate["prototypePages"] = {
   history: { hash: "history" },

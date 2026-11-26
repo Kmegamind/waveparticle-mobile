@@ -19,7 +19,7 @@ import { readFeatureSeed } from "../scripts/ai-features/seed.mjs";
 // #439 (part of #430): the AI features index and one read-only page per feature. The pages read
 // public.ai_features and public.ai_feature_test_runs, and section (e) reads public.prompts live
 // through public.list_prompt_versions, the same call as ADM-08 Prompts. The pages themselves are
-// checked in e2e/ai-features.spec.ts and against the drawing in e2e/admin-visual.spec.ts.
+// checked in e2e/ai-features.spec.ts and against the drawing in e2e/admin-visual-ai-features.spec.ts.
 
 const root = path.join(import.meta.dirname, "..");
 const read = (file: string) => readFileSync(path.join(root, file), "utf8");

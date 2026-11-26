@@ -1,7 +1,6 @@
 /* The AI feature pages' styles (issue 483: moved from src/app/globals.css, in their order there).
-   Imported by each AI feature page, so it loads after src/app/admin/admin.css. Every selector here
-   names a class of this page only, so the rules stay inert on other admin pages after a client-side
-   navigation. */
+   Loaded by the admin layout through src/app/admin/styles.ts, after src/app/admin/admin.css. Every
+   selector here names a class of this page only, so the rules do nothing on other admin pages. */
 
 /* Issue 439: the AI feature pages, drawn in docs/design/prototype/admin-ai-features.html. The four
    statuses (AI-PAGE-STATUS) in the drawing's colours, and the mark for "Draft - owner to edit"

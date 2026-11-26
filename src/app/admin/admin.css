@@ -1,7 +1,8 @@
 /* The content admin's shared styles (issue 483: moved from src/app/globals.css, in their order
    there): the frame (rail, menu, header), panels, tables, chips, pills, buttons, fields and item
-   panels. Loaded by the admin layout, after globals.css. Each admin page keeps its own styles in
-   its own file, imported by that page and loaded after this one; tokens stay in src/app/tokens.css. */
+   panels. Loaded first by the admin layout through src/app/admin/styles.ts, after globals.css. Each
+   admin page keeps its own rules in a file next to that page, loaded after this one; tokens stay in
+   src/app/tokens.css. */
 
 /* The content admin (issue 287), with the look of issue 313. A desktop tool for staff that follows the
    content-admin prototype at desktop widths (docs/DECISIONS.md ADMIN-DESKTOP): the prototype's

@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { baseUrlOf, signIn } from "./support/account";
 import {
   ADMIN_VISUAL_USE,
+  skipGateOutsideCi,
   type Component,
   FONT,
   type Gate,
@@ -18,6 +19,7 @@ import {
 // (e2e/support/admin-visual.ts, #483).
 
 test.use(ADMIN_VISUAL_USE);
+skipGateOutsideCi();
 
 const PROTOTYPE_PAGES: Gate["prototypePages"] = {
   // #439: the AI features index (AIF-1) and the feature page (AIF-2, the Pause message).

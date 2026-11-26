@@ -6,7 +6,7 @@ import { readAdminCss } from "./support/admin-css";
 
 // #435: the admin frame follows the admin prototype: its fonts, its 8 px page margin, its header
 // action row and the current menu row on detail pages. The look itself is checked against the
-// prototype by e2e/admin-visual.spec.ts.
+// prototype by e2e/admin-visual.spec.ts (the frame rows of the visual gate).
 
 const root = path.join(import.meta.dirname, "..");
 const read = (file: string) => readFileSync(path.join(root, file), "utf8");

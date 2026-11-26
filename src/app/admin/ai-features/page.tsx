@@ -11,7 +11,6 @@ import { readPromptVersions } from "@/lib/prompts/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Breadcrumb, KeyChip, PageHead, StatePill } from "../admin-ui";
 import { FeatureStatusPill, MarkPill } from "./feature-ui";
-import "./ai-features.css";
 
 // ADM-16 AI features (#439, part of #430; AI-PAGES-7): the 7 AI features with their status, the
 // published version of their prompts and their last imported test run, as the drawing
@@ -68,7 +67,7 @@ async function FeatureTable() {
       ) : null}
       <div className="admin-panel admin-scroll">
         {/* As the drawing, the table sizes its own columns. Its headings keep to one line
-            (admin-table-nowrap-head): see the exception in e2e/admin-visual.spec.ts. */}
+            (admin-table-nowrap-head): see the exception in e2e/admin-visual-ai-features.spec.ts. */}
         <table aria-label="AI features" className="admin-table admin-table-nowrap-head">
           <thead>
             <tr>

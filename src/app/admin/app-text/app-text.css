@@ -1,7 +1,6 @@
-/* App text's styles (issue 483: moved from src/app/globals.css, in their order there). Imported by
-   src/app/admin/app-text/page.tsx, so it loads after src/app/admin/admin.css. Every selector here
-   names a class of this page only, so the rules stay inert on other admin pages after a client-side
-   navigation. */
+/* App text's styles (issue 483: moved from src/app/globals.css, in their order there). Loaded by
+   the admin layout through src/app/admin/styles.ts, after src/app/admin/admin.css. Every selector
+   here names a class of this page only, so the rules do nothing on other admin pages. */
 
 /* Issue 445, ADM-07 App text: one line per key, as the prototype's table. The text is edited in
    place like the prototype's contenteditable cell; stored line breaks and double spaces stay

@@ -8,7 +8,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PublishFirstNotice } from "../publish-first-notice";
 import { StoryCardsEditor } from "./story-cards-editor";
 import { Breadcrumb, PageHead } from "@/app/admin/admin-ui";
-import "./story-cards.css";
 
 export const instant = false;
 

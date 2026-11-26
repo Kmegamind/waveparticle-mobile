@@ -8,7 +8,6 @@ import { Breadcrumb, PageHead } from "../../../admin-ui";
 import { FeatureStatusPill } from "../../feature-ui";
 import { readFeature, readPeople, readStatusHistory } from "../../load";
 import { StatusForm } from "../../status-form";
-import "../../ai-features.css";
 
 export const instant = false;
 

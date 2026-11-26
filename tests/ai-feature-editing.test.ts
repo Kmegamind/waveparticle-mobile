@@ -16,7 +16,7 @@ import {
 // #453 (part of #430 T6; AI-PAGE-EDIT): writers and admins edit (a) purpose, (b) pass questions and
 // (c) current approach; only an admin changes the status, and every change is kept with who, when,
 // from, to and a note. The pages are checked in e2e/ai-features.spec.ts and against the drawing in
-// e2e/admin-visual.spec.ts.
+// e2e/admin-visual-ai-features.spec.ts.
 
 const root = path.join(import.meta.dirname, "..");
 const read = (file: string) => readFileSync(path.join(root, file), "utf8");

@@ -2,6 +2,7 @@ import { test } from "@playwright/test";
 import { baseUrlOf, signIn } from "./support/account";
 import {
   ADMIN_VISUAL_USE,
+  skipGateOutsideCi,
   type Gate,
   STYLE,
   gateTests,
@@ -14,6 +15,7 @@ import {
 // (e2e/support/admin-visual.ts, #483).
 
 test.use(ADMIN_VISUAL_USE);
+skipGateOutsideCi();
 
 const PROTOTYPE_PAGES: Gate["prototypePages"] = {
   uitext: { hash: "uitext" },

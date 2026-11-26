@@ -1,7 +1,6 @@
 /* The Companions list's styles (issue 483: moved from src/app/globals.css, in their order there).
-   Imported by src/app/admin/companions/page.tsx, so it loads after src/app/admin/admin.css. Every
-   selector here names a class of this page only, so the rules stay inert on other admin pages after
-   a client-side navigation. */
+   Loaded by the admin layout through src/app/admin/styles.ts, after src/app/admin/admin.css. Every
+   selector here names a class of this page only, so the rules do nothing on other admin pages. */
 
 /* Issue 441: a clickable row (the prototype's tr.click). The name is bold text like the
    prototype's <b>; its link is stretched over the row, so a click anywhere on the row opens it. */

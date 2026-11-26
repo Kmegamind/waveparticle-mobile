@@ -11,7 +11,6 @@ import {
 } from "@/lib/publish-history/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Breadcrumb, KeyChip, PageHead, StatePill } from "../admin-ui";
-import "./companions.css";
 
 // ADM-03 Companions (#309): every Companion in display order with its mode and number of stories.
 // The layout already checked the role; the rows come through the signed-in user's own client.

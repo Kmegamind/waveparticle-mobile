@@ -14,7 +14,7 @@ import type { StoryCardRow, StoryListRow } from "@/lib/story-cards/admin";
 import { readAdminCss } from "./support/admin-css";
 
 // #440: the Overview (/admin) is the prototype's Status board (ADM-01), built only from data the
-// admin has today. Its look is compared with the prototype in e2e/admin-visual.spec.ts.
+// admin has today. Its look is compared with the prototype in e2e/admin-visual-overview.spec.ts.
 
 const root = path.join(import.meta.dirname, "..");
 const read = (file: string) => readFileSync(path.join(root, file), "utf8");

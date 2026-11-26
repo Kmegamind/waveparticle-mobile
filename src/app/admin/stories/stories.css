@@ -1,10 +1,9 @@
 /* The Stories page's styles (issue 483: moved from src/app/globals.css, in their order there).
-   Imported by src/app/admin/stories/page.tsx, so it loads after src/app/admin/admin.css. Every
-   selector here names a class of this page only, so the rules stay inert on other admin pages after
-   a client-side navigation. */
+   Loaded by the admin layout through src/app/admin/styles.ts, after src/app/admin/admin.css. Every
+   selector here names a class of this page only, so the rules do nothing on other admin pages. */
 
 /* ADM-06 Stories as the prototype's Life path table (issue 443). It scrolls sideways in
-   .admin-scroll, defined above. */
+   .admin-scroll (src/app/admin/admin.css). */
 .admin-life-path td {
   overflow-wrap: anywhere;
 }

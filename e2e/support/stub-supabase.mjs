@@ -92,7 +92,9 @@
 //                                     null gives it up
 //   POST /__publish_history { token, append: { kind, item_key, version } }   (#460) adds a publish
 //                                     row by that account to the shared history, as an editing
-//                                     test's publish writes one, without changing any content
+//                                     test's publish writes one, without changing any content;
+//                                     { token, remove: "<item_key>" } takes that account's rows
+//                                     of that key out again
 //   POST /__fail_reads { token, tables: ["profiles"] }   reads of those tables answer 500 for that
 //                                     account until set again (#118, a failed profile read);
 //                                     "auth" makes GET /auth/v1/user answer 500
@@ -1025,6 +1027,13 @@ createServer(async (request, response) => {
         acted_by_email: account.user.email ?? null,
         acted_at: new Date().toISOString(),
       });
+      return json(response, 200, { ok: true });
+    }
+    if (account && typeof body.remove === "string") {
+      // #460: takes that account's rows of one key out of the shared history again.
+      publishHistory = publishHistory.filter(
+        (row) => !(row.item_key === body.remove && row.acted_by === account.user.id),
+      );
       return json(response, 200, { ok: true });
     }
     if (!account || !("own" in body)) return json(response, 404, { message: "no such account" });

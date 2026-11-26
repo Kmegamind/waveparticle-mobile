@@ -3,6 +3,7 @@ import { baseUrlOf, signIn } from "./support/account";
 import { useOwnHotlines } from "./support/hotlines";
 import {
   ADMIN_VISUAL_USE,
+  skipGateOutsideCi,
   type Gate,
   STYLE,
   gateTests,
@@ -15,6 +16,7 @@ import {
 // admin visual gate (e2e/support/admin-visual.ts, #483).
 
 test.use(ADMIN_VISUAL_USE);
+skipGateOutsideCi();
 
 const PROTOTYPE_PAGES: Gate["prototypePages"] = {
   // #448: the Hotlines list (ADM-14) and the Hotline entry (ADM-15) of the hotlines file.

@@ -7,7 +7,6 @@ import { hotlineList } from "@/lib/hotlines/admin";
 import { readHotlineVersions } from "@/lib/hotlines/repository";
 import { contactLabel, countryList, DIRECTORY, isCountryCode } from "@/lib/safety/help-lines";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import "./hotlines.css";
 
 export const instant = false;
 

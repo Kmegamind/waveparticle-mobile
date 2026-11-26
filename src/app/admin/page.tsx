@@ -14,7 +14,6 @@ import { leaksForStory } from "@/lib/story-cards/checks";
 import { readStageZeros, readStoryCardsData, sceneCheckFor } from "@/lib/story-cards/reader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Breadcrumb, KeyChip, PageHead } from "@/app/admin/admin-ui";
-import "./overview.css";
 
 // ADM-01 Status board (#287, #440): the admin's first page, laid out as the prototype's Status
 // board: four count tiles, one panel per Companion and the story-by-story table with its stage

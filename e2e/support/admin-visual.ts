@@ -35,6 +35,20 @@ import { recordInventory } from "./admin-visual-inventory";
 /** The browser settings of every gate file: `test.use(ADMIN_VISUAL_USE)`. */
 export const ADMIN_VISUAL_USE = { colorScheme: "light", isMobile: false, hasTouch: false } as const;
 
+/**
+ * The owner's ruling after #465 (it failed six times on GitHub only, on font rendering): the gate
+ * is judged in CI, which runs in the official Playwright image. On a developer machine it is
+ * skipped unless ADMIN_GATE_LOCAL=1 (docs/testing.md).
+ */
+export const GATE_LOCAL_SKIP_MESSAGE =
+  "admin visual gate runs in CI (Playwright image); set ADMIN_GATE_LOCAL=1 to run locally, " +
+  "results may differ by font rendering";
+
+/** Call at the top of every gate file: skips the file outside CI unless ADMIN_GATE_LOCAL=1. */
+export function skipGateOutsideCi() {
+  test.skip(!process.env.CI && process.env.ADMIN_GATE_LOCAL !== "1", GATE_LOCAL_SKIP_MESSAGE);
+}
+
 export const WIDTHS = [1024, 1280] as const;
 export const HEIGHT = 800;
 const ROOT = path.join(__dirname, "..", "..");

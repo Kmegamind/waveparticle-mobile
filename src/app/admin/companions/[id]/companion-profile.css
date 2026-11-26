@@ -1,7 +1,6 @@
 /* The Companion profile's styles (issue 483: moved from src/app/globals.css, in their order there).
-   Imported by src/app/admin/companions/[id]/page.tsx, so it loads after src/app/admin/admin.css.
-   Every selector here names a class of this page only, so the rules stay inert on other admin pages
-   after a client-side navigation. */
+   Loaded by the admin layout through src/app/admin/styles.ts, after src/app/admin/admin.css. Every
+   selector here names a class of this page only, so the rules do nothing on other admin pages. */
 
 /* Issue 442, ADM-04 Companion profile: the prototype's tabs (.tabs) and field rows (dl.fields):
    the label and id on the left, the text edited in place with its state pill on the right. */

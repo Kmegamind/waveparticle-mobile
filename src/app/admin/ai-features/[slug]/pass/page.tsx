@@ -1,5 +1,4 @@
 import { FeatureEditorPage } from "../editor-page";
-import "../../ai-features.css";
 
 export const instant = false;
 
