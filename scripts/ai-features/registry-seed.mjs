@@ -16,6 +16,8 @@
 // - Fills the registry fields of the 7 Runtime rows (where it appears, requirement, output format,
 //   design rationale, room to improve, example), each only while it is still empty. Their slug,
 //   title, prompt keys, sections (a) to (c), status and history are never touched.
+// - Drops the mentions of the proposed prompt versions from the stored text (withoutProposedVersions;
+//   AI-PROPOSED-SEED-TEXT, #491): the registry shows the published versions.
 // - Leaves out every example that quotes book or story text (BOOK_TEXT_EXAMPLES): the field stays
 //   empty and the page shows "Not written yet".
 // - Stores the example state "none" whenever the stored example text is empty (a book-text example
@@ -69,6 +71,22 @@ export const TEXT_FIELDS = {
   rationale: "design_rationale",
   room_to_improve: "room_to_improve",
 };
+
+/**
+ * Drops the mentions of the proposed prompt versions (`prompt-table-source/proposed4/`) from a seed
+ * text: the registry shows the published prompt versions, not the proposed ones (owner answer of
+ * 2026-11-26, AI-PROPOSED-SEED-TEXT; AI-PROPOSED4-HOLD). "Proposed v4: x" becomes "X" and
+ * "roleplay format proposed" becomes "roleplay format". Other text is returned as it is.
+ * @param {string} value
+ */
+export function withoutProposedVersions(value) {
+  let result = value.replace(/^Proposed v\d+:\s*/i, "");
+  if (result !== value) result = result.charAt(0).toUpperCase() + result.slice(1);
+  return result.replace(/\broleplay format proposed\b/gi, "roleplay format");
+}
+
+/** A mention of a proposed prompt version that withoutProposedVersions did not remove. */
+const PROPOSED_VERSION = /proposed4|\bproposed v\d+|\bv\d+ proposed|\bformat proposed\b/i;
 
 const ID = /^([PGR])-(\d{2})$/;
 const KEY = /^[a-z][a-z0-9_]*$/;
@@ -137,8 +155,16 @@ export function parseRegistrySeed(seed) {
       throw new Error(`${id}: not one of the 7 runtime rows R-01 to R-07`);
     }
     const fields = Object.fromEntries(
-      Object.entries(TEXT_FIELDS).map(([from, to]) => [to, text(raw[from] ?? "", from, id)]),
+      Object.entries(TEXT_FIELDS).map(([from, to]) => [
+        to,
+        withoutProposedVersions(text(raw[from] ?? "", from, id)),
+      ]),
     );
+    for (const [column, value] of Object.entries(fields)) {
+      if (PROPOSED_VERSION.test(value)) {
+        throw new Error(`${id}: ${column} still names a proposed prompt version`);
+      }
+    }
     const exampleText = BOOK_TEXT_EXAMPLES.includes(id)
       ? ""
       : text(raw.example_or_notes ?? "", "example_or_notes", id);
