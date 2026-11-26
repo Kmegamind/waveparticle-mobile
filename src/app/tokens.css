@@ -334,6 +334,18 @@
   --adm-track-th: 0.06em;
   --adm-lede-measure: 68ch;
   --adm-field-min: 64px;
+  /* Issue 440: the Status board's count tiles, Companion panels and stage dots. Its headings use
+     --adm-h2-after (issue 439, below). */
+  --adm-tile-gap: 12px;
+  --adm-tile-pad: 12px 14px;
+  --adm-tile-label-size: 12px;
+  --adm-panel-row-after: 16px;
+  --adm-stage-pad: 4px 3px;
+  --adm-dot-size: 18px;
+  --adm-legend-gap: 14px;
+  /* The browser margin of the prototype's .note paragraph on the board: one line of its own size.
+     Not --adm-note-gap, which is the Companion profile's note (issue 442). */
+  --adm-board-note-gap: 1em;
   /* Issue 442, ADM-04 Companion profile: the prototype's .tabs and dl.fields. */
   --adm-tab-gap: 4px;
   --adm-tab-pad: 8px 10px;
