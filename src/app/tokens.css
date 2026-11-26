@@ -336,6 +336,20 @@
   --adm-field-min: 64px;
 }
 
+/* Issue 445: the prototype's dialog (dialog.sheet), used by App text's Publish changes. The shade
+   is the same in light and dark in the prototype. */
+.admin-shell {
+  --adm-sheet-radius: 12px;
+  --adm-sheet-width: 560px;
+  --adm-sheet-gutter: 32px;
+  --adm-sheet-room: 40px;
+  --adm-sheet-head-pad: 14px 16px;
+  --adm-sheet-body-pad: 16px;
+  --adm-sheet-foot-pad: 12px 16px;
+  --adm-sheet-title-size: 16px;
+  --adm-shade: rgb(0 0 0 / 35%);
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not(.theme-light) .admin-shell {
     --adm-bg: #121615;

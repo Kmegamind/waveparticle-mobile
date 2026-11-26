@@ -78,6 +78,22 @@ const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
     },
   },
   appText: { path: "/admin/app-text" },
+  // #445: App text with one text typed into (in the browser only, nothing is saved), so its Save
+  // draft and Cancel show.
+  appTextEditing: {
+    path: "/admin/app-text",
+    prepare: async (page) => {
+      const text = page.locator(".admin-table [contenteditable]").first();
+      await expect(text).toHaveAttribute("contenteditable", "true");
+      await text.click();
+      await page.keyboard.press("End");
+      await page.keyboard.type(" x");
+      await expect(page.locator(".admin-table .button-gray.button-small").first()).toBeVisible();
+    },
+  },
+  // #445: App text no longer has a text box (its texts are edited in place, as the prototype's);
+  // a story's cards still do.
+  storyCards: { path: "/admin/stories/eagle-hill-garden" },
   // A detail page: its menu row (Prompts) is marked as current.
   prompt: { path: "/admin/prompts/plan_split" },
 };
@@ -295,15 +311,76 @@ const COMPONENTS: Component[] = [
   {
     name: "small secondary button",
     prototype: { page: "history", selector: "td button.small" },
-    live: { page: "appText", selector: ".admin-table .button-gray.button-small" },
+    live: { page: "appTextEditing", selector: ".admin-table .button-gray.button-small" },
     properties: [...STYLE, "cursor"],
     box: ["height"],
   },
   {
     name: "text field",
     prototype: { page: "regenerate", selector: "dialog.sheet textarea" },
-    live: { page: "appText", selector: ".admin-table textarea.admin-text-field" },
+    live: { page: "storyCards", selector: "textarea.admin-text-field" },
     properties: [...STYLE, "resize"],
+  },
+  // #445: App text (ADM-07), the prototype's `uitext` screen: the header with Publish changes, and
+  // one line per key with its text edited in place. Read on the seed, which no gate test writes.
+  {
+    name: "header row (App text)",
+    prototype: { page: "uitext", selector: ".head" },
+    live: { page: "appText", selector: ".admin-head" },
+    box: ["x", "y", "width"],
+  },
+  {
+    name: "header action row (App text)",
+    prototype: { page: "uitext", selector: ".head .btns" },
+    live: { page: "appText", selector: ".admin-head .admin-actions" },
+  },
+  {
+    name: "panel (App text)",
+    prototype: { page: "uitext", selector: ".panel" },
+    live: { page: "appText", selector: ".admin-panel" },
+    box: ["x", "width"],
+  },
+  {
+    name: "table (App text)",
+    prototype: { page: "uitext", selector: "table" },
+    live: { page: "appText", selector: ".admin-table" },
+    properties: [...STYLE, "border-collapse", "table-layout"],
+    box: ["width"],
+  },
+  {
+    name: "table head cell (App text)",
+    prototype: { page: "uitext", selector: "th" },
+    live: { page: "appText", selector: ".admin-table th" },
+    box: ["height"],
+  },
+  {
+    name: "table cell (App text)",
+    prototype: { page: "uitext", selector: "td" },
+    live: { page: "appText", selector: ".admin-table td" },
+  },
+  {
+    // The issue's finding: a line was 241 px tall live against 39.6 px in the prototype.
+    name: "table line (App text)",
+    prototype: { page: "uitext", selector: "tbody tr" },
+    live: { page: "appText", selector: ".admin-table tbody tr" },
+    box: ["height"],
+  },
+  {
+    name: "id chip (App text)",
+    prototype: { page: "uitext", selector: "td .key" },
+    live: { page: "appText", selector: ".admin-table .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "text, edited in place (App text)",
+    prototype: { page: "uitext", selector: "td [contenteditable]" },
+    live: { page: "appText", selector: ".admin-table [contenteditable]" },
+  },
+  {
+    name: "pill (App text, Published)",
+    prototype: { page: "uitext", selector: "td .pill.s-pub" },
+    live: { page: "appText", selector: ".admin-table .admin-pill-published" },
+    box: ["height"],
   },
 ];
 
@@ -358,13 +435,6 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
       "height is compared as `box height`.",
   })),
   {
-    component: "small secondary button",
-    properties: ["display"],
-    reason:
-      "Both are inline-flex. The live one sits in a flex row (.admin-text-actions), where the " +
-      "browser computes a flex item's inline-flex as flex; the prototype's sits in a table cell.",
-  },
-  {
     component: "text field",
     properties: ["font-weight"],
     reason:
@@ -380,6 +450,24 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
       "shows bold text in a clickable row, so there is nothing to compare it with. Links look the " +
       "same on both sides (the prototype keeps the browser's underline too). The Companions page " +
       "pull request (#430 T8) decides the row and adds it here.",
+  },
+  // #445: App text.
+  {
+    component: "text, edited in place (App text)",
+    properties: ["white-space"],
+    reason:
+      "Live is pre-wrap, the prototype normal: a stored text may hold a line break or a double " +
+      "space (the earlier editor was a text box that allowed them); they must stay visible and be " +
+      "saved back unchanged.",
+  },
+  {
+    component: "main button (App text) (not in COMPONENTS)",
+    properties: ["(whole component)"],
+    reason:
+      "Publish changes is disabled while no key has a newer draft, which is the seed the gate " +
+      "reads (gate tests never write drafts). A disabled button draws cursor not-allowed and 35% " +
+      "opacity, so it is not compared with the prototype's enabled button. The enabled main " +
+      "button is compared as `main button`; the row it sits in as `header action row (App text)`.",
   },
 ];
 
@@ -630,6 +718,39 @@ test("test_435_frame_pictures_prototype_vs_live", async ({ page, context }) => {
     );
     writeFileSync(
       path.join(REFERENCE_DIR, `frame-${width}-side-by-side.png`),
+      await page.screenshot({ fullPage: true }),
+    );
+  }
+});
+
+// #445: the App text pictures for its pull request (prototype `uitext` vs live App text, as an
+// admin) at each width. Written only on request.
+test("test_445_app_text_pictures_prototype_vs_live", async ({ page, context }) => {
+  test.skip(!process.env.ADMIN_VISUAL_SCREENSHOTS, "Set ADMIN_VISUAL_SCREENSHOTS=1 to write them.");
+  test.setTimeout(120_000);
+  mkdirSync(REFERENCE_DIR, { recursive: true });
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto("/admin/app-text");
+  const origin = new URL(page.url()).origin;
+  await servePrototype(page, await adminFontFaces(page));
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: HEIGHT });
+    await openPrototype(page, origin, "uitext");
+    const prototype = await page.screenshot();
+    await openLive(page, "appText");
+    const live = await page.screenshot();
+    writeFileSync(path.join(REFERENCE_DIR, `app-text-${width}-prototype.png`), prototype);
+    writeFileSync(path.join(REFERENCE_DIR, `app-text-${width}-live.png`), live);
+
+    const image = (png: Buffer) => `data:image/png;base64,${png.toString("base64")}`;
+    await page.setViewportSize({ width: width * 2 + 48, height: HEIGHT + 56 });
+    await page.setContent(
+      `<!doctype html><meta charset=utf-8><body style="margin:0;padding:16px;background:#888;display:flex;gap:16px;font:14px system-ui;color:#fff">` +
+        `<figure style="margin:0"><figcaption>Prototype (standards mode), ${width} px</figcaption><img src="${image(prototype)}"></figure>` +
+        `<figure style="margin:0"><figcaption>Live admin, ${width} px</figcaption><img src="${image(live)}"></figure></body>`,
+    );
+    writeFileSync(
+      path.join(REFERENCE_DIR, `app-text-${width}-side-by-side.png`),
       await page.screenshot({ fullPage: true }),
     );
   }

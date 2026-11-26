@@ -72,9 +72,15 @@ test("test_288_ac2_lists_every_key_with_its_screen_and_published_text", async ({
   await expect(page.getByRole("table", { name: "App text" }).locator("tbody tr")).toHaveCount(13);
   const failure = card(page, "ui.F3.fail.body");
   await expect(failure.getByRole("cell", { name: "F3", exact: true })).toBeVisible();
+  // #445: the published text is the text edited in place; one version (v1) has no Versions list.
   await expect(failure.getByTestId("published-text")).toHaveText(
-    "v1 He is not here right now. Please try again.",
+    "He is not here right now. Please try again.",
   );
+  await expect(failure.getByLabel("Text for ui.F3.fail.body")).toHaveText(
+    "He is not here right now. Please try again.",
+  );
+  await expect(failure.getByText("Published", { exact: true })).toBeVisible();
+  await expect(failure.getByText(/^Versions \(/)).toHaveCount(0);
   await expect(failure.getByTestId("draft-text")).toHaveCount(0);
 });
 
@@ -152,4 +158,85 @@ test("test_288_admin_is_not_kept_in_the_browser_cache", async ({ page, context }
   expect(notFound?.status()).toBe(404);
   // Next's not-found answer sets its own value, which is private and no-store as well.
   expect(notFound?.headers()["cache-control"]).toMatch(/^private,.*\bno-store\b/);
+});
+
+// #445: the page as the prototype draws it (ADM-07): one line per key, the text edited in place,
+// and "Publish changes" in the header for an admin.
+
+test("test_445_each_key_is_one_line_with_its_text_edited_in_place", async ({ page, context }) => {
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+  await page.goto("/admin/app-text");
+  const table = page.getByRole("table", { name: "App text" });
+  // No text box in the table: each text is edited where it stands.
+  await expect(table.locator("textarea")).toHaveCount(0);
+  const failure = card(page, "ui.F3.fail.body");
+  await expect(failure.getByLabel("Text for ui.F3.fail.body")).toHaveAttribute(
+    "contenteditable",
+    "true",
+  );
+  await expect(failure.getByRole("button")).toHaveCount(0);
+  // The prototype's line is 39.6 px tall (cell padding, one line of text, the line under it).
+  const height = await failure.evaluate((row) => row.getBoundingClientRect().height);
+  expect(height).toBeLessThanOrEqual(41);
+  // A writer has no Publish changes (admin only).
+  await expect(page.getByRole("button", { name: /^Publish changes/ })).toHaveCount(0);
+});
+
+test("test_445_save_draft_appears_only_on_an_exact_difference", async ({ page, context }) => {
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+  await page.goto("/admin/app-text");
+  const greeting = card(page, KEY);
+  const text = greeting.getByLabel(`Text for ${KEY}`);
+  await text.fill(`${DEFAULT} `);
+  // One trailing space is a difference.
+  await expect(greeting.getByRole("button", { name: "Save draft" })).toBeVisible();
+  // Typed back to the stored text exactly: nothing to save.
+  await text.fill(DEFAULT);
+  await expect(greeting.getByRole("button", { name: "Save draft" })).toHaveCount(0);
+  // Cancel puts the stored text back, unchanged.
+  await text.fill("Something else");
+  await greeting.getByRole("button", { name: "Cancel" }).click();
+  await expect(text).toHaveText(DEFAULT);
+  await expect(greeting.getByRole("button")).toHaveCount(0);
+  // Enter adds no line break.
+  await text.click();
+  await page.keyboard.press("End");
+  await page.keyboard.press("Enter");
+  await expect(text).toHaveText(DEFAULT);
+  await expect(greeting.getByRole("button", { name: "Save draft" })).toHaveCount(0);
+});
+
+test("test_445_admin_publishes_changes_naming_each_key", async ({ page, context }) => {
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto("/admin/app-text");
+  const greeting = card(page, KEY);
+  await greeting.getByLabel(`Text for ${KEY}`).fill("Let’s start your first wave.");
+  await greeting.getByRole("button", { name: "Save draft" }).click();
+  await expect(greeting.getByRole("status")).toHaveText("Draft saved.");
+  // The per-key publish stays beside the draft.
+  await expect(greeting.getByRole("button", { name: "Publish v2" })).toBeVisible();
+
+  const dialog = page.getByRole("dialog", { name: "Publish changes" });
+  const listed = dialog.getByRole("list", { name: "Drafts to publish" }).getByRole("listitem");
+  // publish-history.spec.ts holds a draft of its own key for a moment. The dialog publishes only
+  // what it lists, so this waits (reading only) until it lists this file's draft alone.
+  await expect(async () => {
+    await page.reload();
+    const open = page.getByRole("button", { name: /^Publish changes \(\d+\)$/ });
+    // The button states its count.
+    await expect(open).toHaveText("Publish changes (1)", { timeout: 2000 });
+    await open.click();
+    await expect(listed).toHaveCount(1, { timeout: 2000 });
+  }).toPass({ timeout: 20_000 });
+  await expect(listed).toHaveText(`${KEY} v2Let’s start your first wave.`);
+  await dialog.getByRole("button", { name: "Publish 1 draft" }).click();
+  await expect(dialog.getByRole("status")).toHaveText(`Published ${KEY} v2.`);
+  await dialog.getByRole("button", { name: "Close" }).last().click();
+  await expect(dialog).toBeHidden();
+
+  await expect(card(page, KEY).getByTestId("published-text")).toHaveText(
+    "Let’s start your first wave.",
+  );
+  await expect(await homeGreeting(page)).toHaveText("Let’s start your first wave.");
+  await rollBackToFirst(page);
 });
