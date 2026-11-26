@@ -5,6 +5,7 @@ import { normalisePauseRequest } from "@/lib/prototype/line-requests";
 import { pauseMessageFor } from "@/lib/prototype/rest-lines";
 import { seedContent } from "./support/seed-content";
 import { seedPromptSource } from "./support/seed-prompts";
+import { OPPENHEIMER } from "./support/companion";
 
 // Fix round 1 of #386 (review I1 to I4): the word checks on call two, no false alarms on ordinary
 // words, one time limit for the whole pause, and no browser text in the prompts.
@@ -30,6 +31,7 @@ function gatewayWith(replies: string[], options: { timeLimitMs?: number } = {}) 
 
 describe("I1 the word checks run on call two, the message he shows", () => {
   const input = {
+    companionName: OPPENHEIMER,
     pauseNumber: 1,
     facts: "f",
     story: "His notebook page has curled.",
@@ -157,9 +159,16 @@ describe("I3 one time limit for the whole pause", () => {
     });
     const startedAt = Date.now();
     const scene = sceneOf("bohr-difficulties");
-    const first = await gateway.writeStuckStory({ pauseNumber: 1, facts: "f", scene, startedAt });
+    const first = await gateway.writeStuckStory({
+      companionName: OPPENHEIMER,
+      pauseNumber: 1,
+      facts: "f",
+      scene,
+      startedAt,
+    });
     expect(first.source).toBe("generated");
     const second = await gateway.writePausePredicament({
+      companionName: OPPENHEIMER,
       pauseNumber: 1,
       facts: "f",
       story: "His notebook page curls.",
@@ -171,6 +180,7 @@ describe("I3 one time limit for the whole pause", () => {
   it("test_56_i3_a_spent_time_limit_makes_no_call", async () => {
     const { gateway, calls } = gatewayWith(["x"], { timeLimitMs: 100 });
     const result = await gateway.writePausePredicament({
+      companionName: OPPENHEIMER,
       pauseNumber: 1,
       facts: "f",
       story: "s.",
@@ -208,8 +218,15 @@ describe("I4 earlier texts from the browser never reach a prompt", () => {
       "My notebook will not lie flat, and I feel restless.",
     ]);
     const scene = sceneOf("bohr-difficulties");
-    await gateway.writeStuckStory({ pauseNumber: 3, facts: "f", scene, earlierStories: [earlier] });
+    await gateway.writeStuckStory({
+      companionName: OPPENHEIMER,
+      pauseNumber: 3,
+      facts: "f",
+      scene,
+      earlierStories: [earlier],
+    });
     await gateway.writePausePredicament({
+      companionName: OPPENHEIMER,
       pauseNumber: 3,
       facts: "f",
       story: "His notebook page curls.",

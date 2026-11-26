@@ -10,6 +10,7 @@ import { storyDetail, type StoryCardRow } from "@/lib/story-cards/admin";
 import { cardProblems, SCENE_UNREADABLE } from "@/lib/story-cards/checks";
 import { seedContent, seedDocument } from "./support/seed-content";
 import { seedPromptSource, seedRows } from "./support/seed-prompts";
+import { OPPENHEIMER } from "./support/companion";
 
 // #64 (US-CON-4) and #65 (US-CON-7): each Story's one scene table (SCENE-PER-STORY), loaded from
 // the imported data, checked on every card, and passed to the pause message and its checks.
@@ -206,7 +207,12 @@ describe("#64 AC3 and #65 AC1: the scene table is an input to the pause message 
   it("test_64_ac3_the_stuck_story_prompt_names_the_prop_the_objects_and_the_people", async () => {
     const fake = provider([JSON.stringify({ story: "The shaker lid sticks in my hand." })]);
     const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
-    await gateway.writeStuckStory({ pauseNumber: 1, facts: "He is at home.", scene });
+    await gateway.writeStuckStory({
+      companionName: OPPENHEIMER,
+      pauseNumber: 1,
+      facts: "He is at home.",
+      scene,
+    });
     expect(fake.calls[0]).toContain("shaker");
     expect(fake.calls[0]).toContain("martini glass, shaker");
     expect(fake.calls[0]).toContain("Kitty");
@@ -227,6 +233,7 @@ describe("#64 AC3 and #65 AC1: the scene table is an input to the pause message 
       log: (event) => logs.push(event as { rejectedRules: string[] }),
     });
     const result = await gateway.writeStuckStory({
+      companionName: OPPENHEIMER,
       pauseNumber: 1,
       facts: "f",
       scene,
@@ -256,7 +263,12 @@ describe("#64 AC3 and #65 AC1: the scene table is an input to the pause message 
       provider: fake.impl,
       log: (event) => logs.push(event as { rejectedRules: string[] }),
     });
-    const result = await gateway.writeStuckStory({ pauseNumber: 1, facts: "f", scene });
+    const result = await gateway.writeStuckStory({
+      companionName: OPPENHEIMER,
+      pauseNumber: 1,
+      facts: "f",
+      scene,
+    });
     expect(result.source).toBe("generated");
     expect(logs.at(-1)?.rejectedRules).toContain("leak");
   });
@@ -295,6 +307,7 @@ describe("#65 AC1 the scene checks on the live pause message, without false alar
   async function firstTry(id: string, line: string) {
     const { gateway, calls, logs } = gatewayWith([line]);
     const result = await gateway.writePausePredicament({
+      companionName: OPPENHEIMER,
       pauseNumber: 1,
       facts: "f",
       story: "s.",
@@ -439,6 +452,7 @@ describe("#65 AC1 the scene checks on the live pause message, without false alar
         JSON.stringify({ prop: "coffee cup", story: "His coffee cup has gone cold." }),
     });
     const result = await gateway.writeStuckStory({
+      companionName: OPPENHEIMER,
       pauseNumber: 1,
       facts: "f",
       scene: sceneOf("trinity"),

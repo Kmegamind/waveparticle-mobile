@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createModelGateway } from "@/lib/model-gateway";
 import { stubAnswer } from "../e2e/support/stub-cards.mjs";
 import { seedPromptSource } from "./support/seed-prompts";
+import { OPPENHEIMER } from "./support/companion";
 
 // #254 AC8: the e2e stub model answers within the existing card checks, so a failure in the
 // live e2e run is a real failure of the app, not of the stub.
@@ -14,6 +15,7 @@ describe("the e2e stub model", () => {
     const earlier: string[] = [];
     for (const stepNumber of [1, 2, 3]) {
       const result = await gateway.writeStepCards({
+        companionName: OPPENHEIMER,
         minutes: 20,
         facts: "I am in Cambridge.",
         stepFacts: "I work at the bench.",

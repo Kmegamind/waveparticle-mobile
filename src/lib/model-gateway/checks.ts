@@ -27,10 +27,25 @@ const PRAISE = /\b(great|well done|proud|streak)\b/i;
 const EXCLAIM_OR_EMOJI = /!|\p{Extended_Pictographic}/u;
 const LINK = /https?:\/\/|www\./i;
 /**
- * The Companion whose name the `name` check uses when a caller gives none. Every server caller
- * passes the story's Companion (#302); this keeps older callers checked as before.
+ * AI-CHARACTER-NEUTRAL (2026-11-26, #468): no check holds one character's name. The `name` check
+ * takes the name of the Companion speaking as an input; there is no default. A missing or blank
+ * name throws, so a caller that forgets it fails loudly instead of being checked against someone
+ * else.
  */
-export const DEFAULT_COMPANION_NAME = "J. Robert Oppenheimer";
+export class MissingCompanionNameError extends Error {
+  constructor(where: string) {
+    super(`${where}: no Companion name was given, so the name check cannot run (#468)`);
+    this.name = "MissingCompanionNameError";
+  }
+}
+
+/** The name, trimmed; throws `MissingCompanionNameError` when it is missing or blank. */
+export function requireCompanionName(name: unknown, where: string): string {
+  if (typeof name !== "string" || name.trim().length === 0) {
+    throw new MissingCompanionNameError(where);
+  }
+  return name.trim();
+}
 /** Words of a name that are titles, not the name itself ("Professor Moriarty", "Count Dracula"). */
 const TITLES = new Set(["professor", "doctor", "dr", "mr", "mrs", "miss", "sir", "lord", "count"]);
 const BLAME = /\b(you again|finally came back|welcome back|while you were away)\b/i;
@@ -81,9 +96,17 @@ export function allowUserWords(terms: string[], userTexts: string[]): string[] {
   );
 }
 
-export function cleanLine(text: string, companionName = DEFAULT_COMPANION_NAME): string {
-  // A speaker label ("Oppenheimer: ...") is dropped; any word of his name counts as the label.
-  const label = ownNamePattern(companionName);
+/**
+ * The text trimmed, with straight quotes, and without a speaker label of the Companion speaking.
+ * `null` means the text is not a Companion's line (the Plan's titles, which the person's own Goal
+ * produces): no one speaks it, so there is no label to drop. It is never a stand-in name (#468).
+ */
+export function cleanLine(text: string, companionName: string | null): string {
+  // A speaker label ("<name>: ...") is dropped; any word of his name counts as the label.
+  const label =
+    companionName === null
+      ? null
+      : ownNamePattern(requireCompanionName(companionName, "cleanLine"));
   const cleaned = text
     .trim()
     .replace(/[’‘]/g, "'")
@@ -190,12 +213,14 @@ export function checkCompanionLine(
   kind: CompanionKind,
   forbidTerms: string[],
   rowLimits: LineLimits,
-  companionName = DEFAULT_COMPANION_NAME,
+  companionName: string,
 ): { ok: true; text: string } | { ok: false; rejectedRules: string[] } {
+  // #468: the name of the Companion speaking is required; a missing one throws, never a default.
+  const name = requireCompanionName(companionName, "checkCompanionLine");
   const limits = limitsFor(kind, rowLimits);
   const live = kind === "rest_reply" || kind === "stuck_story" || kind === "pause_message";
-  const text = cleanLine(raw, companionName);
-  const ownName = ownNamePattern(companionName);
+  const text = cleanLine(raw, name);
+  const ownName = ownNamePattern(name);
   const rejected: string[] = [];
   const sentenceCount = sentences(text);
   const wordCount = words(text);
@@ -251,7 +276,9 @@ export function checkPlan(
 ): { ok: true; plan: GeneratedPlan } | { ok: false; rejectedRules: string[] } {
   const rejected: string[] = [];
   const record = isRecord(value) ? value : null;
-  const title = typeof record?.title === "string" ? cleanLine(record.title) : "";
+  // The Plan is the person's own Goal in Steps; no Companion speaks it, so it has no name check
+  // and no speaker label to drop (`null`, #468).
+  const title = typeof record?.title === "string" ? cleanLine(record.title, null) : "";
   const steps = Array.isArray(record?.steps) ? record.steps : null;
 
   push(rejected, "parse", record === null || steps === null);
@@ -266,8 +293,9 @@ export function checkPlan(
   const parsedSteps =
     steps?.map((step) => {
       const item = isRecord(step) ? step : {};
-      const stepTitle = typeof item.title === "string" ? cleanLine(item.title) : "";
-      const description = typeof item.description === "string" ? cleanLine(item.description) : "";
+      const stepTitle = typeof item.title === "string" ? cleanLine(item.title, null) : "";
+      const description =
+        typeof item.description === "string" ? cleanLine(item.description, null) : "";
       const minutes = item.minutes;
       const minutesOk = typeof minutes === "number" && Number.isInteger(minutes) && minutes > 0;
       push(

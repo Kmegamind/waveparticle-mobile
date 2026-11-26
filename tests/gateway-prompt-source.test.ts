@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createModelGateway, type GatewayLog, type ModelGateway } from "@/lib/model-gateway";
 import type { PromptKey, PromptRow, PromptSource } from "@/lib/prompts/repository";
 import { seedPromptSource, seedRows } from "./support/seed-prompts";
+import { OPPENHEIMER } from "./support/companion";
 
 // #282: the gateway reads every prompt from the prompt source. A missing, inactive or broken
 // prompt fails the call before any model call: no stored line, no default prompt (NO-BACKUP).
@@ -10,11 +11,21 @@ const facts = "He is at the mesa.";
 
 const calls: [string, (g: ModelGateway) => Promise<{ source: string }>][] = [
   ["plan_split", (g) => g.splitPlan({ goal: "SECRET_GOAL", totalMinutes: 30, splitFiner: false })],
-  ["step_cards", (g) => g.writeStepCards({ minutes: 10, facts })],
-  ["stuck_story", (g) => g.writeStuckStory({ pauseNumber: 1, facts })],
-  ["rest_reply", (g) => g.writeRestReply({ facts, userMessage: "SECRET_MESSAGE" })],
-  ["return_popup", (g) => g.writeReturnPopup({ trigger: "rest", facts, awayMinutes: 2 })],
-  ["closing_line", (g) => g.writeClosingLine({ facts, lastMoment: "He waits." })],
+  ["step_cards", (g) => g.writeStepCards({ companionName: OPPENHEIMER, minutes: 10, facts })],
+  ["stuck_story", (g) => g.writeStuckStory({ companionName: OPPENHEIMER, pauseNumber: 1, facts })],
+  [
+    "rest_reply",
+    (g) => g.writeRestReply({ companionName: OPPENHEIMER, facts, userMessage: "SECRET_MESSAGE" }),
+  ],
+  [
+    "return_popup",
+    (g) =>
+      g.writeReturnPopup({ companionName: OPPENHEIMER, trigger: "rest", facts, awayMinutes: 2 }),
+  ],
+  [
+    "closing_line",
+    (g) => g.writeClosingLine({ companionName: OPPENHEIMER, facts, lastMoment: "He waits." }),
+  ],
 ];
 
 function without(missing: PromptKey): PromptSource {
@@ -69,7 +80,11 @@ describe("the gateway and the prompt source (#282)", () => {
       log: (event) => logs.push(event),
     });
     const started = Date.now();
-    const result = await gateway.writeRestReply({ facts, userMessage: "hello" });
+    const result = await gateway.writeRestReply({
+      companionName: OPPENHEIMER,
+      facts,
+      userMessage: "hello",
+    });
     expect(result).toEqual({ source: "failed", reason: "prompt" });
     expect(Date.now() - started).toBeLessThan(1_000);
     expect(modelCalls).toBe(0);
@@ -111,9 +126,17 @@ describe("the gateway and the prompt source (#282)", () => {
     const gateway = (prompts: PromptSource) =>
       createModelGateway({ prompts, provider: async () => answer, maxAttempts: 1 });
     expect(
-      (await gateway(seedPromptSource()).writeStuckStory({ pauseNumber: 1, facts })).source,
+      (
+        await gateway(seedPromptSource()).writeStuckStory({
+          companionName: OPPENHEIMER,
+          pauseNumber: 1,
+          facts,
+        })
+      ).source,
     ).toBe("generated");
-    expect(await gateway(tight).writeStuckStory({ pauseNumber: 1, facts })).toEqual({
+    expect(
+      await gateway(tight).writeStuckStory({ companionName: OPPENHEIMER, pauseNumber: 1, facts }),
+    ).toEqual({
       source: "failed",
       reason: "checks",
     });
@@ -132,7 +155,7 @@ describe("the gateway and the prompt source (#282)", () => {
         return JSON.stringify({ reply: "I keep to my own desk." });
       },
     });
-    await gateway.writeRestReply({ facts: "F", userMessage: "hello" });
+    await gateway.writeRestReply({ companionName: OPPENHEIMER, facts: "F", userMessage: "hello" });
     expect(sent).toEqual(["Answer kindly.\nThe person wrote: hello\nFacts: F"]);
   });
 });

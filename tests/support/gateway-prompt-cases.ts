@@ -1,4 +1,5 @@
 import type { ModelGateway, ModelProvider } from "@/lib/model-gateway/types";
+import { OPPENHEIMER } from "./companion";
 
 /**
  * Inputs that exercise every branch of every gateway prompt (#282). The golden file
@@ -40,13 +41,14 @@ export const GATEWAY_PROMPT_CASES: Case[] = [
   {
     name: "step cards, plain",
     answers: [notJson, JSON.stringify({ cards: [badLine] }), notJson],
-    call: (g) => g.writeStepCards({ minutes: 20, facts }),
+    call: (g) => g.writeStepCards({ companionName: OPPENHEIMER, minutes: 20, facts }),
   },
   {
     name: "step cards, background, numbered, must-use, new facts",
     answers: [notJson, notJson, notJson],
     call: (g) =>
       g.writeStepCards({
+        companionName: OPPENHEIMER,
         minutes: 15,
         facts,
         stepFacts: "A truck breaks down on the road.",
@@ -62,6 +64,7 @@ export const GATEWAY_PROMPT_CASES: Case[] = [
     answers: [notJson, notJson, notJson],
     call: (g) =>
       g.writeStepCards({
+        companionName: OPPENHEIMER,
         minutes: 10,
         facts,
         stepFacts: "  ",
@@ -73,28 +76,36 @@ export const GATEWAY_PROMPT_CASES: Case[] = [
   {
     name: "step cards, story count not a number of cards",
     answers: [notJson, notJson, notJson],
-    call: (g) => g.writeStepCards({ minutes: 10, facts, storyCards: 0, stepNumber: 2 }),
+    call: (g) =>
+      g.writeStepCards({
+        companionName: OPPENHEIMER,
+        minutes: 10,
+        facts,
+        storyCards: 0,
+        stepNumber: 2,
+      }),
   },
   {
     name: "stuck story, first pause",
     answers: [notJson, JSON.stringify({ story: badLine }), notJson],
-    call: (g) => g.writeStuckStory({ pauseNumber: 1, facts }),
+    call: (g) => g.writeStuckStory({ companionName: OPPENHEIMER, pauseNumber: 1, facts }),
   },
   {
     name: "stuck story, third pause",
     answers: [notJson, notJson, notJson],
-    call: (g) => g.writeStuckStory({ pauseNumber: 3, facts }),
+    call: (g) => g.writeStuckStory({ companionName: OPPENHEIMER, pauseNumber: 3, facts }),
   },
   {
     name: "stuck story, invalid pause number",
     answers: [notJson, notJson, notJson],
-    call: (g) => g.writeStuckStory({ pauseNumber: 2.5, facts }),
+    call: (g) => g.writeStuckStory({ companionName: OPPENHEIMER, pauseNumber: 2.5, facts }),
   },
   {
     name: "stuck story, chosen category and prop, scene and earlier snags (#56)",
     answers: [notJson, JSON.stringify({ prop: "lamp", story: badLine }), notJson],
     call: (g) =>
       g.writeStuckStory({
+        companionName: OPPENHEIMER,
         pauseNumber: 2,
         facts,
         category: "paper",
@@ -113,13 +124,19 @@ export const GATEWAY_PROMPT_CASES: Case[] = [
     name: "pause predicament, first pause (#56)",
     answers: [notJson, badLine, notJson],
     call: (g) =>
-      g.writePausePredicament({ pauseNumber: 1, facts, story: "His pencil has gone blunt." }),
+      g.writePausePredicament({
+        companionName: OPPENHEIMER,
+        pauseNumber: 1,
+        facts,
+        story: "His pencil has gone blunt.",
+      }),
   },
   {
     name: "pause predicament, third pause, earlier snags (#56)",
     answers: [notJson, notJson, notJson],
     call: (g) =>
       g.writePausePredicament({
+        companionName: OPPENHEIMER,
         pauseNumber: 3,
         facts,
         story: "The notebook page has curled.",
@@ -129,22 +146,35 @@ export const GATEWAY_PROMPT_CASES: Case[] = [
   {
     name: "rest reply, user text with braces",
     answers: [notJson, JSON.stringify({ reply: badLine }), notJson],
-    call: (g) => g.writeRestReply({ facts, userMessage: "I am stuck on {{facts}} again." }),
+    call: (g) =>
+      g.writeRestReply({
+        companionName: OPPENHEIMER,
+        facts,
+        userMessage: "I am stuck on {{facts}} again.",
+      }),
   },
   {
     name: "return pop-up after rest",
     answers: [notJson, JSON.stringify({ returnLine: badLine }), notJson],
-    call: (g) => g.writeReturnPopup({ trigger: "rest", facts, awayMinutes: 3 }),
+    call: (g) =>
+      g.writeReturnPopup({ companionName: OPPENHEIMER, trigger: "rest", facts, awayMinutes: 3 }),
   },
   {
     name: "return pop-up after an absence",
     answers: [notJson, notJson, notJson],
-    call: (g) => g.writeReturnPopup({ trigger: "absence", facts, awayMinutes: 42 }),
+    call: (g) =>
+      g.writeReturnPopup({
+        companionName: OPPENHEIMER,
+        trigger: "absence",
+        facts,
+        awayMinutes: 42,
+      }),
   },
   {
     name: "closing line",
     answers: [notJson, JSON.stringify({ closing_line: badLine, carry_line: badLine }), notJson],
-    call: (g) => g.writeClosingLine({ facts, lastMoment: "He signs the letter." }),
+    call: (g) =>
+      g.writeClosingLine({ companionName: OPPENHEIMER, facts, lastMoment: "He signs the letter." }),
   },
 ];
 
