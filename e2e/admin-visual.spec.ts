@@ -48,13 +48,29 @@ type PageSetup = (page: Page) => Promise<void>;
  */
 const REGISTRY_SCREENS = ["registry", "feature", "run", "lab", "runs", "samples"] as const;
 const REGISTRY_STATES = ["admin", "writer", "empty", "loading", "error", "running"] as const;
-const REGISTRY_PAGES = REGISTRY_SCREENS.flatMap((screen) =>
-  REGISTRY_STATES.map((state) => ({
-    key: `registry_${screen}_${state}`,
-    picture: `ai-registry-${screen}-${state}`,
-    hash: `reg-${screen}/${state}`,
-  })),
-);
+const REGISTRY_PAGES: { key: string; picture: string; hash: string; prepare?: PageSetup }[] = [
+  ...REGISTRY_SCREENS.flatMap((screen) =>
+    REGISTRY_STATES.map((state) => ({
+      key: `registry_${screen}_${state}`,
+      picture: `ai-registry-${screen}-${state}`,
+      hash: `reg-${screen}/${state}`,
+    })),
+  ),
+  // The registry as an admin with its table scrolled to the right end: the Prompt, Status and
+  // Example columns, the admin's Change buttons and the example pills, beside the sticky ID and Name.
+  {
+    key: "registry_registry_admin_scrolled",
+    picture: "ai-registry-registry-admin-scrolled",
+    hash: "reg-registry/admin",
+    prepare: async (page) => {
+      const panel = page.locator(".panel.scroll");
+      await panel.evaluate((node) => {
+        node.scrollLeft = node.scrollWidth;
+      });
+      await expect(page.locator("table.reg td:nth-child(8) .pill").first()).toBeInViewport();
+    },
+  },
+];
 
 /**
  * Prototype screens by hash, with any step needed to show a component. `file: "aiFeatures"` is a
@@ -65,7 +81,7 @@ const PROTOTYPE_PAGES: Record<string, { hash: string; file?: "aiFeatures"; prepa
     ...Object.fromEntries(
       REGISTRY_PAGES.map((target) => [
         target.key,
-        { hash: target.hash, file: "aiFeatures" as const },
+        { hash: target.hash, file: "aiFeatures" as const, prepare: target.prepare },
       ]),
     ),
     // #439: the AI features index (AIF-1) and the feature page (AIF-2, the Pause message).

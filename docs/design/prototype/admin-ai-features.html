@@ -386,8 +386,11 @@ const MODEL_ERR=`<p class="errbox" role="alert"><span><b>The model did not answe
 const LOAD_ERR=what=>`<p class="errbox" role="alert"><span><b>${what} could not be read.</b> This page calls no model.</span><button class="small" onclick="toast('Retry (prototype)')">Retry</button></p>`;
 const RUNNING=(what,stub=true)=>`<div role="status"><p style="margin:0"><span class="pill s-gen">Run in progress</span> ${what} · started by you${stub?" · "+FAKE:""}</p><div class="bar"><i></i></div><button class="small" onclick="toast('Cancelled (prototype)')">Cancel</button></div>`;
 const PUB=["Sample text: a stand-in for the published prompt, not its wording.","You write for {{persona}}.","Use only {{source_excerpt}} and {{facts}}.","Answer in the output format of this row."];
-const DRF=["Sample text: a stand-in for the published prompt, not its wording.","You write for {{persona}}.","Use only {{source_excerpt}}, {{facts}} and {{world_record}}.","Answer in the output format of this row."];
+const DRF=["Sample text: a stand-in for the draft prompt, not its wording.","You write for {{persona}}.","Use only {{source_excerpt}}, {{facts}} and {{world_record}}.","Answer in the output format of this row."];
 const ANSWER="Sample text: the stub model's fixed answer, not real output.";
+const OWNER="Owner, 2026-11-26";
+const PCAT={Pipeline:"pipeline","Quality gate":"gate",Runtime:"runtime"};
+const statusSrc=r=>`<p class="src">${r.category==="Runtime"?"A Runtime row keeps the status it already has on its feature page.":"A Pipeline or Quality gate row starts with the status from the seed."} (${OWNER})</p>`;
 const PASSQ=[1,2,3].map(n=>`Pass question ${n} from the database`);
 const ynRow=(q,i,side)=>`<div class="yn"><span>${q}</span><div class="seg" role="group" aria-label="${side}, question ${i+1}"><button class="small" aria-pressed="false">Yes</button><button class="small" aria-pressed="false">No</button></div></div>`;
 
@@ -409,6 +412,7 @@ V["reg-registry"]=st=>{
  return h+(st==="error"?LOAD_ERR("The registry")+`<div style="height:12px"></div>`:"")+filters+
   `<div class="panel scroll"><table class="reg"><thead>${head8}</thead><tbody>${body}</tbody></table></div>
   <div class="legend"><span>Example: ${expill("none")} ${expill("candidate")} ${expill("confirmed")}</span><span>Status: ${pill("ns")} ${pill("ex")} ${pill("ps")} ${pill("fz")}</span><span>${writer?"Status is admin only: a writer sees no Change button.":"Change opens the status control on the feature page (admin only)."}</span></div>
+  <p class="note" style="margin-top:10px">Status: Pipeline and Quality gate rows take the seed's status; Runtime rows keep the status they already have (${OWNER}).</p>
   <p class="note" style="margin-top:10px">The table scrolls sideways inside its panel; ID and Name stay visible. ID order follows the seed: P (Pipeline), G (Quality gate), R (Runtime).</p>`;
 };
 
@@ -421,23 +425,25 @@ V["reg-feature"]=(st,id)=>{
  const latest=st==="error"?MODEL_ERR:st==="running"?RUNNING("Run of the draft on Oppenheimer story 1"):empty?`<p class="empty">No runs yet</p>`:
   `<p class="note" style="margin:0">Sample date · Admin (sample) · Draft · Oppenheimer story 1 · ${FAKE} · result set as ${expill("candidate")}</p>`;
  const prompt=empty?`<p class="empty">Not written yet</p>`:
-  `<p style="margin:0 0 8px"><span class="key">${esc(r.prompt)}</span> <span class="pill s-pub">Published</span> <span class="pill s-draft">Draft</span> ${SAMPLE}</p>
+  `<p style="margin:0 0 8px"><span class="key">${esc(r.prompt)}</span> <span class="pill s-pub">Published</span> <span class="pill s-draft">Draft</span> <span class="key">category: ${PCAT[r.category]}</span> ${SAMPLE}</p>
   <div class="cmp"><div><p class="note" style="margin:0 0 6px">Published</p><pre class="code">${PUB.map(hv).join("\n")}</pre></div>
   <div><p class="note" style="margin:0 0 6px">Draft</p><pre class="code">${DRF.map(hv).join("\n")}</pre></div></div>
-  <p class="note" style="margin:12px 0 6px">Changed lines</p><div class="diff"><div>  ${hv(PUB[1])}</div><div class="del">- ${hv(PUB[2])}</div><div class="add">+ ${hv(DRF[2])}</div><div>  ${hv(PUB[3])}</div></div>
-  <p class="src">The real text is read live from <span class="key">public.prompts</span>, never copied. <span class="var">{{variables}}</span> are filled from a sample.</p>`;
+  <p class="note" style="margin:12px 0 6px">Changed lines</p><div class="diff"><div class="del">- ${hv(PUB[0])}</div><div class="add">+ ${hv(DRF[0])}</div><div>  ${hv(PUB[1])}</div><div class="del">- ${hv(PUB[2])}</div><div class="add">+ ${hv(DRF[2])}</div><div>  ${hv(PUB[3])}</div></div>
+  <p class="src">The real text is read live from <span class="key">public.prompts</span>, never copied. <span class="var">{{variables}}</span> are filled from a sample. <span class="key">public.prompts</span> has a category column (runtime, pipeline or gate); the app reads only runtime keys (${OWNER}).</p>`;
  const exHist=r.example_state==="none"?`<p class="empty" style="margin-top:10px">No earlier examples</p>`:
   `<table style="margin-top:10px"><thead><tr><th>When</th><th>Who</th><th>Change</th></tr></thead><tbody><tr><td class="note">Sample date</td><td>Setup</td><td>Seeded as ${expill(r.example_state)}</td></tr></tbody></table>`;
  const example=r.example_state==="none"?`<p class="empty">Not written yet</p>`:
   `<p style="margin:0 0 6px">${expill(r.example_state)} ${r.example_state==="confirmed"?`<span class="note">Confirmed by Setup (sample) · sample date</span>`:`<span class="note">From a run · sample date</span> <button class="small" onclick="toast('Confirmed (prototype)')">Confirm</button>`}</p><p style="margin:0">${exText(r)}</p>${exHist}`;
- const status=writer?`<div class="panel ro"><h2>Status ${pill(RST[r.status])} <span class="lock">Admin only</span></h2><p class="note" style="margin:0">You can see the status. Only an admin can change it.</p></div>`:
+ const status=writer?`<div class="panel ro"><h2>Status ${pill(RST[r.status])} <span class="lock">Admin only</span></h2><p class="note" style="margin:0">You can see the status. Only an admin can change it.</p>${statusSrc(r)}</div>`:
   `<div class="panel"><h2>Status ${pill(RST[r.status])}</h2><div class="form"><div class="seg" role="group" aria-label="Status">${Object.keys(RST).map(s=>`<button aria-pressed="${s===r.status}">${ST[RST[s]][0]}</button>`).join("")}</div>
-  <label>Reason (one line)<input type="text" placeholder="Why the status changes"></label><div><button class="primary" onclick="toast('Status saved (prototype)')">Save status</button></div></div></div>`;
+  <label>Reason (one line)<input type="text" placeholder="Why the status changes"></label><div><button class="primary" onclick="toast('Status saved (prototype)')">Save status</button></div></div>${statusSrc(r)}</div>`;
  const runtime=r.category==="Runtime"?`<div class="panel"><h2>Fix added after a rejected answer <span class="key">retry_hints</span></h2><pre class="code">${hv("Sample text: a stand-in for retry_hints. It is sent with {{reason}} when an answer fails a check.")}</pre><p class="src">Read live from <span class="key">public.prompts</span>; the same text shows on every Runtime row.</p></div>`:"";
  const hist=empty?`<p class="empty">No changes yet</p>`:`<table><thead><tr><th>When</th><th>Who</th><th>Field</th></tr></thead><tbody><tr><td class="note">Sample date</td><td>Setup</td><td>Every field, from the seed of 2026-11-26</td></tr></tbody></table>`;
  const sec=(t,b)=>`<div class="panel"><h2>${t}</h2>${b}</div>`;
+ const purpose=r.category!=="Runtime"?"":sec("Purpose",(empty?`<p class="empty">Not written yet</p>`:`<p style="margin:0">${SAMPLE} Purpose text from the database: what the feature does for the user, kept from the feature page's section (a).</p>`)+
+  `<p class="src">Runtime rows keep their purpose and add a separate Requirement (${OWNER}).</p>`);
  const p=s=>`<p style="margin:0">${val(s)}</p>`;
- return h+`<div class="stack">`+sec("Latest run",latest)+sec("Requirement",p(r.requirement))+sec("Prompt",prompt)+sec("Output format and rules",p(r.output_format))+
+ return h+`<div class="stack">`+sec("Latest run",latest)+purpose+sec("Requirement",p(r.requirement)+(r.category==="Runtime"?`<p class="src">A separate field next to Purpose (${OWNER}).</p>`:""))+sec("Prompt",prompt)+sec("Output format and rules",p(r.output_format))+
   sec("Design rationale",p(r.rationale))+sec("Room to improve",p(r.room_to_improve))+sec("Confirmed example",example)+sec("Notes",`<p class="empty">Not written yet</p>`)+
   sec("Pass standard",`<p class="empty">Not written yet</p>`)+status+sec("Version history",hist)+runtime+`</div>`;
 };
@@ -464,7 +470,7 @@ V["reg-run"]=(st,id)=>{
   <div class="btns" style="margin-top:12px"><button onclick="toast('Set as candidate (prototype)')">Set as candidate example</button><button onclick="toast('Confirmed (prototype)')">Confirm</button></div>
   <p class="src">Confirm records who and when; a replaced confirmed example stays in history.</p>`;
  return h+`<div class="grid2">${form}<div class="panel"><h2>Answer</h2>${result}</div></div>
-  <p class="note" style="margin-top:10px">${st==="writer"?"A writer has the same panel: run, set a candidate and confirm. Only the status is admin only.":"An admin and a writer see the same panel."}</p>`;
+  <p class="note" style="margin-top:10px">${st==="writer"?"A writer has the same panel: Run is enabled, and a writer can set a candidate and confirm. Only the status is admin only.":"An admin and a writer see the same panel."} Admin and writer both may press Run (${OWNER}).</p>`;
 };
 
 V["reg-lab"]=st=>{
