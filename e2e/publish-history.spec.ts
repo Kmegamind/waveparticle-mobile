@@ -99,9 +99,13 @@ test("test_289_ac2_roll_back_from_the_history_publishes_that_version_again", asy
   await expect(historyRow(page, 2, "Rolled back")).toContainText("Published now");
 
   await page.goto("/admin/app-text");
-  await expect(
-    page.getByRole("row", { name: KEY, exact: true }).getByTestId("published-text"),
-  ).toHaveText("v2 You are offline. Your Step is kept.");
+  // #445: the published text is the text edited in place; its version is in the Versions list.
+  const again = page.getByRole("row", { name: KEY, exact: true });
+  await expect(again.getByTestId("published-text")).toHaveText(
+    "You are offline. Your Step is kept.",
+  );
+  await again.getByText(/^Versions \(/).click();
+  await expect(again.getByRole("listitem").filter({ hasText: /^v2/ })).toContainText("Published");
 });
 
 test("test_289_ac3_an_account_without_a_role_cannot_read_the_history", async ({
