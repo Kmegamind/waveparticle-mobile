@@ -1058,9 +1058,16 @@ const WORD_BREAK_NORMAL = new Set([
   "AI features: version chip",
 ]);
 
+/**
+ * The component name of an exception that applies to every compared component except the
+ * WORD_BREAK_NORMAL ones, decided when a component is compared (differences), so rows added to
+ * COMPONENTS later, and components compared in their own test, are covered too.
+ */
+const EVERY_COMPONENT_BUT_WORD_BREAK_NORMAL = "(every component not in WORD_BREAK_NORMAL)";
+
 const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] = [
-  ...COMPONENTS.filter((component) => !WORD_BREAK_NORMAL.has(component.name)).map((component) => ({
-    component: component.name,
+  {
+    component: EVERY_COMPONENT_BUT_WORD_BREAK_NORMAL,
     properties: ["overflow-wrap"],
     reason:
       "Live text breaks a word longer than its line anywhere (the app's body, issue 100, and " +
@@ -1070,7 +1077,7 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
       "clips them (#439 review round 3: a 200-character token was 1313 px wide in a 348 px " +
       "box). word-break is still compared everywhere, and overflow-wrap on the index table " +
       "cells (WORD_BREAK_NORMAL), which keep normal inside their scrolling panel.",
-  })),
+  },
   {
     component: "page (body / frame)",
     properties: [
@@ -1466,7 +1473,11 @@ const PX = /^-?\d+(\.\d+)?px$/;
 function differences(name: string, prototype: Reading, live: Reading): string[] {
   const found: string[] = [];
   const skipped = new Set(
-    EXCEPTIONS.filter((item) => item.component === name).flatMap((item) => item.properties),
+    EXCEPTIONS.filter(
+      (item) =>
+        item.component === name ||
+        (item.component === EVERY_COMPONENT_BUT_WORD_BREAK_NORMAL && !WORD_BREAK_NORMAL.has(name)),
+    ).flatMap((item) => item.properties),
   );
   for (const key of Object.keys(prototype)) {
     if (skipped.has(key)) continue;
