@@ -394,6 +394,69 @@ const COMPONENTS: Component[] = [
     live: { page: "textField", selector: ".admin-panel textarea.admin-text-field" },
     properties: [...STYLE, "resize"],
   },
+  // #445: App text (ADM-07), the prototype's `uitext` screen: the header with Publish changes, and
+  // one line per key with its text edited in place. Rows read the first line (ui.F3.fail.body),
+  // which no test writes. They come before the AI feature rows: the last of those pages signs the
+  // browser in again as a writer, and Publish changes shows to an admin only.
+  {
+    name: "header row (App text)",
+    prototype: { page: "uitext", selector: ".head" },
+    live: { page: "appText", selector: ".admin-head" },
+    box: ["x", "y", "width"],
+  },
+  {
+    name: "header action row (App text)",
+    prototype: { page: "uitext", selector: ".head .btns" },
+    live: { page: "appText", selector: ".admin-head .admin-actions" },
+  },
+  {
+    name: "panel (App text)",
+    prototype: { page: "uitext", selector: ".panel" },
+    live: { page: "appText", selector: ".admin-panel" },
+    box: ["x", "width"],
+  },
+  {
+    name: "table (App text)",
+    prototype: { page: "uitext", selector: "table" },
+    live: { page: "appText", selector: ".admin-table" },
+    properties: [...STYLE, "border-collapse", "table-layout"],
+    box: ["width"],
+  },
+  {
+    name: "table head cell (App text)",
+    prototype: { page: "uitext", selector: "th" },
+    live: { page: "appText", selector: ".admin-table th" },
+    box: ["height"],
+  },
+  {
+    name: "table cell (App text)",
+    prototype: { page: "uitext", selector: "td" },
+    live: { page: "appText", selector: ".admin-table td" },
+  },
+  {
+    // The issue's finding: a line was 241 px tall live against 39.6 px in the prototype.
+    name: "table line (App text)",
+    prototype: { page: "uitext", selector: "tbody tr" },
+    live: { page: "appText", selector: ".admin-table tbody tr" },
+    box: ["height"],
+  },
+  {
+    name: "id chip (App text)",
+    prototype: { page: "uitext", selector: "td .key" },
+    live: { page: "appText", selector: ".admin-table .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "text, edited in place (App text)",
+    prototype: { page: "uitext", selector: "td [contenteditable]" },
+    live: { page: "appText", selector: ".admin-table [contenteditable]" },
+  },
+  {
+    name: "pill (App text, Published)",
+    prototype: { page: "uitext", selector: "td .pill.s-pub" },
+    live: { page: "appText", selector: ".admin-table .admin-pill-published" },
+    box: ["height"],
+  },
   // #439: the AI features index (drawing AIF-1). The table's rows are seed data; only their parts
   // are compared, never their text or their heights.
   {
@@ -965,67 +1028,6 @@ const COMPONENTS: Component[] = [
     prototype: { page: "aiStatusWriter", selector: ".ro button.primary" },
     live: { page: "aiStatusWriter", selector: ".admin-ro .button-filled" },
     properties: [...STYLE, "opacity"],
-    box: ["height"],
-  },
-  // #445: App text (ADM-07), the prototype's `uitext` screen: the header with Publish changes, and
-  // one line per key with its text edited in place. Rows read the first line (ui.F3.fail.body), which no test writes.
-  {
-    name: "header row (App text)",
-    prototype: { page: "uitext", selector: ".head" },
-    live: { page: "appText", selector: ".admin-head" },
-    box: ["x", "y", "width"],
-  },
-  {
-    name: "header action row (App text)",
-    prototype: { page: "uitext", selector: ".head .btns" },
-    live: { page: "appText", selector: ".admin-head .admin-actions" },
-  },
-  {
-    name: "panel (App text)",
-    prototype: { page: "uitext", selector: ".panel" },
-    live: { page: "appText", selector: ".admin-panel" },
-    box: ["x", "width"],
-  },
-  {
-    name: "table (App text)",
-    prototype: { page: "uitext", selector: "table" },
-    live: { page: "appText", selector: ".admin-table" },
-    properties: [...STYLE, "border-collapse", "table-layout"],
-    box: ["width"],
-  },
-  {
-    name: "table head cell (App text)",
-    prototype: { page: "uitext", selector: "th" },
-    live: { page: "appText", selector: ".admin-table th" },
-    box: ["height"],
-  },
-  {
-    name: "table cell (App text)",
-    prototype: { page: "uitext", selector: "td" },
-    live: { page: "appText", selector: ".admin-table td" },
-  },
-  {
-    // The issue's finding: a line was 241 px tall live against 39.6 px in the prototype.
-    name: "table line (App text)",
-    prototype: { page: "uitext", selector: "tbody tr" },
-    live: { page: "appText", selector: ".admin-table tbody tr" },
-    box: ["height"],
-  },
-  {
-    name: "id chip (App text)",
-    prototype: { page: "uitext", selector: "td .key" },
-    live: { page: "appText", selector: ".admin-table .admin-chip" },
-    box: ["height"],
-  },
-  {
-    name: "text, edited in place (App text)",
-    prototype: { page: "uitext", selector: "td [contenteditable]" },
-    live: { page: "appText", selector: ".admin-table [contenteditable]" },
-  },
-  {
-    name: "pill (App text, Published)",
-    prototype: { page: "uitext", selector: "td .pill.s-pub" },
-    live: { page: "appText", selector: ".admin-table .admin-pill-published" },
     box: ["height"],
   },
 ];
