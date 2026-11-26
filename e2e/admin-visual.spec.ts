@@ -63,7 +63,7 @@ const REGISTRY_PAGES: { key: string; picture: string; hash: string; prepare?: Pa
     picture: "ai-registry-registry-admin-scrolled",
     hash: "reg-registry/admin",
     prepare: async (page) => {
-      const panel = page.locator(".panel.scroll");
+      const panel = page.locator(".reg-scroll");
       await panel.evaluate((node) => {
         node.scrollLeft = node.scrollWidth;
       });
