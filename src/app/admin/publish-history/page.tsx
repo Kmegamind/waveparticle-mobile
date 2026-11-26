@@ -6,23 +6,28 @@ import { readCompanionsData } from "@/lib/content-fields/reader";
 import { PROMPT_PURPOSE } from "@/lib/prompts/admin";
 import { publishHistoryEntries, readPublishHistory } from "@/lib/publish-history/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { Breadcrumb, KeyChip } from "../admin-ui";
+import { Breadcrumb, KeyChip, PageHead } from "../admin-ui";
 import { HistoryRowAction } from "./roll-back-button";
 
 // ADM-12 Publish history (#289, docs/decisions/0018): every publish and roll back, newest first,
 // with a Roll back button. The layout already checked the role; the rows come through the
 // signed-in user's own client from public.list_publish_history(), which answers editors only.
 // #313: the prototype's table (When, Who, What, Version), a short UTC date and a readable name
-// before every key.
+// before every key. #447: the prototype's `history` screen: title and lede in the header row, the
+// table in a scrolling panel (.panel.scroll).
 export default function AdminPublishHistory() {
   return (
     <>
       <Breadcrumb items={[{ label: "Review and logs" }]} />
-      <h1>Publish history</h1>
-      <p className="admin-lede">
-        Who published what, and when, newest first. Roll back puts that version back on phones
-        within a minute and adds its own row here. Times are in UTC.
-      </p>
+      <PageHead
+        lede={
+          <>
+            Who published what, and when, newest first. Roll back puts that version back on phones
+            within a minute and adds its own row here. Times are in UTC.
+          </>
+        }
+        title="Publish history"
+      />
       <Suspense fallback={null}>
         <PublishHistoryTable />
       </Suspense>
@@ -59,8 +64,8 @@ async function PublishHistoryTable() {
     return <p className="admin-lede">Nothing has been published yet.</p>;
   }
   return (
-    <div className="admin-panel">
-      <table aria-label="Publish history" className="admin-table">
+    <div className="admin-panel admin-scroll">
+      <table aria-label="Publish history" className="admin-table admin-publish-history">
         <thead>
           <tr>
             <th scope="col">When</th>
