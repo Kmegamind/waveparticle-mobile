@@ -28,14 +28,15 @@ WaveParticle Mobile: A mobile-first web app where you do a real task while a his
 1. Work starts from a GitHub issue with acceptance criteria. No issue → open one first.
 2. Claim it: assign yourself, add `in-progress`, comment "Working on this."
 3. Branch from up-to-date `main`: `feat/<issue#>-<slug>` (or `fix/`, `docs/`, `chore/`). NEVER commit to `main`.
+   - Shared spec files (`docs/PRD.md`, `docs/DECISIONS.md`, `docs/FLOW.md`, `docs/CONTENT_MODEL.md`, `docs/USER_STORIES.md`) change in one spec pull request at the start of a round. Feature pull requests do not edit them; they edit only their own `docs/api/` file or a new `docs/decisions/NNNN-<slug>.md` file.
 4. Plan first; the human approves the plan before code.
 5. Write a failing test for each acceptance criterion, then the code.
-6. Run unit tests, e2e tests, lint and format check; read the output.
+6. Locally, under the e2e lock, run the unit tests, the Python safety test and only the end-to-end specs for the area you changed, then lint and format check; read the output. The full end-to-end suite runs in GitHub CI, and a pull request is done only when CI is green.
 7. Open a PR with `.github/pull_request_template.md`; body has `Closes #N`. Commit messages follow Conventional Commits (`feat: … (#N)`).
 8. Comment the PR link on the issue. A human reviews and merges. Agents NEVER merge.
 
 ## Keeping a branch mergeable
-- Before starting work, and again before opening or updating a pull request, merge `origin/main` into the branch: `git fetch origin && git merge origin/main`. Merge; never rebase and never force-push.
+- Before starting work, merge `origin/main` into the branch: `git fetch origin && git merge origin/main`. After that, update the branch from main only when GitHub shows a conflict, or when another merged pull request changed the same files as this branch. Merge; never rebase and never force-push.
 - Before reporting a task done, run `gh pr view <number> --json mergeable,mergeStateStatus` and wait for the checks of the newest commit (`gh pr checks <number> --watch`), not an older run.
 - The report states the mergeable status and the check result.
 - If a merge conflict touches a file whose behaviour both sides changed, stop and report the conflict instead of choosing a side.
