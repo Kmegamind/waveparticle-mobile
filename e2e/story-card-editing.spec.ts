@@ -46,8 +46,10 @@ async function phoneCard(
 
 const cardOf = (page: Page, key = KEY) => page.getByRole("article", { name: key });
 
+/** #444: the text box opens with Edit. Every call is on a freshly loaded page (box closed). */
 async function saveDraft(page: Page, text: string, key = KEY) {
   const card = cardOf(page, key);
+  await card.getByRole("button", { name: "Edit" }).click();
   await card.getByLabel(`Text for ${key}`).fill(text);
   await card.getByRole("button", { name: "Save draft" }).click();
 }
@@ -77,13 +79,15 @@ test("test_304_ac1_ac3_ac5_a_writer_saves_a_draft_sees_its_problems_and_cannot_p
 test("test_304_ac2_a_writer_renames_a_part", async ({ page, context }) => {
   await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
   await page.goto(`/admin/stories/${STORY}`);
-  const part1 = page.getByRole("region", { name: /^Part 1: / });
+  const part1 = page.getByRole("region", { name: /^Part 1 · / });
+  // #444: the title form opens with Rename part (the prototype has no place for it).
+  await part1.getByRole("button", { name: "Rename part" }).click();
   await part1.getByLabel("Title of part 1").fill("Hear Haakon out in the kitchen.");
   await part1.getByRole("button", { name: "Save title" }).click();
   await expect(part1.getByRole("status").first()).toHaveText("Title saved.");
   await page.reload();
   await expect(
-    page.getByRole("heading", { level: 2, name: "Part 1: Hear Haakon out in the kitchen." }),
+    page.getByRole("heading", { level: 2, name: "Part 1 · Hear Haakon out in the kitchen." }),
   ).toBeVisible();
 });
 
