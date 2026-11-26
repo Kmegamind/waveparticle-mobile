@@ -16,6 +16,9 @@ import { Breadcrumb, KeyChip, PageHead, StatePill } from "../admin-ui";
 // The layout already checked the role; the rows come through the signed-in user's own client.
 // #313: the prototype's table, with "Shown to users" (Published once phones can open one of his
 // stories, otherwise Not ready) and "Last change" (the newest Publish history row that is his).
+// #441: as in the prototype, each row is clickable and the name is bold text, not an underlined
+// link. The name is still the row's one link (keyboard and screen readers); CSS stretches it over
+// the row. The panel scrolls sideways (the prototype's `.panel.scroll`).
 export default function AdminCompanions() {
   return (
     <>
@@ -66,7 +69,7 @@ async function CompanionTable() {
           Last change could not be read, so it shows &quot;—&quot; for now. Try again later.
         </p>
       )}
-      <div className="admin-panel">
+      <div className="admin-panel admin-panel-scroll">
         <table aria-label="Companions" className="admin-table">
           <thead>
             <tr>
@@ -83,9 +86,9 @@ async function CompanionTable() {
             {data.companions.map((companion) => {
               const row = companionRow(companion, data.stories, changes);
               return (
-                <tr aria-label={companion.name} key={companion.id}>
+                <tr aria-label={companion.name} className="admin-row-click" key={companion.id}>
                   <td>
-                    <Link className="admin-cell-name" href={`/admin/companions/${companion.id}`}>
+                    <Link className="admin-row-link" href={`/admin/companions/${companion.id}`}>
                       {companion.name}
                     </Link>
                     <br />

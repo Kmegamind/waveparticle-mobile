@@ -3812,8 +3812,32 @@ button.focus-avatar:focus-visible {
   font-size: var(--adm-note-size);
 }
 
-.admin-cell-name {
-  font-weight: 600;
+/* Issue 441: a clickable row (the prototype's tr.click). The name is bold text like the
+   prototype's <b>; its link is stretched over the row, so a click anywhere on the row opens it. */
+.admin-row-click {
+  cursor: pointer;
+  position: relative;
+}
+
+.admin-row-click:hover td {
+  background: var(--adm-soft);
+}
+
+.admin-shell .admin-row-link {
+  align-items: normal;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-row-link::after {
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+/* Issue 441: a panel whose table scrolls sideways instead of widening the page (.panel.scroll). */
+.admin-panel-scroll {
+  overflow-x: auto;
 }
 
 /* The App text Text cell: the field and its actions stacked, inside a plain table cell. */
