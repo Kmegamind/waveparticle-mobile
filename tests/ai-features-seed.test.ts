@@ -95,9 +95,12 @@ describe("#436 AC2: the AI feature seed", () => {
   it("test_436_ac2_the_sql_inserts_only_missing_features_as_exploring", () => {
     const sql = seedSql(readFeatureSeed());
     expect(START_STATUS).toBe("exploring");
-    expect(sql.match(/^insert into public\.ai_features /gm)).toHaveLength(7);
-    expect(sql.match(/^on conflict \(slug\) do nothing;$/gm)).toHaveLength(7);
+    // #473: one insert per feature in each of the two branches (with and without the registry
+    // columns of 20261202000000_ai_registry.sql); only one branch runs.
+    expect(sql.match(/^insert into public\.ai_features /gm)).toHaveLength(14);
+    expect(sql.match(/^on conflict \(slug\) do nothing;$/gm)).toHaveLength(14);
     expect(sql.match(/, 'exploring'\)$/gm)).toHaveLength(7);
+    expect(sql.match(/, 'exploring', 'R-0\d', 'runtime'\)$/gm)).toHaveLength(7);
     expect(sql).toMatch(/^begin;$/m);
     expect(sql.trimEnd().endsWith("commit;")).toBe(true);
     // The prompt text is never copied (AI-PAGE-STORE).

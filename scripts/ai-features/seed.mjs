@@ -119,8 +119,28 @@ export function quote(text) {
 const items = (list) => `${quote(JSON.stringify(list))}::jsonb`;
 
 /**
- * The SQL: one insert per feature, skipped when the slug exists. With dryRun the transaction ends
- * in ROLLBACK after listing what it would have inserted, so pasting it changes nothing.
+ * The Feature ID of each of the 7 features in the registry (#473, AI_11 section 5.2: R-01 to R-07).
+ * After 20261202000000_ai_registry.sql every row must have one, with the category runtime.
+ */
+export const RUNTIME_FEATURE_IDS = {
+  plan_split: "R-01",
+  step_cards: "R-02",
+  pause_message: "R-03",
+  rest_reply: "R-04",
+  return_popup: "R-05",
+  closing_line: "R-06",
+  safety_classifier: "R-07",
+};
+
+/** The dollar-quote marker of the block below; no seeded text may contain it. */
+const BLOCK = "$seed_block$";
+
+/**
+ * The SQL: one insert per feature, skipped when the slug exists. The inserts sit in one block that
+ * works before and after 20261202000000_ai_registry.sql (#473): when public.ai_features has the
+ * registry columns, each row also gets its Feature ID and the category runtime (both required
+ * there); otherwise the columns of 20261130000000_ai_features.sql only. With dryRun the transaction
+ * ends in ROLLBACK after listing what it would have inserted, so pasting it changes nothing.
  * @param {ReturnType<typeof parseFeaturePages>} rows
  * @param {{ dryRun?: boolean }} [options]
  */
@@ -134,15 +154,45 @@ export function seedSql(rows, { dryRun = false } = {}) {
     ),
     "begin;",
   ];
+  /** @type {string[]} */
+  const registry = [];
+  /** @type {string[]} */
+  const plain = [];
   for (const row of rows) {
     if (!KEY.test(row.slug)) throw new Error(`bad slug: ${row.slug}`);
+    // A slug outside the 7 has no Feature ID: the database refuses its null after #473.
+    const featureId = RUNTIME_FEATURE_IDS[row.slug];
     const keys = row.prompt_keys.map((key) => `'${key}'`).join(", ");
-    lines.push(
+    const values = `'${row.slug}', ${row.position}, ${quote(row.title)}, array[${keys}], ${items(row.purpose)}, ${items(row.pass_questions)}, ${items(row.approach)}, '${START_STATUS}'`;
+    registry.push(
+      "insert into public.ai_features (slug, position, title, prompt_keys, purpose, pass_questions, approach, status, feature_id, category)",
+      `values (${values}, ${featureId ? `'${featureId}'` : "null"}, 'runtime')`,
+      "on conflict (slug) do nothing;",
+    );
+    plain.push(
       "insert into public.ai_features (slug, position, title, prompt_keys, purpose, pass_questions, approach, status)",
-      `values ('${row.slug}', ${row.position}, ${quote(row.title)}, array[${keys}], ${items(row.purpose)}, ${items(row.pass_questions)}, ${items(row.approach)}, '${START_STATUS}')`,
+      `values (${values})`,
       "on conflict (slug) do nothing;",
     );
   }
+  const block = [
+    `do ${BLOCK}`,
+    "begin",
+    "if exists (",
+    "  select 1 from information_schema.columns",
+    "  where table_schema = 'public' and table_name = 'ai_features' and column_name = 'feature_id'",
+    ") then",
+    ...registry,
+    "else",
+    ...plain,
+    "end if;",
+    "end;",
+    `${BLOCK};`,
+  ];
+  if (block.slice(1, -1).some((line) => line.includes(BLOCK))) {
+    throw new Error(`a seeded text contains ${BLOCK}`);
+  }
+  lines.push(...block);
   if (dryRun) {
     lines.push(
       "select slug, title, status, jsonb_array_length(purpose) as purpose, jsonb_array_length(pass_questions) as pass_questions, jsonb_array_length(approach) as approach",

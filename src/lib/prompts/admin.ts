@@ -26,6 +26,8 @@ export type PromptVersionRow = {
   created_at: string;
   /** The last time this version became the active one; null for a draft never active. */
   activated_at: string | null;
+  /** runtime, pipeline or gate (#473, AI-PROMPT-CATEGORY); the app reads runtime keys only. */
+  category?: "runtime" | "pipeline" | "gate";
 };
 
 /** What each prompt is used for (docs/ai/prompts/README.md). */

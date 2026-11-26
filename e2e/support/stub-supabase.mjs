@@ -81,6 +81,19 @@
 //   POST /__ai_features { reset?: true, testRuns?: [...] }   puts the features back (and removes
 //                                     their history and test runs); testRuns adds rows as the
 //                                     SQL of scripts/ai-features/import-runs.mjs would
+//   #473 (registry, 20261202000000_ai_registry.sql): the 7 rows carry the registry columns
+//                                     (feature_id R-01 to R-07, category runtime, empty fields,
+//                                     example none); GET ai_feature_field_history |
+//                                     ai_feature_example_history (editors); POST
+//                                     /rest/v1/rpc/save_ai_feature_fields | set_ai_feature_example
+//                                     (editors) | set_ai_feature_category (admin only), each with its
+//                                     history rows; save_ai_feature_sections also writes field history.
+//                                     Prompts carry a category (runtime); get_active_prompts returns
+//                                     runtime rows only; a draft keeps its key's category;
+//                                     POST /__prompts { importRows: [{ key, body, category }] } adds a
+//                                     key as the SQL of scripts/ai-features/import-pipeline-prompts.mjs
+//                                     would (version 1, active, only when the key is missing);
+//                                     reset: true or reset: "<key>" removes it again
 //   POST /__ai_features { token, purpose: { "<slug>": [items] } | null }   for that account only,
 //                                     reads of ai_features show these purpose items (#439: a
 //                                     layout test that no other test, nor the visual gate, sees);
@@ -109,7 +122,17 @@ import { readPromptDirectory } from "../../scripts/prompts/prompt-files.mjs";
 import { readAppTextSeed } from "../../scripts/app-text/import.mjs";
 import { appDocument, readContentRows } from "../../scripts/content/content-files.mjs";
 import { readStoryDecks, storyCardRows } from "../../scripts/story-cards/import.mjs";
-import { readFeatureSeed, STATUSES } from "../../scripts/ai-features/seed.mjs";
+import { readFeatureSeed, RUNTIME_FEATURE_IDS, STATUSES } from "../../scripts/ai-features/seed.mjs";
+/** #473: the text fields save_ai_feature_fields writes, in its argument order, and their limits. */
+const REGISTRY_TEXT_FIELDS = [
+  "where_used",
+  "requirement",
+  "output_format",
+  "design_rationale",
+  "room_to_improve",
+  "notes",
+];
+const REGISTRY_FIELD_MAX = [300, 4000, 4000, 4000, 4000, 4000];
 
 const promptDirectory = fileURLToPath(new URL("../../docs/ai/prompts", import.meta.url));
 const promptReaderToken = process.env.STUB_PROMPTS_READ_TOKEN ?? "";
@@ -159,6 +182,7 @@ const seededPrompts = () =>
     note: row.note ?? "",
     created_at: "2026-11-14T00:00:00Z",
     activated_at: "2026-11-14T00:00:00Z",
+    category: "runtime",
   }));
 let promptVersions = seededPrompts();
 
@@ -361,10 +385,23 @@ const seededAiFeatures = () =>
     created_at: "2026-11-25T00:00:00Z",
     sections_updated_at: null,
     sections_updated_by: null,
+    // #473: the registry columns as 20261202000000_ai_registry.sql leaves the 7 rows.
+    feature_id: RUNTIME_FEATURE_IDS[row.slug],
+    category: "runtime",
+    ...Object.fromEntries(REGISTRY_TEXT_FIELDS.map((field) => [field, ""])),
+    example_text: "",
+    example_state: "none",
+    example_set_by: null,
+    example_set_at: null,
+    fields_updated_at: null,
+    fields_updated_by: null,
   }));
 let aiFeatures = seededAiFeatures();
 let aiFeatureHistory = [];
 let aiFeatureRuns = [];
+/** #473: the field history and the example history (20261202000000_ai_registry.sql). */
+let aiFeatureFieldHistory = [];
+let aiFeatureExampleHistory = [];
 let nextAiFeatureId = 1;
 
 /**
@@ -372,7 +409,26 @@ let nextAiFeatureId = 1;
  * one (POST /__ai_features { token, own: true }), otherwise the shared ones.
  */
 const aiFeatureState = (account) =>
-  account?.aiFeaturesOwn ?? { features: aiFeatures, history: aiFeatureHistory };
+  account?.aiFeaturesOwn ?? {
+    features: aiFeatures,
+    history: aiFeatureHistory,
+    fieldHistory: aiFeatureFieldHistory,
+    exampleHistory: aiFeatureExampleHistory,
+  };
+
+/** #473: one field history row when a value changed (private.record_ai_feature_field). */
+function recordAiFeatureField(state, slug, field, oldValue, newValue, user) {
+  if (JSON.stringify(oldValue) === JSON.stringify(newValue)) return;
+  state.fieldHistory.push({
+    id: nextAiFeatureId++,
+    feature_slug: slug,
+    field,
+    old_value: oldValue,
+    new_value: newValue,
+    changed_by: user.id,
+    changed_at: new Date().toISOString(),
+  });
+}
 
 /** The item check of private.ai_feature_items_valid (20261130000000). */
 const validItems = (items) =>
@@ -650,8 +706,9 @@ createServer(async (request, response) => {
   if (path === "/rest/v1/rpc/get_active_prompts" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
     const allowed = promptReaderToken.length > 0 && body.reader_token === promptReaderToken;
+    // #473: runtime keys only (AI-PROMPT-CATEGORY), as 20261202000000_ai_registry.sql.
     const active = promptVersions
-      .filter((row) => row.active)
+      .filter((row) => row.active && row.category === "runtime")
       .map(({ key, version, body, params, note }) => ({ key, version, body, params, note }));
     return json(response, 200, allowed ? active : []);
   }
@@ -665,6 +722,32 @@ createServer(async (request, response) => {
       const account = datasets.get(body.token);
       if (!account) return json(response, 404, { message: "no such account" });
       account.promptsSeededView = body.seededView === true ? true : undefined;
+      return json(response, 200, { ok: true });
+    }
+    if (Array.isArray(body.importRows)) {
+      // #473: as the SQL of scripts/ai-features/import-pipeline-prompts.mjs: version 1, active,
+      // with its category, only when the key has no row yet.
+      for (const row of body.importRows) {
+        if (!/^[a-z][a-z0-9_]*$/.test(row?.key ?? "")) {
+          return json(response, 400, { code: "23514", message: "bad key" });
+        }
+        if (!["runtime", "pipeline", "gate"].includes(row.category)) {
+          return json(response, 400, { code: "23514", message: "bad category" });
+        }
+        if (promptVersions.some((item) => item.key === row.key)) continue;
+        const now = new Date().toISOString();
+        promptVersions.push({
+          key: row.key,
+          version: 1,
+          active: true,
+          body: String(row.body ?? ""),
+          params: {},
+          note: String(row.note ?? ""),
+          created_at: now,
+          activated_at: now,
+          category: row.category,
+        });
+      }
       return json(response, 200, { ok: true });
     }
     if (body.reset === true) {
@@ -722,6 +805,8 @@ createServer(async (request, response) => {
         note: body.prompt_note ?? "",
         created_at: new Date().toISOString(),
         activated_at: null,
+        // #473: a new version keeps its key's category (private.keep_prompt_category).
+        category: rows[0].category ?? "runtime",
       });
       return json(response, 200, version);
     }
@@ -1050,7 +1135,9 @@ createServer(async (request, response) => {
       const account = datasets.get(body.token);
       if (!account) return json(response, 404, { message: "no such account" });
       account.aiFeaturesOwn =
-        body.own === true ? { features: seededAiFeatures(), history: [] } : undefined;
+        body.own === true
+          ? { features: seededAiFeatures(), history: [], fieldHistory: [], exampleHistory: [] }
+          : undefined;
       return json(response, 200, { ok: true });
     }
     if (typeof body.token === "string" && "purpose" in body) {
@@ -1067,6 +1154,8 @@ createServer(async (request, response) => {
       aiFeatures = seededAiFeatures();
       aiFeatureHistory = [];
       aiFeatureRuns = [];
+      aiFeatureFieldHistory = [];
+      aiFeatureExampleHistory = [];
     }
     for (const row of Array.isArray(body.testRuns) ? body.testRuns : []) {
       if (!aiFeatures.some((feature) => feature.slug === row.feature_slug)) {
@@ -1087,7 +1176,7 @@ createServer(async (request, response) => {
 
   // #436: content editors read the three AI feature tables; other accounts get no rows.
   const aiFeatureTable = path.match(
-    /^\/rest\/v1\/(ai_features|ai_feature_status_history|ai_feature_test_runs)$/,
+    /^\/rest\/v1\/(ai_features|ai_feature_status_history|ai_feature_test_runs|ai_feature_field_history|ai_feature_example_history)$/,
   );
   if (aiFeatureTable && request.method === "GET") {
     const user = dataset && !dataset.deleted ? dataset : null;
@@ -1102,6 +1191,8 @@ createServer(async (request, response) => {
       ),
       ai_feature_status_history: state.history,
       ai_feature_test_runs: aiFeatureRuns,
+      ai_feature_field_history: state.fieldHistory,
+      ai_feature_example_history: state.exampleHistory,
     }[aiFeatureTable[1]];
     const params = [...url.searchParams.entries()];
     const found = (editor ? all : []).filter((row) => matches(row, params));
@@ -1133,11 +1224,141 @@ createServer(async (request, response) => {
     if (!sections.every(validItems)) {
       return json(response, 400, { code: "23514", message: "violates check constraint" });
     }
+    const state = aiFeatureState(dataset);
+    for (const [field, value] of [
+      ["purpose", body.new_purpose],
+      ["pass_questions", body.new_pass_questions],
+      ["approach", body.new_approach],
+    ]) {
+      recordAiFeatureField(state, feature.slug, field, feature[field], value, dataset.user);
+    }
     feature.purpose = body.new_purpose;
     feature.pass_questions = body.new_pass_questions;
     feature.approach = body.new_approach;
     feature.sections_updated_at = new Date().toISOString();
     feature.sections_updated_by = dataset.user.id;
+    return json(response, 204);
+  }
+
+  // #473: the registry fields (editors), the example (editors) and the category (admin only).
+  if (path === "/rest/v1/rpc/save_ai_feature_fields" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    const editor = dataset && !dataset.deleted && ["admin", "writer"].includes(dataset.contentRole);
+    if (!editor) {
+      return json(response, 403, {
+        code: "42501",
+        message: "only a content editor may change an AI feature",
+      });
+    }
+    const values = REGISTRY_TEXT_FIELDS.map((field) => body[`new_${field}`]);
+    if (!values.every((value) => typeof value === "string")) {
+      return json(response, 400, {
+        code: "22004",
+        message: "a registry field is text, never null",
+      });
+    }
+    if (values.some((value, index) => value.length > REGISTRY_FIELD_MAX[index])) {
+      return json(response, 400, { code: "23514", message: "violates check constraint" });
+    }
+    const state = aiFeatureState(dataset);
+    const feature = state.features.find((row) => row.slug === body.target_feature);
+    if (!feature) {
+      return json(response, 400, {
+        code: "P0002",
+        message: `no AI feature ${body.target_feature}`,
+      });
+    }
+    REGISTRY_TEXT_FIELDS.forEach((field, index) => {
+      recordAiFeatureField(state, feature.slug, field, feature[field], values[index], dataset.user);
+      feature[field] = values[index];
+    });
+    feature.fields_updated_at = new Date().toISOString();
+    feature.fields_updated_by = dataset.user.id;
+    return json(response, 204);
+  }
+
+  if (path === "/rest/v1/rpc/set_ai_feature_example" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    const editor = dataset && !dataset.deleted && ["admin", "writer"].includes(dataset.contentRole);
+    if (!editor) {
+      return json(response, 403, {
+        code: "42501",
+        message: "only a content editor may change an AI feature",
+      });
+    }
+    if (!["none", "candidate", "confirmed"].includes(body.new_state)) {
+      return json(response, 400, { code: "22023", message: "unknown example state" });
+    }
+    if (typeof body.new_text !== "string") {
+      return json(response, 400, { code: "22004", message: "an example is text, never null" });
+    }
+    if (body.new_state !== "none" && body.new_text.trim() === "") {
+      // ai_features_example_needs_text: a state other than none needs an example.
+      return json(response, 400, { code: "22023", message: "an example state needs text" });
+    }
+    if (body.new_text.length > 8000) {
+      return json(response, 400, { code: "23514", message: "violates check constraint" });
+    }
+    const state = aiFeatureState(dataset);
+    const feature = state.features.find((row) => row.slug === body.target_feature);
+    if (!feature) {
+      return json(response, 400, {
+        code: "P0002",
+        message: `no AI feature ${body.target_feature}`,
+      });
+    }
+    const now = new Date().toISOString();
+    Object.assign(feature, {
+      example_text: body.new_text,
+      example_state: body.new_state,
+      example_set_by: dataset.user.id,
+      example_set_at: now,
+    });
+    state.exampleHistory.push({
+      id: nextAiFeatureId++,
+      feature_slug: feature.slug,
+      example_text: body.new_text,
+      example_state: body.new_state,
+      set_by: dataset.user.id,
+      set_at: now,
+    });
+    return json(response, 204);
+  }
+
+  if (path === "/rest/v1/rpc/set_ai_feature_category" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    if (!dataset || dataset.deleted || dataset.contentRole !== "admin") {
+      return json(response, 403, {
+        code: "42501",
+        message: "only an admin may change the category of an AI feature",
+      });
+    }
+    if (!["pipeline", "gate", "runtime"].includes(body.new_category)) {
+      return json(response, 400, {
+        code: "22023",
+        message: `unknown category ${body.new_category}`,
+      });
+    }
+    const state = aiFeatureState(dataset);
+    const feature = state.features.find((row) => row.slug === body.target_feature);
+    if (!feature) {
+      return json(response, 400, {
+        code: "P0002",
+        message: `no AI feature ${body.target_feature}`,
+      });
+    }
+    if (feature.category === body.new_category) {
+      return json(response, 400, { code: "P0001", message: `already ${body.new_category}` });
+    }
+    recordAiFeatureField(
+      state,
+      feature.slug,
+      "category",
+      feature.category,
+      body.new_category,
+      dataset.user,
+    );
+    feature.category = body.new_category;
     return json(response, 204);
   }
 

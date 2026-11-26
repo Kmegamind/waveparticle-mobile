@@ -57,7 +57,9 @@ describe("who changed a feature: the migration (#453)", () => {
     const names = readdirSync(path.join(root, "supabase", "migrations"))
       .filter((file) => file.endsWith(".sql"))
       .sort();
-    expect(names.at(-1)).toBe(MIGRATION);
+    // Was "the latest migration"; #473 adds the AI registry after it, which needs this function's
+    // tables. It must still run after the AI feature tables.
+    expect(names.slice(names.indexOf(MIGRATION) + 1)).toEqual(["20261202000000_ai_registry.sql"]);
     expect(names.indexOf(MIGRATION)).toBeGreaterThan(
       names.indexOf("20261130000000_ai_features.sql"),
     );
