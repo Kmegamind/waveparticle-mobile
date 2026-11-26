@@ -241,7 +241,8 @@ test("test_445_admin_publishes_changes_naming_each_key", async ({ page, context 
   await expect(dialog).toBeHidden();
 
   // The stored text changed under the typing: it is kept, shown, and said so (#445 review I1).
-  await expect(greeting.getByText("Published", { exact: true })).toBeVisible();
+  // The State cell (the Versions list holds pills of its own).
+  await expect(greeting.getByRole("cell").last()).toHaveText(/^Published/);
   await expect(greeting.getByRole("alert")).toContainText(
     "The stored text changed; your unsaved text was kept.",
   );

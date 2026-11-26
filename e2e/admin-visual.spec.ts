@@ -94,7 +94,9 @@ const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
   // #445: App text no longer has a text box (its texts are edited in place, as the prototype's),
   // and the pages that still have one are being rebuilt. The row checks the shared field class, so
   // a stand-in field of that class is put into a panel of a page that no test writes, as `actions`
-  // does for the header buttons. A page that builds a form like the prototype's adds its own row.
+  // does for the header buttons. It sits in the admin's form grid (.admin-text-form), as every live
+  // field does, the way the prototype's sits in its .form label grid. A page that builds a form
+  // like the prototype's adds its own row.
   textField: {
     path: "/admin/companions",
     prepare: async (page) => {
@@ -102,10 +104,13 @@ const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
         .locator(".admin-panel")
         .first()
         .evaluate((panel) => {
+          const form = document.createElement("div");
+          form.className = "admin-text-form";
           const field = document.createElement("textarea");
           field.className = "admin-text-field";
           field.rows = 3;
-          panel.append(field);
+          form.append(field);
+          panel.append(form);
         });
     },
   },
