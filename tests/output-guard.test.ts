@@ -6,6 +6,7 @@ import { checkCompanionLine } from "@/lib/model-gateway/checks";
 import type { CompanionKind } from "@/lib/model-gateway/types";
 import { cardProblems } from "@/lib/story-cards/checks";
 import { seedLineLimits, seedPromptSource } from "./support/seed-prompts";
+import { OPPENHEIMER } from "./support/companion";
 
 // #55 (US-SAF-9): the output guard on every AI reply is the shared checks, including the style
 // checks. There is no word list of dangerous method or instruction words (NO-DENYLIST,
@@ -35,7 +36,8 @@ describe("#55 output guard", () => {
   it("test_55_ac1_every_reply_kind_passes_the_shared_checks_including_the_style_checks", () => {
     const good = "I keep my notes flat on the table.";
     for (const kind of KINDS) {
-      const check = (text: string) => checkCompanionLine(text, kind, [], seedLineLimits(kind));
+      const check = (text: string) =>
+        checkCompanionLine(text, kind, [], seedLineLimits(kind), OPPENHEIMER);
       expect(check(good).ok, kind).toBe(true);
       // Style checks: a dash, an exclamation mark, a banned word.
       expect(check("I keep my notes flat — on the table."), kind).toMatchObject({ ok: false });
@@ -62,7 +64,11 @@ describe("#55 output guard", () => {
         return JSON.stringify({ reply: rejected });
       },
     });
-    const reply = await gateway.writeRestReply({ userMessage: "Hello.", facts: "A quiet room." });
+    const reply = await gateway.writeRestReply({
+      companionName: OPPENHEIMER,
+      userMessage: "Hello.",
+      facts: "A quiet room.",
+    });
     expect(calls).toBeGreaterThan(1);
     expect(reply).toEqual({ source: "failed", reason: "checks" });
     expect(JSON.stringify(reply)).not.toContain(rejected);

@@ -12,6 +12,7 @@ import { PROMPT_KEYS } from "@/lib/prompts/repository";
 import { PROMPT_PURPOSE } from "@/lib/prompts/admin";
 import { promptRowProblems } from "@/lib/model-gateway";
 import { seedPromptSource, seedRows } from "./support/seed-prompts";
+import { OPPENHEIMER } from "./support/companion";
 
 // #56 (US-AI-3, PAUSE-TWO-CALLS): the pause message is two calls. Call one returns {prop, story};
 // call two returns his words about the predicament and his feelings as plain text. Checks per
@@ -51,6 +52,7 @@ function gatewayWith(replies: string[]) {
 }
 
 const stuckInput = {
+  companionName: OPPENHEIMER,
   pauseNumber: 1,
   facts: "He is at home in Berkeley.",
   category: "gear" as const,
@@ -89,6 +91,7 @@ describe("#56 AC1 two calls, two prompts", () => {
     const line = "My fingers will not work the shaker lid, and I feel foolish and slow tonight.";
     const { gateway, calls } = gatewayWith([line]);
     const result = await gateway.writePausePredicament({
+      companionName: OPPENHEIMER,
       pauseNumber: 3,
       facts: "He is at home.",
       story: good.story,
@@ -106,6 +109,7 @@ describe("#56 AC1 two calls, two prompts", () => {
     const line = "I cannot get the lid off, and it makes me restless.";
     const { gateway, logs } = gatewayWith([JSON.stringify({ message: line }), line]);
     const result = await gateway.writePausePredicament({
+      companionName: OPPENHEIMER,
       pauseNumber: 1,
       facts: "f",
       story: good.story,
@@ -246,7 +250,12 @@ describe("#56 AC3 LEN-PAUSE: the final message is at most 30 words", () => {
     expect(long.split(/\s+/).length).toBeGreaterThan(30);
     const ok = "The shaker lid will not turn, and I feel slow and foolish.";
     const { gateway, logs } = gatewayWith([long, ok]);
-    const result = await gateway.writePausePredicament({ pauseNumber: 1, facts: "f", story: "s." });
+    const result = await gateway.writePausePredicament({
+      companionName: OPPENHEIMER,
+      pauseNumber: 1,
+      facts: "f",
+      story: "s.",
+    });
     expect(result).toEqual({ source: "generated", text: ok });
     expect(logs.at(-1)?.rejectedRules).toContain("len");
   });
@@ -254,15 +263,19 @@ describe("#56 AC3 LEN-PAUSE: the final message is at most 30 words", () => {
   it("test_56_ac3_a_prompt_row_cannot_lengthen_the_pause_message", () => {
     expect(PAUSE_MESSAGE_LIMITS).toEqual({ max_sentences: 2, max_words: 30 });
     const loose = { max_words: 200, max_sentences: 9 };
-    expect(checkCompanionLine(long, "pause_message", [], loose)).toMatchObject({ ok: false });
+    expect(checkCompanionLine(long, "pause_message", [], loose, OPPENHEIMER)).toMatchObject({
+      ok: false,
+    });
     const three = "I sit. I wait. I stare at the shaker.";
-    expect(checkCompanionLine(three, "pause_message", [], loose)).toMatchObject({ ok: false });
+    expect(checkCompanionLine(three, "pause_message", [], loose, OPPENHEIMER)).toMatchObject({
+      ok: false,
+    });
   });
 
   it("test_56_ac3_the_stuck_story_is_third_person_and_the_message_first_person", () => {
     const limits = { max_words: 30, max_sentences: 2 };
-    expect(checkCompanionLine(good.story, "stuck_story", [], limits).ok).toBe(true);
-    expect(checkCompanionLine(good.story, "pause_message", [], limits)).toMatchObject({
+    expect(checkCompanionLine(good.story, "stuck_story", [], limits, OPPENHEIMER).ok).toBe(true);
+    expect(checkCompanionLine(good.story, "pause_message", [], limits, OPPENHEIMER)).toMatchObject({
       ok: false,
       rejectedRules: ["first_person"],
     });
@@ -284,7 +297,12 @@ describe("#56 AC4 a failing answer is retried with the reason, then fails with n
 
   it("test_56_ac4_call_two_fails_the_same_way_with_no_stored_text", async () => {
     const { gateway, calls } = gatewayWith(["You should stop pausing!", "", "Later!"]);
-    const result = await gateway.writePausePredicament({ pauseNumber: 1, facts: "f", story: "s." });
+    const result = await gateway.writePausePredicament({
+      companionName: OPPENHEIMER,
+      pauseNumber: 1,
+      facts: "f",
+      story: "s.",
+    });
     expect(result).toEqual({ source: "failed", reason: "checks" });
     expect(calls).toHaveLength(3);
   });

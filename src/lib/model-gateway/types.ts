@@ -61,8 +61,8 @@ export type PlanSplitResult = GeneratedPlan | GatewayFailure;
  * Goal. The Story side says where this Step sits in his Story (#43).
  */
 export type StepCardsInput = {
-  /** The name of the Companion speaking, for the `name` check (#302). Default: Oppenheimer. */
-  companionName?: string;
+  /** The name of the Companion speaking, for the `name` check (#302). Required, no default (#468). */
+  companionName: string;
   minutes: number;
   /** Who he is and where, and the Story facts of earlier Steps; never a later Step's facts. */
   facts: string;
@@ -98,8 +98,8 @@ export type StepCardsResult =
  * picked (`pickPauseSnag`). It is never an event: it never moves his Story.
  */
 export type StuckStoryInput = {
-  /** The name of the Companion speaking, for the `name` check (#302). Default: Oppenheimer. */
-  companionName?: string;
+  /** The name of the Companion speaking, for the `name` check (#302). Required, no default (#468). */
+  companionName: string;
   /** 1-based number of this Pause in the current Step. From 3 the snag is much harder (F1, PAUSE-3). */
   pauseNumber: number;
   facts: string;
@@ -146,7 +146,8 @@ export type StuckStoryInput = {
  * 1 or 2 sentences and at most 30 words (LEN-PAUSE).
  */
 export type PausePredicamentInput = {
-  companionName?: string;
+  /** The name of the Companion speaking, for the `name` check (#302). Required, no default (#468). */
+  companionName: string;
   pauseNumber: number;
   facts: string;
   /** The stuck story that call one returned. */
@@ -171,8 +172,8 @@ export type StuckStoryResult =
   { source: "generated"; prop: string; story: string } | GatewayFailure;
 
 export type RestReplyInput = {
-  /** The name of the Companion speaking, for the `name` check (#302). Default: Oppenheimer. */
-  companionName?: string;
+  /** The name of the Companion speaking, for the `name` check (#302). Required, no default (#468). */
+  companionName: string;
   userMessage: string;
   facts: string;
   /** Words from after his date (the Story's forbidden terms); a reply that uses one is generated again. */
@@ -195,8 +196,8 @@ export type RestReplyInput = {
 export type ReturnTrigger = "rest" | "absence";
 
 export type ReturnPopupInput = {
-  /** The name of the Companion speaking, for the `name` check (#302). Default: Oppenheimer. */
-  companionName?: string;
+  /** The name of the Companion speaking, for the `name` check (#302). Required, no default (#468). */
+  companionName: string;
   trigger: ReturnTrigger;
   facts: string;
   awayMinutes: number;
@@ -217,8 +218,8 @@ export type LineResult =
  * how he feels, plus one thing he still carries. Built from the story only, never from user text.
  */
 export type ClosingLineInput = {
-  /** The name of the Companion speaking, for the `name` check (#302). Default: Oppenheimer. */
-  companionName?: string;
+  /** The name of the Companion speaking, for the `name` check (#302). Required, no default (#468). */
+  companionName: string;
   /** Who he is, the place, the story's goal sentence and the facts of the run. */
   facts: string;
   /** The facts of the last moment of the run. */
