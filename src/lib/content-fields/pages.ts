@@ -20,6 +20,11 @@ export type CompanionPage = {
   key: string;
   mode: string;
   profile: FieldEntry[];
+  /**
+   * #442: the line under his name on the Companions screen. Read only here: no content field
+   * holds it yet, so it cannot be drafted or published from the admin (owner decision).
+   */
+  oneLine: { label: string; key: string; text: string };
   periods: { number: number; name: string; field: FieldEntry; stories: StoryFieldsRow[] }[];
 };
 
@@ -40,6 +45,7 @@ export function companionPage(
     key: `chr.${code}`,
     mode: companion.mode,
     profile: [entry("name", "Name"), entry("tags", "Tags"), entry("who", "Who I am")],
+    oneLine: { label: "One line (Companions)", key: `chr.${code}.line`, text: companion.line },
     periods: periodsOf(stories).map((period) => {
       const key = periodFieldKey(code, period.number);
       return {
