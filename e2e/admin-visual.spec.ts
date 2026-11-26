@@ -82,6 +82,8 @@ const PROTOTYPE_PAGES: Record<
   uitext: { hash: "uitext" },
   history: { hash: "history" },
   prompts: { hash: "prompts" },
+  // #443 Stories: the prototype's Life path screen.
+  lifepath: { hash: "lifepath" },
   // The only text fields in the prototype are in the Regenerate dialog of Story cards.
   regenerate: {
     hash: "cards",
@@ -155,6 +157,8 @@ const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
   },
   // A detail page: its menu row (Prompts) is marked as current.
   prompt: { path: "/admin/prompts/plan_split" },
+  // #443: the Stories page (the Life path table).
+  stories: { path: "/admin/stories" },
   // #446: the prompts list (no prototype screen; drawn with the prototype's table components).
   // Other tests save prompt drafts while the gate runs (rest_reply, stuck_story ...), and a draft
   // changes the list's column widths, so the gate's account reads the seeded prompts only
@@ -1672,6 +1676,70 @@ const COMPONENTS: Component[] = [
   },
 ];
 
+// #443 Stories: the Life path table's fixed components. Kept in their own block.
+COMPONENTS.push(
+  {
+    name: "Life path panel (scrolls sideways)",
+    prototype: { page: "lifepath", selector: ".panel.scroll" },
+    live: { page: "stories", selector: ".admin-panel.admin-scroll" },
+    properties: [...STYLE, "overflow-x"],
+    box: ["x", "width"],
+  },
+  {
+    name: "Life path table",
+    prototype: { page: "lifepath", selector: "table" },
+    live: { page: "stories", selector: ".admin-life-path" },
+    properties: [...STYLE, "border-collapse", "table-layout"],
+    box: ["width"],
+  },
+  {
+    name: "Life path head cell (#)",
+    prototype: { page: "lifepath", selector: "th.num" },
+    live: { page: "stories", selector: ".admin-life-path th.admin-num" },
+    properties: [...STYLE, "font-variant-numeric"],
+    box: ["height"],
+  },
+  {
+    name: "Life path period row",
+    prototype: { page: "lifepath", selector: 'td[colspan="4"]' },
+    live: { page: "stories", selector: ".admin-period-row td" },
+  },
+  {
+    name: "Life path period key chip",
+    prototype: { page: "lifepath", selector: 'td[colspan="4"] .key' },
+    live: { page: "stories", selector: ".admin-period-row .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "Life path story number cell",
+    prototype: { page: "lifepath", selector: "td.num" },
+    live: { page: "stories", selector: ".admin-life-path td.admin-num" },
+    properties: [...STYLE, "font-variant-numeric"],
+  },
+  {
+    name: "Life path story title",
+    prototype: { page: "lifepath", selector: "td b" },
+    live: { page: "stories", selector: ".admin-life-path .admin-cell-name" },
+  },
+  {
+    name: "Life path story key chip",
+    prototype: { page: "lifepath", selector: "tr.click td .key" },
+    live: { page: "stories", selector: ".admin-life-path tr[aria-label] .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "Life path description note",
+    prototype: { page: "lifepath", selector: "td .note" },
+    live: { page: "stories", selector: ".admin-life-path .admin-path-note" },
+  },
+  {
+    name: "pill (Draft, grey)",
+    prototype: { page: "characters", selector: ".pill.s-draft" },
+    live: { page: "stories", selector: ".admin-life-path .admin-pill-draft" },
+    box: ["height"],
+  },
+);
+
 /**
  * Every deliberate gap in the comparison, in one place, each with its reason. A property listed
  * here is not compared for that component; nothing else is skipped. Content-dependent sizes (the
@@ -2016,6 +2084,18 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
   },
 ];
 
+// #443 Stories: its exceptions, in their own block.
+EXCEPTIONS.push({
+  component: "Life path story title",
+  properties: ["text-decoration-line", "align-items"],
+  reason:
+    "Live shows each story title as an underlined link (.admin-cell-name), reachable by keyboard; " +
+    "the prototype shows bold text (<b>, no underline) in a clickable row, which a keyboard " +
+    "cannot reach. align-items comes from the phone app's global link rule (center); it has no " +
+    "effect on an inline element, and display is compared (inline on both sides). Every other " +
+    "style of the title is compared.",
+});
+
 // ---------------------------------------------------------------------------------------------
 // Reading and comparing.
 // ---------------------------------------------------------------------------------------------
@@ -2271,6 +2351,39 @@ test("test_435_frame_pictures_prototype_vs_live", async ({ page, context }) => {
   const origin = new URL(page.url()).origin;
   await servePrototype(page, await adminFontFaces(page));
   await writePictures(page, origin, PICTURES.slice(0, 1));
+});
+
+// #443: the Stories pictures for its pull request: the prototype's Life path screen vs the live
+// Stories page at each width, the top of the page, prototype on the left. Written only on request.
+test("test_443_stories_pictures_prototype_vs_live", async ({ page, context }) => {
+  test.skip(!process.env.ADMIN_VISUAL_SCREENSHOTS, "Set ADMIN_VISUAL_SCREENSHOTS=1 to write them.");
+  test.setTimeout(120_000);
+  mkdirSync(REFERENCE_DIR, { recursive: true });
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto("/admin/stories");
+  const origin = new URL(page.url()).origin;
+  await servePrototype(page, await adminFontFaces(page));
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: HEIGHT });
+    await openPrototype(page, origin, "lifepath");
+    const prototype = await page.screenshot();
+    await openLive(page, "stories");
+    const live = await page.screenshot();
+    writeFileSync(path.join(REFERENCE_DIR, `stories-${width}-prototype.png`), prototype);
+    writeFileSync(path.join(REFERENCE_DIR, `stories-${width}-live.png`), live);
+
+    const image = (png: Buffer) => `data:image/png;base64,${png.toString("base64")}`;
+    await page.setViewportSize({ width: width * 2 + 48, height: HEIGHT + 56 });
+    await page.setContent(
+      `<!doctype html><meta charset=utf-8><body style="margin:0;padding:16px;background:#888;display:flex;gap:16px;font:14px system-ui;color:#fff">` +
+        `<figure style="margin:0"><figcaption>Prototype Life path (standards mode), ${width} px</figcaption><img src="${image(prototype)}"></figure>` +
+        `<figure style="margin:0"><figcaption>Live Stories, ${width} px</figcaption><img src="${image(live)}"></figure></body>`,
+    );
+    writeFileSync(
+      path.join(REFERENCE_DIR, `stories-${width}-side-by-side.png`),
+      await page.screenshot({ fullPage: true }),
+    );
+  }
 });
 
 // #441: a Companions row under the mouse (the prototype's `tr.click:hover td`). Compared in its own
