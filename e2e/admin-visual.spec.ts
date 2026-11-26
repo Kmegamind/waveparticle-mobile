@@ -493,6 +493,14 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
         "tap minimum (ADMIN-DESKTOP); the prototype has none (auto). The height is compared.",
     }),
   ),
+  {
+    component: "field text, edited in place",
+    properties: ["white-space"],
+    reason:
+      "Live is pre-wrap, the prototype normal: stored production text may contain line breaks " +
+      "(the earlier editor was a textarea that allowed them), and they must stay visible and be " +
+      "saved back unchanged.",
+  },
 ];
 
 // ---------------------------------------------------------------------------------------------

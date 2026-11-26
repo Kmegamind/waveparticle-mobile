@@ -4120,10 +4120,10 @@ input.admin-text-field {
   overflow-wrap: anywhere;
 }
 
-/* As the prototype's span: the browser draws an in-place editor with pre-wrap otherwise. The
-   field is one paragraph, so Enter does not add a line (profile-fields.tsx). */
+/* Stored text may hold line breaks and double spaces (the earlier editor was a textarea); they
+   stay visible and are read back exactly (profile-fields.tsx). The prototype computes normal. */
 .admin-field-text {
-  white-space: normal;
+  white-space: pre-wrap;
 }
 
 .admin-field-text:empty::before {

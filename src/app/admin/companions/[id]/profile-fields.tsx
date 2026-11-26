@@ -7,6 +7,7 @@ import type { CompanionPage, FieldEntry } from "@/lib/content-fields/pages";
 import {
   changedFields,
   fieldPill,
+  publishLabel,
   publishPlan,
   saveSummary,
   startText,
@@ -80,11 +81,12 @@ export function ProfileFields({ page, role }: { page: CompanionPage; role: Conte
   );
   const busy = pending || !ready;
   const isAdmin = role === "admin";
-  const views = [
-    ...page.profile.map((entry) => entry.view),
-    ...page.periods.map((p) => p.field.view),
-  ];
-  const unsaved = changedFields(views, typed);
+  const profileViews = page.profile.map((entry) => entry.view);
+  const periodViews = page.periods.map((period) => period.field.view);
+  const views = [...profileViews, ...periodViews];
+  // The header's Publish acts on the open tab only.
+  const tabViews = tab === "profile" ? profileViews : periodViews;
+  const blockedId = `${id}-blocked`;
 
   function begin() {
     setSummary("");
@@ -117,9 +119,10 @@ export function ProfileFields({ page, role }: { page: CompanionPage; role: Conte
     });
   }
 
-  function publishAll() {
+  /** The header's Publish: the saved draft of every field on the open tab. */
+  function publishTab() {
     begin();
-    const plan = publishPlan(role, views, unsaved.length);
+    const plan = publishPlan(role, tabViews, changedFields(tabViews, typed).length);
     if (!plan.ok) {
       setSummary(plan.reason);
       return;
@@ -138,6 +141,29 @@ export function ProfileFields({ page, role }: { page: CompanionPage; role: Conte
       }
       setStatuses(next);
       setSummary(saveSummary("publish", done, plan.drafts.length - done));
+    });
+  }
+
+  /** A field's own Publish vN: that field only. A changed text not saved yet is never skipped. */
+  function publishOne(key: string, version: number) {
+    begin();
+    const view = views.find((item) => item.key === key);
+    if (view && changedFields([view], typed).length > 0) {
+      setStatuses({
+        [key]: {
+          text: "Save draft first: this field has changes that are not saved.",
+          problems: [],
+        },
+      });
+      return;
+    }
+    startTransition(async () => {
+      const result = await attempt(() => publishContentFieldAction(key, version));
+      setStatuses({
+        [key]: result.ok
+          ? { text: `Published v${version}.`, problems: [] }
+          : refusal(result, "published"),
+      });
     });
   }
 
@@ -168,8 +194,10 @@ export function ProfileFields({ page, role }: { page: CompanionPage; role: Conte
       busy={busy}
       entry={entry}
       extra={extra}
+      blockedId={blockedId}
       isAdmin={isAdmin}
       key={entry.view.key}
+      onPublish={publishOne}
       onRollBack={rollBack}
       onType={(text) => setTyped((current) => ({ ...current, [entry.view.key]: text }))}
       ready={ready}
@@ -194,13 +222,13 @@ export function ProfileFields({ page, role }: { page: CompanionPage; role: Conte
               Save draft
             </button>
             <button
-              aria-describedby={isAdmin ? undefined : `${id}-blocked`}
+              aria-describedby={isAdmin ? undefined : blockedId}
               className="button-filled"
               disabled={busy || !isAdmin}
-              onClick={publishAll}
+              onClick={publishTab}
               type="button"
             >
-              Publish
+              {publishLabel(tabViews)}
             </button>
           </>
         }
@@ -213,7 +241,7 @@ export function ProfileFields({ page, role }: { page: CompanionPage; role: Conte
         title={page.name}
       />
       {isAdmin ? null : (
-        <p className="admin-fields-status" id={`${id}-blocked`}>
+        <p className="admin-fields-status" id={blockedId}>
           Only an admin can publish. Ask an admin to publish the drafts.
         </p>
       )}
@@ -306,6 +334,21 @@ export function ProfileFields({ page, role }: { page: CompanionPage; role: Conte
   );
 }
 
+/** Puts plain text at the caret (replacing a selection) inside the field, as a text node. */
+function insertPlainText(field: HTMLElement, text: string) {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+  const range = selection.getRangeAt(0);
+  if (!field.contains(range.commonAncestorContainer)) return;
+  range.deleteContents();
+  const node = document.createTextNode(text);
+  range.insertNode(node);
+  range.setStartAfter(node);
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
+}
+
 /** One `dl.fields` row: label and id, then the text edited in place, its pill and its versions. */
 function FieldRow({
   entry,
@@ -314,7 +357,9 @@ function FieldRow({
   ready,
   busy,
   isAdmin,
+  blockedId,
   onType,
+  onPublish,
   onRollBack,
 }: {
   entry: FieldEntry;
@@ -323,7 +368,10 @@ function FieldRow({
   ready: boolean;
   busy: boolean;
   isAdmin: boolean;
+  /** The note that says why a writer cannot publish. */
+  blockedId: string;
   onType: (text: string) => void;
+  onPublish: (key: string, version: number) => void;
   onRollBack: (key: string, version: number) => void;
 }) {
   const view: FieldView = entry.view;
@@ -345,18 +393,22 @@ function FieldRow({
             contentEditable={ready}
             data-placeholder="Not written yet."
             key={`${view.draft?.version ?? 0}:${start}`}
-            // The browser keeps a typed space at the end as a no-break space; it is a space.
-            onInput={(event) => onType(event.currentTarget.innerText.replace(/ /g, " "))}
-            // One paragraph per field: Enter does not add a line break.
+            // The text is read back exactly (textContent): with pre-wrap a stored line break, a
+            // double space or a no-break space stays as it is, and nothing else is inserted.
+            onInput={(event) => onType(event.currentTarget.textContent ?? "")}
+            // New text is one paragraph: Enter and Shift+Enter add no line break.
             onKeyDown={(event) => {
               if (event.key === "Enter") event.preventDefault();
             }}
             // Pasted text arrives as plain text on one line, never as formatting.
             onPaste={(event) => {
               event.preventDefault();
-              const text = event.clipboardData.getData("text/plain").replace(/\s*\n\s*/g, " ");
-              document.execCommand("insertText", false, text);
+              const text = event.clipboardData.getData("text/plain");
+              insertPlainText(event.currentTarget, text.replace(/\s*[\r\n]+\s*/g, " "));
+              onType(event.currentTarget.textContent ?? "");
             }}
+            // A drop could bring formatting or blocks; paste the text instead.
+            onDrop={(event) => event.preventDefault()}
             role="textbox"
             spellCheck={false}
             suppressContentEditableWarning
@@ -364,6 +416,20 @@ function FieldRow({
             {start}
           </span>{" "}
           <StatePill state={pill.state}>{pill.label}</StatePill>
+          {view.draft ? (
+            <>
+              {" "}
+              <button
+                aria-describedby={isAdmin ? undefined : blockedId}
+                className="button-gray button-small"
+                disabled={busy || !isAdmin}
+                onClick={() => onPublish(view.key, view.draft!.version)}
+                type="button"
+              >
+                Publish v{view.draft.version}
+              </button>
+            </>
+          ) : null}
           {view.draft ? (
             <p className="admin-field-note">
               The app still shows: {view.shown.trim() === "" ? "nothing yet" : view.shown}

@@ -19,8 +19,9 @@ export function fieldPill(view: FieldView): FieldPill {
 export const startText = (view: FieldView) => view.draft?.body ?? view.shown;
 
 /**
- * The fields whose typed text differs from where their editor started (spaces around a text are
- * not part of it, #317). A field never typed in is unchanged.
+ * The fields whose typed text differs from where their editor started, compared exactly: a stored
+ * text is never saved again unless the user changed it. A field never typed in is unchanged. The
+ * text goes to the server as typed; the server trims the spaces around it (#317).
  */
 export function changedFields(
   views: FieldView[],
@@ -28,15 +29,18 @@ export function changedFields(
 ): { key: string; text: string }[] {
   return views.flatMap((view) => {
     const text = typed[view.key];
-    if (text === undefined || text.trim() === startText(view).trim()) return [];
-    return [{ key: view.key, text: text.trim() }];
+    if (text === undefined || text === startText(view)) return [];
+    return [{ key: view.key, text }];
   });
 }
 
 export type PublishPlan =
   { ok: true; drafts: { key: string; version: number }[] } | { ok: false; reason: string };
 
-/** What the header's Publish does: every saved draft, admin only, never a text not yet saved. */
+/**
+ * What the header's Publish does with the fields of the open tab: the saved draft of each, admin
+ * only, never a text not yet saved. Each field also has its own Publish in its row.
+ */
 export function publishPlan(role: ContentRole, views: FieldView[], unsaved: number): PublishPlan {
   if (role !== "admin") {
     return { ok: false, reason: "Only an admin can publish. Ask an admin to publish the drafts." };
@@ -46,19 +50,25 @@ export function publishPlan(role: ContentRole, views: FieldView[], unsaved: numb
       ok: false,
       reason:
         unsaved === 1
-          ? "Save draft first: 1 changed field is not saved yet."
-          : `Save draft first: ${unsaved} changed fields are not saved yet.`,
+          ? "Save draft first: 1 changed field on this tab is not saved yet."
+          : `Save draft first: ${unsaved} changed fields on this tab are not saved yet.`,
     };
   }
   const drafts = views.flatMap((view) =>
     view.draft ? [{ key: view.key, version: view.draft.version }] : [],
   );
   if (drafts.length === 0)
-    return { ok: false, reason: "Nothing to publish: no field has a draft." };
+    return { ok: false, reason: "Nothing to publish: no field on this tab has a draft." };
   return { ok: true, drafts };
 }
 
 const fields = (count: number) => (count === 1 ? "1 field" : `${count} fields`);
+
+/** The header Publish button's words: how many fields of the open tab it publishes. */
+export function publishLabel(views: FieldView[]): string {
+  const count = views.filter((view) => view.draft).length;
+  return count === 0 ? "Publish" : `Publish ${fields(count)}`;
+}
 
 /** The header's status after Save draft or Publish: what was done, then what was not. */
 export function saveSummary(kind: "save" | "publish", done: number, failed: number): string {

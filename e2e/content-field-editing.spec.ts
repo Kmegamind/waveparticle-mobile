@@ -219,7 +219,9 @@ test("test_442_header_save_draft_and_publish_work_field_by_field", async ({ page
   await who.getByLabel("Text for chr.mor.who").fill("I run things from a distance.");
   // A text not saved yet is never published.
   await publishAll(page);
-  await expect(status).toHaveText("Save draft first: 2 changed fields are not saved yet.");
+  await expect(status).toHaveText(
+    "Save draft first: 2 changed fields on this tab are not saved yet.",
+  );
 
   await header(page).getByRole("button", { name: "Save draft" }).click();
   await expect(status).toHaveText("Saved 2 drafts. The app still shows the published text.");
@@ -253,5 +255,197 @@ test("test_442_header_save_draft_and_publish_work_field_by_field", async ({ page
   await expect(again.getByRole("status")).toHaveText("Not saved: it fails 1 check.");
   await expect(again.getByRole("list", { name: "Problems" })).toHaveText(
     'Mentions a year ("1890"). Years and dates stay in the admin.',
+  );
+});
+
+// #442 review: the text edited in place stores exactly what the user typed, and nothing else.
+// Moriarty's Profile fields, or Oppenheimer's Life Path periods: never Oppenheimer's Profile tab,
+// which the visual gate reads.
+
+/** Saves a draft straight through the stub's database function, as the signed-in account. */
+async function storeDraft(token: string, key: string, body: string) {
+  const answer = await fetch(`${STUB_SUPABASE}/rest/v1/rpc/save_content_field_draft`, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+    body: JSON.stringify({ field_key: key, field_body: body }),
+  });
+  if (!answer.ok) throw new Error(`stub save failed: ${answer.status}`);
+}
+
+/** The field's text box, once the page has loaded its scripts (it is editable from then on). */
+async function textOf(page: Page, key: string) {
+  const text = fieldOf(page, key).getByLabel(`Text for ${key}`);
+  await expect(text).toHaveAttribute("contenteditable", "true");
+  return text;
+}
+
+/** Puts the caret at the end of the field's text. */
+async function caretAtEnd(page: Page, key: string) {
+  const text = await textOf(page, key);
+  await text.click();
+  await text.evaluate((node) => {
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    range.collapse(false);
+    const selection = window.getSelection()!;
+    selection.removeAllRanges();
+    selection.addRange(range);
+  });
+  return text;
+}
+
+const stored = (page: Page, key: string) =>
+  fieldOf(page, key)
+    .getByLabel(`Text for ${key}`)
+    .evaluate((node) => ({ text: node.textContent, html: node.innerHTML }));
+
+const saveDraft = (page: Page) => header(page).getByRole("button", { name: "Save draft" }).click();
+
+test("test_442_review_pasted_rich_text_is_stored_as_plain_text", async ({ page, context }) => {
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto("/admin/companions/moriarty");
+  const text = await textOf(page, "chr.mor.who");
+  await text.focus();
+  await text.evaluate((node) => {
+    const data = new DataTransfer();
+    data.setData("text/html", "<b>I plan</b> <i>everything</i><div>twice</div>");
+    data.setData("text/plain", "I plan everything\ntwice");
+    node.dispatchEvent(
+      new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }),
+    );
+  });
+  await saveDraft(page);
+  await expect(fieldOf(page, "chr.mor.who").getByRole("status")).toHaveText(
+    "Draft v1 saved. The app still shows the published text.",
+  );
+  await page.reload();
+  // Plain text on one line, no HTML.
+  expect(await stored(page, "chr.mor.who")).toEqual({
+    text: "I plan everything twice",
+    html: "I plan everything twice",
+  });
+});
+
+test("test_442_review_enter_and_shift_enter_add_no_line_break", async ({ page, context }) => {
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto("/admin/companions/moriarty");
+  const key = "chr.mor.tags";
+  const before = (await stored(page, key)).text;
+  await caretAtEnd(page, key);
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("Shift+Enter");
+  await page.keyboard.type(" · Cold");
+  await saveDraft(page);
+  await expect(fieldOf(page, key).getByRole("status")).toContainText("Draft v2 saved.");
+  await page.reload();
+  expect((await stored(page, key)).text).toBe(`${before} · Cold`);
+});
+
+test("test_442_review_a_typed_no_break_space_is_saved_exactly_as_typed", async ({
+  page,
+  context,
+}) => {
+  // Kept as typed, not turned into a space: with pre-wrap the browser never puts a no-break space
+  // in on its own, so one in the text was typed or stored on purpose, and stored text is never
+  // changed unless the user changed it.
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto("/admin/companions/moriarty");
+  const key = "chr.mor.who";
+  await (await textOf(page, key)).focus();
+  await page.keyboard.insertText("Professor Moriarty, at  your service");
+  await saveDraft(page);
+  await expect(fieldOf(page, key).getByRole("status")).toContainText("Draft v1 saved.");
+  await page.reload();
+  expect((await stored(page, key)).text).toBe("Professor Moriarty, at  your service");
+});
+
+test("test_442_review_typing_then_restoring_the_text_saves_nothing", async ({ page, context }) => {
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto("/admin/companions/moriarty");
+  const key = "chr.mor.tags";
+  await caretAtEnd(page, key);
+  await page.keyboard.type("Z");
+  await page.keyboard.press("Backspace");
+  await saveDraft(page);
+  await expect(page.locator(".admin-head ~ p[role=status]")).toHaveText(
+    "Nothing changed, so nothing was saved.",
+  );
+  await expect(fieldOf(page, key).locator(":scope > .admin-pill")).toHaveText("Published");
+  await expect(fieldOf(page, key).getByText(/^Versions/)).toHaveCount(0);
+});
+
+test("test_442_review_a_stored_line_break_survives_an_edit_elsewhere", async ({
+  page,
+  context,
+}) => {
+  const account = await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  const key = "chr.mor.who";
+  await storeDraft(account.token, key, "I keep two notebooks.\nOne is for you.");
+  await page.goto("/admin/companions/moriarty");
+  expect((await stored(page, key)).text).toBe("I keep two notebooks.\nOne is for you.");
+  // The line break is shown, not folded into a space.
+  const text = await textOf(page, key);
+  expect(await text.evaluate((node) => getComputedStyle(node).whiteSpace)).toBe("pre-wrap");
+  await caretAtEnd(page, key);
+  await page.keyboard.type(" Choose well.");
+  await saveDraft(page);
+  await expect(fieldOf(page, key).getByRole("status")).toContainText("Draft v2 saved.");
+  await page.reload();
+  expect((await stored(page, key)).text).toBe(
+    "I keep two notebooks.\nOne is for you. Choose well.",
+  );
+});
+
+test("test_442_review_one_field_publishes_on_its_own", async ({ page, context }) => {
+  const account = await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await storeDraft(account.token, "chr.mor.tags", "Cold · Patient");
+  await storeDraft(account.token, "chr.mor.who", "I run things from a distance.");
+  await page.goto("/admin/companions/moriarty");
+  await textOf(page, "chr.mor.tags");
+  await expect(header(page).getByRole("button", { name: /^Publish/ })).toHaveText(
+    "Publish 2 fields",
+  );
+  const tags = fieldOf(page, "chr.mor.tags");
+  await tags.getByRole("button", { name: "Publish v2" }).click();
+  await expect(tags.getByRole("status")).toHaveText("Published v2.");
+  await expect(tags.locator(":scope > .admin-pill")).toHaveText("Published");
+  // The other draft is untouched.
+  const who = fieldOf(page, "chr.mor.who");
+  await expect(who.locator(":scope > .admin-pill")).toHaveText("Draft v1");
+  await expect(header(page).getByRole("button", { name: /^Publish/ })).toHaveText(
+    "Publish 1 field",
+  );
+});
+
+test("test_442_review_header_publish_takes_only_the_open_tab", async ({ page, context }) => {
+  const account = await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  const key = "chr.opp.period.6";
+  await storeDraft(account.token, key, "His last years");
+  await page.goto("/admin/companions/oppenheimer");
+  await textOf(page, "chr.opp.name");
+  // The Profile tab has no draft: its Publish publishes nothing.
+  const publish = header(page).getByRole("button", { name: /^Publish/ });
+  await expect(publish).toHaveText("Publish");
+  await publish.click();
+  const status = page.locator(".admin-head ~ p[role=status]");
+  await expect(status).toHaveText("Nothing to publish: no field on this tab has a draft.");
+
+  await openLifePath(page);
+  // The draft on the other tab was left alone.
+  await expect(fieldOf(page, key).locator(":scope > .admin-pill")).toHaveText("Draft v2");
+  await expect(publish).toHaveText("Publish 1 field");
+  await publish.click();
+  await expect(status).toHaveText("Published 1 field.");
+  await expect(fieldOf(page, key).getByRole("status")).toHaveText("Published v2.");
+});
+
+test("test_442_review_a_writer_cannot_publish_a_field", async ({ page, context }) => {
+  const account = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+  await storeDraft(account.token, "chr.mor.tags", "Cold · Patient");
+  await page.goto("/admin/companions/moriarty");
+  const publish = fieldOf(page, "chr.mor.tags").getByRole("button", { name: "Publish v2" });
+  await expect(publish).toBeDisabled();
+  await expect(publish).toHaveAccessibleDescription(
+    "Only an admin can publish. Ask an admin to publish the drafts.",
   );
 });

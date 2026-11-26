@@ -5,6 +5,7 @@ import { companionPage } from "@/lib/content-fields/pages";
 import {
   changedFields,
   fieldPill,
+  publishLabel,
   publishPlan,
   saveSummary,
   startText,
@@ -55,14 +56,41 @@ describe("Companion profile fields (#442)", () => {
       view("chr.opp.tags", "Tags", { version: 2, body: "New tags" }),
       view("chr.opp.who", ""),
     ];
-    // Spaces around a text are not part of it (#317); a field never typed in is unchanged.
+    // Compared exactly with the stored text; a field never typed in, or typed back to its stored
+    // text, is unchanged.
     expect(
-      changedFields(views, { "chr.opp.name": " Name ", "chr.opp.tags": "Tags", "chr.opp.who": "" }),
+      changedFields(views, { "chr.opp.name": "Name", "chr.opp.tags": "Tags", "chr.opp.who": "" }),
     ).toEqual([{ key: "chr.opp.tags", text: "Tags" }]);
     expect(changedFields(views, { "chr.opp.who": "I am" })).toEqual([
       { key: "chr.opp.who", text: "I am" },
     ]);
     expect(changedFields(views, {})).toEqual([]);
+  });
+
+  it("test_442_review_a_stored_text_is_compared_exactly_and_sent_as_typed", () => {
+    const lines = view("chr.opp.who", "Line one\nLine two  ends");
+    // The same text, line break and double space included: nothing to save.
+    expect(changedFields([lines], { "chr.opp.who": "Line one\nLine two  ends" })).toEqual([]);
+    // Any difference, even of spaces, is a change; the line break goes to the server as it is.
+    expect(changedFields([lines], { "chr.opp.who": "Line one\nLine two ends" })).toEqual([
+      { key: "chr.opp.who", text: "Line one\nLine two ends" },
+    ]);
+    expect(changedFields([view("chr.opp.name", "Name")], { "chr.opp.name": "Name " })).toEqual([
+      { key: "chr.opp.name", text: "Name " },
+    ]);
+  });
+
+  it("test_442_review_header_publish_says_how_many_fields_of_the_tab_it_publishes", () => {
+    expect(publishLabel([view("chr.opp.name", "Name")])).toBe("Publish");
+    expect(publishLabel([view("chr.opp.name", "Name", { version: 2, body: "N" })])).toBe(
+      "Publish 1 field",
+    );
+    expect(
+      publishLabel([
+        view("chr.opp.name", "Name", { version: 2, body: "N" }),
+        view("chr.opp.tags", "Tags", { version: 3, body: "T" }),
+      ]),
+    ).toBe("Publish 2 fields");
   });
 
   it("test_442_publish_takes_every_saved_draft_and_only_an_admin_publishes", () => {
@@ -85,15 +113,15 @@ describe("Companion profile fields (#442)", () => {
     // A changed text that is not saved yet is never published by mistake.
     expect(publishPlan("admin", views, 1)).toEqual({
       ok: false,
-      reason: "Save draft first: 1 changed field is not saved yet.",
+      reason: "Save draft first: 1 changed field on this tab is not saved yet.",
     });
     expect(publishPlan("admin", views, 2)).toEqual({
       ok: false,
-      reason: "Save draft first: 2 changed fields are not saved yet.",
+      reason: "Save draft first: 2 changed fields on this tab are not saved yet.",
     });
     expect(publishPlan("admin", [view("chr.opp.tags", "Tags")], 0)).toEqual({
       ok: false,
-      reason: "Nothing to publish: no field has a draft.",
+      reason: "Nothing to publish: no field on this tab has a draft.",
     });
   });
 
