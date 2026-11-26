@@ -17,7 +17,10 @@
 //   POST /rest/v1/rpc/list_prompt_versions (editors), save_prompt_draft (editors),
 //        publish_prompt | roll_back_prompt (admin only), as 20261124000000 (#308);
 //        POST /__prompts { reset: true | "<key>" } puts every prompt (true) or one key back,
-//        with the matching history rows (#439)
+//        with the matching history rows (#439);
+//        POST /__prompts { token, seededView: true | null }   (#446) that account's
+//        list_prompt_versions answers the seed prompts only (no drafts), and its prompt writes are
+//        refused, so the visual gate reads no row another test writes
 //   POST /rest/v1/rpc/get_story_content  { reader_key } → the seed story content (src/content,
 //        docs/demo) when the key is STUB_CONTENT_READ_KEY, otherwise null, as the real function (#284)
 //   GET  /rest/v1/stories | story_parts | story_cards   the seed rows (#293): stories for any
@@ -77,6 +80,11 @@
 //                                     reads of ai_features show these purpose items (#439: a
 //                                     layout test that no other test, nor the visual gate, sees);
 //                                     null removes them. Reset does not touch them
+//   POST /__publish_history { token, own: true | null }   (#447) that account's
+//                                     list_publish_history answers a fixed, seeded history (three
+//                                     rows, as the prototype) instead of the shared one, so the
+//                                     visual gate never reads a row another test writes (#460);
+//                                     null gives it up
 //   POST /__fail_reads { token, tables: ["profiles"] }   reads of those tables answer 500 for that
 //                                     account until set again (#118, a failed profile read);
 //                                     "auth" makes GET /auth/v1/user answer 500
@@ -398,6 +406,47 @@ let appTextFailReads = false;
 let publishHistory = [];
 let nextHistoryId = 1;
 
+/**
+ * #447: the fixed publish history of POST /__publish_history { token, own: true }, as
+ * list_publish_history answers it, newest first: the prototype's three rows (a Companion field,
+ * a prompt, an app text). The first two are not published now, so an admin sees Roll back.
+ */
+const seededPublishHistory = () => [
+  {
+    id: 3,
+    kind: "companion_field",
+    item_key: "chr.opp.who",
+    version: 2,
+    action: "publish",
+    acted_by: "00000000-0000-4000-8000-000000000447",
+    acted_by_email: "editor@example.invalid",
+    acted_at: "2026-11-14T15:20:00Z",
+    is_current: false,
+  },
+  {
+    id: 2,
+    kind: "prompt",
+    item_key: "step_cards",
+    version: 4,
+    action: "publish",
+    acted_by: "00000000-0000-4000-8000-000000000447",
+    acted_by_email: "editor@example.invalid",
+    acted_at: "2026-11-12T10:04:00Z",
+    is_current: false,
+  },
+  {
+    id: 1,
+    kind: "app_text",
+    item_key: "ui.S1.back",
+    version: 3,
+    action: "publish",
+    acted_by: "00000000-0000-4000-8000-000000000448",
+    acted_by_email: "writer@example.invalid",
+    acted_at: "2026-11-12T09:40:00Z",
+    is_current: true,
+  },
+];
+
 /** The same checks and history insert as private.set_published_app_text (20261118000000). */
 function setPublished(key, version, action, user) {
   const rows = appText.filter((row) => row.key === key);
@@ -599,6 +648,15 @@ createServer(async (request, response) => {
 
   if (path === "/__prompts" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
+    if (typeof body.token === "string" && "seededView" in body) {
+      // #446: that account's list_prompt_versions answers the seeded prompts (version 1 of each,
+      // no drafts), whatever other tests save meanwhile; null gives it up. Read only: a write from
+      // the account is refused, so its view never mixes with the shared rows.
+      const account = datasets.get(body.token);
+      if (!account) return json(response, 404, { message: "no such account" });
+      account.promptsSeededView = body.seededView === true ? true : undefined;
+      return json(response, 200, { ok: true });
+    }
     if (body.reset === true) {
       promptVersions = seededPrompts();
       publishHistory = publishHistory.filter((row) => row.kind !== "prompt");
@@ -627,8 +685,12 @@ createServer(async (request, response) => {
     if (needsAdmin ? role !== "admin" : !["admin", "writer"].includes(role)) {
       return json(response, 403, { code: "42501", message: "not allowed" });
     }
+    if (promptRpc[1] !== "list_prompt_versions" && dataset.promptsSeededView) {
+      return json(response, 409, { message: "this account reads the seeded prompts only" });
+    }
     if (promptRpc[1] === "list_prompt_versions") {
-      const rows = [...promptVersions].sort((left, right) =>
+      const source = dataset.promptsSeededView ? seededPrompts() : promptVersions;
+      const rows = [...source].sort((left, right) =>
         left.key === right.key ? right.version - left.version : left.key < right.key ? -1 : 1,
       );
       return json(response, 200, rows);
@@ -920,6 +982,16 @@ createServer(async (request, response) => {
     return problem ? json(response, 400, { code: "P0001", message: problem }) : json(response, 204);
   }
 
+  if (path === "/__publish_history" && request.method === "POST") {
+    // #447: that account's list_publish_history answers the fixed rows of SEEDED_PUBLISH_HISTORY
+    // (null gives the view up), so the visual gate never reads a row another test writes (#460).
+    const body = (await readBody(request)) ?? {};
+    const account = typeof body.token === "string" ? datasets.get(body.token) : undefined;
+    if (!account || !("own" in body)) return json(response, 404, { message: "no such account" });
+    account.publishHistoryOwn = body.own === true ? seededPublishHistory() : undefined;
+    return json(response, 200, { ok: true });
+  }
+
   if (path === "/__ai_features" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
     if (typeof body.token === "string" && "own" in body) {
@@ -1137,6 +1209,8 @@ createServer(async (request, response) => {
       });
     }
     const limit = Math.min(Math.max(Number(body.row_limit ?? 100) || 100, 1), 500);
+    // #447: an account with the fixed view (POST /__publish_history) reads only those rows.
+    if (dataset.publishHistoryOwn) return json(response, 200, dataset.publishHistoryOwn);
     const rows = [...publishHistory]
       .sort((left, right) => right.id - left.id)
       .slice(0, limit)

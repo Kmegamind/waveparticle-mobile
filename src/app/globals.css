@@ -4424,6 +4424,45 @@ input.admin-text-field {
   gap: var(--adm-gap-tiny);
 }
 
+/* Issue 447, ADM-12: the prototype's history rows are one line high. The status line under Roll
+   back or "Published now" stays in the page (a live region must exist before its message) but takes
+   no height until it has something to say. */
+.admin-history-action:has(> .admin-text-status:empty) {
+  gap: 0;
+}
+
+.admin-history-action > .admin-text-status:empty {
+  min-height: 0;
+}
+
+/* Issue 447: as the prototype's .panel.scroll table, a cell is never squeezed below its longest
+   word (the app's body breaks anywhere, which split "When" and "Roll back to v2" at 1024 px). The
+   table sits in .admin-scroll, so a long email or key scrolls instead of being clipped. */
+.admin-publish-history th,
+.admin-publish-history td {
+  overflow-wrap: normal;
+}
+
+/* The prototype's "Roll back" fits its column on one line; the live label names the version
+   ("Roll back to v2"), which the self-sized table would wrap at 1024 px. It stays one line, as the
+   prototype's button; the What column wraps instead. */
+.admin-publish-history .admin-history-action .button-small {
+  white-space: nowrap;
+}
+
+/* The button's min-width is 0 in the admin (no 44 px tap minimum), so an auto grid track could
+   shrink below its label and let it run out of the cell; the track keeps its content's width. */
+.admin-publish-history .admin-history-action {
+  grid-template-columns: minmax(min-content, auto);
+}
+
+/* The prototype's time ("11-14 15:20") and its notes stay on one line; with real emails in Who,
+   the self-sized table would break them at their space at 1024 px. */
+.admin-publish-history time,
+.admin-publish-history .admin-history-note {
+  white-space: nowrap;
+}
+
 /* Issue 442, ADM-04 Companion profile: the prototype's tabs (.tabs) and field rows (dl.fields):
    the label and id on the left, the text edited in place with its state pill on the right. */
 .admin-tabs {
@@ -4592,7 +4631,6 @@ input.admin-text-field {
   padding-left: var(--adm-gap);
 }
 
-.admin-prompt-text,
 .admin-diff {
   background: var(--adm-soft);
   border-radius: var(--adm-r-code);
@@ -4603,10 +4641,6 @@ input.admin-text-field {
   overflow-wrap: anywhere;
   padding: var(--adm-code-pad);
   white-space: pre-wrap;
-}
-
-.admin-prompt-field {
-  font-family: var(--adm-font-mono);
 }
 
 .admin-prompt-subhead {
@@ -4645,4 +4679,176 @@ input.admin-text-field {
   position: absolute;
   white-space: nowrap;
   width: 1px;
+}
+
+/* Issue 446: ADM-08 Prompts in the prototype's layout. The prompt page is two equal panels 14 px apart
+   (prototype .grid2), headings 10 px above their content, the prompt text as the prototype's
+   pre.code (also when it is a text field), the version note as its .note line, and the draft below
+   14 px down (prototype .cmp). Prompt text holds long unbroken tokens, so it wraps anywhere. */
+.admin-prompt-grid {
+  display: grid;
+  gap: var(--adm-gap);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-main .admin-prompt-heading {
+  margin: 0 0 var(--adm-h2-after);
+}
+
+.admin-prompt-code {
+  background: var(--adm-soft);
+  border: 0;
+  border-radius: var(--adm-r-code);
+  color: var(--adm-ink);
+  display: block;
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-code-size);
+  font-weight: 400;
+  line-height: var(--adm-code-leading);
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding: var(--adm-code-pad);
+  white-space: pre-wrap;
+  width: 100%;
+}
+
+textarea.admin-prompt-code {
+  resize: vertical;
+}
+
+.admin-prompt-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: var(--adm-note-gap) 0 var(--adm-note-after);
+  overflow-wrap: anywhere;
+}
+
+.admin-prompt-code + .admin-prompt-settings {
+  margin-top: var(--adm-note-gap);
+}
+
+/* The prototype's id chip inside a title or heading takes the heading's weight. */
+.admin-main h1 .admin-chip,
+.admin-prompt-heading .admin-chip {
+  font-weight: inherit;
+}
+
+.admin-main .admin-prompt-versions .admin-prompt-heading {
+  margin-top: var(--adm-gap);
+}
+
+.admin-prompt-version-note {
+  overflow-wrap: anywhere;
+}
+
+/* The list: words break only at spaces, as in the prototype's tables (the app's body breaks
+   anywhere, which squeezed short columns to one letter); the setting lines still wrap anywhere. */
+.admin-prompt-list {
+  overflow-wrap: normal;
+}
+
+.admin-prompt-after {
+  display: grid;
+  gap: var(--adm-gap-small);
+  margin-top: var(--adm-gap);
+}
+
+.admin-prompt-after .admin-prompt-heading {
+  margin: 0;
+}
+
+/* Issue 445, ADM-07 App text: one line per key, as the prototype's table. The text is edited in
+   place like the prototype's contenteditable cell; stored line breaks and double spaces stay
+   visible and are read back exactly (pre-wrap; the prototype computes normal). */
+.admin-app-text-field {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.admin-app-text-field:focus-visible {
+  outline: 2px solid var(--adm-accent);
+  outline-offset: 2px;
+}
+
+/* A note or status under one key's text. Empty, it takes no room (a live region must exist before
+   its text arrives). */
+.admin-app-text-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The stored text changed under unsaved typing: the typing was kept (review I1). */
+.admin-app-text-kept {
+  color: var(--adm-warn);
+}
+
+.admin-app-text-versions {
+  margin-top: var(--adm-gap-tiny);
+}
+
+/* The prototype's dialog (dialog.sheet): Publish changes lists each key it publishes. */
+.admin-sheet {
+  background: var(--adm-panel);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-sheet-radius);
+  color: var(--adm-ink);
+  font-family: var(--adm-font-body);
+  font-size: var(--adm-text-size);
+  line-height: var(--adm-leading);
+  max-height: calc(100vh - var(--adm-sheet-room));
+  padding: 0;
+  width: min(var(--adm-sheet-width), calc(100vw - var(--adm-sheet-gutter)));
+}
+
+.admin-sheet::backdrop {
+  background: var(--adm-shade);
+}
+
+.admin-sheet-head {
+  align-items: center;
+  border-bottom: 1px solid var(--adm-line);
+  display: flex;
+  justify-content: space-between;
+  padding: var(--adm-sheet-head-pad);
+}
+
+.admin-sheet-head h2 {
+  font-size: var(--adm-sheet-title-size);
+  margin: 0;
+}
+
+.admin-sheet-body {
+  display: grid;
+  gap: var(--adm-gap-small);
+  overflow: auto;
+  padding: var(--adm-sheet-body-pad);
+}
+
+.admin-sheet-foot {
+  border-top: 1px solid var(--adm-line);
+  display: flex;
+  gap: var(--adm-gap-small);
+  justify-content: flex-end;
+  padding: var(--adm-sheet-foot-pad);
+}
+
+.admin-sheet-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-sheet-list {
+  display: grid;
+  gap: var(--adm-gap-small);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-sheet-list p {
+  margin: 0;
 }

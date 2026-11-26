@@ -1,7 +1,8 @@
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
-import { baseUrlOf, signIn } from "./support/account";
+import { baseUrlOf, signIn, useSeededPublishHistory } from "./support/account";
+import { useSeededPrompts } from "./support/prompts";
 
 // #435: the admin visual gate. It opens the repository copy of the owner's admin prototype
 // (docs/design/prototype/admin-prototype.html) and the live admin side by side, at 1024 and
@@ -106,8 +107,49 @@ const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
     },
   },
   appText: { path: "/admin/app-text" },
+  // #445: App text with one text typed into (in the browser only, nothing is saved), so its Save
+  // draft and Cancel show.
+  appTextEditing: {
+    path: "/admin/app-text",
+    prepare: async (page) => {
+      const text = page.locator(".admin-table [contenteditable]").first();
+      await expect(text).toHaveAttribute("contenteditable", "true");
+      await text.click();
+      await page.keyboard.press("End");
+      await page.keyboard.type(" x");
+      await expect(page.locator(".admin-table .button-gray.button-small").first()).toBeVisible();
+    },
+  },
+  // #445: App text no longer has a text box (its texts are edited in place, as the prototype's),
+  // and the pages that still have one are being rebuilt. The row checks the shared field class, so
+  // a stand-in field of that class is put into a panel of a page that no test writes, as `actions`
+  // does for the header buttons. It sits in the admin's form grid (.admin-text-form), as every live
+  // field does, the way the prototype's sits in its .form label grid. A page that builds a form
+  // like the prototype's adds its own row.
+  textField: {
+    path: "/admin/companions",
+    prepare: async (page) => {
+      await page
+        .locator(".admin-panel")
+        .first()
+        .evaluate((panel) => {
+          const form = document.createElement("div");
+          form.className = "admin-text-form";
+          const field = document.createElement("textarea");
+          field.className = "admin-text-field";
+          field.rows = 3;
+          form.append(field);
+          panel.append(form);
+        });
+    },
+  },
   // A detail page: its menu row (Prompts) is marked as current.
   prompt: { path: "/admin/prompts/plan_split" },
+  // #446: the prompts list (no prototype screen; drawn with the prototype's table components).
+  // Other tests save prompt drafts while the gate runs (rest_reply, stuck_story ...), and a draft
+  // changes the list's column widths, so the gate's account reads the seeded prompts only
+  // (useSeededPrompts): neither prompt page depends on what other tests write.
+  promptList: { path: "/admin/prompts" },
   // #442: Companion profile (ADM-04), the prototype's `character` screen.
   companion: { path: "/admin/companions/oppenheimer" },
   // #439: the AI features index and the Pause message page, as the drawing's AIF-1 and AIF-2.
@@ -118,6 +160,9 @@ const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
   aiStatus: { path: "/admin/ai-features/pause_message/status" },
   aiPass: { path: "/admin/ai-features/pause_message/pass" },
   aiPurpose: { path: "/admin/ai-features/pause_message/purpose" },
+  // #447: Publish history (ADM-12), the prototype's `history` screen. The gate's account reads a
+  // fixed, seeded history (useSeededPublishHistory), never the shared one other tests write (#460).
+  history: { path: "/admin/publish-history" },
   // The writer's view of the status editor: this page signs the browser in again as a writer, so
   // it is the last live page COMPONENTS names (the pages are opened in the order of the map).
   aiStatusWriter: {
@@ -501,15 +546,206 @@ const COMPONENTS: Component[] = [
   {
     name: "small secondary button",
     prototype: { page: "history", selector: "td button.small" },
-    live: { page: "appText", selector: ".admin-table .button-gray.button-small" },
+    live: { page: "appTextEditing", selector: ".admin-table .button-gray.button-small" },
     properties: [...STYLE, "cursor"],
     box: ["height"],
   },
   {
     name: "text field",
     prototype: { page: "regenerate", selector: "dialog.sheet textarea" },
-    live: { page: "appText", selector: ".admin-table textarea.admin-text-field" },
+    live: { page: "textField", selector: ".admin-panel textarea.admin-text-field" },
     properties: [...STYLE, "resize"],
+  },
+  // #446: ADM-08 Prompts. The prompt page against the prototype's Prompts screen; the list against
+  // the prototype's table components (it has no list screen).
+  {
+    name: "prompt: title chip",
+    prototype: { page: "prompts", selector: ".head h1 .key" },
+    live: { page: "prompt", selector: ".admin-head h1 .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "prompt: header action row",
+    prototype: { page: "prompts", selector: ".head .btns" },
+    live: { page: "prompt", selector: ".admin-head .admin-actions" },
+  },
+  {
+    name: "prompt: header secondary button (Save draft)",
+    prototype: { page: "prompts", selector: ".head .btns button:not(.primary)" },
+    live: { page: "prompt", selector: ".admin-actions .button-gray" },
+    properties: [...STYLE, "cursor"],
+    box: ["height"],
+  },
+  {
+    name: "prompt: two columns",
+    prototype: { page: "prompts", selector: ".grid2" },
+    live: { page: "prompt", selector: ".admin-prompt-grid" },
+    box: ["x", "width"],
+  },
+  {
+    name: "prompt: left panel",
+    prototype: { page: "prompts", selector: ".grid2 > .panel:first-child" },
+    live: { page: "prompt", selector: ".admin-prompt-grid > .admin-panel:first-child" },
+    box: ["x", "width"],
+  },
+  {
+    name: "prompt: right panel",
+    prototype: { page: "prompts", selector: ".grid2 > .panel:last-child" },
+    live: { page: "prompt", selector: ".admin-prompt-grid > .admin-panel:last-child" },
+    box: ["x", "width"],
+  },
+  {
+    name: "prompt: panel heading",
+    prototype: { page: "prompts", selector: ".grid2 > .panel:last-child h2" },
+    live: { page: "prompt", selector: ".admin-prompt-grid .admin-prompt-heading" },
+  },
+  {
+    name: "prompt: heading chip",
+    prototype: { page: "prompts", selector: ".grid2 > .panel:last-child h2 .key" },
+    live: { page: "prompt", selector: ".admin-prompt-heading .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "prompt: prompt text",
+    prototype: { page: "prompts", selector: "pre.code" },
+    live: { page: "prompt", selector: "pre.admin-prompt-code" },
+  },
+  {
+    name: "prompt: prompt text field",
+    prototype: { page: "prompts", selector: "pre.code" },
+    live: { page: "prompt", selector: "textarea.admin-prompt-code" },
+  },
+  {
+    name: "prompt: note line",
+    prototype: { page: "prompts", selector: ".grid2 p.note" },
+    live: { page: "prompt", selector: ".admin-prompt-note" },
+  },
+  {
+    name: "prompt: Versions heading",
+    prototype: { page: "prompts", selector: ".grid2 > .panel:last-child h2:nth-of-type(2)" },
+    live: { page: "prompt", selector: ".admin-prompt-versions .admin-prompt-heading" },
+  },
+  {
+    name: "prompt: Versions table",
+    prototype: { page: "prompts", selector: ".grid2 table" },
+    live: { page: "prompt", selector: ".admin-prompt-versions .admin-table" },
+    properties: [...STYLE, "border-collapse", "table-layout"],
+    box: ["width"],
+  },
+  {
+    name: "prompt: Versions cell",
+    prototype: { page: "prompts", selector: ".grid2 td" },
+    live: { page: "prompt", selector: ".admin-prompt-versions td" },
+  },
+  {
+    name: "prompt: Versions chip",
+    prototype: { page: "prompts", selector: ".grid2 td .key" },
+    live: { page: "prompt", selector: ".admin-prompt-versions td .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "prompt: Versions pill (Active)",
+    prototype: { page: "prompts", selector: ".grid2 .pill.s-pub" },
+    live: { page: "prompt", selector: ".admin-prompt-versions .admin-pill-published" },
+    box: ["height"],
+  },
+  {
+    name: "prompts list: panel",
+    prototype: { page: "characters", selector: ".panel" },
+    live: { page: "promptList", selector: ".admin-panel" },
+    box: ["x", "width"],
+  },
+  {
+    name: "prompts list: table",
+    prototype: { page: "characters", selector: "table" },
+    live: { page: "promptList", selector: ".admin-table" },
+    properties: [...STYLE, "border-collapse", "table-layout"],
+    box: ["width"],
+  },
+  {
+    name: "prompts list: head cell",
+    prototype: { page: "characters", selector: "th" },
+    live: { page: "promptList", selector: ".admin-table th" },
+    box: ["height"],
+  },
+  {
+    name: "prompts list: cell",
+    prototype: { page: "characters", selector: "td" },
+    live: { page: "promptList", selector: ".admin-table td" },
+  },
+  {
+    name: "prompts list: id chip",
+    prototype: { page: "characters", selector: "td .key" },
+    live: { page: "promptList", selector: ".admin-table .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "prompts list: pill (Active)",
+    prototype: { page: "characters", selector: ".pill.s-pub" },
+    live: { page: "promptList", selector: ".admin-table .admin-pill-published" },
+  },
+  // #445: App text (ADM-07), the prototype's `uitext` screen: the header with Publish changes, and
+  // one line per key with its text edited in place. Rows read the first line (ui.F3.fail.body),
+  // which no test writes. They come before the AI feature rows: the last of those pages signs the
+  // browser in again as a writer, and Publish changes shows to an admin only.
+  {
+    name: "header row (App text)",
+    prototype: { page: "uitext", selector: ".head" },
+    live: { page: "appText", selector: ".admin-head" },
+    box: ["x", "y", "width"],
+  },
+  {
+    name: "header action row (App text)",
+    prototype: { page: "uitext", selector: ".head .btns" },
+    live: { page: "appText", selector: ".admin-head .admin-actions" },
+  },
+  {
+    name: "panel (App text)",
+    prototype: { page: "uitext", selector: ".panel" },
+    live: { page: "appText", selector: ".admin-panel" },
+    box: ["x", "width"],
+  },
+  {
+    name: "table (App text)",
+    prototype: { page: "uitext", selector: "table" },
+    live: { page: "appText", selector: ".admin-table" },
+    properties: [...STYLE, "border-collapse", "table-layout"],
+    box: ["width"],
+  },
+  {
+    name: "table head cell (App text)",
+    prototype: { page: "uitext", selector: "th" },
+    live: { page: "appText", selector: ".admin-table th" },
+    box: ["height"],
+  },
+  {
+    name: "table cell (App text)",
+    prototype: { page: "uitext", selector: "td" },
+    live: { page: "appText", selector: ".admin-table td" },
+  },
+  {
+    // The issue's finding: a line was 241 px tall live against 39.6 px in the prototype.
+    name: "table line (App text)",
+    prototype: { page: "uitext", selector: "tbody tr" },
+    live: { page: "appText", selector: ".admin-table tbody tr" },
+    box: ["height"],
+  },
+  {
+    name: "id chip (App text)",
+    prototype: { page: "uitext", selector: "td .key" },
+    live: { page: "appText", selector: ".admin-table .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "text, edited in place (App text)",
+    prototype: { page: "uitext", selector: "td [contenteditable]" },
+    live: { page: "appText", selector: ".admin-table [contenteditable]" },
+  },
+  {
+    name: "pill (App text, Published)",
+    prototype: { page: "uitext", selector: "td .pill.s-pub" },
+    live: { page: "appText", selector: ".admin-table .admin-pill-published" },
+    box: ["height"],
   },
   // #442: Companion profile (ADM-04): the real header actions, the tabs and the dl.fields rows.
   // Read on Oppenheimer's Profile tab, whose fields no other test writes.
@@ -1144,6 +1380,98 @@ const COMPONENTS: Component[] = [
     live: { page: "aiPurpose", selector: ".admin-editor > .admin-panel:last-child > h2" },
     box: ["height"],
   },
+  // #447: Publish history (ADM-12), read on the gate account's fixed, seeded history: three
+  // one-line rows, the first two with Roll back (the gate signs in as an admin).
+  {
+    name: "history: menu row, current",
+    prototype: { page: "history", selector: ".rail a.on" },
+    live: { page: "history", selector: ".admin-menu-link[aria-current]" },
+    box: ["width", "height"],
+  },
+  {
+    name: "history: breadcrumb",
+    prototype: { page: "history", selector: ".crumb" },
+    live: { page: "history", selector: ".admin-crumb" },
+    box: ["height"],
+  },
+  {
+    name: "history: header row",
+    prototype: { page: "history", selector: ".head" },
+    live: { page: "history", selector: ".admin-head" },
+    box: ["x", "y", "width"],
+  },
+  {
+    name: "history: page title",
+    prototype: { page: "history", selector: ".head h1" },
+    live: { page: "history", selector: ".admin-head h1" },
+    box: ["height"],
+  },
+  {
+    name: "history: lede",
+    prototype: { page: "history", selector: ".head .lede" },
+    live: { page: "history", selector: ".admin-head .admin-lede" },
+  },
+  {
+    name: "history: panel",
+    prototype: { page: "history", selector: ".panel.scroll" },
+    live: { page: "history", selector: ".admin-panel.admin-scroll" },
+    properties: [...STYLE, "overflow-x"],
+    box: ["x", "width"],
+  },
+  {
+    name: "history: table",
+    prototype: { page: "history", selector: "table" },
+    live: { page: "history", selector: ".admin-table" },
+    properties: [...STYLE, "border-collapse", "table-layout"],
+    box: ["width"],
+  },
+  {
+    name: "history: table head cell",
+    prototype: { page: "history", selector: "th" },
+    live: { page: "history", selector: ".admin-table th" },
+    box: ["height"],
+  },
+  {
+    name: "history: When cell",
+    prototype: { page: "history", selector: "td.note" },
+    live: { page: "history", selector: ".admin-table td.admin-cell-note" },
+  },
+  {
+    name: "history: Who cell",
+    prototype: { page: "history", selector: "td:nth-child(2)" },
+    live: { page: "history", selector: ".admin-table td:nth-child(2)" },
+  },
+  {
+    name: "history: What cell",
+    prototype: { page: "history", selector: "td:nth-child(3)" },
+    live: { page: "history", selector: ".admin-table td:nth-child(3)" },
+  },
+  {
+    name: "history: What id chip",
+    prototype: { page: "history", selector: "td:nth-child(3) .key" },
+    live: { page: "history", selector: ".admin-table td:nth-child(3) .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "history: version chip",
+    prototype: { page: "history", selector: "td:nth-child(4) .key" },
+    live: { page: "history", selector: ".admin-table td:nth-child(4) .admin-chip" },
+    box: ["height"],
+  },
+  {
+    // Its height is the row's, which the What text sets (seed data, not compared). That an empty
+    // status line adds no height is tested in e2e/publish-history.spec.ts (test_447_ac1).
+    name: "history: Roll back cell",
+    prototype: { page: "history", selector: "td:last-child" },
+    live: { page: "history", selector: ".admin-table td:last-child" },
+  },
+  {
+    name: "history: Roll back button",
+    prototype: { page: "history", selector: "td button.small" },
+    live: { page: "history", selector: ".admin-table td .button-gray.button-small" },
+    properties: [...STYLE, "cursor"],
+    box: ["height"],
+  },
   // #453: the status editor as a writer sees it (the drawing's "View as writer"). Last in the map:
   // its live page signs the browser in again as a writer.
   {
@@ -1205,6 +1533,15 @@ const WORD_BREAK_NORMAL = new Set([
   "AI features: status pill (Exploring)",
   "AI features: status pill dot",
   "AI features: version chip",
+  // #447: the Publish history table, also self-sized in a scrolling panel (.panel.scroll).
+  "history: table head cell",
+  "history: When cell",
+  "history: Who cell",
+  "history: What cell",
+  "history: What id chip",
+  "history: version chip",
+  "history: Roll back cell",
+  "history: Roll back button",
 ]);
 
 const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] = [
@@ -1273,18 +1610,11 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
       "height is compared as `box height`.",
   })),
   {
-    component: "small secondary button",
-    properties: ["display"],
-    reason:
-      "Both are inline-flex. The live one sits in a flex row (.admin-text-actions), where the " +
-      "browser computes a flex item's inline-flex as flex; the prototype's sits in a table cell.",
-  },
-  {
     component: "text field",
     properties: ["font-weight"],
     reason:
       "Both fields inherit the weight (font: inherit). The prototype's only field sits inside a " +
-      ".form label (600); live fields have their label beside them (400). The page pull request " +
+      ".form label (600); the live stand-in field sits in a panel (400). The page pull request " +
       "that builds a form like the prototype's compares the weight there.",
   },
   {
@@ -1409,12 +1739,88 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
       "save (when and who); the side panel's box and heading are compared. Adding them needs an " +
       "owner decision and a migration.",
   },
+  // #447: Publish history.
+  {
+    component: "history: Roll back button",
+    properties: ["min-width", "min-height", "display", "white-space"],
+    reason:
+      "As `small secondary button`: live sets min-width and min-height 0 to switch off the phone " +
+      "app's 44 px tap minimum (ADMIN-DESKTOP); the prototype has none (auto); the height is " +
+      "compared. Both buttons are inline-flex; the live one sits in a grid " +
+      "(.admin-history-action, which also holds its status line and the story card warning), " +
+      "where the browser computes a grid item's inline-flex as flex. white-space: the " +
+      "prototype's label is 'Roll back' and fits its column; the live label names the version " +
+      "('Roll back to v2', which the e2e tests and screen readers use), and the self-sized table " +
+      "wrapped it to two lines at 1024 px (measured: 44 px against 26 px), so it is nowrap. The " +
+      "result, one line, is compared: the button's and the cell's box height.",
+  },
+  {
+    component: "history: panel (box y, not measured)",
+    properties: ["box y"],
+    reason:
+      "The panel's x and width are compared, not its y: it depends on the lede's length. The " +
+      "prototype's lede says 'Any entry can be rolled back.', which is not true live (the version " +
+      "published now has no Roll back, and story cards, Companion and story fields, prompts and " +
+      "hotlines roll back for an admin only, #289); the live lede says what Roll back does and " +
+      "that times are in UTC, and wraps to two lines. The header row itself is compared.",
+  },
+  {
+    component: "history: header action row (not in COMPONENTS)",
+    properties: ["(whole component)"],
+    reason:
+      "The prototype's history screen has an empty .btns slot in its header: the page has no " +
+      "page-level action. Live draws no empty slot (PageHead renders none without actions).",
+  },
+  {
+    component: "history: Published now and Rolled back notes (not in COMPONENTS)",
+    properties: ["(whole component)"],
+    reason:
+      "The prototype offers Roll back on every row. Live keeps decision #289: the version " +
+      "published now has no Roll back and shows 'Published now' (the prototype's 12.5 px muted " +
+      ".note), and a roll back row says 'Rolled back' after its version chip. The prototype has " +
+      "no such row to compare with; the When cell compares the same note style.",
+  },
   {
     component: "View as admin / View as writer (not in COMPONENTS)",
     properties: ["(whole component)"],
     reason:
       "A switch of the drawing only, to show both roles. Live shows the writer's view to a " +
       "writer; it is compared as the `status, writer:` rows.",
+  },
+  // #446: ADM-08 Prompts.
+  {
+    component: "prompt: header secondary button (Save draft)",
+    properties: ["min-width", "min-height"],
+    reason:
+      "Live sets 0 to switch off the phone app's 44 px tap minimum inside the admin " +
+      "(ADMIN-DESKTOP); the prototype has none (auto). Neither draws a minimum.",
+  },
+  {
+    component: "prompt: header secondary button (Save draft)",
+    properties: ["box height"],
+    reason:
+      "The prototype's action row also holds the model list (a select, 36 px tall), and the row " +
+      "stretches its buttons to it, so Test draft is 36 px. Live has no model list (an owner " +
+      "decision: no per-prompt model in the data), so Save draft keeps its own 33.5 px, the " +
+      "height of the prototype's own secondary button (compared in `secondary button`).",
+  },
+  // #445: App text.
+  {
+    component: "text, edited in place (App text)",
+    properties: ["white-space"],
+    reason:
+      "Live is pre-wrap, the prototype normal: a stored text may hold a line break or a double " +
+      "space (the earlier editor was a text box that allowed them); they must stay visible and be " +
+      "saved back unchanged.",
+  },
+  {
+    component: "main button (App text) (not in COMPONENTS)",
+    properties: ["(whole component)"],
+    reason:
+      "Publish changes is disabled while no key has a newer draft, which is the seed the gate " +
+      "reads (gate tests never write drafts). A disabled button draws cursor not-allowed and 35% " +
+      "opacity, so it is not compared with the prototype's enabled button. The enabled main " +
+      "button is compared as `main button`; the row it sits in as `header action row (App text)`.",
   },
 ];
 
@@ -1602,7 +2008,12 @@ for (const width of WIDTHS) {
   }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width, height: HEIGHT });
-    await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+    const account = await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+    // #446: this account reads the seeded prompts only, so drafts other tests save while the gate
+    // runs never change the prompt pages it measures.
+    await useSeededPrompts(account.token);
+    // #447: this account reads a fixed, seeded publish history, never rows other tests write.
+    await useSeededPublishHistory(account);
     await page.goto("/admin/companions");
     const origin = new URL(page.url()).origin;
     await servePrototype(page, await adminFontFaces(page));
@@ -1748,6 +2159,27 @@ test("test_453_ai_editor_pictures_prototype_vs_live", async ({ page, context }) 
   await writePictures(page, origin, PICTURES.slice(3));
 });
 
+// #447: the Publish history pictures for its pull request (prototype `history` vs live, on the
+// account's fixed, seeded history), written as publish-history-<width>-{prototype,live,side-by-side}.png.
+test("test_447_publish_history_pictures_prototype_vs_live", async ({ page, context }) => {
+  test.skip(!process.env.ADMIN_VISUAL_SCREENSHOTS, "Set ADMIN_VISUAL_SCREENSHOTS=1 to write them.");
+  test.setTimeout(120_000);
+  mkdirSync(REFERENCE_DIR, { recursive: true });
+  const account = await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await useSeededPublishHistory(account);
+  await page.goto("/admin/companions");
+  const origin = new URL(page.url()).origin;
+  await servePrototype(page, await adminFontFaces(page));
+  await writePictures(page, origin, [HISTORY_PICTURE]);
+});
+
+const HISTORY_PICTURE = {
+  name: "publish-history",
+  prototype: "history",
+  live: "history",
+  fullPage: false,
+} as const;
+
 const PICTURES = [
   { name: "frame", prototype: "characters", live: "companions", fullPage: false },
   { name: "ai-index", prototype: "aiIndex", live: "aiIndex", fullPage: true },
@@ -1761,7 +2193,7 @@ const PICTURES = [
 async function writePictures(
   page: Page,
   origin: string,
-  pictures: readonly (typeof PICTURES)[number][],
+  pictures: readonly ((typeof PICTURES)[number] | typeof HISTORY_PICTURE)[],
 ) {
   for (const picture of pictures) {
     for (const width of WIDTHS) {
@@ -1787,3 +2219,36 @@ async function writePictures(
     }
   }
 }
+
+// #445: the App text pictures for its pull request (prototype `uitext` vs live App text, as an
+// admin) at each width. Written only on request.
+test("test_445_app_text_pictures_prototype_vs_live", async ({ page, context }) => {
+  test.skip(!process.env.ADMIN_VISUAL_SCREENSHOTS, "Set ADMIN_VISUAL_SCREENSHOTS=1 to write them.");
+  test.setTimeout(120_000);
+  mkdirSync(REFERENCE_DIR, { recursive: true });
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto("/admin/app-text");
+  const origin = new URL(page.url()).origin;
+  await servePrototype(page, await adminFontFaces(page));
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: HEIGHT });
+    await openPrototype(page, origin, "uitext");
+    const prototype = await page.screenshot();
+    await openLive(page, "appText");
+    const live = await page.screenshot();
+    writeFileSync(path.join(REFERENCE_DIR, `app-text-${width}-prototype.png`), prototype);
+    writeFileSync(path.join(REFERENCE_DIR, `app-text-${width}-live.png`), live);
+
+    const image = (png: Buffer) => `data:image/png;base64,${png.toString("base64")}`;
+    await page.setViewportSize({ width: width * 2 + 48, height: HEIGHT + 56 });
+    await page.setContent(
+      `<!doctype html><meta charset=utf-8><body style="margin:0;padding:16px;background:#888;display:flex;gap:16px;font:14px system-ui;color:#fff">` +
+        `<figure style="margin:0"><figcaption>Prototype (standards mode), ${width} px</figcaption><img src="${image(prototype)}"></figure>` +
+        `<figure style="margin:0"><figcaption>Live admin, ${width} px</figcaption><img src="${image(live)}"></figure></body>`,
+    );
+    writeFileSync(
+      path.join(REFERENCE_DIR, `app-text-${width}-side-by-side.png`),
+      await page.screenshot({ fullPage: true }),
+    );
+  }
+});

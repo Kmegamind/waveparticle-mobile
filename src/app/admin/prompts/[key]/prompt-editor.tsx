@@ -1,10 +1,16 @@
 "use client";
 
-import { useId, useState, useSyncExternalStore, useTransition } from "react";
+import { useId, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import type { ContentRole } from "@/lib/admin/roles";
 import type { DiffLine, PromptDetail, PromptWriteError } from "@/lib/admin/prompt-editor-types";
-import { publishPromptAction, savePromptDraftAction, type SavePromptResult } from "../actions";
-import { StatePill } from "@/app/admin/admin-ui";
+import { savedText, versionDay } from "@/lib/admin/prompt-text";
+import {
+  publishPromptAction,
+  rollBackPromptAction,
+  savePromptDraftAction,
+  type SavePromptResult,
+} from "../actions";
+import { KeyChip, PageHead, StatePill } from "@/app/admin/admin-ui";
 
 const PROBLEMS: Record<PromptWriteError, string> = {
   "not-allowed": "Your account cannot do this. Only an admin publishes or rolls back.",
@@ -27,6 +33,9 @@ const SPOKEN = { same: "Unchanged", added: "Added", removed: "Removed" } as cons
 const noSubscription = () => () => {};
 const problemsWord = (count: number) => (count === 1 ? "1 problem" : `${count} problems`);
 
+type Status = { text: string; problems: string[] };
+const NO_STATUS: Status = { text: "", problems: [] };
+
 function Diff({ label, lines, same }: { label: string; lines: DiffLine[]; same: string }) {
   if (lines.every((line) => line.kind === "same"))
     return <p className="admin-text-state">{same}</p>;
@@ -45,23 +54,50 @@ function Diff({ label, lines, same }: { label: string; lines: DiffLine[]; same: 
   );
 }
 
-/** The editor of one prompt on ADM-08 (#308): the newest draft, its diff, Save, Publish, versions. */
+function StatusText({ status }: { status: Status }) {
+  return (
+    <div aria-live="polite" className="admin-text-status" role="status">
+      {status.text}
+      {status.problems.length > 0 ? (
+        <ul className="admin-card-problems">
+          {status.problems.map((problem) => (
+            <li key={problem}>{problem}</li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * One prompt on ADM-08 (#308) in the prototype's layout (#446): Save draft and Publish in the
+ * header row; the active version (`active`, drawn on the server) beside the editor and its Versions
+ * table; the newest draft's changes below.
+ */
 export function PromptEditor({
+  active,
   detail,
+  lede,
   role,
   startBody,
   startSettings,
   startNote,
+  title,
 }: {
+  active: React.ReactNode;
   detail: PromptDetail;
+  lede: React.ReactNode;
   role: ContentRole;
   startBody: string;
   startSettings: string;
   startNote: string;
+  title: React.ReactNode;
 }) {
   const id = useId();
-  const [status, setStatus] = useState("");
-  const [statusProblems, setStatusProblems] = useState<string[]>([]);
+  const formId = `${id}-form`;
+  const form = useRef<HTMLFormElement>(null);
+  const [status, setStatus] = useState<Status>(NO_STATUS);
+  const [versionStatus, setVersionStatus] = useState<Status>(NO_STATUS);
   const [pending, startTransition] = useTransition();
   // False in the server HTML and until React has hydrated, so nothing typed is lost and a click
   // never submits the form natively.
@@ -82,27 +118,211 @@ export function PromptEditor({
         : null;
 
   function run(
+    show: (status: Status) => void,
     action: () => Promise<SavePromptResult>,
     done: (result: SavePromptResult) => string,
   ) {
-    setStatus("");
-    setStatusProblems([]);
+    setStatus(NO_STATUS);
+    setVersionStatus(NO_STATUS);
     startTransition(async () => {
       const result = await action().catch(() => ({ ok: false, error: "failed" }) as const);
       if (result.ok) {
-        setStatus(done(result));
+        show({ text: done(result), problems: [] });
       } else {
-        setStatus(PROBLEMS[result.error]);
-        setStatusProblems("problems" in result ? (result.problems ?? []) : []);
+        show({
+          text: PROBLEMS[result.error],
+          problems: "problems" in result ? (result.problems ?? []) : [],
+        });
       }
     });
   }
 
+  function save() {
+    const fields = form.current?.elements;
+    const typed = (name: string) => {
+      const field = fields?.namedItem(name);
+      return field instanceof HTMLTextAreaElement || field instanceof HTMLInputElement
+        ? field.value
+        : "";
+    };
+    // Exactly what is stored goes back for a field the user did not change (#446).
+    const body = savedText(startBody, typed("body"));
+    const settings = savedText(startSettings, typed("settings"));
+    const note = savedText(startNote, typed("note"));
+    if (!body.changed && !settings.changed && !note.changed) {
+      setVersionStatus(NO_STATUS);
+      setStatus({ text: PROBLEMS["unchanged"], problems: [] });
+      return;
+    }
+    run(
+      setStatus,
+      () => savePromptDraftAction(detail.key, body.text, settings.text, note.text),
+      (result) => {
+        const failing = result.draftProblems ?? [];
+        const saved =
+          result.ok && result.version ? `Draft v${result.version} saved.` : "Draft saved.";
+        return failing.length > 0
+          ? `${saved} The gateway cannot use it yet (${problemsWord(failing.length)}); see the problems below.`
+          : `${saved} The gateway can use it.`;
+      },
+    );
+  }
+
   return (
     <>
+      <PageHead
+        actions={
+          <>
+            <button className="button-gray" disabled={busy} form={formId} type="submit">
+              Save draft
+            </button>
+            {draft ? (
+              <button
+                aria-describedby={blocked ? `${id}-blocked` : undefined}
+                className="button-filled"
+                disabled={busy || blocked !== null}
+                onClick={() =>
+                  run(
+                    setStatus,
+                    () => publishPromptAction(detail.key, draft.version),
+                    () => `Published v${draft.version}.`,
+                  )
+                }
+                type="button"
+              >
+                Publish v{draft.version}
+              </button>
+            ) : null}
+          </>
+        }
+        actionsLabel="Prompt actions"
+        lede={lede}
+        title={title}
+      />
+
+      <div className="admin-prompt-grid">
+        {active}
+        <div className="admin-panel">
+          <section aria-labelledby={`${id}-edit`}>
+            <h2 className="admin-prompt-heading" id={`${id}-edit`}>
+              Edit
+            </h2>
+            <form
+              className="admin-text-form"
+              id={formId}
+              onSubmit={(event) => {
+                event.preventDefault();
+                save();
+              }}
+              ref={form}
+            >
+              <p className="admin-history-note">
+                {draft
+                  ? `Starts from draft v${draft.version}.`
+                  : detail.active
+                    ? `Starts from active v${detail.active.version}.`
+                    : "Starts empty."}
+              </p>
+              <label className="admin-text-label" htmlFor={`${id}-body`}>
+                Prompt
+              </label>
+              <textarea
+                className="admin-prompt-code"
+                defaultValue={startBody}
+                disabled={!ready}
+                id={`${id}-body`}
+                maxLength={20000}
+                name="body"
+                rows={12}
+                spellCheck={false}
+              />
+              <label className="admin-text-label" htmlFor={`${id}-settings`}>
+                Settings (JSON)
+              </label>
+              <textarea
+                className="admin-prompt-code"
+                defaultValue={startSettings}
+                disabled={!ready}
+                id={`${id}-settings`}
+                name="settings"
+                rows={8}
+                spellCheck={false}
+              />
+              <label className="admin-text-label" htmlFor={`${id}-note`}>
+                Note (what changed and why)
+              </label>
+              <input
+                className="admin-text-field"
+                defaultValue={startNote}
+                disabled={!ready}
+                id={`${id}-note`}
+                maxLength={500}
+                name="note"
+                type="text"
+              />
+            </form>
+            {blocked ? (
+              <p className="admin-history-note" id={`${id}-blocked`}>
+                {blocked}
+              </p>
+            ) : null}
+            <StatusText status={status} />
+          </section>
+
+          <section aria-labelledby={`${id}-versions`} className="admin-prompt-versions">
+            <h2 className="admin-prompt-heading" id={`${id}-versions`}>
+              Versions
+            </h2>
+            <table aria-label="Versions" className="admin-table">
+              <tbody>
+                {detail.versions.map((version) => (
+                  <tr key={version.version}>
+                    <td>
+                      <KeyChip>v{version.version}</KeyChip>
+                    </td>
+                    <td className="admin-prompt-version-note">
+                      {[version.note || "No note", `saved ${versionDay(version.createdAt)}`].join(
+                        " · ",
+                      )}
+                    </td>
+                    <td>
+                      <StatePill state={version.state === "active" ? "published" : version.state}>
+                        {STATE_LABEL[version.state]}
+                      </StatePill>
+                      {isAdmin && version.state === "earlier" ? (
+                        <>
+                          {" "}
+                          <button
+                            className="button-gray button-small"
+                            disabled={busy}
+                            onClick={() =>
+                              run(
+                                setVersionStatus,
+                                () => rollBackPromptAction(detail.key, version.version),
+                                () => `Rolled back to v${version.version}.`,
+                              )
+                            }
+                            type="button"
+                          >
+                            Roll back to v{version.version}
+                          </button>
+                        </>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <StatusText status={versionStatus} />
+          </section>
+        </div>
+      </div>
+
       {draft ? (
-        <section aria-label={`Draft v${draft.version}`} className="admin-text">
-          <h2 className="admin-text-key">Draft v{draft.version}</h2>
+        <section aria-label={`Draft v${draft.version}`} className="admin-panel admin-prompt-after">
+          <h2 className="admin-prompt-heading">
+            Draft <KeyChip>v{draft.version}</KeyChip>
+          </h2>
           {draft.note ? <p className="admin-text-screen">{draft.note}</p> : null}
           {draft.problems.length > 0 ? (
             <ul aria-label="Problems of the draft" className="admin-card-problems">
@@ -124,123 +344,6 @@ export function PromptEditor({
           />
         </section>
       ) : null}
-
-      <section aria-label="Edit" className="admin-text">
-        <form
-          className="admin-text-form"
-          onSubmit={(event) => {
-            event.preventDefault();
-            const form = new FormData(event.currentTarget);
-            const value = (name: string) => String(form.get(name) ?? "");
-            run(
-              () =>
-                savePromptDraftAction(detail.key, value("body"), value("settings"), value("note")),
-              (result) => {
-                const failing = result.draftProblems ?? [];
-                const saved =
-                  result.ok && result.version ? `Draft v${result.version} saved.` : "Draft saved.";
-                return failing.length > 0
-                  ? `${saved} The gateway cannot use it yet (${problemsWord(failing.length)}); see the problems above.`
-                  : `${saved} The gateway can use it.`;
-              },
-            );
-          }}
-        >
-          <label className="admin-text-label" htmlFor={`${id}-body`}>
-            Prompt
-          </label>
-          <textarea
-            className="admin-text-field admin-prompt-field"
-            defaultValue={startBody}
-            disabled={!ready}
-            id={`${id}-body`}
-            maxLength={20000}
-            name="body"
-            rows={12}
-            spellCheck={false}
-          />
-          <label className="admin-text-label" htmlFor={`${id}-settings`}>
-            Settings (JSON)
-          </label>
-          <textarea
-            className="admin-text-field admin-prompt-field"
-            defaultValue={startSettings}
-            disabled={!ready}
-            id={`${id}-settings`}
-            name="settings"
-            rows={10}
-            spellCheck={false}
-          />
-          <label className="admin-text-label" htmlFor={`${id}-note`}>
-            Note (what changed and why)
-          </label>
-          <input
-            className="admin-text-field"
-            defaultValue={startNote}
-            disabled={!ready}
-            id={`${id}-note`}
-            maxLength={500}
-            name="note"
-            type="text"
-          />
-          <div className="admin-text-actions">
-            <button className="button-gray button-small" disabled={busy} type="submit">
-              Save draft
-            </button>
-            {draft ? (
-              <button
-                aria-describedby={blocked ? `${id}-blocked` : undefined}
-                className="button-filled button-small"
-                disabled={busy || blocked !== null}
-                onClick={() =>
-                  run(
-                    () => publishPromptAction(detail.key, draft.version),
-                    () => `Published v${draft.version}.`,
-                  )
-                }
-                type="button"
-              >
-                Publish v{draft.version}
-              </button>
-            ) : null}
-          </div>
-          {blocked ? (
-            <p className="admin-history-note" id={`${id}-blocked`}>
-              {blocked}
-            </p>
-          ) : null}
-        </form>
-        <div aria-live="polite" className="admin-text-status" role="status">
-          {status}
-          {statusProblems.length > 0 ? (
-            <ul className="admin-card-problems">
-              {statusProblems.map((problem) => (
-                <li key={problem}>{problem}</li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-      </section>
-
-      <details className="admin-text-versions">
-        <summary>Versions ({detail.versions.length})</summary>
-        <ol>
-          {detail.versions.map((version) => (
-            <li key={version.version}>
-              <p>
-                <span className="admin-page-id">v{version.version}</span>{" "}
-                <StatePill state={version.state === "active" ? "published" : version.state}>
-                  {STATE_LABEL[version.state]}
-                </StatePill>
-                {version.note ? ` · ${version.note}` : null}
-              </p>
-            </li>
-          ))}
-        </ol>
-        <p className="admin-history-note">
-          To go back to an earlier version, use Roll back in Publish history.
-        </p>
-      </details>
     </>
   );
 }
