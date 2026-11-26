@@ -3812,8 +3812,32 @@ button.focus-avatar:focus-visible {
   font-size: var(--adm-note-size);
 }
 
-.admin-cell-name {
-  font-weight: 600;
+/* Issue 441: a clickable row (the prototype's tr.click). The name is bold text like the
+   prototype's <b>; its link is stretched over the row, so a click anywhere on the row opens it. */
+.admin-row-click {
+  cursor: pointer;
+  position: relative;
+}
+
+.admin-row-click:hover td {
+  background: var(--adm-soft);
+}
+
+.admin-shell .admin-row-link {
+  align-items: normal;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-row-link::after {
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+/* Issue 441: a panel whose table scrolls sideways instead of widening the page (.panel.scroll). */
+.admin-panel-scroll {
+  overflow-x: auto;
 }
 
 /* The App text Text cell: the field and its actions stacked, inside a plain table cell. */
@@ -4322,6 +4346,45 @@ input.admin-text-field {
   color: var(--adm-muted);
   font-size: var(--adm-note-size);
   margin: 0;
+}
+
+/* Issue 447, ADM-12: the prototype's history rows are one line high. The status line under Roll
+   back or "Published now" stays in the page (a live region must exist before its message) but takes
+   no height until it has something to say. */
+.admin-history-action:has(> .admin-text-status:empty) {
+  gap: 0;
+}
+
+.admin-history-action > .admin-text-status:empty {
+  min-height: 0;
+}
+
+/* Issue 447: as the prototype's .panel.scroll table, a cell is never squeezed below its longest
+   word (the app's body breaks anywhere, which split "When" and "Roll back to v2" at 1024 px). The
+   table sits in .admin-scroll, so a long email or key scrolls instead of being clipped. */
+.admin-publish-history th,
+.admin-publish-history td {
+  overflow-wrap: normal;
+}
+
+/* The prototype's "Roll back" fits its column on one line; the live label names the version
+   ("Roll back to v2"), which the self-sized table would wrap at 1024 px. It stays one line, as the
+   prototype's button; the What column wraps instead. */
+.admin-publish-history .admin-history-action .button-small {
+  white-space: nowrap;
+}
+
+/* The button's min-width is 0 in the admin (no 44 px tap minimum), so an auto grid track could
+   shrink below its label and let it run out of the cell; the track keeps its content's width. */
+.admin-publish-history .admin-history-action {
+  grid-template-columns: minmax(min-content, auto);
+}
+
+/* The prototype's time ("11-14 15:20") and its notes stay on one line; with real emails in Who,
+   the self-sized table would break them at their space at 1024 px. */
+.admin-publish-history time,
+.admin-publish-history .admin-history-note {
+  white-space: nowrap;
 }
 
 /* Issue 442, ADM-04 Companion profile: the prototype's tabs (.tabs) and field rows (dl.fields):

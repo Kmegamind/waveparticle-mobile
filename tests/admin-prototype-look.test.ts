@@ -271,7 +271,8 @@ describe("admin pages follow the prototype (#313 rows 8, 9, 11, 13, 36, 45, 48)"
 
   it("test_313_publish_history_is_a_table_with_names_and_keys", () => {
     const page = "src/app/admin/publish-history/page.tsx";
-    expect(read(page)).toContain('className="admin-table"');
+    // #447: the same admin table, with its own class for the prototype's word breaking.
+    expect(read(page)).toContain('className="admin-table admin-publish-history"');
     expect(headers(page)).toEqual(["When", "Who", "What", "Version"]);
     expect(read(page)).toContain("historyItemName(");
     expect(read(page)).toContain("HistoryRowAction");
