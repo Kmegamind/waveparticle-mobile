@@ -16,8 +16,8 @@
 //        STUB_PROMPTS_READ_TOKEN, otherwise no rows, as the real function (#282)
 //   POST /rest/v1/rpc/list_prompt_versions (editors), save_prompt_draft (editors),
 //        publish_prompt | roll_back_prompt (admin only), as 20261124000000 (#308);
-//        POST /__prompts { reset: true } puts the prompts and their history back;
-//        { reset: true, key } only that prompt's versions and history (#446)
+//        POST /__prompts { reset: true | "<key>" } puts every prompt (true) or one key back,
+//        with the matching history rows (#439)
 //   POST /rest/v1/rpc/get_story_content  { reader_key } → the seed story content (src/content,
 //        docs/demo) when the key is STUB_CONTENT_READ_KEY, otherwise null, as the real function (#284)
 //   GET  /rest/v1/stories | story_parts | story_cards   the seed rows (#293): stories for any
@@ -62,9 +62,21 @@
 //                                     other accounts none, as the policies
 //   POST /rest/v1/rpc/save_ai_feature_sections (editors) | set_ai_feature_status (admin only,
 //                                     with a history row), as 20261130000000
+//   POST /rest/v1/rpc/list_ai_feature_people (editors) { target_feature }   the email of each
+//                                     account in that feature's status history or as its last
+//                                     editor, as 20261201000000 (#453)
+//   POST /__ai_features { token, own: true | null }   (#453) that account gets its own copy of
+//                                     the features and their status history (null gives it up):
+//                                     its reads, save_ai_feature_sections, set_ai_feature_status
+//                                     and list_ai_feature_people use the copy, so an editing test
+//                                     never writes a row that another test or the visual gate reads
 //   POST /__ai_features { reset?: true, testRuns?: [...] }   puts the features back (and removes
 //                                     their history and test runs); testRuns adds rows as the
 //                                     SQL of scripts/ai-features/import-runs.mjs would
+//   POST /__ai_features { token, purpose: { "<slug>": [items] } | null }   for that account only,
+//                                     reads of ai_features show these purpose items (#439: a
+//                                     layout test that no other test, nor the visual gate, sees);
+//                                     null removes them. Reset does not touch them
 //   POST /__fail_reads { token, tables: ["profiles"] }   reads of those tables answer 500 for that
 //                                     account until set again (#118, a failed profile read);
 //                                     "auth" makes GET /auth/v1/user answer 500
@@ -337,6 +349,13 @@ let aiFeatureHistory = [];
 let aiFeatureRuns = [];
 let nextAiFeatureId = 1;
 
+/**
+ * #453: the feature rows and status history an account reads and writes: its own copy when it has
+ * one (POST /__ai_features { token, own: true }), otherwise the shared ones.
+ */
+const aiFeatureState = (account) =>
+  account?.aiFeaturesOwn ?? { features: aiFeatures, history: aiFeatureHistory };
+
 /** The item check of private.ai_feature_items_valid (20261130000000). */
 const validItems = (items) =>
   Array.isArray(items) &&
@@ -580,19 +599,19 @@ createServer(async (request, response) => {
 
   if (path === "/__prompts" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
-    if (body.reset === true && typeof body.key === "string") {
-      // #446: one prompt only, so a test never puts back rows another test (or the visual gate)
-      // is reading.
-      promptVersions = [
-        ...promptVersions.filter((row) => row.key !== body.key),
-        ...seededPrompts().filter((row) => row.key === body.key),
-      ];
-      publishHistory = publishHistory.filter(
-        (row) => !(row.kind === "prompt" && row.item_key === body.key),
-      );
-    } else if (body.reset === true) {
+    if (body.reset === true) {
       promptVersions = seededPrompts();
       publishHistory = publishHistory.filter((row) => row.kind !== "prompt");
+    } else if (typeof body.reset === "string") {
+      // #439: one key only, so test files that use different prompts never undo each other.
+      const key = body.reset;
+      promptVersions = [
+        ...promptVersions.filter((row) => row.key !== key),
+        ...seededPrompts().filter((row) => row.key === key),
+      ];
+      publishHistory = publishHistory.filter(
+        (row) => !(row.kind === "prompt" && row.item_key === key),
+      );
     }
     return json(response, 204);
   }
@@ -903,6 +922,26 @@ createServer(async (request, response) => {
 
   if (path === "/__ai_features" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
+    if (typeof body.token === "string" && "own" in body) {
+      // #453: the account gets its own copy of the features and their status history (or gives it
+      // up with null). Its reads, saves, status changes and the people lookup use the copy, so an
+      // editing test never writes a row that another test or the visual gate reads.
+      const account = datasets.get(body.token);
+      if (!account) return json(response, 404, { message: "no such account" });
+      account.aiFeaturesOwn =
+        body.own === true ? { features: seededAiFeatures(), history: [] } : undefined;
+      return json(response, 200, { ok: true });
+    }
+    if (typeof body.token === "string" && "purpose" in body) {
+      const account = datasets.get(body.token);
+      if (!account) return json(response, 404, { message: "no such account" });
+      const purpose = body.purpose ?? null;
+      if (purpose !== null && !Object.values(purpose).every(validItems)) {
+        return json(response, 400, { code: "23514", message: "violates check constraint" });
+      }
+      account.aiFeaturePurpose = purpose;
+      return json(response, 200, { ok: true });
+    }
     if (body.reset === true) {
       aiFeatures = seededAiFeatures();
       aiFeatureHistory = [];
@@ -933,9 +972,14 @@ createServer(async (request, response) => {
     const user = dataset && !dataset.deleted ? dataset : null;
     if (!user) return json(response, 401, { code: "42501", message: "permission denied" });
     const editor = ["admin", "writer"].includes(user.contentRole);
+    // The account's own purpose items (POST /__ai_features { token, purpose }), if any.
+    const purpose = user.aiFeaturePurpose ?? {};
+    const state = aiFeatureState(user);
     const all = {
-      ai_features: aiFeatures,
-      ai_feature_status_history: aiFeatureHistory,
+      ai_features: state.features.map((row) =>
+        purpose[row.slug] ? { ...row, purpose: purpose[row.slug] } : row,
+      ),
+      ai_feature_status_history: state.history,
       ai_feature_test_runs: aiFeatureRuns,
     }[aiFeatureTable[1]];
     const params = [...url.searchParams.entries()];
@@ -955,7 +999,9 @@ createServer(async (request, response) => {
         message: "only a content editor may change an AI feature",
       });
     }
-    const feature = aiFeatures.find((row) => row.slug === body.target_feature);
+    const feature = aiFeatureState(dataset).features.find(
+      (row) => row.slug === body.target_feature,
+    );
     if (!feature) {
       return json(response, 400, {
         code: "P0002",
@@ -974,6 +1020,37 @@ createServer(async (request, response) => {
     return json(response, 204);
   }
 
+  if (path === "/rest/v1/rpc/list_ai_feature_people" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    const editor = dataset && !dataset.deleted && ["admin", "writer"].includes(dataset.contentRole);
+    if (!editor) {
+      return json(response, 403, {
+        code: "42501",
+        message: "only a content editor may read who changed an AI feature",
+      });
+    }
+    const state = aiFeatureState(dataset);
+    const feature = state.features.find((row) => row.slug === body.target_feature);
+    const ids = new Set(
+      [
+        ...state.history
+          .filter((row) => row.feature_slug === body.target_feature)
+          .map((row) => row.changed_by),
+        feature?.sections_updated_by,
+      ].filter(Boolean),
+    );
+    // auth.users: each seeded account that is not deleted, once.
+    const found = new Map();
+    for (const item of datasets.values()) {
+      if (!item.deleted && ids.has(item.user.id)) found.set(item.user.id, item.user.email ?? null);
+    }
+    return json(
+      response,
+      200,
+      [...found].map(([user_id, email]) => ({ user_id, email })),
+    );
+  }
+
   if (path === "/rest/v1/rpc/set_ai_feature_status" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
     if (!dataset || dataset.deleted || dataset.contentRole !== "admin") {
@@ -985,7 +1062,8 @@ createServer(async (request, response) => {
     if (!STATUSES.includes(body.new_status)) {
       return json(response, 400, { code: "22023", message: `unknown status ${body.new_status}` });
     }
-    const feature = aiFeatures.find((row) => row.slug === body.target_feature);
+    const state = aiFeatureState(dataset);
+    const feature = state.features.find((row) => row.slug === body.target_feature);
     if (!feature) {
       return json(response, 400, {
         code: "P0002",
@@ -996,7 +1074,7 @@ createServer(async (request, response) => {
       return json(response, 400, { code: "P0001", message: `already ${body.new_status}` });
     }
     const note = typeof body.change_note === "string" ? body.change_note.trim() : "";
-    aiFeatureHistory.push({
+    state.history.push({
       id: nextAiFeatureId++,
       feature_slug: feature.slug,
       from_status: feature.status,

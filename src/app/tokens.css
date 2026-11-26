@@ -334,9 +334,29 @@
   --adm-track-th: 0.06em;
   --adm-lede-measure: 68ch;
   --adm-field-min: 64px;
-  /* #446: the prompt page (prototype pre.code line height, h2 and .note spacing). */
-  --adm-code-leading: 1.55;
+  /* Issue 439: the AI feature pages (docs/design/prototype/admin-ai-features.html). */
   --adm-h2-after: 10px;
+  --adm-empty-size: 13px;
+  --adm-empty-pad: 10px 12px;
+  --adm-legend-size: 12px;
+  --adm-list-indent: 20px;
+  --adm-list-item-pad: 4px 0;
+  --adm-code-leading: 1.55;
+  /* Issue 453: the AI feature editors (drawing screens AIF-5, AIF-6, AIF-7). */
+  --adm-editor-side: 300px;
+  --adm-editor-gap: 16px;
+  --adm-form-gap: 12px;
+  --adm-label-gap: 4px;
+  --adm-qrow-number: 30px;
+  --adm-qrow-gap: 10px;
+  --adm-qrow-pad: 8px 0;
+  --adm-ro-opacity: 0.6;
+  --adm-toast-pad: 9px 16px;
+  --adm-toast-size: 13px;
+  --adm-toast-bottom: 20px;
+  --adm-toast-layer: 20;
+  /* #446: the prompt page (the prototype's .note line under its pre.code; --adm-h2-after and
+     --adm-code-leading above are shared). */
   --adm-note-before: 10px;
   --adm-note-after: 1em;
 }

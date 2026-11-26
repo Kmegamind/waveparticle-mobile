@@ -21,7 +21,7 @@ There are 7 pages, one per AI feature (AI-PAGES). The page title is the feature'
 
 `retry_hints` has no page of its own. Every page shows it in a section named **"Fix added after a rejected answer"**: the fixes of `retry_hints` that the feature's checks can add when its answer is rejected (`docs/ai/prompts/retry_hints.md` line 12; the retry path is `docs/ai/AI_06_check-and-fallback.md` line 23).
 
-The owner's message named "8 pages" but listed 7. This file has 7; the count is an open question (`docs/DECISIONS.md`, section 3, AI-PAGES-COUNT).
+The owner's message named "8 pages" but listed 7. The owner confirmed 7 pages on 2026-11-25 (`docs/DECISIONS.md`, AI-PAGES-7, which closes AI-PAGES-COUNT).
 
 ### 1.2 The sections of every page
 
