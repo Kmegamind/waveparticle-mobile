@@ -67,6 +67,23 @@ export function writePrefs(storage: PrefsStorage | null, prefs: Prefs): void {
   }
 }
 
+/**
+ * Makes one change to this device's settings, stores it and returns the result (#490). The change
+ * starts from what is stored, never from a screen's own copy: just after a page loads that copy can
+ * still be the defaults (it is read after hydration), so a tap in that moment would undo an earlier
+ * choice and announce the wrong state. `held` is this visit's last change, or null before the
+ * first; once set it is the starting point, so blocked storage still works for the visit.
+ */
+export function changePrefs(
+  storage: PrefsStorage | null,
+  held: Prefs | null,
+  change: (current: Prefs) => Prefs,
+): Prefs {
+  const next = change(held ?? readPrefs(storage));
+  writePrefs(storage, next);
+  return next;
+}
+
 /** The class on <html> for an appearance; System follows the device (no class). */
 export function themeClass(appearance: Appearance): "theme-light" | "theme-dark" | null {
   if (appearance === "day") return "theme-light";

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { DEFAULT_PREFS, readPrefs, writePrefs, type Prefs, deviceStorage } from "@/lib/me/prefs";
+import { useEffect, useRef, useState } from "react";
+import { changePrefs, DEFAULT_PREFS, readPrefs, type Prefs, deviceStorage } from "@/lib/me/prefs";
 import { setKeepClockRunningAction } from "../actions";
 
 /**
@@ -77,15 +77,21 @@ export function SignalsScreen({ keepClockRunning }: { keepClockRunning: boolean 
   const [lockReason, setLockReason] = useState<string | null>(null);
   const [clockReason, setClockReason] = useState<string | null>(null);
 
+  // This visit's last change; a change starts from it or from storage, never from `prefs`, which
+  // is still the defaults until the effect below has run, so Appearance and Plain text are kept (#490).
+  const held = useRef<Prefs | null>(null);
+
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPrefs(readPrefs(deviceStorage()));
+    setPrefs(held.current ?? readPrefs(deviceStorage()));
   }, []);
 
   function setSignal(key: keyof Prefs["signals"], value: boolean) {
-    const next = { ...prefs, signals: { ...prefs.signals, [key]: value } };
+    const next = changePrefs(deviceStorage(), held.current, (current) => ({
+      ...current,
+      signals: { ...current.signals, [key]: value },
+    }));
+    held.current = next;
     setPrefs(next);
-    writePrefs(deviceStorage(), next);
   }
 
   async function toggleLockScreen() {

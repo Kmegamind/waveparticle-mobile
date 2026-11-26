@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  changePrefs,
   DEFAULT_PREFS,
   PREFS_KEY,
   PREFS_SCRIPT,
@@ -150,5 +151,49 @@ describe("#81 final review: blocked device storage never throws", () => {
     }
     expect(readPrefs(null)).toEqual(DEFAULT_PREFS);
     expect(() => writePrefs(null, DEFAULT_PREFS)).not.toThrow();
+  });
+});
+
+describe("#490 a setting change starts from the stored settings, not a screen's first copy", () => {
+  const plainOn = { ...DEFAULT_PREFS, appearance: "night" as const, plainText: true };
+  const togglePlain = (current: typeof DEFAULT_PREFS) => ({
+    ...current,
+    plainText: !current.plainText,
+  });
+
+  it("just after a reload Plain text on turns off, and the other choices stay", () => {
+    const storage = memoryStorage();
+    writePrefs(storage, plainOn);
+    // No change made in this visit yet: the screen may still hold the defaults.
+    const next = changePrefs(storage, null, togglePlain);
+    expect(next).toEqual({ ...plainOn, plainText: false });
+    expect(readPrefs(storage)).toEqual(next);
+  });
+
+  it("a signal change right after a reload keeps Plain text and the appearance", () => {
+    const storage = memoryStorage();
+    writePrefs(storage, plainOn);
+    const next = changePrefs(storage, null, (current) => ({
+      ...current,
+      signals: { ...current.signals, newCard: true },
+    }));
+    expect(next).toMatchObject({ appearance: "night", plainText: true });
+    expect(next.signals.newCard).toBe(true);
+  });
+
+  it("two quick changes give the second one's result", () => {
+    const storage = memoryStorage();
+    const first = changePrefs(storage, null, togglePlain);
+    const second = changePrefs(storage, first, togglePlain);
+    expect(first.plainText).toBe(true);
+    expect(second.plainText).toBe(false);
+    expect(readPrefs(storage).plainText).toBe(false);
+  });
+
+  it("with blocked storage the visit's last change is the starting point", () => {
+    const first = changePrefs(throwing, null, togglePlain);
+    expect(first.plainText).toBe(true);
+    expect(changePrefs(throwing, first, togglePlain).plainText).toBe(false);
+    expect(changePrefs(null, first, togglePlain).plainText).toBe(false);
   });
 });
