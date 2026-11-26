@@ -71,6 +71,8 @@ describe("#311 leftovers: prompt versions made active outside the admin", () => 
       "20261130000000_ai_features.sql",
       // #453: who changed an AI feature, by email.
       "20261201000000_ai_feature_people.sql",
+      // #473: the AI registry.
+      "20261202000000_ai_registry.sql",
     ]);
   });
 
