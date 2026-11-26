@@ -4580,12 +4580,12 @@ textarea.admin-prompt-code {
 .admin-prompt-note {
   color: var(--adm-muted);
   font-size: var(--adm-note-size);
-  margin: var(--adm-note-before) 0 var(--adm-note-after);
+  margin: var(--adm-note-gap) 0 var(--adm-note-after);
   overflow-wrap: anywhere;
 }
 
 .admin-prompt-code + .admin-prompt-settings {
-  margin-top: var(--adm-note-before);
+  margin-top: var(--adm-note-gap);
 }
 
 /* The prototype's id chip inside a title or heading takes the heading's weight. */
