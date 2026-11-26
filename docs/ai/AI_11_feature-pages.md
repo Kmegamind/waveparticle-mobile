@@ -264,7 +264,7 @@ The owner's decisions of 2026-11-26 (AI-REGISTRY to AI-ROLEPLAY-FORMAT, and the 
 - Rule 4 of section 1.2 ("every feature starts as exploring") applied to the first 7. The 12 new rows take the status given in the seed; the 7 Runtime rows keep their current status (AI-SEED-STATUS).
 - The Runtime rows keep section (a) purpose as it is and get the requirement as a separate field, filled from the seed (AI-REQUIREMENT-FIELD).
 - Admin and writer both may press Run on the live admin; agents and tests never do (AI-RUN-LIVE).
-- A run from the admin or a test uses the fake model in every test and end-to-end run, and the stub marker shows (AI-LAB-STUB, as rule 5 of section 1.2).
+- Every test and end-to-end run uses the fake model, and the stub marker shows (AI-LAB-STUB, as rule 5 of section 1.2).
 - Source excerpts and sample texts from books are never committed; test fixtures use short invented text (AI-SAMPLES-LOCAL).
 - A prompt holds no information about one character (AI-CHARACTER-NEUTRAL; the code fix of `checks.ts` is #468).
 - The proposed prompts in `prompt-table-source/proposed4/` are not imported or published in this work (AI-PROPOSED4-HOLD).

@@ -397,7 +397,7 @@ The 19 initial rows are listed by id, name, category and prompt in `docs/ai/AI_1
 | FR-AIREG-2 | A row opens a detail page with every field; the prompt text is shown in full with its `{{variables}}` highlighted, the published version and the draft side by side, and the diff (existing). | Must | AI-REGISTRY-FIELDS, AI-PAGE-STORE |
 | FR-AIREG-3 | The admin text, the field labels and all seeded content are English only. There is no translation view. | Must | AI-ENGLISH-ONLY |
 | FR-AIREG-4 | Fields that have no source show "Not written yet", never filler (as AI-11 rule 2). | Must | AI-PAGES |
-| FR-AIREG-5 | The seven runtime features keep their prompt keys; Pipeline and Quality gate rows get new keys in `public.prompts` with category `pipeline` or `gate`. The app reads only `runtime` keys. | Must | AI-REGISTRY, AI-REGISTRY-STORE |
+| FR-AIREG-5 | The seven runtime features keep their prompt keys; Pipeline and Quality gate rows get new keys in `public.prompts` with category `pipeline` or `gate`. The app reads only `runtime` keys. | Must | AI-REGISTRY, AI-REGISTRY-STORE, AI-PROMPT-CATEGORY |
 | FR-AIREG-6 | A prompt contains no information about one character: names, places and example scenes of a specific Companion are inputs (a sample), not prompt text. A check on publish warns when a prompt contains a Companion name from the sample library. | Should | AI-CHARACTER-NEUTRAL |
 | FR-AIREG-7 | Every change to a registry field is kept in its history; only a status change is admin only (AI-PAGE-STATUS). | Must | AI-PAGE-EDIT, AI-PAGE-STATUS |
 
@@ -592,7 +592,8 @@ Every decided row in `docs/DECISIONS.md`, up to 2026-11-17, is applied in sectio
 | MORIARTY-READ | Yue's reading of the 31 cards of Moriarty story 1 (MORIARTY-6). | Stories 2 to 7 wait for it. |
 | AI-SPEND-WARNING | The read-only "today's spend" line (FR-AILAB-3) is not a cap. If a runaway loop becomes a worry, a soft warning at a chosen amount can be added later without blocking. | Not decided. |
 | AI-EXAMPLE-RECHECK | Whether confirmed examples need a second look when a prompt is published again. | Not decided. |
-| AI-PROPOSED-SEED-TEXT | The seed text of R-02 to R-06 names proposed prompt versions that are not imported (AI-PROPOSED4-HOLD; section 10.4, row 3). | Not decided. |
+| AI-PROPOSED-SEED-TEXT | The seed text of R-02 to R-05 mentions proposed versions that are not imported: R-02 names `step_cards` v4 as proposed; R-03 to R-05 say the roleplay format is proposed (AI-PROPOSED4-HOLD; section 10.4, row 3). | Not decided. |
+| AI-SEED-HISTORY | Whether the seed writes a status-history row for the 12 new rows (AI-SEED-STATUS). | Not decided. |
 
 ### 10.3 Items that need the original test data
 
@@ -609,7 +610,7 @@ Every decided row in `docs/DECISIONS.md`, up to 2026-11-17, is applied in sectio
 |---|---|---|
 | 1 | The prototype and wireframes disagree with the decision log: four cards at step start, a landing page after each step, a third-pause warning and timer reset, the old note field, a Language row, a Reminders row, a weekly total and a time-limited Home state. The prototype must be aligned before it is used as a screen specification. | Open |
 | 2 | Master PRD F-SA-4 says goal text is also used for the dialogue responses; the later goal-dialogue spec limits it to classification and split. This document follows the later one; since GOAL-SHAPE-LOCAL the shape is decided by a local rule, so goal text goes to one model call, the split. | Confirm |
-| 3 | The registry and the current schema. Resolved by the owner on 2026-11-26: the `category` column of `public.prompts`, the runtime-only prompt reader, the key names and the Feature ID column (AI-PROMPT-CATEGORY); the start status of the new rows (AI-SEED-STATUS); the requirement field of the Runtime rows (AI-REQUIREMENT-FIELD). Still open: the seed text of R-02 to R-06 names proposed versions (for example "step_cards v2 (v4 proposed)") that are not imported (AI-PROPOSED4-HOLD, AI-PROPOSED-SEED-TEXT). | Open (proposed versions only) |
+| 3 | The registry and the current schema. Resolved by the owner on 2026-11-26: the `category` column of `public.prompts`, the runtime-only prompt reader, the key names and the Feature ID column (AI-PROMPT-CATEGORY); the start status of the new rows (AI-SEED-STATUS); the requirement field of the Runtime rows (AI-REQUIREMENT-FIELD). Still open: the seed text of R-02 to R-05 mentions proposed versions that are not imported (R-02 "step_cards v2 (v4 proposed)"; R-03 to R-05 "roleplay format proposed") (AI-PROPOSED4-HOLD, AI-PROPOSED-SEED-TEXT). | Open (proposed versions only) |
 
 Risks that remain:
 - **The magic may not carry over to English or to Oppenheimer.** Only characters from the founder's own culture were validated (constitution section 5).
