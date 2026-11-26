@@ -21,6 +21,7 @@ import {
 } from "@/lib/prototype/goal-lines";
 import {
   TIME_HINT,
+  capGoalMinutes,
   findTimeInGoal,
   goalTimeWasCapped,
   formatMinutes,
@@ -181,6 +182,62 @@ describe("GOAL-TIME a goal that states a length skips the time question", () => 
       expect(findTimeInGoal(goal)).toBeNull();
     },
   );
+});
+
+// NF7 v7 section 3.1 names these English patterns for reading the time from the goal. Its Chinese
+// patterns are out of scope: release 1 is English only (decision L1). Its "round to 15, clamp
+// 15-240" is replaced by NO-ROUNDING and the 180-minute cap (#344, #351).
+describe("#416 GOAL-TIME reads every NF7 v7 section 3.1 pattern", () => {
+  it.each([
+    ["for N minutes", "Write the cover letter for 40 minutes", 40],
+    ["for N min", "Tidy the inbox for 25 min", 25],
+    ["for N hours", "Revise biology for 2 hours", 120],
+    ["for N h", "Revise biology for 2h", 120],
+    ["in N minutes", "Finish the slides in 45 minutes", 45],
+    ["within N min", "Draft the email within 20 min", 20],
+    ["about N hours", "Read about 2 hours", 120],
+    ["an hour", "Read the article for an hour", 60],
+    ["half an hour", "Plan the week for half an hour", 30],
+    ["one and a half hours", "Study for one and a half hours", 90],
+    ["1.5h", "Practise piano 1.5h", 90],
+    ["number words: one hour", "Clean the kitchen for one hour", 60],
+    ["number words: two hours", "Clean the kitchen for two hours", 120],
+  ])("%s: %s is %i minutes", (_pattern, goal, minutes) => {
+    expect(findTimeInGoal(goal)).toBe(minutes);
+  });
+
+  it.each([
+    ["Write two job applications for an hour and a half", 90],
+    ["Study for one hour and a half", 90],
+    ["Study for two and a half hours", 150],
+    ["Study for 2 hours and a half", 150],
+    ["Write two job applications for 1.5 hours", 90],
+    ["Write two job applications for 90 minutes", 90],
+  ])("#416 reads %s as %i minutes", (goal, minutes) => {
+    expect(findTimeInGoal(goal)).toBe(minutes);
+  });
+
+  it.each([
+    ["Write two job applications for an hour and a half", "Write two job applications"],
+    ["Study for one and a half hours, then rest", "Study, then rest"],
+  ])("#416 title for %s is %s", (goal, title) => {
+    expect(removeTimePhrase(goal)).toBe(title);
+  });
+
+  it.each(["watch a 1.5-hour lecture", "summarise a one and a half hour lecture"])(
+    "#416 still does not read %s as the user's time",
+    (goal) => {
+      expect(findTimeInGoal(goal)).toBeNull();
+    },
+  );
+
+  it("#344 #351 caps a half-hour reading over 3 hours, and leaves 3 hours or less alone", () => {
+    expect(findTimeInGoal("study for three and a half hours")).toBe(210);
+    expect(capGoalMinutes(findTimeInGoal("study for three and a half hours"))).toBe(180);
+    expect(goalTimeWasCapped("study for three and a half hours")).toBe(true);
+    expect(goalTimeWasCapped("study for two and a half hours")).toBe(false);
+    expect(capGoalMinutes(findTimeInGoal("study for an hour and a half"))).toBe(90);
+  });
 });
 
 describe("#30 AC1 his first opening", () => {
