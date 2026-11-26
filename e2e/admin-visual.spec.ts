@@ -136,6 +136,34 @@ const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
       await page.evaluate(() => document.fonts.ready);
     },
   },
+  // #442: Companion profile (ADM-04), the prototype's `character` screen.
+  companion: { path: "/admin/companions/oppenheimer" },
+  // #439: the AI features index and the Pause message page, as the drawing's AIF-1 and AIF-2.
+  aiIndex: { path: "/admin/ai-features" },
+  aiFeature: { path: "/admin/ai-features/pause_message" },
+  // #453: the editors of the Pause message, as the drawing's AIF-5, AIF-6 and AIF-7. Nothing is
+  // saved: the gate only opens them.
+  aiStatus: { path: "/admin/ai-features/pause_message/status" },
+  aiPass: { path: "/admin/ai-features/pause_message/pass" },
+  aiPurpose: { path: "/admin/ai-features/pause_message/purpose" },
+  // The writer's view of the status editor: this page signs the browser in again as a writer, so
+  // it is the last live page COMPONENTS names (the pages are opened in the order of the map).
+  aiStatusWriter: {
+    path: "/admin/ai-features/pause_message/status",
+    prepare: async (page) => {
+      await signIn(page.context(), new URL(page.url()).origin, undefined, {
+        contentRole: "writer",
+      });
+      await page.reload();
+      await expect(page.locator(".admin-ro")).toBeVisible();
+      await page.waitForLoadState("networkidle");
+      await page.waitForFunction(() => {
+        const shell = document.querySelector(".admin-shell");
+        return !!shell && Object.keys(shell).some((key) => key.startsWith("__reactFiber"));
+      });
+      await page.evaluate(() => document.fonts.ready);
+    },
+  },
 };
 
 type Side = { page: string; selector: string };
@@ -1066,6 +1094,679 @@ const COMPONENTS: Component[] = [
     properties: [...STYLE, "opacity"],
     box: ["height"],
   },
+  // #442: Companion profile (ADM-04): the real header actions, the tabs and the dl.fields rows.
+  // Read on Oppenheimer's Profile tab, whose fields no other test writes.
+  {
+    name: "header row (Companion profile)",
+    prototype: { page: "character", selector: ".head" },
+    live: { page: "companion", selector: ".admin-head" },
+    box: ["x", "y", "width"],
+  },
+  {
+    name: "header action row (Companion profile)",
+    prototype: { page: "character", selector: ".head .btns" },
+    live: { page: "companion", selector: ".admin-head .admin-actions" },
+  },
+  {
+    name: "main button (Companion profile)",
+    prototype: { page: "character", selector: ".head button.primary" },
+    live: { page: "companion", selector: ".admin-head .admin-actions .button-filled" },
+    properties: [...STYLE, "cursor"],
+    box: ["height"],
+  },
+  {
+    name: "secondary button (Companion profile)",
+    prototype: { page: "character", selector: ".head .btns button:not(.primary)" },
+    live: { page: "companion", selector: ".admin-head .admin-actions .button-gray" },
+    properties: [...STYLE, "cursor"],
+    box: ["height"],
+  },
+  {
+    name: "tab bar",
+    prototype: { page: "character", selector: ".tabs" },
+    live: { page: "companion", selector: ".admin-tabs" },
+    box: ["x", "width", "height"],
+  },
+  {
+    name: "tab",
+    prototype: { page: "character", selector: ".tabs button:not(.on)" },
+    live: { page: "companion", selector: '.admin-tab[aria-selected="false"]' },
+    properties: [...STYLE, "cursor"],
+    box: ["height"],
+  },
+  {
+    name: "tab, current",
+    prototype: { page: "character", selector: ".tabs button.on" },
+    live: { page: "companion", selector: '.admin-tab[aria-selected="true"]' },
+    properties: [...STYLE, "cursor"],
+    box: ["x", "height"],
+  },
+  {
+    name: "fields panel",
+    prototype: { page: "character", selector: ".tabs + .panel" },
+    live: { page: "companion", selector: ".admin-tabs + .admin-panel" },
+    box: ["x", "width"],
+  },
+  {
+    name: "field list (dl.fields)",
+    prototype: { page: "character", selector: "dl.fields" },
+    live: { page: "companion", selector: "dl.admin-fields" },
+    box: ["x", "width"],
+  },
+  {
+    name: "field label (dt)",
+    prototype: { page: "character", selector: "dl.fields dt" },
+    live: { page: "companion", selector: "dl.admin-fields dt" },
+    box: ["x", "width"],
+  },
+  {
+    name: "field value (dd)",
+    prototype: { page: "character", selector: "dl.fields dd" },
+    live: { page: "companion", selector: "dl.admin-fields dd" },
+    box: ["x", "width"],
+  },
+  {
+    name: "field id chip",
+    prototype: { page: "character", selector: "dl.fields dt .key" },
+    live: { page: "companion", selector: "dl.admin-fields dt .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "field text, edited in place",
+    prototype: { page: "character", selector: "dl.fields dd [contenteditable]" },
+    live: { page: "companion", selector: "dl.admin-fields dd [contenteditable]" },
+  },
+  {
+    name: "field pill (Published)",
+    prototype: { page: "character", selector: "dl.fields dd .pill.s-pub" },
+    live: { page: "companion", selector: "dl.admin-fields dd .admin-pill-published" },
+    box: ["height"],
+  },
+  {
+    // The prototype's Draft pill; live draws Draft, Not written and Read only in the same grey.
+    name: "field pill (grey)",
+    prototype: { page: "character", selector: "dl.fields dd .pill.s-draft" },
+    live: { page: "companion", selector: "dl.admin-fields dd .admin-pill-earlier" },
+    box: ["height"],
+  },
+  {
+    name: "panel note",
+    prototype: { page: "character", selector: ".panel > .note" },
+    live: { page: "companion", selector: ".admin-panel > .admin-fields-note" },
+  },
+  // #439: the AI features index (drawing AIF-1). The table's rows are seed data; only their parts
+  // are compared, never their text or their heights.
+  {
+    name: "AI features: menu row, current",
+    prototype: { page: "aiIndex", selector: ".rail a.on" },
+    live: { page: "aiIndex", selector: ".admin-menu-link[aria-current]" },
+    box: ["width", "height"],
+  },
+  {
+    name: "AI features: header row",
+    prototype: { page: "aiIndex", selector: ".head" },
+    live: { page: "aiIndex", selector: ".admin-head" },
+    box: ["x", "y", "width"],
+  },
+  {
+    name: "AI features: lede",
+    prototype: { page: "aiIndex", selector: ".head .lede" },
+    live: { page: "aiIndex", selector: ".admin-head .admin-lede" },
+  },
+  {
+    name: "AI features: panel",
+    prototype: { page: "aiIndex", selector: ".panel" },
+    live: { page: "aiIndex", selector: ".admin-panel" },
+    box: ["x", "y", "width"],
+  },
+  {
+    name: "AI features: table",
+    prototype: { page: "aiIndex", selector: "table" },
+    live: { page: "aiIndex", selector: ".admin-table" },
+    properties: [...STYLE, "border-collapse", "table-layout"],
+    box: ["width"],
+  },
+  {
+    name: "AI features: table head cell",
+    prototype: { page: "aiIndex", selector: "th" },
+    live: { page: "aiIndex", selector: ".admin-table th" },
+    box: ["height"],
+  },
+  {
+    name: "AI features: feature cell",
+    prototype: { page: "aiIndex", selector: "td:first-child" },
+    live: { page: "aiIndex", selector: ".admin-table td:first-child" },
+  },
+  {
+    name: "AI features: feature name",
+    prototype: { page: "aiIndex", selector: "td b" },
+    live: { page: "aiIndex", selector: ".admin-table td b" },
+  },
+  {
+    name: "AI features: purpose cell",
+    prototype: { page: "aiIndex", selector: "td.note" },
+    live: { page: "aiIndex", selector: ".admin-table td.admin-cell-note" },
+  },
+  {
+    name: "AI features: status pill (Exploring)",
+    prototype: { page: "aiIndex", selector: "td .pill.s-gen" },
+    live: { page: "aiIndex", selector: ".admin-table .admin-pill-ai-exploring" },
+    box: ["height"],
+  },
+  {
+    name: "AI features: status pill dot",
+    prototype: { page: "aiIndex", selector: "td .pill.s-gen" },
+    live: { page: "aiIndex", selector: ".admin-table .admin-pill-ai-exploring" },
+    pseudo: "::before",
+    properties: [...STYLE, "width", "height", "content"],
+  },
+  {
+    name: "AI features: version chip",
+    prototype: { page: "aiIndex", selector: "td .key" },
+    live: { page: "aiIndex", selector: ".admin-table .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "AI features: status legend",
+    prototype: { page: "aiIndex", selector: ".legend" },
+    live: { page: "aiIndex", selector: ".admin-legend" },
+    box: ["width"],
+  },
+  {
+    name: "AI features: legend item",
+    prototype: { page: "aiIndex", selector: ".legend span" },
+    live: { page: "aiIndex", selector: ".admin-legend > span" },
+  },
+  ...(
+    [
+      ["Not started", "s-draft", "not_started"],
+      ["Passed", "s-pub", "passed"],
+      ["Frozen", "s-read", "frozen"],
+    ] as const
+  ).map(([label, prototypeClass, status]): Component => ({
+    name: `AI features: status pill (${label})`,
+    prototype: { page: "aiIndex", selector: `.legend .pill.${prototypeClass}` },
+    live: { page: "aiIndex", selector: `.admin-legend .admin-pill-ai-${status}` },
+    box: ["height"],
+  })),
+  // #439: one feature page (drawing AIF-2, the Pause message), sections (a) to (f) and the
+  // retry_hints fix.
+  {
+    name: "feature: menu row, current on a detail page",
+    prototype: { page: "aiFeature", selector: ".rail a.on" },
+    live: { page: "aiFeature", selector: ".admin-menu-link[aria-current]" },
+    box: ["width", "height"],
+  },
+  {
+    name: "feature: breadcrumb",
+    prototype: { page: "aiFeature", selector: ".crumb" },
+    live: { page: "aiFeature", selector: ".admin-crumb" },
+    box: ["height"],
+  },
+  {
+    name: "feature: breadcrumb link",
+    prototype: { page: "aiFeature", selector: ".crumb a" },
+    live: { page: "aiFeature", selector: ".admin-crumb a" },
+  },
+  {
+    name: "feature: page title",
+    prototype: { page: "aiFeature", selector: ".head h1" },
+    live: { page: "aiFeature", selector: ".admin-head h1" },
+    box: ["height"],
+  },
+  {
+    name: "feature: lede",
+    prototype: { page: "aiFeature", selector: ".head .lede" },
+    live: { page: "aiFeature", selector: ".admin-head .admin-lede" },
+  },
+  {
+    name: "feature: sections",
+    prototype: { page: "aiFeature", selector: ".stack" },
+    live: { page: "aiFeature", selector: ".admin-sections" },
+    box: ["x", "width"],
+  },
+  {
+    name: "feature: section panel",
+    prototype: { page: "aiFeature", selector: ".stack > .panel" },
+    live: { page: "aiFeature", selector: ".admin-sections > .admin-panel" },
+    box: ["x", "width"],
+  },
+  {
+    name: "feature: section heading",
+    prototype: { page: "aiFeature", selector: ".stack > .panel > h2" },
+    live: { page: "aiFeature", selector: ".admin-section > h2" },
+    box: ["height"],
+  },
+  {
+    name: "feature: item text",
+    prototype: { page: "aiFeature", selector: ".stack > .panel:first-child > p:not(.src)" },
+    live: { page: "aiFeature", selector: ".admin-items .admin-item-text" },
+  },
+  {
+    name: "feature: source line",
+    prototype: { page: "aiFeature", selector: ".src" },
+    live: { page: "aiFeature", selector: ".admin-src" },
+  },
+  {
+    name: "feature: draft mark (Draft - owner to edit; also Fake model (stub))",
+    prototype: { page: "aiFeature", selector: ".src .pill.s-checked" },
+    live: { page: "aiFeature", selector: ".admin-src .admin-pill-mark" },
+    box: ["height"],
+  },
+  {
+    name: "feature: draft mark dot",
+    prototype: { page: "aiFeature", selector: ".src .pill.s-checked" },
+    live: { page: "aiFeature", selector: ".admin-src .admin-pill-mark" },
+    pseudo: "::before",
+    properties: [...STYLE, "width", "height", "content"],
+  },
+  {
+    name: "feature: source chip",
+    prototype: { page: "aiFeature", selector: ".src .key" },
+    live: { page: "aiFeature", selector: ".admin-src .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "feature: pass questions",
+    prototype: { page: "aiFeature", selector: "ol.qs" },
+    live: { page: "aiFeature", selector: ".admin-questions" },
+  },
+  {
+    name: "feature: pass question",
+    prototype: { page: "aiFeature", selector: "ol.qs li" },
+    live: { page: "aiFeature", selector: ".admin-questions > li" },
+  },
+  {
+    name: "feature: status pill in the heading",
+    prototype: { page: "aiFeature", selector: ".panel > h2 .pill.s-gen" },
+    live: { page: "aiFeature", selector: ".admin-section > h2 .admin-pill-ai-exploring" },
+    box: ["height"],
+  },
+  {
+    name: "feature: status note",
+    prototype: { page: "aiFeature", selector: ".panel > p.note" },
+    live: { page: "aiFeature", selector: ".admin-section > .admin-note" },
+  },
+  {
+    name: "feature: prompt columns",
+    prototype: { page: "aiFeature", selector: ".grid2" },
+    live: { page: "aiFeature", selector: ".admin-grid2" },
+    properties: [...STYLE, "grid-template-columns"],
+    box: ["x", "width"],
+  },
+  {
+    name: "feature: prompt line",
+    prototype: { page: "aiFeature", selector: ".grid2 > div > p:first-child" },
+    live: { page: "aiFeature", selector: ".admin-grid2 > section > .admin-prompt-meta" },
+  },
+  {
+    name: "feature: prompt key chip",
+    prototype: { page: "aiFeature", selector: ".grid2 > div > p:first-child .key" },
+    live: { page: "aiFeature", selector: ".admin-prompt-meta .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "feature: published pill",
+    prototype: { page: "aiFeature", selector: ".grid2 .pill.s-pub" },
+    live: { page: "aiFeature", selector: ".admin-prompt-meta .admin-pill-published" },
+    box: ["height"],
+  },
+  {
+    name: "feature: prompt text",
+    prototype: { page: "aiFeature", selector: ".grid2 pre.code" },
+    live: { page: "aiFeature", selector: ".admin-grid2 pre.admin-code" },
+  },
+  {
+    name: "feature: retry_hints text",
+    prototype: { page: "aiFeature", selector: ".stack > .panel:nth-child(6) > pre.code" },
+    live: { page: "aiFeature", selector: ".admin-sections > .admin-section:nth-child(6) > pre" },
+  },
+  {
+    name: "feature: No real run yet",
+    prototype: { page: "aiFeature", selector: ".stack > .panel:last-child > .empty" },
+    live: {
+      page: "aiFeature",
+      selector: ".admin-sections > .admin-section:last-child > .admin-empty.admin-after-table",
+    },
+  },
+  // #453: the feature page's links to the editors, in the header action row (drawing AIF-2).
+  {
+    name: "feature: edit link in the header action row",
+    prototype: { page: "aiFeature", selector: ".head .btns a.btn" },
+    live: { page: "aiFeature", selector: ".admin-head .admin-actions a.button-gray" },
+    properties: [...STYLE, "cursor"],
+    box: ["height"],
+  },
+  {
+    name: "feature: header action row",
+    prototype: { page: "aiFeature", selector: ".head .btns" },
+    live: { page: "aiFeature", selector: ".admin-head .admin-actions" },
+  },
+  // #453: the status editor (drawing AIF-5), as an admin.
+  {
+    name: "status: page title",
+    prototype: { page: "aiStatus", selector: ".head h1" },
+    live: { page: "aiStatus", selector: ".admin-head h1" },
+    box: ["height"],
+  },
+  {
+    name: "status: lede",
+    prototype: { page: "aiStatus", selector: ".head .lede" },
+    live: { page: "aiStatus", selector: ".admin-head .admin-lede" },
+  },
+  {
+    name: "status: two columns",
+    prototype: { page: "aiStatus", selector: ".grid2" },
+    live: { page: "aiStatus", selector: ".admin-grid2" },
+    properties: [...STYLE, "grid-template-columns"],
+    box: ["x", "width"],
+  },
+  {
+    name: "status: change panel",
+    prototype: { page: "aiStatus", selector: ".grid2 > .panel:first-child" },
+    live: { page: "aiStatus", selector: ".admin-grid2 > .admin-panel:first-child" },
+    properties: [...STYLE, "opacity"],
+    box: ["x", "width"],
+  },
+  {
+    name: "status: history panel",
+    prototype: { page: "aiStatus", selector: ".grid2 > .panel:last-child" },
+    live: { page: "aiStatus", selector: ".admin-grid2 > .admin-panel:last-child" },
+    box: ["x", "width"],
+  },
+  {
+    name: "status: panel heading",
+    prototype: { page: "aiStatus", selector: ".grid2 > .panel > h2" },
+    live: { page: "aiStatus", selector: ".admin-grid2 > .admin-section > h2" },
+    box: ["height"],
+  },
+  {
+    name: "status: form",
+    prototype: { page: "aiStatus", selector: ".form" },
+    live: { page: "aiStatus", selector: ".admin-form" },
+    properties: [...STYLE, "grid-template-columns"],
+    box: ["width"],
+  },
+  {
+    name: "status: status buttons",
+    prototype: { page: "aiStatus", selector: ".form .seg" },
+    live: { page: "aiStatus", selector: ".admin-form .admin-seg" },
+  },
+  {
+    name: "status: status button",
+    prototype: { page: "aiStatus", selector: '.form .seg button[aria-pressed="false"]' },
+    live: { page: "aiStatus", selector: '.admin-seg button[aria-pressed="false"]' },
+    properties: [...STYLE, "cursor", "opacity"],
+    box: ["height"],
+  },
+  {
+    name: "status: status button, chosen",
+    prototype: { page: "aiStatus", selector: '.form .seg button[aria-pressed="true"]' },
+    live: { page: "aiStatus", selector: '.admin-seg button[aria-pressed="true"]' },
+    properties: [...STYLE, "cursor", "opacity"],
+    box: ["height"],
+  },
+  {
+    name: "status: reason label",
+    prototype: { page: "aiStatus", selector: ".form label" },
+    live: { page: "aiStatus", selector: ".admin-form label" },
+    properties: [...STYLE, "grid-template-columns"],
+  },
+  {
+    name: "status: reason field",
+    prototype: { page: "aiStatus", selector: ".form label input" },
+    live: { page: "aiStatus", selector: ".admin-form label input" },
+    box: ["height", "width"],
+  },
+  {
+    name: "status: Save status",
+    prototype: { page: "aiStatus", selector: ".form button.primary" },
+    live: { page: "aiStatus", selector: ".admin-form .button-filled" },
+    properties: [...STYLE, "cursor", "opacity"],
+    box: ["height"],
+  },
+  {
+    name: "status: status pill in Now",
+    prototype: { page: "aiStatus", selector: ".grid2 > .panel:last-child > h2 .pill.s-gen" },
+    live: {
+      page: "aiStatus",
+      selector: ".admin-grid2 > .admin-panel:last-child > h2 .admin-pill-ai-exploring",
+    },
+    box: ["height"],
+  },
+  {
+    name: "status: history table",
+    prototype: { page: "aiStatus", selector: ".grid2 table" },
+    live: { page: "aiStatus", selector: ".admin-grid2 .admin-table" },
+    properties: [...STYLE, "border-collapse", "table-layout"],
+    box: ["width"],
+  },
+  {
+    name: "status: history head cell",
+    prototype: { page: "aiStatus", selector: ".grid2 th" },
+    live: { page: "aiStatus", selector: ".admin-grid2 .admin-table th" },
+    box: ["height"],
+  },
+  {
+    name: "status: history time cell",
+    prototype: { page: "aiStatus", selector: ".grid2 td.note" },
+    live: { page: "aiStatus", selector: ".admin-grid2 .admin-table td.admin-cell-note" },
+  },
+  {
+    name: "status: history who cell",
+    prototype: { page: "aiStatus", selector: ".grid2 td:nth-child(2)" },
+    live: { page: "aiStatus", selector: ".admin-grid2 .admin-table td:nth-child(2)" },
+  },
+  {
+    name: "status: history pill",
+    prototype: { page: "aiStatus", selector: ".grid2 td .pill.s-gen" },
+    live: { page: "aiStatus", selector: ".admin-grid2 .admin-table td .admin-pill-ai-exploring" },
+    box: ["height"],
+  },
+  // #453: the pass standard editor (drawing AIF-6).
+  {
+    name: "pass: header action row",
+    prototype: { page: "aiPass", selector: ".head .btns" },
+    live: { page: "aiPass", selector: ".admin-head .admin-actions" },
+  },
+  {
+    name: "pass: Save",
+    prototype: { page: "aiPass", selector: ".head .btns button.primary" },
+    live: { page: "aiPass", selector: ".admin-head .admin-actions .button-filled" },
+    properties: [...STYLE, "cursor", "opacity"],
+    box: ["height"],
+  },
+  {
+    name: "pass: editor columns",
+    prototype: { page: "aiPass", selector: ".editor" },
+    live: { page: "aiPass", selector: ".admin-editor" },
+    properties: [...STYLE, "grid-template-columns"],
+    box: ["x", "width"],
+  },
+  {
+    name: "pass: questions panel",
+    prototype: { page: "aiPass", selector: ".editor > .panel:first-child" },
+    live: { page: "aiPass", selector: ".admin-editor > .admin-panel:first-child" },
+    box: ["x", "width"],
+  },
+  {
+    name: "pass: side panel",
+    prototype: { page: "aiPass", selector: ".editor > .panel:last-child" },
+    live: { page: "aiPass", selector: ".admin-editor > .admin-panel:last-child" },
+    box: ["x", "width"],
+  },
+  {
+    name: "pass: panel heading",
+    prototype: { page: "aiPass", selector: ".editor > .panel > h2" },
+    live: { page: "aiPass", selector: ".admin-editor > .admin-panel > h2" },
+    box: ["height"],
+  },
+  {
+    name: "pass: question row",
+    prototype: { page: "aiPass", selector: ".qrow" },
+    live: { page: "aiPass", selector: ".admin-qrow" },
+    properties: [...STYLE, "grid-template-columns"],
+    box: ["width"],
+  },
+  {
+    name: "pass: question number",
+    prototype: { page: "aiPass", selector: ".qrow .n" },
+    live: { page: "aiPass", selector: ".admin-qrow-n" },
+  },
+  {
+    name: "pass: question field",
+    prototype: { page: "aiPass", selector: ".qrow input" },
+    live: { page: "aiPass", selector: ".admin-qrow input" },
+    box: ["height"],
+  },
+  {
+    name: "pass: question buttons",
+    prototype: { page: "aiPass", selector: ".qrow .btns" },
+    live: { page: "aiPass", selector: ".admin-qrow .admin-actions" },
+  },
+  {
+    name: "pass: small button",
+    prototype: { page: "aiPass", selector: ".qrow button.small" },
+    live: { page: "aiPass", selector: ".admin-qrow .button-small:not(:disabled)" },
+    properties: [...STYLE, "cursor", "opacity"],
+    box: ["height"],
+  },
+  {
+    name: "pass: Add question row",
+    prototype: {
+      page: "aiPass",
+      selector: ".editor > .panel:first-child > .qrow + div:not(.qrow)",
+    },
+    live: { page: "aiPass", selector: ".admin-editor > .admin-panel:first-child > .admin-add" },
+  },
+  {
+    name: "pass: source line",
+    prototype: { page: "aiPass", selector: ".editor .src" },
+    live: { page: "aiPass", selector: ".admin-qrow-text .admin-src" },
+  },
+  {
+    name: "pass: draft mark",
+    prototype: { page: "aiPass", selector: ".editor .src .pill.s-checked" },
+    live: { page: "aiPass", selector: ".admin-qrow-text .admin-src .admin-pill-mark" },
+    box: ["height"],
+  },
+  {
+    name: "pass: source chip",
+    prototype: { page: "aiPass", selector: ".editor .src .key" },
+    live: { page: "aiPass", selector: ".admin-qrow-text .admin-src .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "pass: side panel table cell",
+    prototype: { page: "aiPass", selector: ".editor > .panel:last-child td.note" },
+    live: { page: "aiPass", selector: ".admin-editor > .admin-panel:last-child .admin-note" },
+    properties: FONT,
+  },
+  // #453: the purpose and approach editor (drawing AIF-7).
+  {
+    name: "purpose: Save",
+    prototype: { page: "aiPurpose", selector: ".head .btns button.primary" },
+    live: { page: "aiPurpose", selector: ".admin-head .admin-actions .button-filled" },
+    properties: [...STYLE, "cursor", "opacity"],
+    box: ["height"],
+  },
+  {
+    name: "purpose: editor columns",
+    prototype: { page: "aiPurpose", selector: ".editor" },
+    live: { page: "aiPurpose", selector: ".admin-editor" },
+    properties: [...STYLE, "grid-template-columns"],
+    box: ["x", "width"],
+  },
+  {
+    name: "purpose: form panel",
+    prototype: { page: "aiPurpose", selector: ".editor > .panel:first-child" },
+    live: { page: "aiPurpose", selector: ".admin-editor > .admin-panel:first-child" },
+    box: ["x", "width"],
+  },
+  {
+    name: "purpose: side panel",
+    prototype: { page: "aiPurpose", selector: ".editor > .panel:last-child" },
+    live: { page: "aiPurpose", selector: ".admin-editor > .admin-panel:last-child" },
+    box: ["x", "width"],
+  },
+  {
+    name: "purpose: form",
+    prototype: { page: "aiPurpose", selector: ".editor .form" },
+    live: { page: "aiPurpose", selector: ".admin-editor .admin-form" },
+    properties: [...STYLE, "grid-template-columns"],
+    box: ["width"],
+  },
+  {
+    name: "purpose: field label",
+    prototype: { page: "aiPurpose", selector: ".form label" },
+    live: { page: "aiPurpose", selector: ".admin-field-group" },
+    properties: [...STYLE, "grid-template-columns"],
+    box: ["width"],
+  },
+  {
+    name: "purpose: text box",
+    prototype: { page: "aiPurpose", selector: ".form label textarea" },
+    live: { page: "aiPurpose", selector: ".admin-field-group textarea" },
+    properties: [...STYLE, "resize"],
+    box: ["width"],
+  },
+  {
+    name: "purpose: source line",
+    prototype: { page: "aiPurpose", selector: ".form > p.src" },
+    live: { page: "aiPurpose", selector: ".admin-field-line .admin-src" },
+  },
+  {
+    name: "purpose: draft mark",
+    prototype: { page: "aiPurpose", selector: ".form .src .pill.s-checked" },
+    live: { page: "aiPurpose", selector: ".admin-field-line .admin-pill-mark" },
+    box: ["height"],
+  },
+  {
+    name: "purpose: side panel heading",
+    prototype: { page: "aiPurpose", selector: ".editor > .panel:last-child > h2" },
+    live: { page: "aiPurpose", selector: ".admin-editor > .admin-panel:last-child > h2" },
+    box: ["height"],
+  },
+  // #453: the status editor as a writer sees it (the drawing's "View as writer"). Last in the map:
+  // its live page signs the browser in again as a writer.
+  {
+    name: "status, writer: change panel (dimmed)",
+    prototype: { page: "aiStatusWriter", selector: ".grid2 > .panel.ro" },
+    live: { page: "aiStatusWriter", selector: ".admin-grid2 > .admin-panel.admin-ro" },
+    properties: [...STYLE, "opacity"],
+    box: ["x", "width"],
+  },
+  {
+    name: "status, writer: Admin only",
+    prototype: { page: "aiStatusWriter", selector: ".panel.ro h2 .lock" },
+    live: { page: "aiStatusWriter", selector: ".admin-ro h2 .admin-lock" },
+  },
+  {
+    name: "status, writer: lede",
+    prototype: { page: "aiStatusWriter", selector: ".head .lede" },
+    live: { page: "aiStatusWriter", selector: ".admin-head .admin-lede" },
+  },
+  {
+    name: "status, writer: status button (disabled)",
+    prototype: { page: "aiStatusWriter", selector: '.ro .seg button[aria-pressed="false"]' },
+    live: { page: "aiStatusWriter", selector: '.admin-ro .admin-seg button[aria-pressed="false"]' },
+    properties: [...STYLE, "opacity"],
+    box: ["height"],
+  },
+  {
+    name: "status, writer: reason field (disabled)",
+    prototype: { page: "aiStatusWriter", selector: ".ro label input" },
+    live: { page: "aiStatusWriter", selector: ".admin-ro label input" },
+    properties: [...STYLE, "opacity"],
+    box: ["height"],
+  },
+  {
+    name: "status, writer: Save status (disabled)",
+    prototype: { page: "aiStatusWriter", selector: ".ro button.primary" },
+    live: { page: "aiStatusWriter", selector: ".admin-ro .button-filled" },
+    properties: [...STYLE, "opacity"],
+    box: ["height"],
+  },
 ];
 
 /**
@@ -1168,6 +1869,24 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
       "shows bold text in a clickable row, so there is nothing to compare it with. Links look the " +
       "same on both sides (the prototype keeps the browser's underline too). The Companions page " +
       "pull request (#430 T8) decides the row and adds it here.",
+  },
+  // #442: Companion profile.
+  ...["main button (Companion profile)", "secondary button (Companion profile)"].map(
+    (component) => ({
+      component,
+      properties: ["min-width", "min-height"],
+      reason:
+        "As `main button` and `secondary button`: live sets 0 to switch off the phone app's 44 px " +
+        "tap minimum (ADMIN-DESKTOP); the prototype has none (auto). The height is compared.",
+    }),
+  ),
+  {
+    component: "field text, edited in place",
+    properties: ["white-space"],
+    reason:
+      "Live is pre-wrap, the prototype normal: stored production text may contain line breaks " +
+      "(the earlier editor was a textarea that allowed them), and they must stay visible and be " +
+      "saved back unchanged.",
   },
   {
     component: "AI features: table head cell",
@@ -1528,6 +2247,39 @@ test("test_435_frame_pictures_prototype_vs_live", async ({ page, context }) => {
   const origin = new URL(page.url()).origin;
   await servePrototype(page, await adminFontFaces(page));
   await writePictures(page, origin, PICTURES.slice(0, 1));
+});
+
+// #442: the Companion profile pictures for its pull request (prototype `character` vs live
+// Oppenheimer, Profile tab) at each width. Written only on request.
+test("test_442_companion_profile_pictures_prototype_vs_live", async ({ page, context }) => {
+  test.skip(!process.env.ADMIN_VISUAL_SCREENSHOTS, "Set ADMIN_VISUAL_SCREENSHOTS=1 to write them.");
+  test.setTimeout(120_000);
+  mkdirSync(REFERENCE_DIR, { recursive: true });
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto("/admin/companions");
+  const origin = new URL(page.url()).origin;
+  await servePrototype(page, await adminFontFaces(page));
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: HEIGHT });
+    await openPrototype(page, origin, "character");
+    const prototype = await page.screenshot();
+    await openLive(page, "companion");
+    const live = await page.screenshot();
+    writeFileSync(path.join(REFERENCE_DIR, `companion-profile-${width}-prototype.png`), prototype);
+    writeFileSync(path.join(REFERENCE_DIR, `companion-profile-${width}-live.png`), live);
+
+    const image = (png: Buffer) => `data:image/png;base64,${png.toString("base64")}`;
+    await page.setViewportSize({ width: width * 2 + 48, height: HEIGHT + 56 });
+    await page.setContent(
+      `<!doctype html><meta charset=utf-8><body style="margin:0;padding:16px;background:#888;display:flex;gap:16px;font:14px system-ui;color:#fff">` +
+        `<figure style="margin:0"><figcaption>Prototype (standards mode), ${width} px</figcaption><img src="${image(prototype)}"></figure>` +
+        `<figure style="margin:0"><figcaption>Live admin, ${width} px</figcaption><img src="${image(live)}"></figure></body>`,
+    );
+    writeFileSync(
+      path.join(REFERENCE_DIR, `companion-profile-${width}-side-by-side.png`),
+      await page.screenshot({ fullPage: true }),
+    );
+  }
 });
 
 // #439: the same pictures of the AI features index and the Pause message page, full page, written
