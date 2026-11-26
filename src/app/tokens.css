@@ -334,6 +334,18 @@
   --adm-track-th: 0.06em;
   --adm-lede-measure: 68ch;
   --adm-field-min: 64px;
+  /* Issue 440: the Status board's count tiles, Companion panels and stage dots. Its headings use
+     --adm-h2-after (issue 439, below). */
+  --adm-tile-gap: 12px;
+  --adm-tile-pad: 12px 14px;
+  --adm-tile-label-size: 12px;
+  --adm-panel-row-after: 16px;
+  --adm-stage-pad: 4px 3px;
+  --adm-dot-size: 18px;
+  --adm-legend-gap: 14px;
+  /* The browser margin of the prototype's .note paragraph on the board: one line of its own size.
+     Not --adm-note-gap, which is the Companion profile's note (issue 442). */
+  --adm-board-note-gap: 1em;
   /* Issue 442, ADM-04 Companion profile: the prototype's .tabs and dl.fields. */
   --adm-tab-gap: 4px;
   --adm-tab-pad: 8px 10px;
@@ -421,6 +433,36 @@
   --adm-info: #8fb0f0;
   --adm-info-soft: #1f2a40;
   color-scheme: dark;
+}
+
+/*
+ * Issue 444: the Story cards page (ADM-06), from the prototype's cards editor and phone preview
+ * (.editor, .part, .cardrow, .phone): the 300 px preview, the 86 px kind column, the phone's
+ * colours, radius and padding. The 16 px between the cards and the preview is the AI feature
+ * editors' --adm-editor-gap (issue 453), defined once above.
+ */
+.admin-shell {
+  --adm-phone: #16191c;
+  --adm-phone-ink: #ece7dc;
+  --adm-phone-pad: 18px 16px 22px;
+  --adm-phone-dim: 0.6;
+  --adm-r-phone: 26px;
+  --adm-preview-width: 300px;
+  --adm-kind-width: 86px;
+  --adm-kind-size: 12px;
+  --adm-part-pad: 10px 14px;
+  --adm-part-after: 12px;
+  --adm-row-gap: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.theme-light) .admin-shell {
+    --adm-phone: #0b0d0e;
+  }
+}
+
+.theme-dark .admin-shell {
+  --adm-phone: #0b0d0e;
 }
 
 @theme inline {
