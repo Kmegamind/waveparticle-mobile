@@ -140,6 +140,8 @@ const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
   },
   // A detail page: its menu row (Prompts) is marked as current.
   prompt: { path: "/admin/prompts/plan_split" },
+  // #442: Companion profile (ADM-04), the prototype's `character` screen.
+  companion: { path: "/admin/companions/oppenheimer" },
   // #439: the AI features index and the Pause message page, as the drawing's AIF-1 and AIF-2.
   aiIndex: { path: "/admin/ai-features" },
   aiFeature: { path: "/admin/ai-features/pause_message" },
@@ -456,6 +458,106 @@ const COMPONENTS: Component[] = [
     prototype: { page: "uitext", selector: "td .pill.s-pub" },
     live: { page: "appText", selector: ".admin-table .admin-pill-published" },
     box: ["height"],
+  },
+  // #442: Companion profile (ADM-04): the real header actions, the tabs and the dl.fields rows.
+  // Read on Oppenheimer's Profile tab, whose fields no other test writes.
+  {
+    name: "header row (Companion profile)",
+    prototype: { page: "character", selector: ".head" },
+    live: { page: "companion", selector: ".admin-head" },
+    box: ["x", "y", "width"],
+  },
+  {
+    name: "header action row (Companion profile)",
+    prototype: { page: "character", selector: ".head .btns" },
+    live: { page: "companion", selector: ".admin-head .admin-actions" },
+  },
+  {
+    name: "main button (Companion profile)",
+    prototype: { page: "character", selector: ".head button.primary" },
+    live: { page: "companion", selector: ".admin-head .admin-actions .button-filled" },
+    properties: [...STYLE, "cursor"],
+    box: ["height"],
+  },
+  {
+    name: "secondary button (Companion profile)",
+    prototype: { page: "character", selector: ".head .btns button:not(.primary)" },
+    live: { page: "companion", selector: ".admin-head .admin-actions .button-gray" },
+    properties: [...STYLE, "cursor"],
+    box: ["height"],
+  },
+  {
+    name: "tab bar",
+    prototype: { page: "character", selector: ".tabs" },
+    live: { page: "companion", selector: ".admin-tabs" },
+    box: ["x", "width", "height"],
+  },
+  {
+    name: "tab",
+    prototype: { page: "character", selector: ".tabs button:not(.on)" },
+    live: { page: "companion", selector: '.admin-tab[aria-selected="false"]' },
+    properties: [...STYLE, "cursor"],
+    box: ["height"],
+  },
+  {
+    name: "tab, current",
+    prototype: { page: "character", selector: ".tabs button.on" },
+    live: { page: "companion", selector: '.admin-tab[aria-selected="true"]' },
+    properties: [...STYLE, "cursor"],
+    box: ["x", "height"],
+  },
+  {
+    name: "fields panel",
+    prototype: { page: "character", selector: ".tabs + .panel" },
+    live: { page: "companion", selector: ".admin-tabs + .admin-panel" },
+    box: ["x", "width"],
+  },
+  {
+    name: "field list (dl.fields)",
+    prototype: { page: "character", selector: "dl.fields" },
+    live: { page: "companion", selector: "dl.admin-fields" },
+    box: ["x", "width"],
+  },
+  {
+    name: "field label (dt)",
+    prototype: { page: "character", selector: "dl.fields dt" },
+    live: { page: "companion", selector: "dl.admin-fields dt" },
+    box: ["x", "width"],
+  },
+  {
+    name: "field value (dd)",
+    prototype: { page: "character", selector: "dl.fields dd" },
+    live: { page: "companion", selector: "dl.admin-fields dd" },
+    box: ["x", "width"],
+  },
+  {
+    name: "field id chip",
+    prototype: { page: "character", selector: "dl.fields dt .key" },
+    live: { page: "companion", selector: "dl.admin-fields dt .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "field text, edited in place",
+    prototype: { page: "character", selector: "dl.fields dd [contenteditable]" },
+    live: { page: "companion", selector: "dl.admin-fields dd [contenteditable]" },
+  },
+  {
+    name: "field pill (Published)",
+    prototype: { page: "character", selector: "dl.fields dd .pill.s-pub" },
+    live: { page: "companion", selector: "dl.admin-fields dd .admin-pill-published" },
+    box: ["height"],
+  },
+  {
+    // The prototype's Draft pill; live draws Draft, Not written and Read only in the same grey.
+    name: "field pill (grey)",
+    prototype: { page: "character", selector: "dl.fields dd .pill.s-draft" },
+    live: { page: "companion", selector: "dl.admin-fields dd .admin-pill-earlier" },
+    box: ["height"],
+  },
+  {
+    name: "panel note",
+    prototype: { page: "character", selector: ".panel > .note" },
+    live: { page: "companion", selector: ".admin-panel > .admin-fields-note" },
   },
   // #439: the AI features index (drawing AIF-1). The table's rows are seed data; only their parts
   // are compared, never their text or their heights.
@@ -1126,6 +1228,24 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
       "same on both sides (the prototype keeps the browser's underline too). The Companions page " +
       "pull request (#430 T8) decides the row and adds it here.",
   },
+  // #442: Companion profile.
+  ...["main button (Companion profile)", "secondary button (Companion profile)"].map(
+    (component) => ({
+      component,
+      properties: ["min-width", "min-height"],
+      reason:
+        "As `main button` and `secondary button`: live sets 0 to switch off the phone app's 44 px " +
+        "tap minimum (ADMIN-DESKTOP); the prototype has none (auto). The height is compared.",
+    }),
+  ),
+  {
+    component: "field text, edited in place",
+    properties: ["white-space"],
+    reason:
+      "Live is pre-wrap, the prototype normal: stored production text may contain line breaks " +
+      "(the earlier editor was a textarea that allowed them), and they must stay visible and be " +
+      "saved back unchanged.",
+  },
   {
     component: "AI features: table head cell",
     properties: ["white-space"],
@@ -1483,6 +1603,39 @@ test("test_435_frame_pictures_prototype_vs_live", async ({ page, context }) => {
   const origin = new URL(page.url()).origin;
   await servePrototype(page, await adminFontFaces(page));
   await writePictures(page, origin, PICTURES.slice(0, 1));
+});
+
+// #442: the Companion profile pictures for its pull request (prototype `character` vs live
+// Oppenheimer, Profile tab) at each width. Written only on request.
+test("test_442_companion_profile_pictures_prototype_vs_live", async ({ page, context }) => {
+  test.skip(!process.env.ADMIN_VISUAL_SCREENSHOTS, "Set ADMIN_VISUAL_SCREENSHOTS=1 to write them.");
+  test.setTimeout(120_000);
+  mkdirSync(REFERENCE_DIR, { recursive: true });
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto("/admin/companions");
+  const origin = new URL(page.url()).origin;
+  await servePrototype(page, await adminFontFaces(page));
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: HEIGHT });
+    await openPrototype(page, origin, "character");
+    const prototype = await page.screenshot();
+    await openLive(page, "companion");
+    const live = await page.screenshot();
+    writeFileSync(path.join(REFERENCE_DIR, `companion-profile-${width}-prototype.png`), prototype);
+    writeFileSync(path.join(REFERENCE_DIR, `companion-profile-${width}-live.png`), live);
+
+    const image = (png: Buffer) => `data:image/png;base64,${png.toString("base64")}`;
+    await page.setViewportSize({ width: width * 2 + 48, height: HEIGHT + 56 });
+    await page.setContent(
+      `<!doctype html><meta charset=utf-8><body style="margin:0;padding:16px;background:#888;display:flex;gap:16px;font:14px system-ui;color:#fff">` +
+        `<figure style="margin:0"><figcaption>Prototype (standards mode), ${width} px</figcaption><img src="${image(prototype)}"></figure>` +
+        `<figure style="margin:0"><figcaption>Live admin, ${width} px</figcaption><img src="${image(live)}"></figure></body>`,
+    );
+    writeFileSync(
+      path.join(REFERENCE_DIR, `companion-profile-${width}-side-by-side.png`),
+      await page.screenshot({ fullPage: true }),
+    );
+  }
 });
 
 // #439: the same pictures of the AI features index and the Pause message page, full page, written

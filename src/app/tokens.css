@@ -334,6 +334,16 @@
   --adm-track-th: 0.06em;
   --adm-lede-measure: 68ch;
   --adm-field-min: 64px;
+  /* Issue 442, ADM-04 Companion profile: the prototype's .tabs and dl.fields. */
+  --adm-tab-gap: 4px;
+  --adm-tab-pad: 8px 10px;
+  --adm-tab-line: 2px;
+  --adm-fields-label: 170px;
+  --adm-fields-row-pad: 9px;
+  --adm-fields-label-gap: 12px;
+  --adm-note-gap: 10px;
+  /* The prototype's note keeps the browser's paragraph margin below it. */
+  --adm-note-after: 1em;
   /* Issue 439: the AI feature pages (docs/design/prototype/admin-ai-features.html). */
   --adm-h2-after: 10px;
   --adm-empty-size: 13px;
