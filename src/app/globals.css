@@ -4325,7 +4325,8 @@ input.admin-text-field {
 }
 
 /* ADM-01 Status board (issue 440): the prototype's count tiles, Companion panels and the story
-   table with its stage dots and legend. */
+   table with its stage dots and legend. The note and legend rules are scoped to the board, so the
+   AI feature pages keep their own .admin-note and .admin-legend (issue 439). */
 .admin-tiles {
   display: grid;
   gap: var(--adm-tile-gap);
@@ -4365,7 +4366,7 @@ input.admin-text-field {
   margin: 0 0 var(--adm-h2-after);
 }
 
-.admin-note {
+.admin-grid3 .admin-note {
   color: var(--adm-muted);
   font-size: var(--adm-note-size);
   margin: var(--adm-note-gap) 0;
@@ -4408,7 +4409,7 @@ input.admin-text-field {
   border-color: var(--adm-bad);
 }
 
-.admin-legend {
+.admin-board + .admin-legend {
   color: var(--adm-muted);
   display: flex;
   flex-wrap: wrap;
@@ -4417,7 +4418,7 @@ input.admin-text-field {
   margin: var(--adm-gap-small) 0 0;
 }
 
-.admin-legend span {
+.admin-board + .admin-legend span {
   align-items: center;
   display: inline-flex;
   gap: var(--adm-gap-tiny);
