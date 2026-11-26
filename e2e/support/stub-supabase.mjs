@@ -77,6 +77,11 @@
 //                                     reads of ai_features show these purpose items (#439: a
 //                                     layout test that no other test, nor the visual gate, sees);
 //                                     null removes them. Reset does not touch them
+//   POST /__publish_history { token, own: true | null }   (#447) that account's
+//                                     list_publish_history answers a fixed, seeded history (three
+//                                     rows, as the prototype) instead of the shared one, so the
+//                                     visual gate never reads a row another test writes (#460);
+//                                     null gives it up
 //   POST /__fail_reads { token, tables: ["profiles"] }   reads of those tables answer 500 for that
 //                                     account until set again (#118, a failed profile read);
 //                                     "auth" makes GET /auth/v1/user answer 500
@@ -397,6 +402,47 @@ let appTextFailReads = false;
 /** The shared publish history (#289): { id, kind, item_key, version, action, acted_by, email, acted_at }. */
 let publishHistory = [];
 let nextHistoryId = 1;
+
+/**
+ * #447: the fixed publish history of POST /__publish_history { token, own: true }, as
+ * list_publish_history answers it, newest first: the prototype's three rows (a Companion field,
+ * a prompt, an app text). The first two are not published now, so an admin sees Roll back.
+ */
+const seededPublishHistory = () => [
+  {
+    id: 3,
+    kind: "companion_field",
+    item_key: "chr.opp.who",
+    version: 2,
+    action: "publish",
+    acted_by: "00000000-0000-4000-8000-000000000447",
+    acted_by_email: "editor@example.invalid",
+    acted_at: "2026-11-14T15:20:00Z",
+    is_current: false,
+  },
+  {
+    id: 2,
+    kind: "prompt",
+    item_key: "step_cards",
+    version: 4,
+    action: "publish",
+    acted_by: "00000000-0000-4000-8000-000000000447",
+    acted_by_email: "editor@example.invalid",
+    acted_at: "2026-11-12T10:04:00Z",
+    is_current: false,
+  },
+  {
+    id: 1,
+    kind: "app_text",
+    item_key: "ui.S1.back",
+    version: 3,
+    action: "publish",
+    acted_by: "00000000-0000-4000-8000-000000000448",
+    acted_by_email: "writer@example.invalid",
+    acted_at: "2026-11-12T09:40:00Z",
+    is_current: true,
+  },
+];
 
 /** The same checks and history insert as private.set_published_app_text (20261118000000). */
 function setPublished(key, version, action, user) {
@@ -920,6 +966,16 @@ createServer(async (request, response) => {
     return problem ? json(response, 400, { code: "P0001", message: problem }) : json(response, 204);
   }
 
+  if (path === "/__publish_history" && request.method === "POST") {
+    // #447: that account's list_publish_history answers the fixed rows of SEEDED_PUBLISH_HISTORY
+    // (null gives the view up), so the visual gate never reads a row another test writes (#460).
+    const body = (await readBody(request)) ?? {};
+    const account = typeof body.token === "string" ? datasets.get(body.token) : undefined;
+    if (!account || !("own" in body)) return json(response, 404, { message: "no such account" });
+    account.publishHistoryOwn = body.own === true ? seededPublishHistory() : undefined;
+    return json(response, 200, { ok: true });
+  }
+
   if (path === "/__ai_features" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
     if (typeof body.token === "string" && "own" in body) {
@@ -1137,6 +1193,8 @@ createServer(async (request, response) => {
       });
     }
     const limit = Math.min(Math.max(Number(body.row_limit ?? 100) || 100, 1), 500);
+    // #447: an account with the fixed view (POST /__publish_history) reads only those rows.
+    if (dataset.publishHistoryOwn) return json(response, 200, dataset.publishHistoryOwn);
     const rows = [...publishHistory]
       .sort((left, right) => right.id - left.id)
       .slice(0, limit)
