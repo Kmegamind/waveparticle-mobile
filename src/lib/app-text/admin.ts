@@ -133,3 +133,126 @@ export async function writeAppText(
   deps.clearCache();
   return { ok: true };
 }
+
+// #445: the page as the prototype draws it. Each key is one line; its text is edited in place, and
+// "Publish changes" in the header publishes every newer draft at once (admin only), one key at a
+// time through the same publish as the per-key button.
+
+/** The text the in-place field starts with: the newer draft, else the published text, else the
+ * code default. Exactly as stored: never trimmed or changed. */
+export function appTextStartText(row: AppTextAdminRow): string {
+  return row.draft?.body ?? row.published?.body ?? row.defaultText;
+}
+
+/**
+ * True when Save draft has something to save: the typed text (null before any typing) differs
+ * exactly from the text the field started with, or the key has no row in the database at all.
+ */
+export function appTextCanSave(row: AppTextAdminRow, typed: string | null): boolean {
+  if (!row.published && !row.draft) return true;
+  return typed !== null && typed !== appTextStartText(row);
+}
+
+/** Names the stored state of one key: its draft and published versions and the start text. */
+export function appTextStoredKey(row: AppTextAdminRow): string {
+  return `${row.draft?.version ?? 0}:${row.published?.version ?? 0}:${appTextStartText(row)}`;
+}
+
+/** Unsaved typing in one field: the stored state it started from, its start text, and the text. */
+export type AppTextTyping = { key: string; base: string; text: string };
+
+/**
+ * What the page shows for a field's typing. `edited`: the text differs exactly from the stored
+ * start text (Publish vN and Roll back wait until it is saved or cancelled). `stale`: the stored
+ * text changed after the typing began (a publish, a roll back or another editor's change); the
+ * typing is kept and the page says so, with Discard.
+ */
+export function appTextEditState(
+  row: AppTextAdminRow,
+  typing: AppTextTyping | null,
+): { edited: boolean; stale: boolean; canSave: boolean } {
+  const edited = typing !== null && typing.text !== appTextStartText(row);
+  return {
+    edited,
+    stale: edited && typing.key !== appTextStoredKey(row),
+    canSave: appTextCanSave(row, typing?.text ?? null),
+  };
+}
+
+export type AppTextChange = { key: AppTextKey; version: number; body: string };
+
+/** What "Publish changes" publishes: every key with a newer draft, with that draft's version. */
+export function appTextChanges(rows: AppTextAdminRow[]): AppTextChange[] {
+  return rows.flatMap((row) =>
+    row.draft ? [{ key: row.key, version: row.draft.version, body: row.draft.body }] : [],
+  );
+}
+
+export type AppTextChangeResult = { key: string; version: number; result: AppTextWriteResult };
+
+export type PublishChangesResult =
+  { ok: true; results: AppTextChangeResult[] } | { ok: false; error: "not-allowed" | "invalid" };
+
+/**
+ * Publishes the listed versions, one key at a time, with `writeAppText` (the per-key publish).
+ * Admin only: a writer or an account without a role gets "not-allowed" before any call. An empty
+ * list, a key listed twice or a malformed item is refused before any call.
+ */
+export async function publishAppTextChanges(
+  items: { key: string; version: number }[],
+  deps: Parameters<typeof writeAppText>[1],
+): Promise<PublishChangesResult> {
+  if (!deps.userId || deps.role !== "admin") return { ok: false, error: "not-allowed" };
+  if (!Array.isArray(items) || items.length === 0 || items.length > APP_TEXT_KEYS.length) {
+    return { ok: false, error: "invalid" };
+  }
+  const keys = new Set<string>();
+  for (const item of items) {
+    if (
+      !item ||
+      typeof item.key !== "string" ||
+      !Number.isInteger(item.version) ||
+      keys.has(item.key)
+    ) {
+      return { ok: false, error: "invalid" };
+    }
+    keys.add(item.key);
+  }
+  const results: AppTextChangeResult[] = [];
+  for (const item of items) {
+    const result = await writeAppText(
+      { kind: "publish", key: item.key, version: item.version },
+      deps,
+    );
+    results.push({ key: item.key, version: item.version, result });
+  }
+  return { ok: true, results };
+}
+
+/** The words for one refused App text write. */
+export const APP_TEXT_PROBLEMS: Record<Exclude<AppTextWriteResult, { ok: true }>["error"], string> =
+  {
+    "not-allowed": "Your account cannot change app text.",
+    invalid: "This key or version is not known.",
+    blank: "Write a text first. An empty text is not saved.",
+    "too-long": "Keep the text under 1000 characters.",
+    failed: "Could not save the change. Please try again.",
+  };
+
+/** One sentence naming each key and version that was published, and each that was not, and why. */
+export function publishChangesMessage(results: AppTextChangeResult[]): string {
+  const done = results.filter((item) => item.result.ok);
+  const refused = results.filter((item) => !item.result.ok);
+  const parts: string[] = [];
+  if (done.length > 0) {
+    parts.push(`Published ${done.map((item) => `${item.key} v${item.version}`).join(", ")}.`);
+  }
+  if (refused.length > 0) {
+    const list = refused.map((item) => {
+      const error = item.result.ok ? "failed" : item.result.error;
+      return `${item.key} v${item.version} (${APP_TEXT_PROBLEMS[error]})`;
+    });
+    parts.push(`Not published: ${list.join(", ")}.`);
+  }
+  return parts.join(" ");
+}

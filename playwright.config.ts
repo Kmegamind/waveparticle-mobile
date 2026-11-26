@@ -31,6 +31,9 @@ const appEnv = {
   GOAL_DIALOGUE_SECRET: "e2e-goal-dialogue-key-for-tests-only-0001",
 };
 
+// #445: every e2e file that writes app text (save, publish, roll back or reset of app_text).
+const APP_TEXT_WRITERS = /(?:^|\/)(?:app-text|publish-history)\.spec\.ts$/;
+
 export default defineConfig({
   testDir: "e2e",
   fullyParallel: true,
@@ -39,7 +42,16 @@ export default defineConfig({
   projects: [
     {
       name: "mobile",
-      testIgnore: [/\.live\.spec\.ts$/, /admin-visual\.spec\.ts$/],
+      testIgnore: [/\.live\.spec\.ts$/, /admin-visual\.spec\.ts$/, APP_TEXT_WRITERS],
+      use: { ...devices["iPhone 14"] },
+    },
+    // #445: the files that write the stub's one app_text table run one at a time, never beside
+    // each other (App text's Publish changes lists every key's draft). One worker for this project
+    // only; the other projects keep running beside it.
+    {
+      name: "app-text",
+      testMatch: APP_TEXT_WRITERS,
+      workers: 1,
       use: { ...devices["iPhone 14"] },
     },
     // #435: the admin visual gate runs in a desktop browser (the admin is desktop only).

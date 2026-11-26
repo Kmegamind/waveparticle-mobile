@@ -103,6 +103,42 @@ const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
     },
   },
   appText: { path: "/admin/app-text" },
+  // #445: App text with one text typed into (in the browser only, nothing is saved), so its Save
+  // draft and Cancel show.
+  appTextEditing: {
+    path: "/admin/app-text",
+    prepare: async (page) => {
+      const text = page.locator(".admin-table [contenteditable]").first();
+      await expect(text).toHaveAttribute("contenteditable", "true");
+      await text.click();
+      await page.keyboard.press("End");
+      await page.keyboard.type(" x");
+      await expect(page.locator(".admin-table .button-gray.button-small").first()).toBeVisible();
+    },
+  },
+  // #445: App text no longer has a text box (its texts are edited in place, as the prototype's),
+  // and the pages that still have one are being rebuilt. The row checks the shared field class, so
+  // a stand-in field of that class is put into a panel of a page that no test writes, as `actions`
+  // does for the header buttons. It sits in the admin's form grid (.admin-text-form), as every live
+  // field does, the way the prototype's sits in its .form label grid. A page that builds a form
+  // like the prototype's adds its own row.
+  textField: {
+    path: "/admin/companions",
+    prepare: async (page) => {
+      await page
+        .locator(".admin-panel")
+        .first()
+        .evaluate((panel) => {
+          const form = document.createElement("div");
+          form.className = "admin-text-form";
+          const field = document.createElement("textarea");
+          field.className = "admin-text-field";
+          field.rows = 3;
+          form.append(field);
+          panel.append(form);
+        });
+    },
+  },
   // A detail page: its menu row (Prompts) is marked as current.
   prompt: { path: "/admin/prompts/plan_split" },
   // #446: the prompts list (no prototype screen; drawn with the prototype's table components).
@@ -356,14 +392,14 @@ const COMPONENTS: Component[] = [
   {
     name: "small secondary button",
     prototype: { page: "history", selector: "td button.small" },
-    live: { page: "appText", selector: ".admin-table .button-gray.button-small" },
+    live: { page: "appTextEditing", selector: ".admin-table .button-gray.button-small" },
     properties: [...STYLE, "cursor"],
     box: ["height"],
   },
   {
     name: "text field",
     prototype: { page: "regenerate", selector: "dialog.sheet textarea" },
-    live: { page: "appText", selector: ".admin-table textarea.admin-text-field" },
+    live: { page: "textField", selector: ".admin-panel textarea.admin-text-field" },
     properties: [...STYLE, "resize"],
   },
   // #446: ADM-08 Prompts. The prompt page against the prototype's Prompts screen; the list against
@@ -493,6 +529,68 @@ const COMPONENTS: Component[] = [
     name: "prompts list: pill (Active)",
     prototype: { page: "characters", selector: ".pill.s-pub" },
     live: { page: "promptList", selector: ".admin-table .admin-pill-published" },
+  },
+  // #445: App text (ADM-07), the prototype's `uitext` screen: the header with Publish changes, and
+  // one line per key with its text edited in place. Rows read the first line (ui.F3.fail.body),
+  // which no test writes. They come before the AI feature rows: the last of those pages signs the
+  // browser in again as a writer, and Publish changes shows to an admin only.
+  {
+    name: "header row (App text)",
+    prototype: { page: "uitext", selector: ".head" },
+    live: { page: "appText", selector: ".admin-head" },
+    box: ["x", "y", "width"],
+  },
+  {
+    name: "header action row (App text)",
+    prototype: { page: "uitext", selector: ".head .btns" },
+    live: { page: "appText", selector: ".admin-head .admin-actions" },
+  },
+  {
+    name: "panel (App text)",
+    prototype: { page: "uitext", selector: ".panel" },
+    live: { page: "appText", selector: ".admin-panel" },
+    box: ["x", "width"],
+  },
+  {
+    name: "table (App text)",
+    prototype: { page: "uitext", selector: "table" },
+    live: { page: "appText", selector: ".admin-table" },
+    properties: [...STYLE, "border-collapse", "table-layout"],
+    box: ["width"],
+  },
+  {
+    name: "table head cell (App text)",
+    prototype: { page: "uitext", selector: "th" },
+    live: { page: "appText", selector: ".admin-table th" },
+    box: ["height"],
+  },
+  {
+    name: "table cell (App text)",
+    prototype: { page: "uitext", selector: "td" },
+    live: { page: "appText", selector: ".admin-table td" },
+  },
+  {
+    // The issue's finding: a line was 241 px tall live against 39.6 px in the prototype.
+    name: "table line (App text)",
+    prototype: { page: "uitext", selector: "tbody tr" },
+    live: { page: "appText", selector: ".admin-table tbody tr" },
+    box: ["height"],
+  },
+  {
+    name: "id chip (App text)",
+    prototype: { page: "uitext", selector: "td .key" },
+    live: { page: "appText", selector: ".admin-table .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "text, edited in place (App text)",
+    prototype: { page: "uitext", selector: "td [contenteditable]" },
+    live: { page: "appText", selector: ".admin-table [contenteditable]" },
+  },
+  {
+    name: "pill (App text, Published)",
+    prototype: { page: "uitext", selector: "td .pill.s-pub" },
+    live: { page: "appText", selector: ".admin-table .admin-pill-published" },
     box: ["height"],
   },
   // #442: Companion profile (ADM-04): the real header actions, the tabs and the dl.fields rows.
@@ -1248,18 +1346,11 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
       "height is compared as `box height`.",
   })),
   {
-    component: "small secondary button",
-    properties: ["display"],
-    reason:
-      "Both are inline-flex. The live one sits in a flex row (.admin-text-actions), where the " +
-      "browser computes a flex item's inline-flex as flex; the prototype's sits in a table cell.",
-  },
-  {
     component: "text field",
     properties: ["font-weight"],
     reason:
       "Both fields inherit the weight (font: inherit). The prototype's only field sits inside a " +
-      ".form label (600); live fields have their label beside them (400). The page pull request " +
+      ".form label (600); the live stand-in field sits in a panel (400). The page pull request " +
       "that builds a form like the prototype's compares the weight there.",
   },
   {
@@ -1407,6 +1498,24 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
       "stretches its buttons to it, so Test draft is 36 px. Live has no model list (an owner " +
       "decision: no per-prompt model in the data), so Save draft keeps its own 33.5 px, the " +
       "height of the prototype's own secondary button (compared in `secondary button`).",
+  },
+  // #445: App text.
+  {
+    component: "text, edited in place (App text)",
+    properties: ["white-space"],
+    reason:
+      "Live is pre-wrap, the prototype normal: a stored text may hold a line break or a double " +
+      "space (the earlier editor was a text box that allowed them); they must stay visible and be " +
+      "saved back unchanged.",
+  },
+  {
+    component: "main button (App text) (not in COMPONENTS)",
+    properties: ["(whole component)"],
+    reason:
+      "Publish changes is disabled while no key has a newer draft, which is the seed the gate " +
+      "reads (gate tests never write drafts). A disabled button draws cursor not-allowed and 35% " +
+      "opacity, so it is not compared with the prototype's enabled button. The enabled main " +
+      "button is compared as `main button`; the row it sits in as `header action row (App text)`.",
   },
 ];
 
@@ -1749,3 +1858,36 @@ async function writePictures(
     }
   }
 }
+
+// #445: the App text pictures for its pull request (prototype `uitext` vs live App text, as an
+// admin) at each width. Written only on request.
+test("test_445_app_text_pictures_prototype_vs_live", async ({ page, context }) => {
+  test.skip(!process.env.ADMIN_VISUAL_SCREENSHOTS, "Set ADMIN_VISUAL_SCREENSHOTS=1 to write them.");
+  test.setTimeout(120_000);
+  mkdirSync(REFERENCE_DIR, { recursive: true });
+  await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await page.goto("/admin/app-text");
+  const origin = new URL(page.url()).origin;
+  await servePrototype(page, await adminFontFaces(page));
+  for (const width of WIDTHS) {
+    await page.setViewportSize({ width, height: HEIGHT });
+    await openPrototype(page, origin, "uitext");
+    const prototype = await page.screenshot();
+    await openLive(page, "appText");
+    const live = await page.screenshot();
+    writeFileSync(path.join(REFERENCE_DIR, `app-text-${width}-prototype.png`), prototype);
+    writeFileSync(path.join(REFERENCE_DIR, `app-text-${width}-live.png`), live);
+
+    const image = (png: Buffer) => `data:image/png;base64,${png.toString("base64")}`;
+    await page.setViewportSize({ width: width * 2 + 48, height: HEIGHT + 56 });
+    await page.setContent(
+      `<!doctype html><meta charset=utf-8><body style="margin:0;padding:16px;background:#888;display:flex;gap:16px;font:14px system-ui;color:#fff">` +
+        `<figure style="margin:0"><figcaption>Prototype (standards mode), ${width} px</figcaption><img src="${image(prototype)}"></figure>` +
+        `<figure style="margin:0"><figcaption>Live admin, ${width} px</figcaption><img src="${image(live)}"></figure></body>`,
+    );
+    writeFileSync(
+      path.join(REFERENCE_DIR, `app-text-${width}-side-by-side.png`),
+      await page.screenshot({ fullPage: true }),
+    );
+  }
+});
