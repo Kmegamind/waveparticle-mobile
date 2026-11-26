@@ -90,6 +90,9 @@
 //                                     rows, as the prototype) instead of the shared one, so the
 //                                     visual gate never reads a row another test writes (#460);
 //                                     null gives it up
+//   POST /__publish_history { token, append: { kind, item_key, version } }   (#460) adds a publish
+//                                     row by that account to the shared history, as an editing
+//                                     test's publish writes one, without changing any content
 //   POST /__fail_reads { token, tables: ["profiles"] }   reads of those tables answer 500 for that
 //                                     account until set again (#118, a failed profile read);
 //                                     "auth" makes GET /auth/v1/user answer 500
@@ -1009,6 +1012,21 @@ createServer(async (request, response) => {
     // (null gives the view up), so the visual gate never reads a row another test writes (#460).
     const body = (await readBody(request)) ?? {};
     const account = typeof body.token === "string" ? datasets.get(body.token) : undefined;
+    if (account && body.append && typeof body.append === "object") {
+      // #460: a publish row in the shared history, as an editing test's publish writes one.
+      const { kind, item_key: itemKey, version } = body.append;
+      publishHistory.push({
+        id: nextHistoryId++,
+        kind,
+        item_key: itemKey,
+        version,
+        action: "publish",
+        acted_by: account.user.id,
+        acted_by_email: account.user.email ?? null,
+        acted_at: new Date().toISOString(),
+      });
+      return json(response, 200, { ok: true });
+    }
     if (!account || !("own" in body)) return json(response, 404, { message: "no such account" });
     account.publishHistoryOwn = body.own === true ? seededPublishHistory() : undefined;
     return json(response, 200, { ok: true });

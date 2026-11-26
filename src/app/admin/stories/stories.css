@@ -1,0 +1,25 @@
+/* The Stories page's styles (issue 483: moved from src/app/globals.css, in their order there).
+   Imported by src/app/admin/stories/page.tsx, so it loads after src/app/admin/admin.css. Every
+   selector here names a class of this page only, so the rules stay inert on other admin pages after
+   a client-side navigation. */
+
+/* ADM-06 Stories as the prototype's Life path table (issue 443). It scrolls sideways in
+   .admin-scroll, defined above. */
+.admin-life-path td {
+  overflow-wrap: anywhere;
+}
+
+.admin-period-row td {
+  background: var(--adm-soft);
+  font-weight: 600;
+}
+
+/* The prototype's period key takes the row's weight, as its chip sets none. */
+.admin-period-row .admin-chip {
+  font-weight: inherit;
+}
+
+/* The prototype's story title is <b> (bolder: 700). */
+.admin-life-path .admin-cell-name {
+  font-weight: 700;
+}

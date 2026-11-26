@@ -3,6 +3,7 @@ import path from "node:path";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import { adminAnswer, isAdminPath, readContentRole } from "@/lib/admin/roles";
+import { readAdminCss } from "./support/admin-css";
 
 // #287: the admin and writer roles, the server-side role check and the admin shell.
 
@@ -141,10 +142,8 @@ describe("server role check (#287)", () => {
 });
 
 describe("admin shell (#287)", () => {
-  const adminCss = () => {
-    const css = read("src/app/globals.css");
-    return css.slice(css.indexOf("/* The content admin (issue 287)"));
-  };
+  // #483: the admin's styles are in src/app/admin/admin.css and one file per admin page.
+  const adminCss = () => readAdminCss();
 
   it("test_287_ac5_admin_styles_use_tokens_only", () => {
     const css = adminCss();

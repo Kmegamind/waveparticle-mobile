@@ -6,6 +6,7 @@ import { isPromptKey, promptDetail, readPromptVersions, settingsLines } from "@/
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PromptEditor } from "./prompt-editor";
 import { Breadcrumb, KeyChip, PageHead } from "@/app/admin/admin-ui";
+import "../prompts.css";
 
 export const instant = false;
 

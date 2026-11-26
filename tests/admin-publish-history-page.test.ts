@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { readAdminCss } from "./support/admin-css";
 
 // #447: ADM-12 Publish history matches the admin prototype's `history` screen.
 
@@ -32,7 +33,7 @@ describe("ADM-12 layout as the prototype (#447)", () => {
   it("test_447_ac1_an_empty_roll_back_status_takes_no_row_height", () => {
     // The prototype's rows are one line (43 px); an empty status line under Roll back or
     // "Published now" made every live row a line taller.
-    const css = read("src/app/globals.css");
+    const css = readAdminCss();
     expect(css).toMatch(
       /\.admin-history-action:has\(> \.admin-text-status:empty\)\s*\{[^}]*gap:\s*0/,
     );
@@ -43,7 +44,7 @@ describe("ADM-12 layout as the prototype (#447)", () => {
 
   it("test_447_ac1_cells_keep_whole_words_as_the_prototype_inside_the_scroll_panel", () => {
     expect(read(PAGE)).toContain('className="admin-table admin-publish-history"');
-    expect(read("src/app/globals.css")).toMatch(
+    expect(readAdminCss()).toMatch(
       /\.admin-publish-history th,\s*\.admin-publish-history td\s*\{\s*overflow-wrap:\s*normal;/,
     );
   });

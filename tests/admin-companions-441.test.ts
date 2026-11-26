@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { companionRow } from "@/lib/admin/companion-rows";
+import { readAdminCss } from "./support/admin-css";
 
 // #441: the Companions list (ADM-03) follows the prototype's Characters screen. Each row is
 // clickable with the name in bold text (no underlined link look); the panel scrolls sideways as
@@ -13,7 +14,7 @@ const root = path.join(import.meta.dirname, "..");
 const read = (file: string) => readFileSync(path.join(root, file), "utf8");
 const page = () => read("src/app/admin/companions/page.tsx");
 const block = (selector: string) => {
-  const css = read("src/app/globals.css");
+  const css = readAdminCss();
   const start = css.indexOf(`${selector} {`);
   expect(start, selector).toBeGreaterThan(-1);
   return css.slice(start, css.indexOf("}", start));

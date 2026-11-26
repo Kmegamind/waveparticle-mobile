@@ -11,6 +11,7 @@ import { readPromptVersions } from "@/lib/prompts/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Breadcrumb, KeyChip, PageHead, StatePill } from "../admin-ui";
 import { FeatureStatusPill, MarkPill } from "./feature-ui";
+import "./ai-features.css";
 
 // ADM-16 AI features (#439, part of #430; AI-PAGES-7): the 7 AI features with their status, the
 // published version of their prompts and their last imported test run, as the drawing

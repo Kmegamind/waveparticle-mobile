@@ -1,0 +1,90 @@
+/* The Hotlines pages' styles (issue 483: moved from src/app/globals.css, in their order there).
+   Imported by the Hotlines list and the Hotline entry page, so it loads after
+   src/app/admin/admin.css. Every selector here names a class of this page only, so the rules stay
+   inert on other admin pages after a client-side navigation. */
+
+/* Issue 448, ADM-14 Hotlines and ADM-15 Hotline entry, as drawn in
+   docs/design/prototype/admin-hotlines_2026-11-23_v1.html. The list: the table in a scrolling
+   panel (.panel.scroll) with its note 12 px under it; Add an entry in the header row submits the
+   country list under the panel. The entry: the legal note as the drawing's grey banner (.est), then the Entry panel
+   beside the Preview on S1 panel (1.3fr and 1fr, 16 px apart), headings 10 px above their content,
+   the Versions heading 18 px under the preview. */
+.admin-hotline-list {
+  overflow-x: auto;
+}
+
+.admin-hotline-list-note {
+  margin-top: var(--adm-form-gap);
+}
+
+.admin-hotline-add {
+  margin-top: var(--adm-gap);
+}
+
+.admin-hotline-legal {
+  background: var(--adm-soft);
+  border-radius: var(--adm-r-code);
+  font-size: var(--adm-empty-size);
+  margin: 0 0 var(--adm-gap);
+  padding: var(--adm-empty-pad);
+}
+
+.admin-hotline-grid {
+  display: grid;
+  gap: var(--adm-editor-gap);
+  grid-template-columns: var(--adm-hotline-columns);
+}
+
+.admin-main .admin-hotline-heading {
+  margin: 0 0 var(--adm-h2-after);
+}
+
+/* The drawing's Versions heading has an inline margin-top of 18 px (the lede's gap). */
+.admin-main .admin-hotline-versions {
+  margin-top: var(--adm-lede-after);
+}
+
+.admin-hotline-read-only {
+  margin-bottom: var(--adm-h2-after);
+}
+
+/* The drawing's p.note keeps the browser's paragraph margin. */
+.admin-hotline-preview-note {
+  margin: var(--adm-note-after) 0;
+}
+
+.admin-hotline-country {
+  margin: var(--adm-gap-small) 0 var(--adm-gap-hair);
+}
+
+.admin-hotline-line {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-hotline-contact {
+  font-weight: 600;
+}
+
+.admin-hotline-link {
+  margin: var(--adm-gap-tiny) 0;
+  overflow-wrap: anywhere;
+}
+
+/* What a version shows, under its chip (not in the drawing, whose sample has one version). */
+.admin-hotline-version-shows {
+  margin-top: var(--adm-gap-hair);
+  overflow-wrap: anywhere;
+}
+
+/* The Versions headings are short fixed words and stay whole, as the drawing's do (with anywhere,
+   a long cell squeezed "Version" to a letter or two per line). */
+.admin-hotline-grid .admin-table th {
+  overflow-wrap: normal;
+}
+
+/* The list's headings too, as the prototype's (normal). With anywhere, a few px of extra cell text
+   at 1024 px (the seed's "the product owner"; CI's font metrics) squeezed them to two lines. */
+.admin-hotline-list .admin-table th {
+  overflow-wrap: normal;
+}

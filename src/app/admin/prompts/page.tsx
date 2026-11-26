@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { promptList, readPromptVersions } from "@/lib/prompts/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Breadcrumb, KeyChip, PageHead, StatePill } from "@/app/admin/admin-ui";
+import "./prompts.css";
 
 // ADM-08 Prompts (#308, docs/decisions/0025): the gateway's prompts with their active version and
 // its settings, and any newer draft. The layout already checked the role; the rows come through the

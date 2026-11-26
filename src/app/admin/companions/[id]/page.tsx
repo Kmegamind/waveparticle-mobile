@@ -6,6 +6,7 @@ import { readCompanionsData } from "@/lib/content-fields/reader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ProfileFields } from "./profile-fields";
 import { Breadcrumb, PageHead } from "@/app/admin/admin-ui";
+import "./companion-profile.css";
 
 export const instant = false;
 

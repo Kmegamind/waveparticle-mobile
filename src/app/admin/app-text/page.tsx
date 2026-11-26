@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Breadcrumb, PageHead } from "../admin-ui";
 import { AppTextEditor } from "./app-text-editor";
 import { PublishChanges } from "./publish-changes";
+import "./app-text.css";
 
 // ADM-07 App text (#288): every key the app reads, with its screen, its published text and any
 // newer draft. The layout already checked the role; the rows come through the signed-in user's own

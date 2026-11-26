@@ -9,6 +9,7 @@ import { readCompanionsData } from "@/lib/content-fields/reader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { FieldEditor } from "../../../field-editor";
 import { Breadcrumb } from "@/app/admin/admin-ui";
+import "./companion-story.css";
 
 export const instant = false;
 

@@ -1,0 +1,107 @@
+/* The Companion profile's styles (issue 483: moved from src/app/globals.css, in their order there).
+   Imported by src/app/admin/companions/[id]/page.tsx, so it loads after src/app/admin/admin.css.
+   Every selector here names a class of this page only, so the rules stay inert on other admin pages
+   after a client-side navigation. */
+
+/* Issue 442, ADM-04 Companion profile: the prototype's tabs (.tabs) and field rows (dl.fields):
+   the label and id on the left, the text edited in place with its state pill on the right. */
+.admin-tabs {
+  border-bottom: 1px solid var(--adm-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-tab-gap);
+  margin-bottom: var(--adm-gap);
+}
+
+.admin-shell .admin-tab {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-bottom: var(--adm-tab-line) solid transparent;
+  border-radius: 0;
+  color: var(--adm-ink);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: var(--adm-font-body);
+  font-size: var(--adm-button-size);
+  font-weight: 400;
+  gap: var(--adm-gap-tiny);
+  line-height: var(--adm-leading);
+  /* The prototype's tabs keep the browser's automatic minimum size. */
+  min-height: auto;
+  min-width: auto;
+  padding: var(--adm-tab-pad);
+}
+
+.admin-shell .admin-tab:hover,
+.admin-shell .admin-tab[aria-selected="true"] {
+  border-bottom-color: var(--adm-accent);
+}
+
+.admin-shell .admin-tab[aria-selected="true"] {
+  color: var(--adm-accent);
+  font-weight: 600;
+}
+
+.admin-fields {
+  display: grid;
+  gap: 0;
+  grid-template-columns: var(--adm-fields-label) minmax(0, 1fr);
+  margin: 0;
+}
+
+.admin-fields dt,
+.admin-fields dd {
+  border-bottom: 1px solid var(--adm-line);
+  margin: 0;
+  padding: var(--adm-fields-row-pad) 0;
+}
+
+.admin-fields dt {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  padding-right: var(--adm-fields-label-gap);
+}
+
+.admin-fields dd {
+  overflow-wrap: anywhere;
+}
+
+/* Stored text may hold line breaks and double spaces (the earlier editor was a textarea); they
+   stay visible and are read back exactly (profile-fields.tsx). The prototype computes normal. */
+.admin-field-text {
+  white-space: pre-wrap;
+}
+
+.admin-field-text:empty::before {
+  color: var(--adm-muted);
+  content: attr(data-placeholder);
+}
+
+.admin-fields-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: var(--adm-note-gap) 0 var(--adm-note-after);
+}
+
+/* A note under one field's text, and its status (empty, it takes no room; a live region must
+   exist before its text arrives). */
+.admin-field-note,
+.admin-fields-status {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: 0;
+}
+
+.admin-fields .admin-text-versions,
+.admin-field-stories {
+  margin-top: var(--adm-gap-tiny);
+}
+
+.admin-field-stories {
+  display: grid;
+  gap: var(--adm-gap-hair);
+  list-style: none;
+  margin-bottom: 0;
+  padding: 0;
+}

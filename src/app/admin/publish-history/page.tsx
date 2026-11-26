@@ -8,6 +8,7 @@ import { publishHistoryEntries, readPublishHistory } from "@/lib/publish-history
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Breadcrumb, KeyChip, PageHead } from "../admin-ui";
 import { HistoryRowAction } from "./roll-back-button";
+import "./publish-history.css";
 
 // ADM-12 Publish history (#289, docs/decisions/0018): every publish and roll back, newest first,
 // with a Roll back button. The layout already checked the role; the rows come through the

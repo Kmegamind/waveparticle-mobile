@@ -11,6 +11,7 @@ import {
   type BoardInput,
 } from "@/lib/story-cards/status-board";
 import type { StoryCardRow, StoryListRow } from "@/lib/story-cards/admin";
+import { readAdminCss } from "./support/admin-css";
 
 // #440: the Overview (/admin) is the prototype's Status board (ADM-01), built only from data the
 // admin has today. Its look is compared with the prototype in e2e/admin-visual.spec.ts.
@@ -250,7 +251,7 @@ describe("Overview page (#440)", () => {
   });
 
   it("test_440_the_board_parts_use_admin_tokens", () => {
-    const css = read("src/app/globals.css");
+    const css = readAdminCss();
     const block = (selector: string) => {
       const start = css.indexOf(`\n${selector} {`);
       expect(start, selector).toBeGreaterThan(-1);

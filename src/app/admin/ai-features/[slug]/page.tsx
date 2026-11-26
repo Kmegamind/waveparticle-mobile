@@ -17,6 +17,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Breadcrumb, KeyChip, PageHead, StatePill } from "../../admin-ui";
 import { FeatureStatusPill, ItemSource, MarkPill, NotWrittenYet } from "../feature-ui";
 import { readPeople, readStatusHistory } from "../load";
+import "../ai-features.css";
 
 export const instant = false;
 

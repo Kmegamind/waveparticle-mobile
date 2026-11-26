@@ -14,6 +14,7 @@ import {
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PublishFirstNotice } from "./publish-first-notice";
 import { Breadcrumb, KeyChip, PageHead, StatePill } from "@/app/admin/admin-ui";
+import "./stories.css";
 
 // ADM-06 Stories (#293, #304), drawn as the prototype's Life path table (#443): Oppenheimer's
 // stories grouped by Life Path period, each with its number, title, key, Life path description and
