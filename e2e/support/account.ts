@@ -91,3 +91,16 @@ export function baseUrlOf(page: Page): string {
   return new URL(page.url() === "about:blank" ? `http://127.0.0.1:${e2ePorts.app}` : page.url())
     .origin;
 }
+
+/**
+ * #447: this account reads a fixed, seeded publish history (POST /__publish_history in the stub)
+ * instead of the shared one that other tests write while the visual gate runs (#460).
+ */
+export async function useSeededPublishHistory(account: StubAccount): Promise<void> {
+  const answer = await fetch(`${STUB_SUPABASE}/__publish_history`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ token: account.token, own: true }),
+  });
+  if (!answer.ok) throw new Error(`stub publish history failed: ${answer.status}`);
+}

@@ -1,7 +1,7 @@
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
-import { baseUrlOf, signIn } from "./support/account";
+import { baseUrlOf, signIn, useSeededPublishHistory } from "./support/account";
 import { useSeededPrompts } from "./support/prompts";
 
 // #435: the admin visual gate. It opens the repository copy of the owner's admin prototype
@@ -156,6 +156,9 @@ const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
   aiStatus: { path: "/admin/ai-features/pause_message/status" },
   aiPass: { path: "/admin/ai-features/pause_message/pass" },
   aiPurpose: { path: "/admin/ai-features/pause_message/purpose" },
+  // #447: Publish history (ADM-12), the prototype's `history` screen. The gate's account reads a
+  // fixed, seeded history (useSeededPublishHistory), never the shared one other tests write (#460).
+  history: { path: "/admin/publish-history" },
   // The writer's view of the status editor: this page signs the browser in again as a writer, so
   // it is the last live page COMPONENTS names (the pages are opened in the order of the map).
   aiStatusWriter: {
@@ -1226,6 +1229,98 @@ const COMPONENTS: Component[] = [
     live: { page: "aiPurpose", selector: ".admin-editor > .admin-panel:last-child > h2" },
     box: ["height"],
   },
+  // #447: Publish history (ADM-12), read on the gate account's fixed, seeded history: three
+  // one-line rows, the first two with Roll back (the gate signs in as an admin).
+  {
+    name: "history: menu row, current",
+    prototype: { page: "history", selector: ".rail a.on" },
+    live: { page: "history", selector: ".admin-menu-link[aria-current]" },
+    box: ["width", "height"],
+  },
+  {
+    name: "history: breadcrumb",
+    prototype: { page: "history", selector: ".crumb" },
+    live: { page: "history", selector: ".admin-crumb" },
+    box: ["height"],
+  },
+  {
+    name: "history: header row",
+    prototype: { page: "history", selector: ".head" },
+    live: { page: "history", selector: ".admin-head" },
+    box: ["x", "y", "width"],
+  },
+  {
+    name: "history: page title",
+    prototype: { page: "history", selector: ".head h1" },
+    live: { page: "history", selector: ".admin-head h1" },
+    box: ["height"],
+  },
+  {
+    name: "history: lede",
+    prototype: { page: "history", selector: ".head .lede" },
+    live: { page: "history", selector: ".admin-head .admin-lede" },
+  },
+  {
+    name: "history: panel",
+    prototype: { page: "history", selector: ".panel.scroll" },
+    live: { page: "history", selector: ".admin-panel.admin-scroll" },
+    properties: [...STYLE, "overflow-x"],
+    box: ["x", "width"],
+  },
+  {
+    name: "history: table",
+    prototype: { page: "history", selector: "table" },
+    live: { page: "history", selector: ".admin-table" },
+    properties: [...STYLE, "border-collapse", "table-layout"],
+    box: ["width"],
+  },
+  {
+    name: "history: table head cell",
+    prototype: { page: "history", selector: "th" },
+    live: { page: "history", selector: ".admin-table th" },
+    box: ["height"],
+  },
+  {
+    name: "history: When cell",
+    prototype: { page: "history", selector: "td.note" },
+    live: { page: "history", selector: ".admin-table td.admin-cell-note" },
+  },
+  {
+    name: "history: Who cell",
+    prototype: { page: "history", selector: "td:nth-child(2)" },
+    live: { page: "history", selector: ".admin-table td:nth-child(2)" },
+  },
+  {
+    name: "history: What cell",
+    prototype: { page: "history", selector: "td:nth-child(3)" },
+    live: { page: "history", selector: ".admin-table td:nth-child(3)" },
+  },
+  {
+    name: "history: What id chip",
+    prototype: { page: "history", selector: "td:nth-child(3) .key" },
+    live: { page: "history", selector: ".admin-table td:nth-child(3) .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "history: version chip",
+    prototype: { page: "history", selector: "td:nth-child(4) .key" },
+    live: { page: "history", selector: ".admin-table td:nth-child(4) .admin-chip" },
+    box: ["height"],
+  },
+  {
+    // Its height is the row's, which the What text sets (seed data, not compared). That an empty
+    // status line adds no height is tested in e2e/publish-history.spec.ts (test_447_ac1).
+    name: "history: Roll back cell",
+    prototype: { page: "history", selector: "td:last-child" },
+    live: { page: "history", selector: ".admin-table td:last-child" },
+  },
+  {
+    name: "history: Roll back button",
+    prototype: { page: "history", selector: "td button.small" },
+    live: { page: "history", selector: ".admin-table td .button-gray.button-small" },
+    properties: [...STYLE, "cursor"],
+    box: ["height"],
+  },
   // #453: the status editor as a writer sees it (the drawing's "View as writer"). Last in the map:
   // its live page signs the browser in again as a writer.
   {
@@ -1287,6 +1382,15 @@ const WORD_BREAK_NORMAL = new Set([
   "AI features: status pill (Exploring)",
   "AI features: status pill dot",
   "AI features: version chip",
+  // #447: the Publish history table, also self-sized in a scrolling panel (.panel.scroll).
+  "history: table head cell",
+  "history: When cell",
+  "history: Who cell",
+  "history: What cell",
+  "history: What id chip",
+  "history: version chip",
+  "history: Roll back cell",
+  "history: Roll back button",
 ]);
 
 const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] = [
@@ -1474,6 +1578,47 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
       "versions. Live has one Save in the same header slot, and the side panel shows the last " +
       "save (when and who); the side panel's box and heading are compared. Adding them needs an " +
       "owner decision and a migration.",
+  },
+  // #447: Publish history.
+  {
+    component: "history: Roll back button",
+    properties: ["min-width", "min-height", "display", "white-space"],
+    reason:
+      "As `small secondary button`: live sets min-width and min-height 0 to switch off the phone " +
+      "app's 44 px tap minimum (ADMIN-DESKTOP); the prototype has none (auto); the height is " +
+      "compared. Both buttons are inline-flex; the live one sits in a grid " +
+      "(.admin-history-action, which also holds its status line and the story card warning), " +
+      "where the browser computes a grid item's inline-flex as flex. white-space: the " +
+      "prototype's label is 'Roll back' and fits its column; the live label names the version " +
+      "('Roll back to v2', which the e2e tests and screen readers use), and the self-sized table " +
+      "wrapped it to two lines at 1024 px (measured: 44 px against 26 px), so it is nowrap. The " +
+      "result, one line, is compared: the button's and the cell's box height.",
+  },
+  {
+    component: "history: panel (box y, not measured)",
+    properties: ["box y"],
+    reason:
+      "The panel's x and width are compared, not its y: it depends on the lede's length. The " +
+      "prototype's lede says 'Any entry can be rolled back.', which is not true live (the version " +
+      "published now has no Roll back, and story cards, Companion and story fields, prompts and " +
+      "hotlines roll back for an admin only, #289); the live lede says what Roll back does and " +
+      "that times are in UTC, and wraps to two lines. The header row itself is compared.",
+  },
+  {
+    component: "history: header action row (not in COMPONENTS)",
+    properties: ["(whole component)"],
+    reason:
+      "The prototype's history screen has an empty .btns slot in its header: the page has no " +
+      "page-level action. Live draws no empty slot (PageHead renders none without actions).",
+  },
+  {
+    component: "history: Published now and Rolled back notes (not in COMPONENTS)",
+    properties: ["(whole component)"],
+    reason:
+      "The prototype offers Roll back on every row. Live keeps decision #289: the version " +
+      "published now has no Roll back and shows 'Published now' (the prototype's 12.5 px muted " +
+      ".note), and a roll back row says 'Rolled back' after its version chip. The prototype has " +
+      "no such row to compare with; the When cell compares the same note style.",
   },
   {
     component: "View as admin / View as writer (not in COMPONENTS)",
@@ -1707,6 +1852,8 @@ for (const width of WIDTHS) {
     // #446: this account reads the seeded prompts only, so drafts other tests save while the gate
     // runs never change the prompt pages it measures.
     await useSeededPrompts(account.token);
+    // #447: this account reads a fixed, seeded publish history, never rows other tests write.
+    await useSeededPublishHistory(account);
     await page.goto("/admin/companions");
     const origin = new URL(page.url()).origin;
     await servePrototype(page, await adminFontFaces(page));
@@ -1819,6 +1966,27 @@ test("test_453_ai_editor_pictures_prototype_vs_live", async ({ page, context }) 
   await writePictures(page, origin, PICTURES.slice(3));
 });
 
+// #447: the Publish history pictures for its pull request (prototype `history` vs live, on the
+// account's fixed, seeded history), written as publish-history-<width>-{prototype,live,side-by-side}.png.
+test("test_447_publish_history_pictures_prototype_vs_live", async ({ page, context }) => {
+  test.skip(!process.env.ADMIN_VISUAL_SCREENSHOTS, "Set ADMIN_VISUAL_SCREENSHOTS=1 to write them.");
+  test.setTimeout(120_000);
+  mkdirSync(REFERENCE_DIR, { recursive: true });
+  const account = await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await useSeededPublishHistory(account);
+  await page.goto("/admin/companions");
+  const origin = new URL(page.url()).origin;
+  await servePrototype(page, await adminFontFaces(page));
+  await writePictures(page, origin, [HISTORY_PICTURE]);
+});
+
+const HISTORY_PICTURE = {
+  name: "publish-history",
+  prototype: "history",
+  live: "history",
+  fullPage: false,
+} as const;
+
 const PICTURES = [
   { name: "frame", prototype: "characters", live: "companions", fullPage: false },
   { name: "ai-index", prototype: "aiIndex", live: "aiIndex", fullPage: true },
@@ -1832,7 +2000,7 @@ const PICTURES = [
 async function writePictures(
   page: Page,
   origin: string,
-  pictures: readonly (typeof PICTURES)[number][],
+  pictures: readonly ((typeof PICTURES)[number] | typeof HISTORY_PICTURE)[],
 ) {
   for (const picture of pictures) {
     for (const width of WIDTHS) {
