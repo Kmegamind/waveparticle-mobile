@@ -79,7 +79,7 @@ describe("Life path table (#443)", () => {
     );
     const rows = periods[0].stories.map((row) => [row.id, row.description, row.state]);
     expect(rows).toEqual([
-      ["empty", { text: null, note: "Not written yet" }, { pill: "draft", label: "Empty" }],
+      ["empty", { text: null, note: "Not written yet" }, { pill: "draft", label: "Not written" }],
       [
         "drafted",
         { text: null, note: "Nothing published yet" },
@@ -136,7 +136,7 @@ describe("Life path table (#443)", () => {
     const headers = [...page.matchAll(/<th[^>]*scope="col"[^>]*>\s*([^<]*?)\s*<\/th>/g)].map(
       (match) => match[1],
     );
-    expect(headers).toEqual(["#", "Story", "Life path description", "State"]);
+    expect(headers).toEqual(["#", "Story", "Life path description", "Description state"]);
     expect(page).toContain("<PageHead");
     expect(page).toContain('className="admin-panel admin-scroll"');
     expect(page).toContain("admin-period-row");

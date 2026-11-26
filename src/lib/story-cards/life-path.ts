@@ -64,7 +64,7 @@ export function lifePath(
         ? { pill: "draft", label: `${shown ? "Newer draft" : "Draft"} v${view.draft.version}` }
         : shown
           ? { pill: "published", label: "Published" }
-          : { pill: "draft", label: "Empty" };
+          : { pill: "draft", label: "Not written" };
       return {
         id,
         key: `${code}.${id}`,

@@ -67,9 +67,10 @@ async function LifePathPage() {
         lede={
           <>
             Oppenheimer&apos;s stories in story order, by Life Path period. Periods are named, never
-            dated. Open a story to edit its cards and part titles. State is the state of the Life
-            path description (Published, a draft not published yet, or Empty); the description and
-            the period names are edited on the Companion&apos;s page.
+            dated. Open a story to edit its cards and part titles. Description state is the state of
+            the Life path description only (Published, a draft not published yet, or Not written),
+            not of the story&apos;s cards; the description and the period names are edited on the
+            Companion&apos;s page.
           </>
         }
       />
@@ -93,7 +94,7 @@ async function LifePathPage() {
               </th>
               <th scope="col">Story</th>
               <th scope="col">Life path description</th>
-              <th scope="col">State</th>
+              <th scope="col">Description state</th>
             </tr>
           </thead>
           {periods.map((period) => (

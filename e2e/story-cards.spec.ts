@@ -51,7 +51,7 @@ test("test_443_ac1_stories_are_a_life_path_table_grouped_by_period", async ({ pa
     "#",
     "Story",
     "Life path description",
-    "State",
+    "Description state",
   ]);
   const first = table.getByRole("rowgroup", { name: /^Period 1: / });
   const periodRow = first.getByRole("row").first();
@@ -61,7 +61,7 @@ test("test_443_ac1_stories_are_a_life_path_table_grouped_by_period", async ({ pa
   await expect(story.locator(".admin-chip")).toHaveText("opp.bohr-difficulties");
   // The stand-in's descriptions start empty (#309): no text, and the state says so.
   await expect(story.getByRole("cell").nth(2)).toHaveText("Not written yet");
-  await expect(story.getByRole("cell").nth(3)).toHaveText("Empty");
+  await expect(story.getByRole("cell").nth(3)).toHaveText("Not written");
   await story.getByRole("link", { name: "The Trade of a Theorist" }).click();
   await expect(page).toHaveURL(/\/admin\/stories\/bohr-difficulties$/);
 });

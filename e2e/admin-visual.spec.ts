@@ -355,7 +355,6 @@ COMPONENTS.push(
     name: "Life path story title",
     prototype: { page: "lifepath", selector: "td b" },
     live: { page: "stories", selector: ".admin-life-path .admin-cell-name" },
-    properties: FONT,
   },
   {
     name: "Life path story key chip",
@@ -451,6 +450,18 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
       "pull request (#430 T8) decides the row and adds it here.",
   },
 ];
+
+// #443 Stories: its exceptions, in their own block.
+EXCEPTIONS.push({
+  component: "Life path story title",
+  properties: ["text-decoration-line", "align-items"],
+  reason:
+    "Live shows each story title as an underlined link (.admin-cell-name), reachable by keyboard; " +
+    "the prototype shows bold text (<b>, no underline) in a clickable row, which a keyboard " +
+    "cannot reach. align-items comes from the phone app's global link rule (center); it has no " +
+    "effect on an inline element, and display is compared (inline on both sides). Every other " +
+    "style of the title is compared.",
+});
 
 // ---------------------------------------------------------------------------------------------
 // Reading and comparing.
