@@ -3879,6 +3879,278 @@ button.focus-avatar:focus-visible {
   color: var(--adm-info);
 }
 
+/* Issue 439: the AI feature pages, drawn in docs/design/prototype/admin-ai-features.html. The four
+   statuses (AI-PAGE-STATUS) in the drawing's colours, and the mark for "Draft - owner to edit"
+   and "Fake model (stub)". */
+.admin-pill-ai-not_started {
+  background: var(--adm-soft);
+  color: var(--adm-muted);
+}
+
+.admin-pill-ai-exploring {
+  background: var(--adm-info-soft);
+  color: var(--adm-info);
+}
+
+.admin-pill-ai-passed {
+  background: var(--adm-ok-soft);
+  color: var(--adm-ok);
+}
+
+.admin-pill-ai-frozen {
+  background: var(--adm-accent-soft);
+  color: var(--adm-accent);
+}
+
+.admin-pill-mark {
+  background: var(--adm-warn-soft);
+  color: var(--adm-warn);
+}
+
+.admin-scroll {
+  overflow-x: auto;
+}
+
+/* The drawing's headings fit on one line because its sample rows are short and its last column
+   holds a "Fake model (stub)" pill that does not wrap. With the real purposes and no imported run,
+   an auto-sized table squeezes the short columns until "Last offline run" wraps; the headings
+   keep to one line instead, and the table still sizes its columns itself. */
+.admin-table-nowrap-head th {
+  white-space: nowrap;
+}
+
+/* Issue 439: in this self-sized table a cell is never squeezed below its longest word (the app's
+   body breaks anywhere, which split titles such as "pause_predicament" mid-word). The table sits in
+   .admin-scroll, so a token longer than the panel scrolls instead of being clipped. */
+.admin-table-nowrap-head th,
+.admin-table-nowrap-head td {
+  overflow-wrap: normal;
+}
+
+.admin-legend {
+  color: var(--adm-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--adm-legend-size);
+  gap: var(--adm-gap);
+  margin: var(--adm-gap-small) 0 0;
+}
+
+.admin-legend > span {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--adm-gap-tiny);
+}
+
+.admin-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--adm-gap);
+}
+
+.admin-main .admin-section > h2 {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-gap-small);
+  margin: 0 0 var(--adm-h2-after);
+}
+
+.admin-items {
+  display: grid;
+  gap: var(--adm-gap-small);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-item-text {
+  margin: 0;
+}
+
+.admin-questions {
+  list-style: decimal;
+  margin: 0;
+  padding-left: var(--adm-list-indent);
+}
+
+.admin-questions > li {
+  padding: var(--adm-list-item-pad);
+}
+
+.admin-src {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: var(--adm-gap-tiny) 0 0;
+}
+
+.admin-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: 0;
+}
+
+.admin-empty {
+  background: var(--adm-soft);
+  border-radius: var(--adm-r-code);
+  color: var(--adm-muted);
+  font-size: var(--adm-empty-size);
+  margin: 0;
+  padding: var(--adm-empty-pad);
+}
+
+.admin-after-table {
+  margin-top: var(--adm-h2-after);
+}
+
+.admin-grid2 {
+  display: grid;
+  gap: var(--adm-gap);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-prompt-meta {
+  margin: 0 0 var(--adm-gap-tiny);
+}
+
+.admin-code {
+  background: var(--adm-soft);
+  border-radius: var(--adm-r-code);
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-code-size);
+  line-height: var(--adm-code-leading);
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding: var(--adm-code-pad);
+  white-space: pre-wrap;
+}
+
+/* Issue 453: the AI feature editors, as the drawing's AIF-5 (status), AIF-6 (pass standard) and
+   AIF-7 (purpose and approach): a form column and a narrow side panel. */
+.admin-editor {
+  align-items: start;
+  display: grid;
+  gap: var(--adm-editor-gap);
+  grid-template-columns: minmax(0, 1fr) var(--adm-editor-side);
+}
+
+.admin-form {
+  display: grid;
+  gap: var(--adm-form-gap);
+}
+
+/* The drawing's .form label: a muted bold label over its field. */
+.admin-form label,
+.admin-field-group {
+  color: var(--adm-muted);
+  display: grid;
+  font-size: var(--adm-note-size);
+  font-weight: 600;
+  gap: var(--adm-label-gap);
+}
+
+/* A field inherits the label's weight, as in the drawing (font: inherit); its source line does not.
+   The source line sits 8 px under its box, as the drawing's (a 12 px form gap less 4 px). */
+.admin-field-line {
+  display: grid;
+  gap: var(--adm-gap-small);
+}
+
+/* A link drawn as a button (the drawing's a.btn) has no underline. */
+.admin-shell a:is(.button-gray, .button-filled) {
+  text-decoration: none;
+}
+
+/* A box grows with its text (from the drawing's 64 px), so a long line is never cut off. */
+.admin-field-line textarea {
+  field-sizing: content;
+}
+
+/* Who changed a status: a short word ("Setup") stays whole; a long email still breaks (this table
+   is not in a scrolling panel, so normal would let an email run out of its box). */
+.admin-table td.admin-history-person {
+  overflow-wrap: break-word;
+}
+
+.admin-field-line .admin-src {
+  font-weight: 400;
+  margin: 0;
+}
+
+.admin-add {
+  margin-top: var(--adm-h2-after);
+}
+
+.admin-form .admin-add {
+  margin-top: 0;
+}
+
+.admin-qrow {
+  align-items: center;
+  border-bottom: 1px solid var(--adm-line);
+  display: grid;
+  gap: var(--adm-qrow-gap);
+  grid-template-columns: var(--adm-qrow-number) minmax(0, 1fr) auto;
+  padding: var(--adm-qrow-pad);
+}
+
+.admin-qrow-n {
+  color: var(--adm-muted);
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-code-size);
+}
+
+.admin-qrow-text input {
+  display: block;
+}
+
+.admin-qrow-text .admin-src {
+  margin: var(--adm-gap-tiny) 0 0;
+}
+
+.admin-seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-gap-tiny);
+}
+
+.admin-shell .admin-seg [aria-pressed="true"] {
+  background: var(--adm-accent-soft);
+  border-color: var(--adm-accent);
+  color: var(--adm-accent);
+  font-weight: 600;
+}
+
+/* A writer's view of the status editor: the whole panel is dimmed, as the drawing's .ro, and its
+   disabled controls are not dimmed a second time. */
+.admin-ro {
+  opacity: var(--adm-ro-opacity);
+}
+
+.admin-shell .admin-ro :disabled {
+  opacity: 1;
+}
+
+.admin-lock {
+  color: var(--adm-accent);
+  font-size: var(--adm-chip-size);
+  font-weight: 600;
+}
+
+.admin-toast {
+  background: var(--adm-ink);
+  border-radius: var(--adm-r-code);
+  bottom: var(--adm-toast-bottom);
+  color: var(--adm-bg);
+  font-size: var(--adm-toast-size);
+  left: 50%;
+  margin: 0;
+  padding: var(--adm-toast-pad);
+  position: fixed;
+  transform: translateX(-50%);
+  z-index: var(--adm-toast-layer);
+}
+
 /* Item panels (App text cells, cards, fields, prompts). */
 .admin-text-list {
   display: grid;
@@ -4050,6 +4322,113 @@ input.admin-text-field {
   color: var(--adm-muted);
   font-size: var(--adm-note-size);
   margin: 0;
+}
+
+/* Issue 442, ADM-04 Companion profile: the prototype's tabs (.tabs) and field rows (dl.fields):
+   the label and id on the left, the text edited in place with its state pill on the right. */
+.admin-tabs {
+  border-bottom: 1px solid var(--adm-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-tab-gap);
+  margin-bottom: var(--adm-gap);
+}
+
+.admin-shell .admin-tab {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-bottom: var(--adm-tab-line) solid transparent;
+  border-radius: 0;
+  color: var(--adm-ink);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: var(--adm-font-body);
+  font-size: var(--adm-button-size);
+  font-weight: 400;
+  gap: var(--adm-gap-tiny);
+  line-height: var(--adm-leading);
+  /* The prototype's tabs keep the browser's automatic minimum size. */
+  min-height: auto;
+  min-width: auto;
+  padding: var(--adm-tab-pad);
+}
+
+.admin-shell .admin-tab:hover,
+.admin-shell .admin-tab[aria-selected="true"] {
+  border-bottom-color: var(--adm-accent);
+}
+
+.admin-shell .admin-tab[aria-selected="true"] {
+  color: var(--adm-accent);
+  font-weight: 600;
+}
+
+.admin-panel[hidden] {
+  display: none;
+}
+
+.admin-fields {
+  display: grid;
+  gap: 0;
+  grid-template-columns: var(--adm-fields-label) minmax(0, 1fr);
+  margin: 0;
+}
+
+.admin-fields dt,
+.admin-fields dd {
+  border-bottom: 1px solid var(--adm-line);
+  margin: 0;
+  padding: var(--adm-fields-row-pad) 0;
+}
+
+.admin-fields dt {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  padding-right: var(--adm-fields-label-gap);
+}
+
+.admin-fields dd {
+  overflow-wrap: anywhere;
+}
+
+/* Stored text may hold line breaks and double spaces (the earlier editor was a textarea); they
+   stay visible and are read back exactly (profile-fields.tsx). The prototype computes normal. */
+.admin-field-text {
+  white-space: pre-wrap;
+}
+
+.admin-field-text:empty::before {
+  color: var(--adm-muted);
+  content: attr(data-placeholder);
+}
+
+.admin-fields-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: var(--adm-note-gap) 0 var(--adm-note-after);
+}
+
+/* A note under one field's text, and its status (empty, it takes no room; a live region must
+   exist before its text arrives). */
+.admin-field-note,
+.admin-fields-status {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: 0;
+}
+
+.admin-fields .admin-text-versions,
+.admin-field-stories {
+  margin-top: var(--adm-gap-tiny);
+}
+
+.admin-field-stories {
+  display: grid;
+  gap: var(--adm-gap-hair);
+  list-style: none;
+  margin-bottom: 0;
+  padding: 0;
 }
 
 /* ADM-06 Stories (issue 293). */
