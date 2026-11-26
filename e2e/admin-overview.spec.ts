@@ -72,8 +72,16 @@ test("test_440_ac1_the_overview_is_the_status_board", async ({ page, context }) 
   await expect(page.getByText(/sample data/i)).toHaveCount(0);
 
   // A story opens its cards.
+  // Since #459 the page heading is "Story cards" and the breadcrumb names the story ("Story N · title"),
+  // so the breadcrumb is what proves the exact story opened (same number and title as the row).
   const title = await first.getByRole("link").textContent();
+  const sequence = await first.getByRole("cell").first().textContent();
   await first.getByRole("link").click();
   await expect(page).toHaveURL(/\/admin\/stories\/[a-z0-9-]+$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(title ?? "");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Story cards");
+  await expect(
+    page.getByRole("navigation", { name: "Breadcrumb" }).getByText(`Story ${sequence} · ${title}`, {
+      exact: true,
+    }),
+  ).toBeVisible();
 });
