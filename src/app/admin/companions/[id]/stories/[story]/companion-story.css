@@ -1,0 +1,11 @@
+/* The story fields page's styles (issue 483: moved from src/app/globals.css, in their order there).
+   Loaded by the admin layout through src/app/admin/styles.ts, after src/app/admin/admin.css. Every
+   selector here names a class of this page only, so the rules do nothing on other admin pages. */
+
+/* ADM-06 Stories (issue 293). */
+.admin-story-part {
+  font-size: var(--adm-h2-size);
+  font-weight: 600;
+  margin: 0;
+  overflow-wrap: anywhere;
+}

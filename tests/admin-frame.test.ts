@@ -2,10 +2,11 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { menuCurrent } from "@/app/admin/menu-current";
+import { readAdminCss } from "./support/admin-css";
 
 // #435: the admin frame follows the admin prototype: its fonts, its 8 px page margin, its header
 // action row and the current menu row on detail pages. The look itself is checked against the
-// prototype by e2e/admin-visual.spec.ts.
+// prototype by e2e/admin-visual.spec.ts (the frame rows of the visual gate).
 
 const root = path.join(import.meta.dirname, "..");
 const read = (file: string) => readFileSync(path.join(root, file), "utf8");
@@ -27,7 +28,7 @@ describe("admin frame (#435)", () => {
 
   it("test_435_ac2_the_page_margin_is_8_px_through_a_token", () => {
     expect(read("src/app/tokens.css")).toContain("--adm-page-margin: 8px;");
-    const css = read("src/app/globals.css");
+    const css = readAdminCss();
     const start = css.indexOf(".admin-shell {");
     expect(css.slice(start, css.indexOf("}", start))).toContain("padding: var(--adm-page-margin)");
   });

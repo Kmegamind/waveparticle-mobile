@@ -1,0 +1,653 @@
+/* The content admin's shared styles (issue 483: moved from src/app/globals.css, in their order
+   there): the frame (rail, menu, header), panels, tables, chips, pills, buttons, fields and item
+   panels. Loaded first by the admin layout through src/app/admin/styles.ts, after globals.css. Each
+   admin page keeps its own rules in a file next to that page, loaded after this one; tokens stay in
+   src/app/tokens.css. */
+
+/* The content admin (issue 287), with the look of issue 313. A desktop tool for staff that follows the
+   content-admin prototype at desktop widths (docs/DECISIONS.md ADMIN-DESKTOP): the prototype's
+   colours, type, spacing and buttons through the --adm-* tokens, a minimum width of 1024 px, no
+   phone layout and no 44 px tap size. The phone app keeps DESIGN.md. */
+.app-shell:has(.admin-shell) {
+  max-width: none;
+}
+
+.app-shell:has(.admin-shell) > .app-header {
+  display: none;
+}
+
+.admin-shell {
+  background: var(--adm-bg);
+  color: var(--adm-ink);
+  display: grid;
+  font-family: var(--adm-font-body);
+  font-size: var(--adm-text-size);
+  grid-template-columns: var(--adm-rail-width) minmax(0, 1fr);
+  line-height: var(--adm-leading);
+  /* Issue 435: the prototype's 8 px page margin on every side (its body keeps the browser's default
+     margin), in the page colour. As in the prototype, the frame is one screen high plus the two
+     margins. */
+  min-height: calc(100svh + 2 * var(--adm-page-margin));
+  min-width: var(--adm-min-width);
+  padding: var(--adm-page-margin);
+}
+
+/* The app's 44 px tap size (DESIGN.md 6) does not apply to this desktop tool. */
+.admin-shell :where(button, a, input, select, textarea) {
+  min-height: 0;
+  min-width: 0;
+}
+
+.admin-shell :where(button, a, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--adm-accent);
+  outline-offset: 2px;
+}
+
+/* Links read as the prototype's: the surrounding text size and weight, inline. Class rules below
+   (menu rows, brand) still set their own layout. */
+.admin-shell :where(a) {
+  color: inherit;
+  display: inline;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.admin-rail {
+  background: var(--adm-panel);
+  border-right: 1px solid var(--adm-line);
+  display: flex;
+  flex-direction: column;
+  height: 100svh;
+  overflow-y: auto;
+  padding: var(--adm-rail-pad);
+  position: sticky;
+  top: 0;
+}
+
+.admin-brand {
+  align-items: flex-start;
+  color: var(--adm-ink);
+  display: flex;
+  flex-direction: column;
+  padding: var(--adm-brand-pad);
+  text-decoration: none;
+}
+
+.admin-brand-name {
+  font-family: var(--adm-font-display);
+  font-size: var(--adm-brand-size);
+  font-weight: 600;
+  line-height: var(--adm-leading);
+}
+
+.admin-brand-sub {
+  color: var(--adm-muted);
+  font-size: var(--adm-brand-sub-size);
+  font-weight: 400;
+  letter-spacing: var(--adm-track-brand);
+  margin-top: var(--adm-gap-hair);
+  text-transform: uppercase;
+}
+
+.admin-menu {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.admin-group-heading {
+  color: var(--adm-muted);
+  font-size: var(--adm-group-size);
+  font-weight: 400;
+  letter-spacing: var(--adm-track-group);
+  line-height: var(--adm-leading);
+  margin: 0;
+  padding: var(--adm-group-pad);
+  text-transform: uppercase;
+}
+
+.admin-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-menu-link {
+  align-items: center;
+  border-radius: var(--adm-r-menu);
+  color: var(--adm-ink);
+  display: flex;
+  gap: var(--adm-gap-small);
+  justify-content: space-between;
+  padding: var(--adm-menu-pad);
+  text-decoration: none;
+}
+
+.admin-menu-link:hover {
+  background: var(--adm-soft);
+}
+
+/* Issue 435: the current page, and on a detail page (a prompt, a story) the menu row it belongs to. */
+.admin-menu-link[aria-current] {
+  background: var(--adm-accent-soft);
+  color: var(--adm-accent);
+  font-weight: 600;
+}
+
+.admin-page-id {
+  color: var(--adm-muted);
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-id-size);
+  font-weight: 400;
+}
+
+.admin-sign-out {
+  align-self: flex-start;
+  margin: var(--adm-gap) 0 0 var(--adm-gap-small);
+}
+
+.admin-main {
+  min-width: 0;
+  padding: var(--adm-main-pad);
+}
+
+.admin-crumb {
+  align-items: center;
+  color: var(--adm-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--adm-crumb-size);
+  gap: var(--adm-gap-tiny);
+}
+
+.admin-crumb ol {
+  display: contents;
+  list-style: none;
+}
+
+.admin-crumb li {
+  display: flex;
+  gap: var(--adm-gap-tiny);
+}
+
+.admin-crumb a {
+  color: var(--adm-muted);
+}
+
+.admin-main h1 {
+  font-family: var(--adm-font-display);
+  font-size: var(--adm-title-size);
+  font-weight: 600;
+  line-height: var(--adm-leading);
+  margin: var(--adm-gap-title) 0;
+  text-wrap: balance;
+}
+
+.admin-main h2 {
+  font-size: var(--adm-h2-size);
+  font-weight: 600;
+}
+
+/* Issue 435: the prototype's header row (.head): title and lede on the left, the page's actions
+   (Save draft, Publish ...) right-aligned beside them. */
+.admin-head {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-head-gap);
+  justify-content: space-between;
+  margin-bottom: var(--adm-head-after);
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-gap-small);
+}
+
+.admin-lede {
+  color: var(--adm-muted);
+  margin: 0 0 var(--adm-lede-after);
+  max-width: var(--adm-lede-measure);
+}
+
+.admin-notice {
+  background: var(--adm-warn-soft);
+  border-radius: var(--adm-r-button);
+  color: var(--adm-warn);
+  margin: 0 0 var(--adm-head-after);
+  max-width: var(--adm-lede-measure);
+  padding: var(--adm-cell-pad);
+}
+
+/* Buttons: the prototype's plain button, its primary button and its small size. */
+.admin-shell .button-gray,
+.admin-shell .button-plain,
+.admin-shell .button-filled {
+  align-items: center;
+  background: var(--adm-panel);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-r-button);
+  box-shadow: none;
+  color: var(--adm-ink);
+  display: inline-flex;
+  font-family: var(--adm-font-body);
+  font-size: var(--adm-button-size);
+  font-weight: 400;
+  gap: var(--adm-gap-tiny);
+  /* Issue 435: the prototype's buttons keep the start alignment (the app's buttons centre). */
+  justify-content: normal;
+  line-height: var(--adm-leading);
+  min-height: 0;
+  padding: var(--adm-button-pad);
+  transition: none;
+}
+
+.admin-shell .button-gray:hover,
+.admin-shell .button-plain:hover {
+  border-color: var(--adm-accent);
+}
+
+.admin-shell .button-filled {
+  background: var(--adm-accent);
+  border-color: var(--adm-accent);
+  color: var(--adm-panel);
+  font-weight: 600;
+}
+
+.admin-shell .button-small {
+  font-size: var(--adm-button-small-size);
+  padding: var(--adm-button-small-pad);
+}
+
+.admin-shell .button-gray:active,
+.admin-shell .button-plain:active,
+.admin-shell .button-filled:active {
+  opacity: 1;
+  transform: none;
+}
+
+/* Panels and tables (issue 313, row 8). */
+.admin-panel,
+.admin-text {
+  background: var(--adm-panel);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-r-panel);
+  min-width: 0;
+  padding: var(--adm-panel-pad);
+}
+
+.admin-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.admin-table th,
+.admin-table td {
+  border-bottom: 1px solid var(--adm-line);
+  padding: var(--adm-cell-pad);
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-table th {
+  color: var(--adm-muted);
+  font-size: var(--adm-th-size);
+  font-weight: 500;
+  letter-spacing: var(--adm-track-th);
+  text-transform: uppercase;
+}
+
+.admin-table .admin-num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.admin-cell-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+}
+
+/* The App text Text cell: the field and its actions stacked, inside a plain table cell. */
+.admin-cell-stack {
+  display: grid;
+  gap: var(--adm-gap-small);
+}
+
+/* Id chips and state pills (issue 313, row 9). */
+.admin-chip {
+  background: var(--adm-soft);
+  border-radius: var(--adm-r-chip);
+  color: var(--adm-muted);
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-chip-size);
+  font-weight: 400;
+  padding: var(--adm-chip-pad);
+  white-space: nowrap;
+}
+
+.admin-pill {
+  align-items: center;
+  border-radius: var(--adm-r-pill);
+  display: inline-flex;
+  font-size: var(--adm-chip-size);
+  font-weight: 500;
+  gap: var(--adm-gap-dot);
+  padding: var(--adm-pill-pad);
+  white-space: nowrap;
+}
+
+.admin-pill::before {
+  background: currentcolor;
+  border-radius: 50%;
+  content: "";
+  height: var(--adm-pill-dot);
+  width: var(--adm-pill-dot);
+}
+
+.admin-pill-draft,
+.admin-pill-earlier {
+  background: var(--adm-soft);
+  color: var(--adm-muted);
+}
+
+.admin-pill-published {
+  background: var(--adm-ok-soft);
+  color: var(--adm-ok);
+}
+
+.admin-pill-failed {
+  background: var(--adm-bad-soft);
+  color: var(--adm-bad);
+}
+
+.admin-pill-passed {
+  background: var(--adm-warn-soft);
+  color: var(--adm-warn);
+}
+
+.admin-pill-default {
+  background: var(--adm-info-soft);
+  color: var(--adm-info);
+}
+
+.admin-scroll {
+  overflow-x: auto;
+}
+
+.admin-legend {
+  color: var(--adm-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--adm-legend-size);
+  gap: var(--adm-gap);
+  margin: var(--adm-gap-small) 0 0;
+}
+
+.admin-legend > span {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--adm-gap-tiny);
+}
+
+.admin-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: 0;
+}
+
+.admin-form {
+  display: grid;
+  gap: var(--adm-form-gap);
+}
+
+/* The drawing's .form label: a muted bold label over its field. */
+.admin-form label,
+.admin-field-group {
+  color: var(--adm-muted);
+  display: grid;
+  font-size: var(--adm-note-size);
+  font-weight: 600;
+  gap: var(--adm-label-gap);
+}
+
+/* A field inherits the label's weight, as in the drawing (font: inherit); its source line does not.
+   The source line sits 8 px under its box, as the drawing's (a 12 px form gap less 4 px). */
+.admin-field-line {
+  display: grid;
+  gap: var(--adm-gap-small);
+}
+
+/* A link drawn as a button (the drawing's a.btn) has no underline. */
+.admin-shell a:is(.button-gray, .button-filled) {
+  text-decoration: none;
+}
+
+/* Item panels (App text cells, cards, fields, prompts). */
+.admin-text-list {
+  display: grid;
+  gap: var(--adm-gap);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-text {
+  display: grid;
+  gap: var(--adm-gap-small);
+}
+
+.admin-text-head {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--adm-gap-small);
+  justify-content: space-between;
+}
+
+.admin-text-key {
+  background: var(--adm-soft);
+  border-radius: var(--adm-r-chip);
+  color: var(--adm-muted);
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-chip-size);
+  font-weight: 400;
+  justify-self: start;
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding: var(--adm-chip-pad);
+  width: fit-content;
+}
+
+.admin-main h1.admin-text-key {
+  background: none;
+  color: var(--adm-ink);
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-title-size);
+  padding: 0;
+}
+
+.admin-text-screen,
+.admin-text-facts dt,
+.admin-history-facts dt,
+.admin-text-label {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  font-weight: 600;
+}
+
+.admin-text-state {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: 0;
+}
+
+.admin-text-facts {
+  display: grid;
+  gap: var(--adm-gap-hair);
+  margin: 0;
+}
+
+.admin-text-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-text-form {
+  display: grid;
+  gap: var(--adm-gap-tiny);
+}
+
+.admin-text-field {
+  background: var(--adm-panel);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-r-button);
+  color: var(--adm-ink);
+  font-family: var(--adm-font-body);
+  font-size: var(--adm-field-size);
+  min-height: var(--adm-field-min);
+  padding: var(--adm-field-pad);
+  resize: vertical;
+  width: 100%;
+}
+
+select.admin-text-field,
+input.admin-text-field {
+  min-height: 0;
+}
+
+.admin-text-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-gap-small);
+}
+
+.admin-text-versions summary {
+  cursor: pointer;
+  font-size: var(--adm-note-size);
+  font-weight: 600;
+}
+
+.admin-text-versions ol {
+  display: grid;
+  gap: var(--adm-gap-small);
+  list-style: none;
+  margin: var(--adm-gap-tiny) 0 0;
+  padding: 0;
+}
+
+.admin-text-versions li {
+  border-top: 1px solid var(--adm-line);
+  display: grid;
+  gap: var(--adm-gap-hair);
+  padding-top: var(--adm-gap-small);
+}
+
+.admin-text-versions p {
+  margin: 0;
+}
+
+.admin-text-body {
+  overflow-wrap: anywhere;
+}
+
+.admin-text-versions .button-small {
+  justify-self: start;
+}
+
+.admin-text-status {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: 0;
+  min-height: 1lh;
+}
+
+/* Issue 377: the status of a story card holds its message and the problems that stopped Publish. */
+.admin-text-status > p {
+  margin: 0;
+}
+
+.admin-history-facts {
+  display: grid;
+  gap: var(--adm-gap-hair) var(--adm-gap-small);
+  grid-template-columns: auto minmax(0, 1fr);
+  margin: 0;
+}
+
+.admin-history-facts dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-history-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: 0;
+}
+
+.admin-panel > h2 {
+  margin: 0 0 var(--adm-h2-after);
+}
+
+.admin-panel[hidden] {
+  display: none;
+}
+
+.admin-card-list {
+  display: grid;
+  gap: var(--adm-gap-small);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-card {
+  border-top: 1px solid var(--adm-line);
+  display: grid;
+  gap: var(--adm-gap-tiny);
+  min-width: 0;
+  padding-top: var(--adm-gap-small);
+}
+
+.admin-card-body {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-card-problems {
+  color: var(--adm-bad);
+  font-size: var(--adm-chip-size);
+  margin: 0;
+  padding-left: var(--adm-gap);
+}
+
+/* Issue 377: the warning before a story card roll back whose version fails a check. */
+.admin-roll-back-warning {
+  background: var(--adm-warn-soft);
+  border: 1px solid var(--adm-warn);
+  border-radius: var(--adm-r-chip);
+  display: grid;
+  gap: var(--adm-gap-tiny);
+  font-size: var(--adm-note-size);
+  padding: var(--adm-gap-small);
+}
+
+.admin-roll-back-warning p {
+  margin: 0;
+}
+
+.admin-diff-spoken {
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+/* The prototype's id chip inside a title or heading takes the heading's weight. */
+.admin-main h1 .admin-chip,
+.admin-prompt-heading .admin-chip {
+  font-weight: inherit;
+}

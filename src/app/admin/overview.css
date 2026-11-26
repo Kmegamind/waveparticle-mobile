@@ -1,0 +1,99 @@
+/* The admin Overview's styles (issue 483: moved from src/app/globals.css, in their order there).
+   Loaded by the admin layout through src/app/admin/styles.ts, after src/app/admin/admin.css. Every
+   selector here names a class of this page only, so the rules do nothing on other admin pages. */
+
+/* ADM-01 Status board (issue 440): the prototype's count tiles, Companion panels and the story
+   table with its stage dots and legend. The note and legend rules are scoped to the board, so the
+   AI feature pages keep their own .admin-note and .admin-legend (issue 439). */
+.admin-tiles {
+  display: grid;
+  gap: var(--adm-tile-gap);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: var(--adm-panel-row-after);
+}
+
+.admin-tile {
+  background: var(--adm-panel);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-r-panel);
+  padding: var(--adm-tile-pad);
+}
+
+.admin-tile-number {
+  display: block;
+  font-family: var(--adm-font-display);
+  font-size: var(--adm-title-size);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.admin-tile-label {
+  color: var(--adm-muted);
+  font-size: var(--adm-tile-label-size);
+  overflow-wrap: anywhere;
+}
+
+.admin-grid3 {
+  display: grid;
+  gap: var(--adm-gap);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: var(--adm-panel-row-after);
+}
+
+.admin-grid3 .admin-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: var(--adm-board-note-gap) 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-board {
+  overflow-x: auto;
+}
+
+.admin-board .admin-table .admin-stage {
+  text-align: center;
+}
+
+.admin-board .admin-table td.admin-stage {
+  padding: var(--adm-stage-pad);
+}
+
+.admin-dot {
+  background: var(--adm-soft);
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-r-chip);
+  display: inline-block;
+  height: var(--adm-dot-size);
+  width: var(--adm-dot-size);
+}
+
+.admin-dot-done {
+  background: var(--adm-ok);
+  border-color: var(--adm-ok);
+}
+
+.admin-dot-passed {
+  background: var(--adm-warn-soft);
+  border-color: var(--adm-warn);
+}
+
+.admin-dot-failed {
+  background: var(--adm-bad-soft);
+  border-color: var(--adm-bad);
+}
+
+.admin-board + .admin-legend {
+  color: var(--adm-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--adm-tile-label-size);
+  gap: var(--adm-legend-gap);
+  margin: var(--adm-gap-small) 0 0;
+}
+
+.admin-board + .admin-legend span {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--adm-gap-tiny);
+}

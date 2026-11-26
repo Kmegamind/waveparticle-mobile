@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { savedText, versionDay } from "@/lib/admin/prompt-text";
+import { readAdminCss } from "./support/admin-css";
 
 // #446: the ADM-08 Prompts pages in the prototype's layout, and the editor never changing text
 // the user did not change.
@@ -74,7 +75,7 @@ describe("ADM-08 Prompts in the prototype's layout (#446)", () => {
   });
 
   it("test_446_prompt_text_wraps_long_tokens", () => {
-    const css = read("src/app/globals.css");
+    const css = readAdminCss();
     const block = css.slice(css.indexOf("/* Issue 446"));
     expect(block).toMatch(/\.admin-prompt-code[^}]*overflow-wrap: anywhere/);
   });

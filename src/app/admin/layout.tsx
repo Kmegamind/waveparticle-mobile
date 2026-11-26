@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
 import { AdminShell } from "./admin-shell";
 import { adminFontVariables } from "./fonts";
+import "./styles";
 
 // The content admin (#287). The proxy already answers 404 without a role; this server check is
 // the second gate, through the signed-in user's own client (no key with full database rights).

@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { readAdminCss } from "./support/admin-css";
 
 const workspaceRoot = fileURLToPath(new URL("..", import.meta.url));
 
@@ -141,14 +142,20 @@ describe("design tokens", () => {
 
     expect(globals).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
     expect(page).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
+    // #483: the admin's styles moved out of globals.css; they are held to the same rule.
+    expect(readAdminCss()).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
   });
 
   it("removes the version 6 token names", async () => {
-    const files = await Promise.all(
-      ["src/app/tokens.css", "src/app/globals.css", "src/app/layout.tsx", "src/app/page.tsx"].map(
-        readWorkspaceFile,
-      ),
-    );
+    const files = [
+      ...(await Promise.all(
+        ["src/app/tokens.css", "src/app/globals.css", "src/app/layout.tsx", "src/app/page.tsx"].map(
+          readWorkspaceFile,
+        ),
+      )),
+      // #483: the admin's styles, moved out of globals.css.
+      readAdminCss(),
+    ];
     for (const name of [
       "--accent",
       "--fill",

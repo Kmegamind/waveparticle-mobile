@@ -1,0 +1,127 @@
+/* The Prompts pages' styles (issue 483: moved from src/app/globals.css, in their order there).
+   Loaded by the admin layout through src/app/admin/styles.ts, after src/app/admin/admin.css. Every
+   selector here names a class of this page only, so the rules do nothing on other admin pages. */
+
+.admin-text-screen {
+  margin: 0;
+}
+
+/* ADM-08 Prompts (issue 308): settings lines, the prompt text and the line diff. */
+.admin-prompt-settings {
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-code-size);
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding-left: var(--adm-gap);
+}
+
+.admin-diff {
+  background: var(--adm-soft);
+  border-radius: var(--adm-r-code);
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-code-size);
+  line-height: var(--adm-leading);
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding: var(--adm-code-pad);
+  white-space: pre-wrap;
+}
+
+.admin-prompt-subhead {
+  font-size: var(--adm-h2-size);
+  margin: 0;
+}
+
+.admin-diff {
+  list-style: none;
+}
+
+.admin-diff-line {
+  display: flex;
+  gap: var(--adm-gap-small);
+}
+
+.admin-diff-mark {
+  flex: none;
+  font-weight: 600;
+  width: var(--adm-gap);
+}
+
+.admin-diff-added,
+.admin-diff-removed {
+  font-weight: 600;
+}
+
+.admin-diff-removed {
+  text-decoration: line-through;
+}
+
+/* Issue 446: ADM-08 Prompts in the prototype's layout. The prompt page is two equal panels 14 px apart
+   (prototype .grid2), headings 10 px above their content, the prompt text as the prototype's
+   pre.code (also when it is a text field), the version note as its .note line, and the draft below
+   14 px down (prototype .cmp). Prompt text holds long unbroken tokens, so it wraps anywhere. */
+.admin-prompt-grid {
+  display: grid;
+  gap: var(--adm-gap);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-main .admin-prompt-heading {
+  margin: 0 0 var(--adm-h2-after);
+}
+
+.admin-prompt-code {
+  background: var(--adm-soft);
+  border: 0;
+  border-radius: var(--adm-r-code);
+  color: var(--adm-ink);
+  display: block;
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-code-size);
+  font-weight: 400;
+  line-height: var(--adm-code-leading);
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding: var(--adm-code-pad);
+  white-space: pre-wrap;
+  width: 100%;
+}
+
+textarea.admin-prompt-code {
+  resize: vertical;
+}
+
+.admin-prompt-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: var(--adm-note-gap) 0 var(--adm-note-after);
+  overflow-wrap: anywhere;
+}
+
+.admin-prompt-code + .admin-prompt-settings {
+  margin-top: var(--adm-note-gap);
+}
+
+.admin-main .admin-prompt-versions .admin-prompt-heading {
+  margin-top: var(--adm-gap);
+}
+
+.admin-prompt-version-note {
+  overflow-wrap: anywhere;
+}
+
+/* The list: words break only at spaces, as in the prototype's tables (the app's body breaks
+   anywhere, which squeezed short columns to one letter); the setting lines still wrap anywhere. */
+.admin-prompt-list {
+  overflow-wrap: normal;
+}
+
+.admin-prompt-after {
+  display: grid;
+  gap: var(--adm-gap-small);
+  margin-top: var(--adm-gap);
+}
+
+.admin-prompt-after .admin-prompt-heading {
+  margin: 0;
+}

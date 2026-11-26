@@ -1,0 +1,48 @@
+/* Publish history's styles (issue 483: moved from src/app/globals.css, in their order there).
+   Loaded by the admin layout through src/app/admin/styles.ts, after src/app/admin/admin.css. Every
+   selector here names a class of this page only, so the rules do nothing on other admin pages. */
+
+.admin-history-action {
+  display: grid;
+  gap: var(--adm-gap-hair);
+  justify-items: start;
+}
+
+/* Issue 447, ADM-12: the prototype's history rows are one line high. The status line under Roll
+   back or "Published now" stays in the page (a live region must exist before its message) but takes
+   no height until it has something to say. */
+.admin-history-action:has(> .admin-text-status:empty) {
+  gap: 0;
+}
+
+.admin-history-action > .admin-text-status:empty {
+  min-height: 0;
+}
+
+/* Issue 447: as the prototype's .panel.scroll table, a cell is never squeezed below its longest
+   word (the app's body breaks anywhere, which split "When" and "Roll back to v2" at 1024 px). The
+   table sits in .admin-scroll, so a long email or key scrolls instead of being clipped. */
+.admin-publish-history th,
+.admin-publish-history td {
+  overflow-wrap: normal;
+}
+
+/* The prototype's "Roll back" fits its column on one line; the live label names the version
+   ("Roll back to v2"), which the self-sized table would wrap at 1024 px. It stays one line, as the
+   prototype's button; the What column wraps instead. */
+.admin-publish-history .admin-history-action .button-small {
+  white-space: nowrap;
+}
+
+/* The button's min-width is 0 in the admin (no 44 px tap minimum), so an auto grid track could
+   shrink below its label and let it run out of the cell; the track keeps its content's width. */
+.admin-publish-history .admin-history-action {
+  grid-template-columns: minmax(min-content, auto);
+}
+
+/* The prototype's time ("11-14 15:20") and its notes stay on one line; with real emails in Who,
+   the self-sized table would break them at their space at 1024 px. */
+.admin-publish-history time,
+.admin-publish-history .admin-history-note {
+  white-space: nowrap;
+}

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { companionRow } from "@/lib/admin/companion-rows";
 import { historyItemName, type NameLookup } from "@/lib/admin/history-names";
 import { formatHistoryTime } from "@/lib/publish-history/admin";
+import { readAdminCss } from "./support/admin-css";
 
 // #313: the admin looks like the admin prototype at desktop widths.
 
@@ -152,10 +153,8 @@ describe("Companions table facts (#313 row 13)", () => {
 
 describe("admin tokens and shell (#313 rows 1, 2, 3, 4, 7, 9, 11)", () => {
   const tokens = () => read("src/app/tokens.css");
-  const adminCss = () => {
-    const css = read("src/app/globals.css");
-    return css.slice(css.indexOf("/* The content admin (issue 287)"));
-  };
+  // #483: the admin's styles are in src/app/admin/admin.css and one file per admin page.
+  const adminCss = () => readAdminCss();
   const block = (css: string, selector: string) => {
     const start = css.indexOf(`${selector} {`);
     expect(start, selector).toBeGreaterThan(-1);

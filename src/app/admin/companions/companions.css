@@ -1,0 +1,31 @@
+/* The Companions list's styles (issue 483: moved from src/app/globals.css, in their order there).
+   Loaded by the admin layout through src/app/admin/styles.ts, after src/app/admin/admin.css. Every
+   selector here names a class of this page only, so the rules do nothing on other admin pages. */
+
+/* Issue 441: a clickable row (the prototype's tr.click). The name is bold text like the
+   prototype's <b>; its link is stretched over the row, so a click anywhere on the row opens it. */
+.admin-row-click {
+  cursor: pointer;
+  position: relative;
+}
+
+.admin-row-click:hover td {
+  background: var(--adm-soft);
+}
+
+.admin-shell .admin-row-link {
+  align-items: normal;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-row-link::after {
+  content: "";
+  inset: 0;
+  position: absolute;
+}
+
+/* Issue 441: a panel whose table scrolls sideways instead of widening the page (.panel.scroll). */
+.admin-panel-scroll {
+  overflow-x: auto;
+}
