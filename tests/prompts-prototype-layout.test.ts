@@ -69,13 +69,13 @@ describe("ADM-08 Prompts in the prototype's layout (#446)", () => {
   it("test_446_list_is_a_table_in_a_panel", () => {
     const page = read("src/app/admin/prompts/page.tsx");
     expect(page).toContain('className="admin-panel"');
-    expect(page).toContain('className="admin-table"');
+    expect(page).toContain('className="admin-table admin-prompt-list"');
     expect(page).toContain('aria-label="Prompts"');
   });
 
   it("test_446_prompt_text_wraps_long_tokens", () => {
     const css = read("src/app/globals.css");
-    const block = css.slice(css.indexOf("/* #446"));
+    const block = css.slice(css.indexOf("/* Issue 446"));
     expect(block).toMatch(/\.admin-prompt-code[^}]*overflow-wrap: anywhere/);
   });
 

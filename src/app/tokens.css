@@ -355,7 +355,7 @@
   --adm-toast-size: 13px;
   --adm-toast-bottom: 20px;
   --adm-toast-layer: 20;
-  /* #446: the prompt page (the prototype's .note line under its pre.code; --adm-h2-after and
+  /* Issue 446: the prompt page (the prototype's .note line under its pre.code; --adm-h2-after and
      --adm-code-leading above are shared). */
   --adm-note-before: 10px;
   --adm-note-after: 1em;

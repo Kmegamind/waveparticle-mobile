@@ -4435,7 +4435,7 @@ input.admin-text-field {
   width: 1px;
 }
 
-/* #446: ADM-08 Prompts in the prototype's layout. The prompt page is two equal panels 14 px apart
+/* Issue 446: ADM-08 Prompts in the prototype's layout. The prompt page is two equal panels 14 px apart
    (prototype .grid2), headings 10 px above their content, the prompt text as the prototype's
    pre.code (also when it is a text field), the version note as its .note line, and the draft below
    14 px down (prototype .cmp). Prompt text holds long unbroken tokens, so it wraps anywhere. */
