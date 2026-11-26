@@ -365,6 +365,8 @@
   --adm-toast-size: 13px;
   --adm-toast-bottom: 20px;
   --adm-toast-layer: 20;
+  /* Issue 448: the Hotline entry's two panels (docs/design/prototype/admin-hotlines_2026-11-23_v1.html). */
+  --adm-hotline-columns: minmax(0, 1.3fr) minmax(0, 1fr);
 }
 
 /* Issue 445: the prototype's dialog (dialog.sheet), used by App text's Publish changes. The shade

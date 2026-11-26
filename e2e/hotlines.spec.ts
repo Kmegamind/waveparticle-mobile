@@ -228,47 +228,55 @@ test("#118 ADM-14 ADM-15: a writer reads the hotline list but cannot change it",
   expect(refused.status).toBe(403);
 });
 
-test("#118 ADM-15: an admin saves a draft for a new country and publishes it, with a history row", async ({
-  page,
-  context,
-  baseURL,
-}) => {
-  await fetch(`${STUB_SUPABASE}/__hotlines`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ reset: true }),
-  });
-  try {
-    await signIn(context, baseURL!, () => ({}), { contentRole: "admin" });
-    await page.goto("/admin/hotlines");
-    await page.getByLabel("Add an entry for a country with none").selectOption("NZ");
-    await page.getByRole("button", { name: "Add an entry" }).click();
-    await expect(page).toHaveURL(/\/admin\/hotlines\/NZ$/);
-    await expect(page.getByText("Nothing is published for New Zealand")).toBeVisible();
+// #448: Add an entry now sits at the right end of the header row, like every admin page's actions,
+// so this test opens the admin at a desktop width (the admin is desktop only, ADMIN-DESKTOP).
+test.describe("#118 ADM-15 at a desktop width", () => {
+  test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
 
-    // A test-only web address (a reserved example domain), never a real help line.
-    await page.getByLabel("Main contact: what Get support now opens").selectOption("web");
-    await page.getByLabel("Main contact number or https address").fill("call us");
-    await page.getByLabel("Checked by").fill("e2e test");
-    await page.getByRole("button", { name: "Save draft" }).click();
-    await expect(page.getByText("Not saved: fix the fields listed below.")).toBeVisible();
-
-    await page.getByLabel("Main contact number or https address").fill("https://example.org/help");
-    await page.getByRole("button", { name: "Save draft" }).click();
-    await expect(page.getByText("Draft v1 saved.")).toBeVisible();
-    await page.getByRole("button", { name: "Publish v1" }).click();
-    await expect(page.getByText("Published v1.")).toBeVisible();
-
-    await page.goto("/admin/publish-history");
-    const history = page.getByRole("row", { name: "NZ v1, Published" });
-    await expect(history.getByRole("cell", { name: "Hotline · New Zealand NZ" })).toBeVisible();
-  } finally {
+  test("#118 ADM-15: an admin saves a draft for a new country and publishes it, with a history row", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
     await fetch(`${STUB_SUPABASE}/__hotlines`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ reset: true }),
     });
-  }
+    try {
+      await signIn(context, baseURL!, () => ({}), { contentRole: "admin" });
+      await page.goto("/admin/hotlines");
+      await page.getByLabel("Add an entry for a country with none").selectOption("NZ");
+      await page.getByRole("button", { name: "Add an entry" }).click();
+      await expect(page).toHaveURL(/\/admin\/hotlines\/NZ$/);
+      await expect(page.getByText("Nothing is published for New Zealand")).toBeVisible();
+
+      // A test-only web address (a reserved example domain), never a real help line.
+      await page.getByLabel("Main contact: what Get support now opens").selectOption("web");
+      await page.getByLabel("Main contact number or https address").fill("call us");
+      await page.getByLabel("Checked by").fill("e2e test");
+      await page.getByRole("button", { name: "Save draft" }).click();
+      await expect(page.getByText("Not saved: fix the fields listed below.")).toBeVisible();
+
+      await page
+        .getByLabel("Main contact number or https address")
+        .fill("https://example.org/help");
+      await page.getByRole("button", { name: "Save draft" }).click();
+      await expect(page.getByText("Draft v1 saved.")).toBeVisible();
+      await page.getByRole("button", { name: "Publish v1" }).click();
+      await expect(page.getByText("Published v1.")).toBeVisible();
+
+      await page.goto("/admin/publish-history");
+      const history = page.getByRole("row", { name: "NZ v1, Published" });
+      await expect(history.getByRole("cell", { name: "Hotline · New Zealand NZ" })).toBeVisible();
+    } finally {
+      await fetch(`${STUB_SUPABASE}/__hotlines`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ reset: true }),
+      });
+    }
+  });
 });
 
 // Review of #406, I-1 and I-2: the copy belongs to one account and never outlives it.

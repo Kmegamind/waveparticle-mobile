@@ -88,6 +88,17 @@ export function newestDraft(versions: HotlineVersionView[]): HotlineVersionView 
   return versions.find((version) => version.state === "draft") ?? null;
 }
 
+/**
+ * #448: what Save draft sends for one field of ADM-15. A one-line field shows a stored value with
+ * its line breaks dropped, so an untouched field (its text still as shown) sends the stored value
+ * itself, and editing never changes a value the user did not change. An edited field sends what
+ * was typed.
+ */
+export function sentValue(stored: string | null, typed: string): string {
+  const shown = (stored ?? "").replace(/[\r\n]/g, "");
+  return typed === shown ? (stored ?? "") : typed;
+}
+
 export type HotlineDraftInput = {
   country: string;
   serviceName: string;

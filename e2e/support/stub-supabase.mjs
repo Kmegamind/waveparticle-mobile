@@ -58,6 +58,11 @@
 //   POST /rest/v1/rpc/save_hotline_draft | publish_hotline | roll_back_hotline   admin only, as
 //                                     20261128000000; publish and roll back write a history row
 //   POST /__hotlines  { reset: true }  puts the list and its history rows back
+//   POST /__hotlines  { token, own: "seeded" | "copy" | null }   (#448) that account reads and
+//                                     writes its own copy of the seed list, not the shared one:
+//                                     "seeded" is read only (its writes are refused), so the visual
+//                                     gate reads no row another test writes; "copy" takes saves,
+//                                     publishes and roll backs (history rows as usual)
 //   GET  /rest/v1/ai_features | ai_feature_status_history | ai_feature_test_runs   the AI feature
 //                                     pages (#436), seeded from docs/ai/AI_11_feature-pages.md
 //                                     (scripts/ai-features/seed.mjs), every status exploring, no
@@ -313,8 +318,8 @@ const seededHotlines = () =>
 let hotlines = seededHotlines();
 
 /** The same checks and history insert as private.set_published_hotline (20261128000000). */
-function setPublishedHotline(country, version, action, user) {
-  const rows = hotlines.filter((row) => row.country === country);
+function setPublishedHotline(country, version, action, user, list = hotlines) {
+  const rows = list.filter((row) => row.country === country);
   const target = rows.find((row) => row.version === version);
   if (!target) return `no hotline ${country} version ${version}`;
   if (target.published) return "already published";
@@ -876,6 +881,17 @@ createServer(async (request, response) => {
 
   if (path === "/__hotlines" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
+    if (typeof body.token === "string" && "own" in body) {
+      // #448: the account's own copy of the seed list, or the shared list again with null.
+      const account = datasets.get(body.token);
+      if (!account) return json(response, 404, { message: "no such account" });
+      if (![null, "seeded", "copy"].includes(body.own)) {
+        return json(response, 400, { message: "own is seeded, copy or null" });
+      }
+      account.hotlinesOwn = body.own === null ? undefined : seededHotlines();
+      account.hotlinesReadOnly = body.own === "seeded";
+      return json(response, 200, { ok: true });
+    }
     if (body.reset === true) {
       hotlines = seededHotlines();
       publishHistory = publishHistory.filter((row) => row.kind !== "hotline");
@@ -888,7 +904,8 @@ createServer(async (request, response) => {
     if (!user) return json(response, 401, { code: "42501", message: "permission denied" });
     const editor = ["admin", "writer"].includes(user.contentRole);
     const params = [...url.searchParams.entries()];
-    const found = hotlines.filter((row) => (editor || row.published) && matches(row, params));
+    const source = user.hotlinesOwn ?? hotlines;
+    const found = source.filter((row) => (editor || row.published) && matches(row, params));
     let rows = ordered(found, url.searchParams.get("order"));
     const limit = url.searchParams.get("limit");
     if (limit) rows = rows.slice(0, Number(limit));
@@ -903,13 +920,17 @@ createServer(async (request, response) => {
     if (!dataset || dataset.deleted || dataset.contentRole !== "admin") {
       return json(response, 403, { code: "42501", message: "only an admin may change a hotline" });
     }
+    if (dataset.hotlinesReadOnly) {
+      return json(response, 409, { message: "this account reads the seeded hotlines only" });
+    }
+    const list = dataset.hotlinesOwn ?? hotlines;
     if (hotlineRpc[1] === "save_hotline_draft") {
       const version =
         Math.max(
           0,
-          ...hotlines.filter((row) => row.country === body.entry_country).map((row) => row.version),
+          ...list.filter((row) => row.country === body.entry_country).map((row) => row.version),
         ) + 1;
-      hotlines.push({
+      list.push({
         country: body.entry_country,
         version,
         service_name: body.entry_service_name || null,
@@ -932,6 +953,7 @@ createServer(async (request, response) => {
       body.entry_version,
       action,
       dataset.user,
+      list,
     );
     return problem ? json(response, 400, { code: "P0001", message: problem }) : json(response, 204);
   }
