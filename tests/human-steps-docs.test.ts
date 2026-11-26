@@ -176,16 +176,100 @@ describe("#189 AC6: docs/HUMAN_STEPS.md lists every recurring human task", () =>
     expect(steps).toMatch(/stops and asks a human/);
   });
 
-  it("keeps the steps open on 2026-11-24", () => {
-    const open = steps.slice(
-      steps.indexOf("## Open now (2026-11-24)"),
+  describe("#449 Open now after the owner's 2026-11-25 production steps", () => {
+    const section = steps.slice(
+      steps.indexOf("## Open now (2026-11-25)"),
       steps.indexOf("## Apply migrations"),
     );
-    expect(open).toContain(
-      "Apply to dev, then prod: `supabase/migrations/20261128000000_hotlines.sql`",
+    const open = section.slice(0, section.indexOf("### Later, by owner decision"));
+    const later = section.slice(
+      section.indexOf("### Later, by owner decision"),
+      section.indexOf("### Done"),
     );
-    expect(open).toMatch(/#377, #46/);
-    expect(open).toMatch(/MODEL_CALL_LIMIT_ENABLED` to `0` in Vercel, scope Production/);
-    expect(open).toMatch(/Publish `plan_split` version 2/);
+    const done = section.slice(section.indexOf("### Done"));
+
+    it("has the dated section with open, later and done parts in that order", () => {
+      expect(steps).toContain("## Open now (2026-11-25)");
+      expect(steps).not.toContain("## Open now (2026-11-24)");
+      expect(open.length).toBeGreaterThan(0);
+      expect(later.length).toBeGreaterThan(0);
+      expect(done.length).toBeGreaterThan(0);
+    });
+
+    it("pins the exact lists: one open step, one later step, five done steps", () => {
+      const items = (part: string, marker: RegExp) =>
+        part.split("\n").filter((line) => marker.test(line));
+      const expectExactly = (lines: string[], prefixes: string[]) => {
+        expect(lines).toHaveLength(prefixes.length);
+        prefixes.forEach((prefix, i) => expect(lines[i].startsWith(prefix), lines[i]).toBe(true));
+      };
+      expectExactly(items(open, /^\d+\. /), [
+        "1. **[dev, prod] Confirm that three migrations ran: `20261126000000_prompt_activated_at.sql`,",
+      ]);
+      expectExactly(items(later, /^- /), [
+        "- **[prod] Fix the published story cards that fail the checks**",
+      ]);
+      expectExactly(items(done, /^- /), [
+        "- 2026-11-25: applied `supabase/migrations/20261128000000_hotlines.sql`",
+        "- 2026-11-25: prompt import",
+        "- 2026-11-25: applied `supabase/migrations/20261130000000_ai_features.sql`",
+        "- 2026-11-25: ran the `ai_features` seed",
+        "- Before 2026-11-25 (date not recorded): set `MODEL_CALL_LIMIT_ENABLED` to `0`",
+      ]);
+    });
+
+    it("no longer lists the steps the owner ran as open", () => {
+      expect(open).not.toContain("20261128000000_hotlines.sql");
+      expect(open).not.toContain("20261130000000_ai_features.sql");
+      expect(open).not.toContain("MODEL_CALL_LIMIT_ENABLED");
+      expect(open).not.toMatch(/Publish `plan_split` version 2/);
+    });
+
+    it("moves them to done with the date and the owner's check results", () => {
+      expect(done).toMatch(
+        /2026-11-25: applied `supabase\/migrations\/20261128000000_hotlines\.sql`/,
+      );
+      expect(done).toMatch(/returned 1, the US entry \(988\)/);
+      for (const prompt of [
+        "pause_predicament",
+        "plan_split",
+        "rest_reply",
+        "retry_hints",
+        "safety_classifier",
+        "stuck_story",
+      ]) {
+        expect(done).toContain(`\`${prompt}\``);
+      }
+      expect(done).toMatch(/`return_popup`, `step_cards` and `closing_line` were left untouched/);
+      expect(done).toMatch(
+        /2026-11-25: applied `supabase\/migrations\/20261130000000_ai_features\.sql`/,
+      );
+      expect(done).toMatch(/`ai_features` seed[\s\S]*7\s+rows/);
+      expect(done).toMatch(/MODEL_CALL_LIMIT_ENABLED` to `0` in Vercel, scope\s+Production/);
+    });
+
+    it("marks the card fix (#377) Later by owner decision", () => {
+      expect(later).toMatch(/#377, #46/);
+      expect(later).toMatch(/Later, by owner\s+decision/);
+      expect(open).not.toMatch(/#377/);
+    });
+
+    it.each([
+      ["20261126000000_prompt_activated_at.sql", "prompts_fill_activated_at"],
+      ["20261127000000_safety_alarm_days.sql", "private.safety_alarm_days"],
+      ["20261129000000_research_conditions.sql", "sessions_keep_story_off_at"],
+    ])("keeps %s open with a read-only check query", (file, object) => {
+      expect(open).toContain(file);
+      expect(open).toContain(object);
+    });
+
+    it("uses only read-only SELECT queries in the open steps", () => {
+      const queries = [...open.matchAll(/```sql\n([\s\S]*?)```/g)].map((m) => m[1]);
+      expect(queries).toHaveLength(3);
+      for (const query of queries) {
+        expect(query.trim()).toMatch(/^select\b/i);
+        expect(query).not.toMatch(/\b(insert|update|delete|drop|alter|create|truncate|grant)\b/i);
+      }
+    });
   });
 });
