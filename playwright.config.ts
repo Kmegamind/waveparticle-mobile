@@ -31,6 +31,10 @@ const appEnv = {
   GOAL_DIALOGUE_SECRET: "e2e-goal-dialogue-key-for-tests-only-0001",
 };
 
+// #435, #483: the admin visual gate, one file per admin page (e2e/admin-visual.spec.ts for the
+// frame and shared components, e2e/admin-visual-<page>.spec.ts for each page).
+const ADMIN_VISUAL_GATE = /(?:^|\/)admin-visual(?:-[a-z-]+)?\.spec\.ts$/;
+
 // #445: every e2e file that writes app text (save, publish, roll back or reset of app_text).
 const APP_TEXT_WRITERS = /(?:^|\/)(?:app-text|publish-history)\.spec\.ts$/;
 
@@ -42,7 +46,7 @@ export default defineConfig({
   projects: [
     {
       name: "mobile",
-      testIgnore: [/\.live\.spec\.ts$/, /admin-visual\.spec\.ts$/, APP_TEXT_WRITERS],
+      testIgnore: [/\.live\.spec\.ts$/, ADMIN_VISUAL_GATE, APP_TEXT_WRITERS],
       use: { ...devices["iPhone 14"] },
     },
     // #445: the files that write the stub's one app_text table run one at a time, never beside
@@ -54,10 +58,11 @@ export default defineConfig({
       workers: 1,
       use: { ...devices["iPhone 14"] },
     },
-    // #435: the admin visual gate runs in a desktop browser (the admin is desktop only).
+    // #435: the admin visual gate runs in a desktop browser (the admin is desktop only). #483: every
+    // file of the gate; each test signs in its own account, so the files run in any order.
     {
       name: "desktop",
-      testMatch: /admin-visual\.spec\.ts$/,
+      testMatch: ADMIN_VISUAL_GATE,
       use: { ...devices["Desktop Chrome"] },
     },
     ...(deployed

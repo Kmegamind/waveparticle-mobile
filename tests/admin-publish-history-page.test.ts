@@ -68,8 +68,10 @@ describe("The visual gate's fixed publish history is test-only (#447)", () => {
   });
 
   it("test_447_ac2_the_gate_reads_its_own_fixed_history", () => {
-    const gate = read("e2e/admin-visual.spec.ts");
-    expect(gate).toContain("useSeededPublishHistory(");
+    // #483: the gate account's seeded views are set up in the gate's shared support file.
+    const gate = read("e2e/support/admin-visual.ts");
+    expect(gate).toContain("useSeededPublishHistory as seededPublishHistoryView");
+    expect(gate).toContain("seededPublishHistoryView(account)");
     expect(read("e2e/support/stub-supabase.mjs")).toContain('path === "/__publish_history"');
   });
 });

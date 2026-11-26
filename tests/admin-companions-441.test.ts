@@ -54,7 +54,8 @@ describe("Companions list matches the prototype (#441)", () => {
   });
 
   it("test_441_the_visual_gate_compares_the_companion_rows_with_no_exception", () => {
-    const spec = read("e2e/admin-visual.spec.ts");
+    // #483: the Companions rows of the visual gate are in their own file.
+    const spec = read("e2e/admin-visual-companions.spec.ts");
     expect(spec).not.toContain("Companion name link");
     for (const name of [
       '"Companion name"',
