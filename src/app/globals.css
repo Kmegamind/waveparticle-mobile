@@ -4516,7 +4516,6 @@ input.admin-text-field {
   padding-left: var(--adm-gap);
 }
 
-.admin-prompt-text,
 .admin-diff {
   background: var(--adm-soft);
   border-radius: var(--adm-r-code);
@@ -4527,10 +4526,6 @@ input.admin-text-field {
   overflow-wrap: anywhere;
   padding: var(--adm-code-pad);
   white-space: pre-wrap;
-}
-
-.admin-prompt-field {
-  font-family: var(--adm-font-mono);
 }
 
 .admin-prompt-subhead {
@@ -4569,6 +4564,82 @@ input.admin-text-field {
   position: absolute;
   white-space: nowrap;
   width: 1px;
+}
+
+/* Issue 446: ADM-08 Prompts in the prototype's layout. The prompt page is two equal panels 14 px apart
+   (prototype .grid2), headings 10 px above their content, the prompt text as the prototype's
+   pre.code (also when it is a text field), the version note as its .note line, and the draft below
+   14 px down (prototype .cmp). Prompt text holds long unbroken tokens, so it wraps anywhere. */
+.admin-prompt-grid {
+  display: grid;
+  gap: var(--adm-gap);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-main .admin-prompt-heading {
+  margin: 0 0 var(--adm-h2-after);
+}
+
+.admin-prompt-code {
+  background: var(--adm-soft);
+  border: 0;
+  border-radius: var(--adm-r-code);
+  color: var(--adm-ink);
+  display: block;
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-code-size);
+  font-weight: 400;
+  line-height: var(--adm-code-leading);
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding: var(--adm-code-pad);
+  white-space: pre-wrap;
+  width: 100%;
+}
+
+textarea.admin-prompt-code {
+  resize: vertical;
+}
+
+.admin-prompt-note {
+  color: var(--adm-muted);
+  font-size: var(--adm-note-size);
+  margin: var(--adm-note-gap) 0 var(--adm-note-after);
+  overflow-wrap: anywhere;
+}
+
+.admin-prompt-code + .admin-prompt-settings {
+  margin-top: var(--adm-note-gap);
+}
+
+/* The prototype's id chip inside a title or heading takes the heading's weight. */
+.admin-main h1 .admin-chip,
+.admin-prompt-heading .admin-chip {
+  font-weight: inherit;
+}
+
+.admin-main .admin-prompt-versions .admin-prompt-heading {
+  margin-top: var(--adm-gap);
+}
+
+.admin-prompt-version-note {
+  overflow-wrap: anywhere;
+}
+
+/* The list: words break only at spaces, as in the prototype's tables (the app's body breaks
+   anywhere, which squeezed short columns to one letter); the setting lines still wrap anywhere. */
+.admin-prompt-list {
+  overflow-wrap: normal;
+}
+
+.admin-prompt-after {
+  display: grid;
+  gap: var(--adm-gap-small);
+  margin-top: var(--adm-gap);
+}
+
+.admin-prompt-after .admin-prompt-heading {
+  margin: 0;
 }
 
 /* Issue 445, ADM-07 App text: one line per key, as the prototype's table. The text is edited in
