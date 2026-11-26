@@ -29,8 +29,10 @@ scripts read only Oppenheimer's folder, the story card keys used a fixed `opp`, 
   and builds keys from that Companion's key code. With no id it imports Oppenheimer, as before.
 - **Name check.** The gateway's `name` check rejects any word of three letters or more of the
   speaking Companion's name, titles left out ("Professor Moriarty" gives `moriarty`). The callers
-  pass the story's Companion name (`generationInputs(...).companionName`); a caller that passes none
-  is checked against Oppenheimer's name, as before.
+  pass the story's Companion name (`generationInputs(...).companionName`). Superseded in part by
+  AI-CHARACTER-NEUTRAL (2026-11-26, #468): there is no default name any more. The name is required;
+  a check run without one throws, and a gateway call without one fails before any model call with
+  `companion_name` in its log. It is never checked against Oppenheimer's name instead.
 
 ## Consequences
 - Oppenheimer's import SQL is unchanged apart from the two new columns; his story card SQL is

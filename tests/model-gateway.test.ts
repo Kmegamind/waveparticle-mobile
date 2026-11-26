@@ -7,10 +7,11 @@ import { cardNouns, checkRunList, similarity } from "@/lib/model-gateway/run-lis
 import { MODEL_GATEWAY_ENV_NAMES, createServerModelGateway } from "@/lib/model-gateway/server";
 import { seedPromptSource, seedLineLimits } from "./support/seed-prompts";
 import type { CompanionKind } from "@/lib/model-gateway/types";
+import { OPPENHEIMER } from "./support/companion";
 
 // #282: the length limits are data in the prompt rows; tests use the seed's.
 const checkLine = (text: string, kind: CompanionKind, forbidTerms: string[] = []) =>
-  checkCompanionLine(text, kind, forbidTerms, seedLineLimits(kind));
+  checkCompanionLine(text, kind, forbidTerms, seedLineLimits(kind), OPPENHEIMER);
 
 const root = path.resolve(import.meta.dirname, "..");
 const goal = "SECRET_GOAL_TEXT";
@@ -101,18 +102,22 @@ describe("model gateway", () => {
     const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
 
     const cards = await gateway.writeStepCards({
+      companionName: OPPENHEIMER,
       minutes: 25,
       facts: "He is at a table.",
     });
     const stuck = await gateway.writeStuckStory({
+      companionName: OPPENHEIMER,
       pauseNumber: 1,
       facts: "He is at a table.",
     });
     const reply = await gateway.writeRestReply({
+      companionName: OPPENHEIMER,
       userMessage,
       facts: "He is at a table.",
     });
     const popup = await gateway.writeReturnPopup({
+      companionName: OPPENHEIMER,
       trigger: "rest",
       facts: "He is at a table.",
       awayMinutes: 12,
@@ -133,6 +138,7 @@ describe("model gateway", () => {
       provider: provider(async () => cardsJson(6)).impl,
     });
     const cards = await gateway.writeStepCards({
+      companionName: OPPENHEIMER,
       minutes: 40,
       facts: "He is at a table.",
     });
@@ -172,6 +178,7 @@ describe("model gateway", () => {
     });
     const started = Date.now();
     const popup = await gateway.writeReturnPopup({
+      companionName: OPPENHEIMER,
       trigger: "absence",
       facts: "A quiet room.",
       awayMinutes: 8,
@@ -190,7 +197,11 @@ describe("model gateway", () => {
         throw new Error(`provider failed for ${userMessage} with ${apiKey}`);
       },
     });
-    const reply = await gateway.writeRestReply({ userMessage, facts: "A quiet room." });
+    const reply = await gateway.writeRestReply({
+      companionName: OPPENHEIMER,
+      userMessage,
+      facts: "A quiet room.",
+    });
     expect(reply).toEqual({ source: "failed", reason: "request" });
     const logged = JSON.stringify(logs);
     expect(logged).not.toContain(userMessage);
@@ -205,6 +216,7 @@ describe("model gateway", () => {
       provider: async () => JSON.stringify({ reply: rejected }),
     });
     const reply = await gateway.writeRestReply({
+      companionName: OPPENHEIMER,
       userMessage: "I am tired.",
       facts: "A quiet room.",
     });
@@ -327,7 +339,7 @@ describe("model gateway", () => {
       it("test_61_ac1_the_cap_holds_even_when_the_stored_prompt_row_allows_more", () => {
         const loose = { max_words: 40, max_sentences: 3 };
         const three = `${twoSentences} My hands are warm.`;
-        expect(checkCompanionLine(three, "return_popup", [], loose)).toEqual({
+        expect(checkCompanionLine(three, "return_popup", [], loose, OPPENHEIMER)).toEqual({
           ok: false,
           rejectedRules: ["len"],
         });
@@ -337,7 +349,7 @@ describe("model gateway", () => {
         const loose = { max_words: 40, max_sentences: 3 };
         const three = "I kept my notes in order. The room stayed quiet. I feel steady again.";
         // The pause lines have their own cap since #56 (LEN-PAUSE); the closing line has none.
-        expect(checkCompanionLine(three, "closing_line", [], loose).ok).toBe(true);
+        expect(checkCompanionLine(three, "closing_line", [], loose, OPPENHEIMER).ok).toBe(true);
       });
 
       it("test_61_ac2_a_three_sentence_model_answer_is_retried_then_fails_with_no_text", async () => {
@@ -347,6 +359,7 @@ describe("model gateway", () => {
         const fake = provider(async () => three);
         const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
         const popup = await gateway.writeReturnPopup({
+          companionName: OPPENHEIMER,
           trigger: "absence",
           facts: "He is at a table.",
           awayMinutes: 12,
@@ -421,7 +434,11 @@ describe("model gateway", () => {
         prompts: seedPromptSource(),
         provider: async () => JSON.stringify({ reply: chatWithQuestion }),
       });
-      const reply = await gateway.writeRestReply({ userMessage, facts: "A quiet room." });
+      const reply = await gateway.writeRestReply({
+        companionName: OPPENHEIMER,
+        userMessage,
+        facts: "A quiet room.",
+      });
       expect(reply).toEqual({ source: "generated", text: chatWithQuestion });
     });
   });
@@ -438,16 +455,30 @@ describe("model gateway", () => {
     async function stuckPromptFor(pauseNumber: number): Promise<string> {
       const fake = provider(async () => stuckJson);
       const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
-      await gateway.writeStuckStory({ pauseNumber, facts: "He is at a table." });
+      await gateway.writeStuckStory({
+        companionName: OPPENHEIMER,
+        pauseNumber,
+        facts: "He is at a table.",
+      });
       const first = fake.calls[0] ?? "";
-      await gateway.writePausePredicament({ pauseNumber, facts: "He is at a table.", story: "s." });
+      await gateway.writePausePredicament({
+        companionName: OPPENHEIMER,
+        pauseNumber,
+        facts: "He is at a table.",
+        story: "s.",
+      });
       return `${first}\n${fake.calls[1] ?? ""}`;
     }
 
     async function returnPromptFor(trigger: "rest" | "absence"): Promise<string> {
       const fake = provider(async () => returnJson);
       const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
-      await gateway.writeReturnPopup({ trigger, facts: "He is at a table.", awayMinutes: 12 });
+      await gateway.writeReturnPopup({
+        companionName: OPPENHEIMER,
+        trigger,
+        facts: "He is at a table.",
+        awayMinutes: 12,
+      });
       return fake.calls[0] ?? "";
     }
 
@@ -507,11 +538,13 @@ describe("model gateway", () => {
       const fake = provider(async (attempt) => (attempt === 1 ? stuckJson : returnJson));
       const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
       await gateway.writeStuckStory({
+        companionName: OPPENHEIMER,
         pauseNumber: 3,
         facts: "He is at a table.",
         forbidTerms: [stepName, goalText],
       });
       await gateway.writeReturnPopup({
+        companionName: OPPENHEIMER,
         trigger: "absence",
         facts: "He is at a table.",
         awayMinutes: 90,
@@ -535,7 +568,11 @@ describe("model gateway", () => {
         attempt === 1 ? story("Is the ink dry? I wait at my desk.") : story(goodStory),
       );
       const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
-      const result = await gateway.writeStuckStory({ pauseNumber: 1, facts });
+      const result = await gateway.writeStuckStory({
+        companionName: OPPENHEIMER,
+        pauseNumber: 1,
+        facts,
+      });
       expect(result).toMatchObject({ source: "generated", story: goodStory });
       expect(fake.calls).toHaveLength(2);
       expect(fake.calls[1]?.startsWith(fake.calls[0] ?? "-")).toBe(true);
@@ -548,7 +585,11 @@ describe("model gateway", () => {
         attempt < 3 ? story("You see the snag.") : story(goodStory),
       );
       const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
-      const result = await gateway.writeStuckStory({ pauseNumber: 2, facts });
+      const result = await gateway.writeStuckStory({
+        companionName: OPPENHEIMER,
+        pauseNumber: 2,
+        facts,
+      });
       expect(result).toMatchObject({ source: "generated", story: goodStory });
       expect(fake.calls).toHaveLength(3);
     });
@@ -564,10 +605,15 @@ describe("model gateway", () => {
       });
       const results = [
         await gateway.splitPlan({ goal, totalMinutes: 25, splitFiner: false }),
-        await gateway.writeStepCards({ minutes: 25, facts }),
-        await gateway.writeStuckStory({ pauseNumber: 1, facts }),
-        await gateway.writeRestReply({ userMessage, facts }),
-        await gateway.writeReturnPopup({ trigger: "absence", facts, awayMinutes: 90 }),
+        await gateway.writeStepCards({ companionName: OPPENHEIMER, minutes: 25, facts }),
+        await gateway.writeStuckStory({ companionName: OPPENHEIMER, pauseNumber: 1, facts }),
+        await gateway.writeRestReply({ companionName: OPPENHEIMER, userMessage, facts }),
+        await gateway.writeReturnPopup({
+          companionName: OPPENHEIMER,
+          trigger: "absence",
+          facts,
+          awayMinutes: 90,
+        }),
       ];
       for (const result of results) {
         expect(result).toEqual({ source: "failed", reason: "request" });
@@ -625,6 +671,7 @@ describe("model gateway", () => {
       const fake = provider(async () => story(repeat));
       const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
       const result = await gateway.writeStuckStory({
+        companionName: OPPENHEIMER,
         pauseNumber: 1,
         facts,
         earlierLines: [repeat],
@@ -635,13 +682,14 @@ describe("model gateway", () => {
       const cards = await createModelGateway({
         prompts: seedPromptSource(),
         provider: async () => JSON.stringify({ cards: [card, card] }),
-      }).writeStepCards({ minutes: 25, facts });
+      }).writeStepCards({ companionName: OPPENHEIMER, minutes: 25, facts });
       expect(cards).toEqual({ source: "failed", reason: "checks" });
 
       const popup = await createModelGateway({
         prompts: seedPromptSource(),
         provider: async () => returnJson,
       }).writeReturnPopup({
+        companionName: OPPENHEIMER,
         trigger: "rest",
         facts,
         awayMinutes: 5,
@@ -666,7 +714,12 @@ describe("model gateway", () => {
       const fresh = "My pencil snapped at the tip.";
       const fake = provider(async (attempt) => story(attempt === 1 ? reuse : fresh));
       const gateway = createModelGateway({ prompts: seedPromptSource(), provider: fake.impl });
-      const result = await gateway.writeStuckStory({ pauseNumber: 1, facts, lastCard });
+      const result = await gateway.writeStuckStory({
+        companionName: OPPENHEIMER,
+        pauseNumber: 1,
+        facts,
+        lastCard,
+      });
       expect(result).toMatchObject({ source: "generated", story: fresh });
       expect(fake.calls[1]).toMatch(/last card/i);
     });
@@ -678,6 +731,7 @@ describe("model gateway", () => {
         provider: async () => story(rejected),
       });
       const result = await gateway.writeStuckStory({
+        companionName: OPPENHEIMER,
         pauseNumber: 1,
         facts,
         earlierLines: [rejected],

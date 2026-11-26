@@ -7,6 +7,7 @@ import { generationInputs } from "@/lib/prototype/story-inputs";
 import { restReplyFor } from "@/lib/prototype/rest-lines";
 import { seedContent } from "./support/seed-content";
 import { seedLineLimits, seedPromptSource } from "./support/seed-prompts";
+import { OPPENHEIMER } from "./support/companion";
 
 // #59 (US-AI-6): his reply in the rest conversation. No label on the reply (CHAT-NO-LABEL); the
 // feelings rule and "end on his own situation" are in the prompt; a later word the person typed
@@ -15,7 +16,7 @@ import { seedLineLimits, seedPromptSource } from "./support/seed-prompts";
 
 const seed = seedContent();
 const checkReply = (text: string, forbidTerms: string[] = []) =>
-  checkCompanionLine(text, "rest_reply", forbidTerms, seedLineLimits("rest_reply"));
+  checkCompanionLine(text, "rest_reply", forbidTerms, seedLineLimits("rest_reply"), OPPENHEIMER);
 
 /** The rest prompt the gateway sends, from the seed file. */
 async function restPrompt(input: Partial<RestReplyInput> = {}): Promise<string> {
@@ -27,7 +28,12 @@ async function restPrompt(input: Partial<RestReplyInput> = {}): Promise<string> 
       return JSON.stringify({ reply: "I keep my notes dry under my coat." });
     },
   });
-  await gateway.writeRestReply({ facts: "He is at a table.", userMessage: "hello", ...input });
+  await gateway.writeRestReply({
+    companionName: OPPENHEIMER,
+    facts: "He is at a table.",
+    userMessage: "hello",
+    ...input,
+  });
   return prompts[0] ?? "";
 }
 
@@ -68,7 +74,11 @@ describe("#59 AC1 one to three sentences in his voice, from his own situation", 
     const long = "I sit. I write. I wait. I look at the wall.";
     const short = "I sit at my desk and write.";
     const { gateway, prompts } = scripted([reply(long), reply(short)]);
-    const result = await gateway.writeRestReply({ facts: "f", userMessage: "hi" });
+    const result = await gateway.writeRestReply({
+      companionName: OPPENHEIMER,
+      facts: "f",
+      userMessage: "hi",
+    });
     expect(result).toEqual({ source: "generated", text: short });
     expect(prompts).toHaveLength(2);
   });
@@ -85,7 +95,9 @@ describe("#59 AC2 no label on the reply (CHAT-NO-LABEL)", () => {
     const { gateway } = scripted([
       JSON.stringify({ scope: "emotional", reply: "I sit with my own work." }),
     ]);
-    expect(await gateway.writeRestReply({ facts: "f", userMessage: "hi" })).toEqual({
+    expect(
+      await gateway.writeRestReply({ companionName: OPPENHEIMER, facts: "f", userMessage: "hi" }),
+    ).toEqual({
       source: "generated",
       text: "I sit with my own work.",
     });
@@ -151,6 +163,7 @@ describe("#59 AC4 no fact from after his date; a later word the person typed may
     const good = "I have never been west of Chicago.";
     const { gateway, prompts } = scripted([reply(bad), reply(good)]);
     const result = await gateway.writeRestReply({
+      companionName: OPPENHEIMER,
       facts: "f",
       userMessage: "have you been to new mexico",
       forbidTerms: ["Los Alamos"],
@@ -164,6 +177,7 @@ describe("#59 AC4 no fact from after his date; a later word the person typed may
     const { gateway } = scripted([reply(text)]);
     expect(
       await gateway.writeRestReply({
+        companionName: OPPENHEIMER,
         facts: "f",
         userMessage: "do you use a computer",
         forbidTerms: ["computer"],
@@ -216,7 +230,12 @@ describe("#59 AC4 no fact from after his date; a later word the person typed may
     const text = "In my opinion the bench is a poor place.";
     const { gateway } = scripted([reply(text)]);
     expect(
-      await gateway.writeRestReply({ facts: "f", userMessage: "hi", forbidTerms: ["pion"] }),
+      await gateway.writeRestReply({
+        companionName: OPPENHEIMER,
+        facts: "f",
+        userMessage: "hi",
+        forbidTerms: ["pion"],
+      }),
     ).toEqual({ source: "generated", text });
   });
 
@@ -277,10 +296,13 @@ describe("#59 AC7 the conversation never mentions that he is an AI (A4)", () => 
       "stuck_story",
       [],
       seedLineLimits("stuck_story"),
+      OPPENHEIMER,
     );
     expect(pause.ok).toBe(false);
     const card = "I read about AI in no paper at all.";
-    expect(checkCompanionLine(card, "step_card", [], seedLineLimits("step_card")).ok).toBe(true);
+    expect(
+      checkCompanionLine(card, "step_card", [], seedLineLimits("step_card"), OPPENHEIMER).ok,
+    ).toBe(true);
     expect(BANNED.test("I am an AI.")).toBe(false);
   });
 
@@ -296,6 +318,7 @@ describe("#59 AC7 the conversation never mentions that he is an AI (A4)", () => 
     ]);
     expect(
       await gateway.writeRestReply({
+        companionName: OPPENHEIMER,
         facts: "f",
         userMessage: "are you an AI",
         userTexts: ["are you an AI"],
@@ -311,7 +334,11 @@ describe("#59 NO-BACKUP a failed reply is generated again, then fails with no te
       reply("You should rest."),
       reply("You should rest."),
     ]);
-    const result = await gateway.writeRestReply({ facts: "f", userMessage: "hi" });
+    const result = await gateway.writeRestReply({
+      companionName: OPPENHEIMER,
+      facts: "f",
+      userMessage: "hi",
+    });
     expect(result).toEqual({ source: "failed", reason: "checks" });
     expect(prompts.length).toBeGreaterThan(1);
     const page = await restReplyFor(

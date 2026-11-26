@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createModelGateway, type ModelProvider } from "@/lib/model-gateway";
 import { seedPromptSource } from "./support/seed-prompts";
+import { OPPENHEIMER } from "./support/companion";
 
 // Issue #258 (#41): his closing line and the line he still carries, from one live call.
 
@@ -19,6 +20,7 @@ function fake(replies: string[]) {
 }
 
 const input = {
+  companionName: OPPENHEIMER,
   facts: "FACT_ONE. FACT_TWO.",
   lastMoment: "LAST_MOMENT.",
   forbidTerms: ["Los Alamos"],

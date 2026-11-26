@@ -13,13 +13,14 @@ import { startStory } from "@/lib/story/start";
 import { seedPromptSource, seedLineLimits } from "./support/seed-prompts";
 import type { CompanionKind } from "@/lib/model-gateway/types";
 import { seedContent } from "./support/seed-content";
+import { OPPENHEIMER } from "./support/companion";
 
 // The story content as the app reads it (#284), from the seed files.
 const seed = seedContent();
 
 // #282: the length limits are data in the prompt rows; tests use the seed's.
 const checkLine = (text: string, kind: CompanionKind, forbidTerms: string[] = []) =>
-  checkCompanionLine(text, kind, forbidTerms, seedLineLimits(kind));
+  checkCompanionLine(text, kind, forbidTerms, seedLineLimits(kind), OPPENHEIMER);
 
 // #43 US-AI-2 (criteria corrected 2026-11-13) and #216.
 
@@ -69,6 +70,7 @@ describe("#216 the step-cards prompt holds no user-written text", () => {
   it("the gateway prompt has no Step line", async () => {
     const fake = recordingProvider([JSON.stringify({ cards: ["I look at the canyon."] })]);
     await createModelGateway({ prompts: seedPromptSource(), provider: fake.impl }).writeStepCards({
+      companionName: OPPENHEIMER,
       minutes: 20,
       facts: "I am at Jemez Springs.",
     });
@@ -116,6 +118,7 @@ describe("#43 AC1 the Story is divided across the Plan's Steps", () => {
   it("the prompt states the Step's place in the Story and the number of cards", async () => {
     const fake = recordingProvider([JSON.stringify({ cards: ["I look at the canyon."] })]);
     await createModelGateway({ prompts: seedPromptSource(), provider: fake.impl }).writeStepCards({
+      companionName: OPPENHEIMER,
       minutes: 25,
       facts: "I am at Jemez Springs.",
       stepNumber: 2,
@@ -140,6 +143,7 @@ describe("#43 AC1 the Story is divided across the Plan's Steps", () => {
       prompts: seedPromptSource(),
       provider: fake.impl,
     }).writeStepCards({
+      companionName: OPPENHEIMER,
       minutes: 10,
       facts: "I am at Jemez Springs.",
       storyCards: 2,
@@ -174,19 +178,20 @@ describe("#43 AC2 CARD-LENGTH", () => {
     const asBackground = await createModelGateway({
       prompts: seedPromptSource(),
       provider: recordingProvider([answer]).impl,
-    }).writeStepCards({ minutes: 20, facts: "f", background: true });
+    }).writeStepCards({ companionName: OPPENHEIMER, minutes: 20, facts: "f", background: true });
     expect(asBackground).toEqual({ source: "generated", cards: [background, "My map is wet."] });
 
     const asCard = await createModelGateway({
       prompts: seedPromptSource(),
       provider: recordingProvider([answer, answer, answer]).impl,
-    }).writeStepCards({ minutes: 20, facts: "f" });
+    }).writeStepCards({ companionName: OPPENHEIMER, minutes: 20, facts: "f" });
     expect(asCard).toEqual({ source: "failed", reason: "checks" });
   });
 
   it("the prompt carries the limits", async () => {
     const fake = recordingProvider([JSON.stringify({ cards: ["I look at the canyon."] })]);
     await createModelGateway({ prompts: seedPromptSource(), provider: fake.impl }).writeStepCards({
+      companionName: OPPENHEIMER,
       minutes: 20,
       facts: "f",
       background: true,
@@ -214,6 +219,7 @@ describe("#43 AC2 CARD-NEW every card says something new", () => {
       prompts: seedPromptSource(),
       provider: fake.impl,
     }).writeStepCards({
+      companionName: OPPENHEIMER,
       minutes: 20,
       facts: "f",
       earlierLines: ["I drove out to Jemez Springs."],
@@ -230,10 +236,7 @@ describe("#43 AC3 generated again within the time limit, then the failure messag
     const result = await createModelGateway({
       prompts: seedPromptSource(),
       provider: fake.impl,
-    }).writeStepCards({
-      minutes: 20,
-      facts: "f",
-    });
+    }).writeStepCards({ companionName: OPPENHEIMER, minutes: 20, facts: "f" });
     expect(result).toEqual({ source: "failed", reason: "checks" });
     expect(fake.prompts).toHaveLength(3);
     const { gateway } = {
@@ -297,6 +300,7 @@ describe("#43 review: the prompt marks what is new in this Step (CARD-NEW)", () 
   it("the prompt labels earlier facts and this part's facts", async () => {
     const fake = recordingProvider([JSON.stringify({ cards: ["I look at the canyon."] })]);
     await createModelGateway({ prompts: seedPromptSource(), provider: fake.impl }).writeStepCards({
+      companionName: OPPENHEIMER,
       minutes: 20,
       facts: "I drove to Jemez Springs.",
       stepFacts: "Groves listens to me about the mesa.",
@@ -315,6 +319,7 @@ describe("#43 review: the prompt marks what is new in this Step (CARD-NEW)", () 
 
     const fake = recordingProvider([JSON.stringify({ cards: ["I look at the canyon."] })]);
     await createModelGateway({ prompts: seedPromptSource(), provider: fake.impl }).writeStepCards({
+      companionName: OPPENHEIMER,
       minutes: 5,
       facts: "I drove to Jemez Springs.",
       stepFacts: "",
@@ -327,6 +332,7 @@ describe("#43 review: the prompt marks what is new in this Step (CARD-NEW)", () 
   it("the word limit of 45 is for story cards, so the background card keeps its 70", async () => {
     const fake = recordingProvider([JSON.stringify({ cards: ["I look at the canyon."] })]);
     await createModelGateway({ prompts: seedPromptSource(), provider: fake.impl }).writeStepCards({
+      companionName: OPPENHEIMER,
       minutes: 20,
       facts: "f",
       background: true,

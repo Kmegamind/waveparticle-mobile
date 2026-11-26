@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createModelGateway, promptRowProblems } from "@/lib/model-gateway";
 import type { PromptKey, PromptRow } from "@/lib/prompts/repository";
 import { seedRows } from "./support/seed-prompts";
+import { OPPENHEIMER } from "./support/companion";
 
 // #308 AC7: a prompt version the gateway would refuse cannot be published. The check is the
 // gateway's own row check, run over every branch of the key's builder.
@@ -100,7 +101,11 @@ describe("promptRowProblems (#308 AC7)", () => {
         return '{"reply":"I wait."}';
       },
     });
-    const result = await gateway.writeRestReply({ facts: "f", userMessage: "u" });
+    const result = await gateway.writeRestReply({
+      companionName: OPPENHEIMER,
+      facts: "f",
+      userMessage: "u",
+    });
     expect(result).toEqual({ source: "failed", reason: "prompt" });
     expect(calls).toBe(0);
   });

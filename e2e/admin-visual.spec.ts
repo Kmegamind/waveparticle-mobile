@@ -3,6 +3,7 @@ import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { baseUrlOf, signIn, useSeededPublishHistory } from "./support/account";
 import { useSeededPrompts } from "./support/prompts";
+import { useOwnHotlines } from "./support/hotlines";
 
 // #435: the admin visual gate. It opens the repository copy of the owner's admin prototype
 // (docs/design/prototype/admin-prototype.html) and the live admin side by side, at 1024 and
@@ -34,6 +35,14 @@ const STANDARDS_MODE = "<!doctype html><meta charset=utf-8>";
 // doctype and charset, so it is served as it is.
 const AI_FEATURES_FILE = path.join(__dirname, "..", "docs/design/prototype/admin-ai-features.html");
 const AI_FEATURES_PATH = "/__admin-visual/admin-ai-features.html";
+// #448: ADM-14 Hotlines and ADM-15 Hotline entry are drawn in their own file (decision
+// ADMIN-DESKTOP). Like the owner's file it has no doctype, so it is served in standards mode too.
+const HOTLINES_FILE = path.join(
+  __dirname,
+  "..",
+  "docs/design/prototype/admin-hotlines_2026-11-23_v1.html",
+);
+const HOTLINES_PATH = "/__admin-visual/admin-hotlines.html";
 
 // ---------------------------------------------------------------------------------------------
 // The selector map. One place: pages first, then the components compared on them.
@@ -76,53 +85,58 @@ const REGISTRY_PAGES: { key: string; picture: string; hash: string; prepare?: Pa
  * Prototype screens by hash, with any step needed to show a component. `file: "aiFeatures"` is a
  * screen of docs/design/prototype/admin-ai-features.html; the others are admin-prototype.html.
  */
-const PROTOTYPE_PAGES: Record<string, { hash: string; file?: "aiFeatures"; prepare?: PageSetup }> =
-  {
-    ...Object.fromEntries(
-      REGISTRY_PAGES.map((target) => [
-        target.key,
-        { hash: target.hash, file: "aiFeatures" as const, prepare: target.prepare },
-      ]),
-    ),
-    // #439: the AI features index (AIF-1) and the feature page (AIF-2, the Pause message).
-    aiIndex: { hash: "index", file: "aiFeatures" },
-    aiFeature: { hash: "feature", file: "aiFeatures" },
-    // #453: the status editor (AIF-5) as an admin and as a writer, the pass standard editor
-    // (AIF-6) and the purpose and approach editor (AIF-7).
-    aiStatus: { hash: "status", file: "aiFeatures" },
-    aiStatusWriter: {
-      hash: "status",
-      file: "aiFeatures",
-      prepare: async (page) => {
-        await page.getByRole("button", { name: "View as writer" }).click();
-        await expect(page.locator(".panel.ro")).toBeVisible();
-      },
+const PROTOTYPE_PAGES: Record<
+  string,
+  { hash: string; file?: "aiFeatures" | "hotlines"; prepare?: PageSetup }
+> = {
+  ...Object.fromEntries(
+    REGISTRY_PAGES.map((target) => [
+      target.key,
+      { hash: target.hash, file: "aiFeatures" as const, prepare: target.prepare },
+    ]),
+  ),
+  // #448: the Hotlines list (ADM-14) and the Hotline entry (ADM-15) of the hotlines file.
+  hotlines: { hash: "", file: "hotlines" },
+  hotline: { hash: "hotline", file: "hotlines" },
+  // #439: the AI features index (AIF-1) and the feature page (AIF-2, the Pause message).
+  aiIndex: { hash: "index", file: "aiFeatures" },
+  aiFeature: { hash: "feature", file: "aiFeatures" },
+  // #453: the status editor (AIF-5) as an admin and as a writer, the pass standard editor
+  // (AIF-6) and the purpose and approach editor (AIF-7).
+  aiStatus: { hash: "status", file: "aiFeatures" },
+  aiStatusWriter: {
+    hash: "status",
+    file: "aiFeatures",
+    prepare: async (page) => {
+      await page.getByRole("button", { name: "View as writer" }).click();
+      await expect(page.locator(".panel.ro")).toBeVisible();
     },
-    aiPass: { hash: "pass", file: "aiFeatures" },
-    aiPurpose: { hash: "purpose", file: "aiFeatures" },
-    // #440 Overview: the Status board (ADM-01).
-    board: { hash: "board" },
-    characters: { hash: "characters" },
-    character: { hash: "character" },
-    uitext: { hash: "uitext" },
-    history: { hash: "history" },
-    prompts: { hash: "prompts" },
-    // #443 Stories: the prototype's Life path screen.
-    lifepath: { hash: "lifepath" },
-    // The only text fields in the prototype are in the Regenerate dialog of Story cards.
-    regenerate: {
-      hash: "cards",
-      prepare: async (page) => {
-        await page.evaluate(() =>
-          (window as unknown as { openRegen: (s: string, t: string) => void }).openRegen(
-            "part",
-            "p1",
-          ),
-        );
-        await expect(page.locator("dialog.sheet textarea")).toBeVisible();
-      },
+  },
+  aiPass: { hash: "pass", file: "aiFeatures" },
+  aiPurpose: { hash: "purpose", file: "aiFeatures" },
+  // #440 Overview: the Status board (ADM-01).
+  board: { hash: "board" },
+  characters: { hash: "characters" },
+  character: { hash: "character" },
+  uitext: { hash: "uitext" },
+  history: { hash: "history" },
+  prompts: { hash: "prompts" },
+  // #443 Stories: the prototype's Life path screen.
+  lifepath: { hash: "lifepath" },
+  // The only text fields in the prototype are in the Regenerate dialog of Story cards.
+  regenerate: {
+    hash: "cards",
+    prepare: async (page) => {
+      await page.evaluate(() =>
+        (window as unknown as { openRegen: (s: string, t: string) => void }).openRegen(
+          "part",
+          "p1",
+        ),
+      );
+      await expect(page.locator("dialog.sheet textarea")).toBeVisible();
     },
-  };
+  },
+};
 
 /** Live admin pages by path, with any step needed to show a component. */
 const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
@@ -203,6 +217,11 @@ const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
   aiStatus: { path: "/admin/ai-features/pause_message/status" },
   aiPass: { path: "/admin/ai-features/pause_message/pass" },
   aiPurpose: { path: "/admin/ai-features/pause_message/purpose" },
+  // #448: Hotlines and the United States entry. Other tests save and publish hotlines while the
+  // gate runs, so the gate's account reads its own read-only copy of the seed list
+  // (useOwnHotlines "seeded"): a draft another test saves never shows here.
+  hotlines: { path: "/admin/hotlines" },
+  hotline: { path: "/admin/hotlines/US" },
   // #447: Publish history (ADM-12), the prototype's `history` screen. The gate's account reads a
   // fixed, seeded history (useSeededPublishHistory), never the shared one other tests write (#460).
   history: { path: "/admin/publish-history" },
@@ -751,6 +770,271 @@ const COMPONENTS: Component[] = [
     name: "prompts list: pill (Active)",
     prototype: { page: "characters", selector: ".pill.s-pub" },
     live: { page: "promptList", selector: ".admin-table .admin-pill-published" },
+  },
+  // #448: ADM-14 Hotlines against the hotlines file's list screen. The one row is the seed entry
+  // (the gate's own read-only copy); only its parts are compared, not its text.
+  {
+    name: "hotlines: header row",
+    prototype: { page: "hotlines", selector: ".head" },
+    live: { page: "hotlines", selector: ".admin-head" },
+    box: ["x", "y", "width"],
+  },
+  {
+    name: "hotlines: header action row",
+    prototype: { page: "hotlines", selector: ".head .btns" },
+    live: { page: "hotlines", selector: ".admin-head .admin-actions" },
+    // Beside the lede, not wrapped under it (the same lede text on both sides).
+    box: ["x", "y"],
+  },
+  {
+    // The issue's finding: a small main button (12 px, 3 x 9 px) where the drawing has a full one.
+    name: "hotlines: Add an entry (main button)",
+    prototype: { page: "hotlines", selector: ".head .btns button.primary" },
+    live: { page: "hotlines", selector: ".admin-actions .button-filled" },
+    properties: [...STYLE, "cursor"],
+    box: ["height"],
+  },
+  {
+    name: "hotlines: panel",
+    prototype: { page: "hotlines", selector: ".panel" },
+    live: { page: "hotlines", selector: ".admin-panel" },
+    properties: [...STYLE, "overflow-x"],
+    box: ["x", "width"],
+  },
+  {
+    name: "hotlines: table",
+    prototype: { page: "hotlines", selector: "table" },
+    live: { page: "hotlines", selector: ".admin-table" },
+    properties: [...STYLE, "border-collapse", "table-layout"],
+    box: ["width"],
+  },
+  {
+    name: "hotlines: head cell",
+    prototype: { page: "hotlines", selector: "th" },
+    live: { page: "hotlines", selector: ".admin-table th" },
+    box: ["height"],
+  },
+  {
+    name: "hotlines: cell (Main contact)",
+    prototype: { page: "hotlines", selector: "td:nth-child(3)" },
+    live: { page: "hotlines", selector: ".admin-table td:nth-child(3)" },
+  },
+  {
+    name: "hotlines: muted cell (Last checked)",
+    prototype: { page: "hotlines", selector: "td.note" },
+    live: { page: "hotlines", selector: ".admin-table td.admin-note" },
+  },
+  {
+    name: "hotlines: None (optional)",
+    prototype: { page: "hotlines", selector: "td span.note" },
+    live: { page: "hotlines", selector: ".admin-table td span.admin-note" },
+  },
+  {
+    name: "hotlines: id chip",
+    prototype: { page: "hotlines", selector: "td .key" },
+    live: { page: "hotlines", selector: ".admin-table .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "hotlines: pill (Published)",
+    prototype: { page: "hotlines", selector: "td .pill.s-pub" },
+    live: { page: "hotlines", selector: ".admin-table .admin-pill-published" },
+    box: ["height"],
+  },
+  {
+    name: "hotlines: note under the table",
+    prototype: { page: "hotlines", selector: ".panel > p.note" },
+    live: { page: "hotlines", selector: ".admin-panel > .admin-hotline-list-note" },
+  },
+  // #448: ADM-15 Hotline entry (United States) against the hotlines file's entry screen.
+  {
+    name: "hotline: menu row, current on a detail page",
+    prototype: { page: "hotline", selector: ".rail a.on" },
+    live: { page: "hotline", selector: ".admin-menu-link[aria-current]" },
+    box: ["width", "height"],
+  },
+  {
+    name: "hotline: header row",
+    prototype: { page: "hotline", selector: ".head" },
+    live: { page: "hotline", selector: ".admin-head" },
+    box: ["x", "y", "width"],
+  },
+  {
+    name: "hotline: page title",
+    prototype: { page: "hotline", selector: ".head h1" },
+    live: { page: "hotline", selector: ".admin-head h1" },
+    box: ["height"],
+  },
+  {
+    name: "hotline: title chip",
+    prototype: { page: "hotline", selector: ".head h1 .key" },
+    live: { page: "hotline", selector: ".admin-head h1 .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "hotline: header action row",
+    prototype: { page: "hotline", selector: ".head .btns" },
+    live: { page: "hotline", selector: ".admin-head .admin-actions" },
+  },
+  {
+    name: "hotline: Save draft (secondary button)",
+    prototype: { page: "hotline", selector: ".head .btns button:not(.primary)" },
+    live: { page: "hotline", selector: ".admin-actions .button-gray" },
+    properties: [...STYLE, "cursor"],
+    box: ["height"],
+  },
+  {
+    name: "hotline: legal review note",
+    prototype: { page: "hotline", selector: "main > .est" },
+    live: { page: "hotline", selector: ".admin-hotline-legal" },
+    box: ["x", "width", "height"],
+  },
+  {
+    name: "hotline: two panels",
+    prototype: { page: "hotline", selector: ".grid2" },
+    live: { page: "hotline", selector: ".admin-hotline-grid" },
+    box: ["x", "width"],
+  },
+  {
+    name: "hotline: Entry panel",
+    prototype: { page: "hotline", selector: ".grid2 > .panel:first-child" },
+    live: { page: "hotline", selector: ".admin-hotline-grid > .admin-panel:first-child" },
+    box: ["x", "width"],
+  },
+  {
+    name: "hotline: Preview panel",
+    prototype: { page: "hotline", selector: ".grid2 > .panel:last-child" },
+    live: { page: "hotline", selector: ".admin-hotline-grid > .admin-panel:last-child" },
+    box: ["x", "width"],
+  },
+  {
+    name: "hotline: panel heading",
+    prototype: { page: "hotline", selector: ".grid2 > .panel:first-child > h2" },
+    live: { page: "hotline", selector: ".admin-hotline-grid > .admin-panel:first-child > h2" },
+    box: ["height"],
+  },
+  {
+    name: "hotline: form",
+    prototype: { page: "hotline", selector: ".form" },
+    live: { page: "hotline", selector: ".admin-hotline-grid .admin-form" },
+  },
+  {
+    name: "hotline: field label (Service name)",
+    prototype: { page: "hotline", selector: ".form > label:nth-child(2)" },
+    live: { page: "hotline", selector: ".admin-hotline-grid .admin-form > label:nth-child(2)" },
+  },
+  {
+    name: "hotline: field group (Main contact)",
+    prototype: { page: "hotline", selector: ".form > label:nth-child(3)" },
+    live: {
+      page: "hotline",
+      selector: ".admin-hotline-grid .admin-form > .admin-field-group:nth-child(3)",
+    },
+  },
+  {
+    name: "hotline: text field",
+    prototype: { page: "hotline", selector: ".form > label:nth-child(2) input" },
+    live: { page: "hotline", selector: ".admin-hotline-grid input[name=serviceName]" },
+    properties: [...STYLE, "width"],
+    box: ["height"],
+  },
+  {
+    name: "hotline: read-only field (Country)",
+    prototype: { page: "hotline", selector: ".form > label:first-child input" },
+    live: {
+      page: "hotline",
+      selector: ".admin-hotline-grid .admin-form > .admin-field-group:first-child input",
+    },
+    box: ["height"],
+  },
+  {
+    name: "hotline: list field (Main contact)",
+    prototype: { page: "hotline", selector: "#mk" },
+    live: { page: "hotline", selector: ".admin-hotline-grid select[name=primaryKind]" },
+    box: ["height"],
+  },
+  {
+    name: "hotline: field note (Fixed once saved)",
+    prototype: { page: "hotline", selector: "#cn" },
+    live: {
+      page: "hotline",
+      selector: ".admin-hotline-grid .admin-form > .admin-field-group:first-child .admin-note",
+    },
+  },
+  {
+    name: "hotline: form note",
+    prototype: { page: "hotline", selector: ".form > p.note" },
+    live: { page: "hotline", selector: ".admin-hotline-grid .admin-form > p.admin-note" },
+  },
+  {
+    name: "hotline: preview note",
+    prototype: { page: "hotline", selector: ".grid2 > .panel:last-child > p:nth-of-type(1)" },
+    live: { page: "hotline", selector: ".admin-hotline-grid .admin-hotline-preview-note" },
+  },
+  {
+    name: "hotline: preview, Help in",
+    prototype: { page: "hotline", selector: ".grid2 > .panel:last-child > p:nth-of-type(2)" },
+    live: { page: "hotline", selector: ".admin-hotline-grid .admin-hotline-country" },
+  },
+  {
+    name: "hotline: preview, contact line",
+    prototype: { page: "hotline", selector: ".grid2 > .panel:last-child > p:nth-of-type(3)" },
+    live: { page: "hotline", selector: ".admin-hotline-grid .admin-hotline-contact" },
+  },
+  {
+    name: "hotline: preview, link line",
+    prototype: { page: "hotline", selector: ".grid2 > .panel:last-child > p:nth-of-type(4)" },
+    live: { page: "hotline", selector: ".admin-hotline-grid .admin-hotline-link" },
+  },
+  {
+    name: "hotline: Versions heading",
+    prototype: { page: "hotline", selector: ".grid2 > .panel:last-child > h2:nth-of-type(2)" },
+    live: { page: "hotline", selector: ".admin-hotline-grid .admin-hotline-versions" },
+    box: ["height"],
+  },
+  {
+    name: "hotline: Versions table",
+    prototype: { page: "hotline", selector: ".grid2 table" },
+    live: { page: "hotline", selector: ".admin-hotline-grid .admin-table" },
+    properties: [...STYLE, "border-collapse", "table-layout"],
+    box: ["width"],
+  },
+  {
+    name: "hotline: Versions head cell",
+    prototype: { page: "hotline", selector: ".grid2 th" },
+    live: { page: "hotline", selector: ".admin-hotline-grid .admin-table th" },
+    box: ["height"],
+  },
+  {
+    name: "hotline: Versions cell",
+    prototype: { page: "hotline", selector: ".grid2 td" },
+    live: { page: "hotline", selector: ".admin-hotline-grid .admin-table td" },
+  },
+  {
+    name: "hotline: Versions muted cell (Saved)",
+    prototype: { page: "hotline", selector: ".grid2 td.note" },
+    live: { page: "hotline", selector: ".admin-hotline-grid .admin-table td.admin-note" },
+  },
+  {
+    name: "hotline: Versions chip",
+    prototype: { page: "hotline", selector: ".grid2 td .key" },
+    live: { page: "hotline", selector: ".admin-hotline-grid .admin-table .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "hotline: Versions pill (Published)",
+    prototype: { page: "hotline", selector: ".grid2 .pill.s-pub" },
+    live: { page: "hotline", selector: ".admin-hotline-grid .admin-pill-published" },
+    box: ["height"],
+  },
+  {
+    name: "hotline: note under Versions",
+    prototype: { page: "hotline", selector: ".grid2 > .panel:last-child > p.note:last-child" },
+    live: {
+      page: "hotline",
+      selector:
+        ".admin-hotline-grid > .admin-panel:last-child > .admin-hotline-preview-note:last-child",
+    },
   },
   // #445: App text (ADM-07), the prototype's `uitext` screen: the header with Publish changes, and
   // one line per key with its text edited in place. Rows read the first line (ui.F3.fail.body),
@@ -1665,6 +1949,9 @@ const WORD_BREAK_NORMAL = new Set([
   "AI features: status pill (Exploring)",
   "AI features: status pill dot",
   "AI features: version chip",
+  // #448: the Versions and list headings keep whole words (normal on both sides).
+  "hotline: Versions head cell",
+  "hotlines: head cell",
   // #447: the Publish history table, also self-sized in a scrolling panel (.panel.scroll).
   "history: table head cell",
   "history: When cell",
@@ -1933,6 +2220,49 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
       "stretches its buttons to it, so Test draft is 36 px. Live has no model list (an owner " +
       "decision: no per-prompt model in the data), so Save draft keeps its own 33.5 px, the " +
       "height of the prototype's own secondary button (compared in `secondary button`).",
+  },
+  // #448: Hotlines and the Hotline entry.
+  ...[
+    "hotlines: Add an entry (main button)",
+    "hotline: Save draft (secondary button)",
+    "hotline: text field",
+    "hotline: read-only field (Country)",
+    "hotline: list field (Main contact)",
+  ].map((component) => ({
+    component,
+    properties: ["min-width", "min-height"],
+    reason:
+      "Live sets 0 to switch off the phone app's 44 px tap minimum inside the admin (ADMIN-" +
+      "DESKTOP; a one-line field also drops the text box's 64 px); the drawing has none (auto). " +
+      "Neither draws a minimum: the control's height is compared as `box height`.",
+  })),
+  {
+    component: "hotlines: country list for Add an entry (not in COMPONENTS)",
+    properties: ["(whole component)"],
+    reason:
+      "The drawing's Add an entry opens an empty entry whose Country field is typed. Live keeps " +
+      "its list of the countries with no entry (#118: a country is chosen from the list, and is " +
+      "fixed once saved) as a labelled field under the table, which the header's Add an entry " +
+      "submits; in the header it made the action row wrap under the lede. It is the admin's " +
+      "form field and label (compared as `hotline: list field (Main contact)` and `hotline: " +
+      "field label (Service name)`).",
+  },
+  {
+    component: "hotline: legal review note (box y, not measured)",
+    properties: ["box y"],
+    reason:
+      "The note's x, width and height are compared, not its y: it sits under the lede, and the " +
+      "drawing's lede is sample text one line longer than the live one. The header row is " +
+      "compared.",
+  },
+  {
+    component: "hotline: preview links (not in COMPONENTS)",
+    properties: ["(whole component)"],
+    reason:
+      "The drawing's preview links have no href (a toast says what they would open), so the " +
+      "browser draws them as its default link. Live links open the real tel:, sms: or https " +
+      "address in the admin's link style. Their line (margin, size) is compared as " +
+      "`hotline: preview, link line`.",
   },
   // #445: App text.
   {
@@ -2240,6 +2570,10 @@ async function servePrototype(page: Page, fontFaces: string) {
   await page.route(`**${AI_FEATURES_PATH}`, (route) =>
     route.fulfill({ body: aiFeatures, contentType: "text/html; charset=utf-8" }),
   );
+  const hotlines = STANDARDS_MODE + readFileSync(HOTLINES_FILE, "utf8");
+  await page.route(`**${HOTLINES_PATH}`, (route) =>
+    route.fulfill({ body: hotlines, contentType: "text/html; charset=utf-8" }),
+  );
   await page.route("https://fonts.googleapis.com/**", (route) =>
     route.fulfill({ body: fontFaces, contentType: "text/css; charset=utf-8" }),
   );
@@ -2250,7 +2584,12 @@ async function servePrototype(page: Page, fontFaces: string) {
 async function openPrototype(page: Page, origin: string, key: string) {
   const target = PROTOTYPE_PAGES[key];
   // A fresh load per screen, so one screen's dialog or state never leaks into the next.
-  const file = target.file === "aiFeatures" ? AI_FEATURES_PATH : PROTOTYPE_PATH;
+  const file =
+    target.file === "aiFeatures"
+      ? AI_FEATURES_PATH
+      : target.file === "hotlines"
+        ? HOTLINES_PATH
+        : PROTOTYPE_PATH;
   await page.goto(`${origin}${file}#${target.hash}`);
   await page.reload();
   await expect(page.locator("main h1")).toBeVisible();
@@ -2300,6 +2639,8 @@ for (const width of WIDTHS) {
     // #446: this account reads the seeded prompts only, so drafts other tests save while the gate
     // runs never change the prompt pages it measures.
     await useSeededPrompts(account.token);
+    // #448: and its own read-only copy of the seed hotline list, for the same reason.
+    await useOwnHotlines(account.token, "seeded");
     // #447: this account reads a fixed, seeded publish history, never rows other tests write.
     await useSeededPublishHistory(account);
     await page.goto("/admin/companions");
@@ -2747,5 +3088,45 @@ test("test_445_app_text_pictures_prototype_vs_live", async ({ page, context }) =
       path.join(REFERENCE_DIR, `app-text-${width}-side-by-side.png`),
       await page.screenshot({ fullPage: true }),
     );
+  }
+});
+
+// #448: the Hotlines pictures for its pull request (the hotlines file's list and entry screens vs
+// live Hotlines and the United States entry, as an admin reading the seed list) at each width,
+// full page, written as hotlines-<list|entry>-<width>-{prototype,live,side-by-side}.png.
+test("test_448_hotlines_pictures_prototype_vs_live", async ({ page, context }) => {
+  test.skip(!process.env.ADMIN_VISUAL_SCREENSHOTS, "Set ADMIN_VISUAL_SCREENSHOTS=1 to write them.");
+  test.setTimeout(180_000);
+  mkdirSync(REFERENCE_DIR, { recursive: true });
+  const account = await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+  await useOwnHotlines(account.token, "seeded");
+  await page.goto("/admin/hotlines");
+  const origin = new URL(page.url()).origin;
+  await servePrototype(page, await adminFontFaces(page));
+  for (const [name, key] of [
+    ["hotlines-list", "hotlines"],
+    ["hotlines-entry", "hotline"],
+  ] as const) {
+    for (const width of WIDTHS) {
+      await page.setViewportSize({ width, height: HEIGHT });
+      await openPrototype(page, origin, key);
+      const prototype = await page.screenshot({ fullPage: true });
+      await openLive(page, key);
+      const live = await page.screenshot({ fullPage: true });
+      writeFileSync(path.join(REFERENCE_DIR, `${name}-${width}-prototype.png`), prototype);
+      writeFileSync(path.join(REFERENCE_DIR, `${name}-${width}-live.png`), live);
+
+      const image = (png: Buffer) => `data:image/png;base64,${png.toString("base64")}`;
+      await page.setViewportSize({ width: width * 2 + 48, height: HEIGHT + 56 });
+      await page.setContent(
+        `<!doctype html><meta charset=utf-8><body style="margin:0;padding:16px;background:#888;display:flex;align-items:flex-start;gap:16px;font:14px system-ui;color:#fff">` +
+          `<figure style="margin:0"><figcaption>Prototype (standards mode), ${width} px</figcaption><img src="${image(prototype)}"></figure>` +
+          `<figure style="margin:0"><figcaption>Live admin, ${width} px</figcaption><img src="${image(live)}"></figure></body>`,
+      );
+      writeFileSync(
+        path.join(REFERENCE_DIR, `${name}-${width}-side-by-side.png`),
+        await page.screenshot({ fullPage: true }),
+      );
+    }
   }
 });

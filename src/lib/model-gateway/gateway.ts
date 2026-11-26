@@ -5,8 +5,10 @@ import {
   checkCompanionLine,
   checkPlan,
   mentionsWord,
+  MissingCompanionNameError,
   readLineLimits,
   readPlanLimits,
+  requireCompanionName,
   type LineLimits,
 } from "./checks";
 import { laterWordHits, unseenPeople } from "@/lib/content/scene";
@@ -219,12 +221,16 @@ export function createModelGateway(options: {
       ({ prompt, accept } = build(row));
       hints = hintsRow;
       retryPrompt("", ["parse"], hints);
-    } catch {
+    } catch (error) {
+      // #468: a Companion call without the speaking Companion's name is not checked against
+      // anyone else. It fails before any model call; the log names the reason (`companion_name`),
+      // which the server gateway writes as a `model_call_failed` error (#135).
+      const noName = error instanceof MissingCompanionNameError;
       log({
         call,
         source: "failed",
         reason: "prompt",
-        rejectedRules: [],
+        rejectedRules: noName ? ["companion_name"] : [],
         latencyMs: Date.now() - started,
         attempts: 0,
       });
@@ -335,6 +341,7 @@ const BUILDERS = {
     };
   },
   step_cards(row: PromptRow, input: StepCardsInput): Built<Generated<StepCardsResult>> {
+    requireCompanionName(input.companionName, "step_cards");
     const rules = cardRules(row);
     return {
       prompt: stepCardPrompt(input, row, rules),
@@ -342,6 +349,7 @@ const BUILDERS = {
     };
   },
   stuck_story(row: PromptRow, input: StuckStoryInput): Built<Generated<StuckStoryResult>> {
+    requireCompanionName(input.companionName, "stuck_story");
     const limits = lineLimits(checks(row), "checks");
     return {
       prompt: stuckPrompt(input, row),
@@ -349,6 +357,7 @@ const BUILDERS = {
     };
   },
   pause_predicament(row: PromptRow, input: PausePredicamentInput): Built<Generated<LineResult>> {
+    requireCompanionName(input.companionName, "pause_predicament");
     const limits = lineLimits(checks(row), "checks");
     return {
       prompt: predicamentPrompt(input, row),
@@ -356,6 +365,7 @@ const BUILDERS = {
     };
   },
   rest_reply(row: PromptRow, input: RestReplyInput): Built<Generated<LineResult>> {
+    requireCompanionName(input.companionName, "rest_reply");
     const limits = lineLimits(checks(row), "checks");
     return {
       prompt: restPrompt(input, row),
@@ -363,17 +373,24 @@ const BUILDERS = {
     };
   },
   return_popup(row: PromptRow, input: ReturnPopupInput): Built<Generated<LineResult>> {
+    requireCompanionName(input.companionName, "return_popup");
     const limits = lineLimits(checks(row), "checks");
     return {
       prompt: returnPrompt(input, row),
       accept: (raw) =>
-        acceptLine(raw, "returnLine", "return_popup", input.forbidTerms ?? [], limits, {
-          earlierLines: input.earlierLines ?? [],
-          companionName: input.companionName,
-        }),
+        acceptLine(
+          raw,
+          "returnLine",
+          "return_popup",
+          input.forbidTerms ?? [],
+          limits,
+          { earlierLines: input.earlierLines ?? [] },
+          input.companionName,
+        ),
     };
   },
   closing_line(row: PromptRow, input: ClosingLineInput): Built<Generated<ClosingLineResult>> {
+    requireCompanionName(input.companionName, "closing_line");
     const limits = lineLimits(checks(row), "checks");
     return {
       prompt: closingPrompt(input, row),
@@ -394,6 +411,7 @@ const CHECK_CASES: {
   ],
   step_cards: [
     {
+      companionName: "C",
       minutes: 10,
       facts: "f",
       storyCards: 2,
@@ -403,13 +421,14 @@ const CHECK_CASES: {
       stepCount: 2,
       mustUse: ["m"],
     },
-    { minutes: 10, facts: "f", background: false },
-    { minutes: 10, facts: "f", stepFacts: "" },
+    { companionName: "C", minutes: 10, facts: "f", background: false },
+    { companionName: "C", minutes: 10, facts: "f", stepFacts: "" },
   ],
   stuck_story: [
-    { pauseNumber: 1, facts: "f" },
-    { pauseNumber: 1000, facts: "f", earlierStories: ["s"] },
+    { companionName: "C", pauseNumber: 1, facts: "f" },
+    { companionName: "C", pauseNumber: 1000, facts: "f", earlierStories: ["s"] },
     ...PAUSE_CATEGORIES.map((category) => ({
+      companionName: "C",
       pauseNumber: 1,
       facts: "f",
       category,
@@ -418,8 +437,9 @@ const CHECK_CASES: {
     })),
   ],
   pause_predicament: [
-    { pauseNumber: 1, facts: "f", story: "s" },
+    { companionName: "C", pauseNumber: 1, facts: "f", story: "s" },
     {
+      companionName: "C",
       pauseNumber: 1000,
       facts: "f",
       story: "s",
@@ -427,12 +447,12 @@ const CHECK_CASES: {
       scene: { present: ["p"], allowedWords: ["a"], props: ["o"], pauseProp: "o", laterWords: [] },
     },
   ],
-  rest_reply: [{ facts: "f", userMessage: "u" }],
+  rest_reply: [{ companionName: "C", facts: "f", userMessage: "u" }],
   return_popup: [
-    { trigger: "rest", facts: "f", awayMinutes: 5 },
-    { trigger: "absence", facts: "f", awayMinutes: 60 },
+    { companionName: "C", trigger: "rest", facts: "f", awayMinutes: 5 },
+    { companionName: "C", trigger: "absence", facts: "f", awayMinutes: 60 },
   ],
-  closing_line: [{ facts: "f", lastMoment: "l" }],
+  closing_line: [{ companionName: "C", facts: "f", lastMoment: "l" }],
 };
 
 /**
@@ -525,8 +545,8 @@ function acceptLine(
   kind: "stuck_story" | "rest_reply" | "return_popup" | "closing_line",
   forbidTerms: string[],
   limits: LineLimits,
-  runList: { earlierLines: string[]; lastCard?: string; companionName?: string } | null,
-  companionName = runList?.companionName,
+  runList: { earlierLines: string[]; lastCard?: string } | null,
+  companionName: string,
 ): Attempt<{ source: "generated"; text: string }> {
   const parsed = parseModelJson(raw);
   const line = isRecord(parsed) ? parsed[key] : undefined;
@@ -588,7 +608,8 @@ function acceptClosing(
     "closing_line",
     input.forbidTerms ?? [],
     limits,
-    { earlierLines, companionName: input.companionName },
+    { earlierLines },
+    input.companionName,
   );
   if (!closing.ok) return closing;
   const carry = acceptLine(
@@ -597,7 +618,8 @@ function acceptClosing(
     "closing_line",
     input.forbidTerms ?? [],
     limits,
-    { earlierLines: [...earlierLines, closing.value.text], companionName: input.companionName },
+    { earlierLines: [...earlierLines, closing.value.text] },
+    input.companionName,
   );
   if (!carry.ok) return carry;
   return {

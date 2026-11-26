@@ -8,6 +8,7 @@ import { MAX_MESSAGE_CHARS, restReplyFor } from "@/lib/prototype/rest-lines";
 import type { RestMessage } from "@/lib/prototype/session";
 import { seedContent } from "./support/seed-content";
 import { seedLineLimits, seedPromptSource } from "./support/seed-prompts";
+import { OPPENHEIMER } from "./support/companion";
 
 // #60 (US-AI-7): every rest reply is checked (words from after his date, facts from later in the
 // Story, advice, length, questions; a later word the person typed is allowed, CHAT-USER-WORD),
@@ -17,7 +18,7 @@ import { seedLineLimits, seedPromptSource } from "./support/seed-prompts";
 const seed = seedContent();
 const STORY = "bohr-difficulties";
 const checkReply = (text: string) =>
-  checkCompanionLine(text, "rest_reply", [], seedLineLimits("rest_reply"));
+  checkCompanionLine(text, "rest_reply", [], seedLineLimits("rest_reply"), OPPENHEIMER);
 const reply = (text: string) => JSON.stringify({ reply: text });
 
 function recorder(text = "I keep to my desk.") {
@@ -99,7 +100,14 @@ describe("#60 AC1 every reply is checked", () => {
     const name = "I keep thinking of Heisenberg.";
     const ordinary = "I have my difficulties with the bench.";
     const { gateway, prompts } = scripted([reply(name), reply(ordinary)]);
-    expect(await gateway.writeRestReply({ facts: "f", userMessage: "hi", ...words })).toEqual({
+    expect(
+      await gateway.writeRestReply({
+        companionName: OPPENHEIMER,
+        facts: "f",
+        userMessage: "hi",
+        ...words,
+      }),
+    ).toEqual({
       source: "generated",
       text: ordinary,
     });
@@ -143,6 +151,7 @@ describe("#60 AC1 every reply is checked", () => {
     const { gateway, prompts } = scripted([reply(bad), reply(good)]);
     expect(
       await gateway.writeRestReply({
+        companionName: OPPENHEIMER,
         facts: "f",
         userMessage: "hi",
         laterFacts: ["wave mechanics"],
@@ -157,6 +166,7 @@ describe("#60 AC1 every reply is checked", () => {
     const bad = "I hear the Kapitza Club and talk of wave mechanics in Los Alamos.";
     const { gateway, prompts } = scripted([reply(bad), reply("I hear the rain.")]);
     await gateway.writeRestReply({
+      companionName: OPPENHEIMER,
       facts: "f",
       userMessage: "hi",
       forbidTerms: ["Los Alamos"],
@@ -175,6 +185,7 @@ describe("#60 AC1 every reply is checked", () => {
       reply("I talk of the bench."),
     ]);
     await gateway.writeRestReply({
+      companionName: OPPENHEIMER,
       facts: "f",
       userMessage: "hi",
       laterFacts: ["wave mechanics", "matrix mechanics"],
@@ -187,7 +198,12 @@ describe("#60 AC1 every reply is checked", () => {
     const text = "I have my notes and my difficulty.";
     const { gateway } = scripted([reply(text)]);
     expect(
-      await gateway.writeRestReply({ facts: "f", userMessage: "hi", laterFacts: ["difficulties"] }),
+      await gateway.writeRestReply({
+        companionName: OPPENHEIMER,
+        facts: "f",
+        userMessage: "hi",
+        laterFacts: ["difficulties"],
+      }),
     ).toEqual({ source: "generated", text });
     expect(mentionsWord("Some Difficulties remain.", "difficulties")).toBe(true);
     expect(mentionsWord("No difficulty.", "difficulties")).toBe(false);
@@ -198,7 +214,12 @@ describe("#60 AC1 every reply is checked", () => {
     const good = "I hear a man laughing.";
     const { gateway, prompts } = scripted([reply(bad), reply(good)]);
     expect(
-      await gateway.writeRestReply({ facts: "f", userMessage: "hi", laterWords: ["Kapitza"] }),
+      await gateway.writeRestReply({
+        companionName: OPPENHEIMER,
+        facts: "f",
+        userMessage: "hi",
+        laterWords: ["Kapitza"],
+      }),
     ).toEqual({ source: "generated", text: good });
     expect(prompts).toHaveLength(2);
   });
@@ -209,6 +230,7 @@ describe("#60 AC1 every reply is checked", () => {
     const { gateway } = scripted([reply(text)]);
     expect(
       await gateway.writeRestReply({
+        companionName: OPPENHEIMER,
         facts: "f",
         userMessage: "do you know Kapitza and wave mechanics",
         laterFacts: ["wave mechanics"],

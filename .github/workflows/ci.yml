@@ -5,6 +5,18 @@ on:
   push:
     branches: [main]
 
+# #481: a new push to a pull request cancels its older run, which is still checking an old commit.
+# - Pull requests: one group per pull request, split in two. Code events (opened, synchronize,
+#   reopened) share the "code" group; body edits (edited) have their own "body" group. So a body
+#   edit never cancels a running check of the same commit, and a new push never cancels a body run.
+#   Either way the newest run of each group reports every check (check, pr-closes-issue,
+#   pr-human-steps), so no required check is left missing.
+# - Pushes to main: the group is the run id, unique per run, so a run on main is never cancelled
+#   (not even a queued one, which a shared group would replace).
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && format('pr-{0}-{1}', github.event.pull_request.number, github.event.action == 'edited' && 'body' || 'code') || format('push-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   check:
     runs-on: ubuntu-latest
