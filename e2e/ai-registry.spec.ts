@@ -225,3 +225,19 @@ test("test_473_get_active_prompts_returns_runtime_keys_only", async ({ page, con
     await stub("/__prompts", null, { reset: key });
   }
 });
+
+test("test_473_a_candidate_or_confirmed_example_needs_text", async ({ page, context }) => {
+  const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+  await own(writer.token);
+  const refused = await stub("/rest/v1/rpc/set_ai_feature_example", writer.token, {
+    target_feature: "rest_reply",
+    new_text: "  ",
+    new_state: "confirmed",
+  });
+  expect(refused.status).toBe(400);
+  expect((await refused.json()).code).toBe("22023");
+  const [row] = (await (
+    await stub("/rest/v1/ai_features?slug=eq.rest_reply", writer.token)
+  ).json()) as Feature[];
+  expect(row).toMatchObject({ example_text: "", example_state: "none" });
+});

@@ -20,6 +20,7 @@ import {
   PROMPT_FILES,
   readPipelinePrompts,
 } from "../scripts/ai-features/import-pipeline-prompts.mjs";
+import { readFeatureSeed, seedSql } from "../scripts/ai-features/seed.mjs";
 
 // #473: the registry seed and the pipeline prompt import print SQL from the owner's files, which
 // stay outside the repository. These tests use invented fixtures (tests/fixtures/ai-registry):
@@ -54,6 +55,61 @@ describe("#473 the registry seed", () => {
       RUNTIME_SLUGS,
     );
     expect(registrySlug("P-01", "Find episodes")).toBe("p01_find_episodes");
+  });
+
+  it("test_473_an_example_state_is_stored_only_with_its_text", () => {
+    const rows = readRegistrySeed(SEED);
+    for (const row of rows) {
+      if (row.example_text === "") expect(row.example_state, row.feature_id).toBe("none");
+    }
+    const state = Object.fromEntries(rows.map((row) => [row.feature_id, row.example_state]));
+    // Book text left out (P-04 was confirmed in the seed), and no example in the seed (G-03).
+    expect(state).toMatchObject({ "P-04": "none", "R-02": "none", "G-03": "none" });
+    expect(state).toMatchObject({ "P-02": "confirmed", "R-07": "candidate" });
+    // The dry-run header still says what the seed had.
+    expect(run(seedScript, SEED, "--dry-run").stdout).toContain(
+      "P-04 p04_plan_historical: pipeline, frozen, example none (seed: confirmed, no text stored)",
+    );
+    const sql = registrySeedSql(rows);
+    expect(sql).toContain("$seed$Plan (historical) (p04_plan_historical)$seed$");
+    expect(sql).toMatch(/'p04_plan_historical'[^\n]*, '', 'none'\)$/m);
+  });
+
+  it("test_473_the_436_seed_writes_the_registry_columns_the_migration_requires", () => {
+    // On a fresh database (new project, db reset) the #436 seed runs after this migration, which
+    // makes feature_id required and drops the category default. Its SQL must name both, and still
+    // run on a database that does not have them yet (the order of docs/deploy.md).
+    const migration = readFileSync(
+      path.join(root, "supabase", "migrations", "20261202000000_ai_registry.sql"),
+      "utf8",
+    ).replace(/--.*$/gm, "");
+    const required = [
+      ...migration.matchAll(/alter column (\w+) set not null/g),
+      ...migration.matchAll(/alter column (\w+) drop default/g),
+    ].map((match) => match[1]);
+    expect(required.sort()).toEqual(["category", "feature_id"]);
+    const sql = seedSql(readFeatureSeed());
+    const block = sql.slice(sql.indexOf("do $seed_block$"), sql.lastIndexOf("$seed_block$;"));
+    const [withRegistry, without] = block.split(/^else$/m);
+    expect(withRegistry).toMatch(
+      /where table_schema = 'public' and table_name = 'ai_features' and column_name = 'feature_id'/,
+    );
+    const columns = [...withRegistry.matchAll(/^insert into public\.ai_features \(([^)]*)\)$/gm)];
+    expect(columns).toHaveLength(7);
+    for (const [, list] of columns) {
+      for (const column of required) expect(list.split(", ")).toContain(column);
+    }
+    const ids = [...withRegistry.matchAll(/'([a-z_]+)', \d+, [\s\S]*?'(R-0\d)', 'runtime'\)$/gm)];
+    expect(Object.fromEntries(ids.map(([, slug, id]) => [id, slug]))).toEqual(RUNTIME_SLUGS);
+    expect(
+      without.match(
+        /^insert into public\.ai_features \(slug, position, title, prompt_keys, purpose, pass_questions, approach, status\)$/gm,
+      ),
+    ).toHaveLength(7);
+    // The registry seed fills these rows afterwards; it never inserts them.
+    expect(registrySeedSql(readRegistrySeed(SEED))).not.toMatch(
+      /insert into public\.ai_features \(slug, feature_id, category, position, title, prompt_keys, status, [^)]*\)\nvalues \('plan_split'/,
+    );
   });
 
   it("test_473_new_rows_take_the_seed_status", () => {

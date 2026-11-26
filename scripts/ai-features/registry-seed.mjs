@@ -17,13 +17,16 @@
 //   design rationale, room to improve, example), each only while it is still empty. Their slug,
 //   title, prompt keys, sections (a) to (c), status and history are never touched.
 // - Leaves out every example that quotes book or story text (BOOK_TEXT_EXAMPLES): the field stays
-//   empty and the page shows "Not written yet"; the example state is kept.
+//   empty and the page shows "Not written yet".
+// - Stores the example state "none" whenever the stored example text is empty (a book-text example
+//   left out, or no example in the seed): a state needs an example (20261202000000_ai_registry.sql,
+//   ai_features_example_needs_text). The dry-run header still names the seed's state.
 // Running it twice changes nothing the second time.
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { quote } from "./seed.mjs";
+import { quote, RUNTIME_FEATURE_IDS } from "./seed.mjs";
 
 /** The seed's category names, as stored. */
 export const CATEGORIES = { Pipeline: "pipeline", "Quality gate": "gate", Runtime: "runtime" };
@@ -37,15 +40,9 @@ export const SEED_STATUSES = {
 export const EXAMPLE_STATES = ["none", "candidate", "confirmed"];
 
 /** The 7 Runtime rows already in the database: Feature ID → slug (AI_11 section 5.2). */
-export const RUNTIME_SLUGS = {
-  "R-01": "plan_split",
-  "R-02": "step_cards",
-  "R-03": "pause_message",
-  "R-04": "rest_reply",
-  "R-05": "return_popup",
-  "R-06": "closing_line",
-  "R-07": "safety_classifier",
-};
+export const RUNTIME_SLUGS = Object.fromEntries(
+  Object.entries(RUNTIME_FEATURE_IDS).map(([slug, id]) => [id, slug]),
+);
 
 /**
  * The rows whose seed example quotes book or story text (generated lines built from the books, or a
@@ -98,7 +95,7 @@ export function registrySlug(id, name) {
  * @typedef {{ feature_id: string, slug: string, category: string, title: string, position: number,
  *   status: string, where_used: string, requirement: string, output_format: string,
  *   design_rationale: string, room_to_improve: string, example_text: string,
- *   example_state: string }} RegistryRow
+ *   example_state: string, seed_example_state: string }} RegistryRow
  */
 
 const text = (value, field, id) => {
@@ -142,6 +139,9 @@ export function parseRegistrySeed(seed) {
     const fields = Object.fromEntries(
       Object.entries(TEXT_FIELDS).map(([from, to]) => [to, text(raw[from] ?? "", from, id)]),
     );
+    const exampleText = BOOK_TEXT_EXAMPLES.includes(id)
+      ? ""
+      : text(raw.example_or_notes ?? "", "example_or_notes", id);
     result.push({
       feature_id: id,
       slug,
@@ -150,10 +150,10 @@ export function parseRegistrySeed(seed) {
       position: runtime ? Number(id.slice(2)) : nextPosition++,
       status,
       ...fields,
-      example_text: BOOK_TEXT_EXAMPLES.includes(id)
-        ? ""
-        : text(raw.example_or_notes ?? "", "example_or_notes", id),
-      example_state: exampleState,
+      example_text: exampleText,
+      // No text, no state: a "confirmed" badge over "Not written yet" would say the opposite.
+      example_state: exampleText === "" ? "none" : exampleState,
+      seed_example_state: exampleState,
     });
   }
   const ids = new Set(result.map((row) => row.feature_id));
@@ -194,7 +194,7 @@ export function registrySeedSql(rows, { dryRun = false } = {}) {
     `-- ${added.length} new rows (inserted when the slug is missing), ${runtime.length} runtime rows (empty registry fields filled).`,
     ...rows.map(
       (row) =>
-        `--   ${row.feature_id} ${row.slug}: ${row.category}, ${row.category === "runtime" ? "status kept" : row.status}, example ${row.example_state}${row.example_text ? "" : " (no text)"}`,
+        `--   ${row.feature_id} ${row.slug}: ${row.category}, ${row.category === "runtime" ? "status kept" : row.status}, example ${row.example_state}${row.example_state === row.seed_example_state ? "" : ` (seed: ${row.seed_example_state}, no text stored)`}`,
     ),
     "begin;",
   ];

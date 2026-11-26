@@ -117,13 +117,7 @@ import { readPromptDirectory } from "../../scripts/prompts/prompt-files.mjs";
 import { readAppTextSeed } from "../../scripts/app-text/import.mjs";
 import { appDocument, readContentRows } from "../../scripts/content/content-files.mjs";
 import { readStoryDecks, storyCardRows } from "../../scripts/story-cards/import.mjs";
-import { readFeatureSeed, STATUSES } from "../../scripts/ai-features/seed.mjs";
-import { RUNTIME_SLUGS } from "../../scripts/ai-features/registry-seed.mjs";
-
-/** #473: slug to Feature ID of the 7 runtime rows, as the migration's backfill. */
-const RUNTIME_FEATURE_IDS = Object.fromEntries(
-  Object.entries(RUNTIME_SLUGS).map(([id, slug]) => [slug, id]),
-);
+import { readFeatureSeed, RUNTIME_FEATURE_IDS, STATUSES } from "../../scripts/ai-features/seed.mjs";
 /** #473: the text fields save_ai_feature_fields writes, in its argument order, and their limits. */
 const REGISTRY_TEXT_FIELDS = [
   "where_used",
@@ -1270,6 +1264,10 @@ createServer(async (request, response) => {
     }
     if (typeof body.new_text !== "string") {
       return json(response, 400, { code: "22004", message: "an example is text, never null" });
+    }
+    if (body.new_state !== "none" && body.new_text.trim() === "") {
+      // ai_features_example_needs_text: a state other than none needs an example.
+      return json(response, 400, { code: "22023", message: "an example state needs text" });
     }
     if (body.new_text.length > 8000) {
       return json(response, 400, { code: "23514", message: "violates check constraint" });

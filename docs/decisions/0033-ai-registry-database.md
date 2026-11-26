@@ -25,7 +25,8 @@ Option A, in `supabase/migrations/20261202000000_ai_registry.sql`:
   `gate`, `runtime`), `where_used`, `requirement`, `output_format`, `design_rationale`,
   `room_to_improve`, `notes` (text, `''` = "Not written yet"), `example_text`, `example_state`
   (`none`, `candidate`, `confirmed`), `example_set_by`, `example_set_at`, `fields_updated_at` and
-  `fields_updated_by`. The existing rows get `R-01` to `R-07` by slug and `runtime`; nothing else
+  `fields_updated_by`. A `candidate` or `confirmed` example needs text (check
+  `ai_features_example_needs_text`, and the same rule in `set_ai_feature_example`). The existing rows get `R-01` to `R-07` by slug and `runtime`; nothing else
   in them changes. A row with another slug stops the migration.
 - `public.ai_feature_field_history` (field, old and new value as JSON, who, when) and
   `public.ai_feature_example_history` (every example set: text, state, who, when). Content
@@ -48,7 +49,8 @@ Option A, in `supabase/migrations/20261202000000_ai_registry.sql`:
   rows when their slug is missing, with the seed's status and no status history row; fills the
   registry fields of the 7 runtime rows only while each is empty (purpose and status untouched).
   The seed's `example_or_notes` goes to the example; `notes` stays empty. Examples that quote book
-  or story text are never stored (P-04 to P-07, R-02 to R-06; the state is kept). `--dry-run`
+  or story text are never stored (P-04 to P-07, R-02 to R-06); a row whose stored text is empty
+  gets the state `none`, so no state stands over "Not written yet" (review of #489). `--dry-run`
   ends in `ROLLBACK`, `--check` prints a read-only `SELECT`, `--undo` the undo.
 - `scripts/ai-features/import-pipeline-prompts.mjs <prompt-table-source/en>` prints one insert per
   key: version 1, active, with its category, only when the key has no row. The files: S1, S2, S3,
@@ -57,6 +59,9 @@ Option A, in `supabase/migrations/20261202000000_ai_registry.sql`:
   the file by md5, so no prompt text is printed. Same `--dry-run` and `--undo`.
 
 ## Consequences
+- `scripts/ai-features/seed.mjs` (#436) writes `feature_id` and `category` when the registry
+  columns exist and the old columns otherwise, so a fresh database (all migrations, then that
+  seed) and an older one both work.
 - The app is unchanged for users: it reads runtime keys only, as before.
 - A later admin slice can show and edit every field and the history without another migration.
 - The import runs once per key; later versions of a pipeline prompt are made in the prompt editor.

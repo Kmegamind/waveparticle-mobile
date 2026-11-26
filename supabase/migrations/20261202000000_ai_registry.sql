@@ -9,7 +9,7 @@
 -- 1. Extends public.ai_features with the registry fields: feature_id ("P-01", "G-03", "R-07"),
 --    category (pipeline, gate or runtime), where it appears, requirement, output format and rules,
 --    design rationale, room to improve, notes, and the example (its text, its state none,
---    candidate or confirmed, who set it and when). An empty text is a field with no source: the
+--    candidate or confirmed, who set it and when; a state other than none needs text). An empty text is a field with no source: the
 --    page shows "Not written yet" (FR-AIREG-4). The rows already there (the 7 runtime features)
 --    keep their slug, position, title, prompt keys, sections (a) to (c), status and status
 --    history: they only get their feature_id (R-01 to R-07, by slug) and the category runtime;
@@ -80,6 +80,12 @@ begin
   end if;
 end;
 $$;
+
+-- A candidate or confirmed example has text: a state over "Not written yet" would claim an
+-- example that is not there (FR-AIREG-4, AI-EXAMPLE-CONFIRM).
+alter table public.ai_features
+  add constraint ai_features_example_needs_text
+    check (example_state = 'none' or btrim(example_text) <> '');
 
 alter table public.ai_features
   alter column feature_id set not null,
@@ -249,6 +255,9 @@ begin
   end if;
   if new_text is null then
     raise exception 'an example is text, never null' using errcode = '22004';
+  end if;
+  if new_state <> 'none' and btrim(new_text) = '' then
+    raise exception 'a % example needs its text', new_state using errcode = '22023';
   end if;
 
   perform 1 from public.ai_features where slug = target_feature for update;

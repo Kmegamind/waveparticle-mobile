@@ -95,6 +95,15 @@ describe("#473 the AI registry migration", () => {
     expect(sql).toMatch(/if exists \(select 1 from public\.ai_features where feature_id is null\)/);
   });
 
+  it("test_473_a_candidate_or_confirmed_example_needs_text", () => {
+    expect(code()).toMatch(
+      /add constraint ai_features_example_needs_text\s+check \(example_state = 'none' or btrim\(example_text\) <> ''\);/,
+    );
+    expect(fn("public.set_ai_feature_example")).toMatch(
+      /if new_state <> 'none' and btrim\(new_text\) = '' then\s+raise exception [^;]*errcode = '22023';/,
+    );
+  });
+
   it("test_473_field_and_example_history_keep_who_when_and_the_values", () => {
     const fields = table("ai_feature_field_history");
     expect(fields).toMatch(
