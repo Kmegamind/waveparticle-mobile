@@ -2,6 +2,7 @@ import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { baseUrlOf, signIn } from "./support/account";
+import { useSeededPrompts } from "./support/prompts";
 
 // #435: the admin visual gate. It opens the repository copy of the owner's admin prototype
 // (docs/design/prototype/admin-prototype.html) and the live admin side by side, at 1024 and
@@ -142,6 +143,11 @@ const LIVE_PAGES: Record<string, { path: string; prepare?: PageSetup }> = {
   prompt: { path: "/admin/prompts/plan_split" },
   // #444: one story's cards. No test writes "site-search", so the gate reads the seed as loaded.
   storyCards: { path: "/admin/stories/site-search" },
+  // #446: the prompts list (no prototype screen; drawn with the prototype's table components).
+  // Other tests save prompt drafts while the gate runs (rest_reply, stuck_story ...), and a draft
+  // changes the list's column widths, so the gate's account reads the seeded prompts only
+  // (useSeededPrompts): neither prompt page depends on what other tests write.
+  promptList: { path: "/admin/prompts" },
   // #442: Companion profile (ADM-04), the prototype's `character` screen.
   companion: { path: "/admin/companions/oppenheimer" },
   // #439: the AI features index and the Pause message page, as the drawing's AIF-1 and AIF-2.
@@ -397,6 +403,134 @@ const COMPONENTS: Component[] = [
     prototype: { page: "regenerate", selector: "dialog.sheet textarea" },
     live: { page: "textField", selector: ".admin-panel textarea.admin-text-field" },
     properties: [...STYLE, "resize"],
+  },
+  // #446: ADM-08 Prompts. The prompt page against the prototype's Prompts screen; the list against
+  // the prototype's table components (it has no list screen).
+  {
+    name: "prompt: title chip",
+    prototype: { page: "prompts", selector: ".head h1 .key" },
+    live: { page: "prompt", selector: ".admin-head h1 .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "prompt: header action row",
+    prototype: { page: "prompts", selector: ".head .btns" },
+    live: { page: "prompt", selector: ".admin-head .admin-actions" },
+  },
+  {
+    name: "prompt: header secondary button (Save draft)",
+    prototype: { page: "prompts", selector: ".head .btns button:not(.primary)" },
+    live: { page: "prompt", selector: ".admin-actions .button-gray" },
+    properties: [...STYLE, "cursor"],
+    box: ["height"],
+  },
+  {
+    name: "prompt: two columns",
+    prototype: { page: "prompts", selector: ".grid2" },
+    live: { page: "prompt", selector: ".admin-prompt-grid" },
+    box: ["x", "width"],
+  },
+  {
+    name: "prompt: left panel",
+    prototype: { page: "prompts", selector: ".grid2 > .panel:first-child" },
+    live: { page: "prompt", selector: ".admin-prompt-grid > .admin-panel:first-child" },
+    box: ["x", "width"],
+  },
+  {
+    name: "prompt: right panel",
+    prototype: { page: "prompts", selector: ".grid2 > .panel:last-child" },
+    live: { page: "prompt", selector: ".admin-prompt-grid > .admin-panel:last-child" },
+    box: ["x", "width"],
+  },
+  {
+    name: "prompt: panel heading",
+    prototype: { page: "prompts", selector: ".grid2 > .panel:last-child h2" },
+    live: { page: "prompt", selector: ".admin-prompt-grid .admin-prompt-heading" },
+  },
+  {
+    name: "prompt: heading chip",
+    prototype: { page: "prompts", selector: ".grid2 > .panel:last-child h2 .key" },
+    live: { page: "prompt", selector: ".admin-prompt-heading .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "prompt: prompt text",
+    prototype: { page: "prompts", selector: "pre.code" },
+    live: { page: "prompt", selector: "pre.admin-prompt-code" },
+  },
+  {
+    name: "prompt: prompt text field",
+    prototype: { page: "prompts", selector: "pre.code" },
+    live: { page: "prompt", selector: "textarea.admin-prompt-code" },
+  },
+  {
+    name: "prompt: note line",
+    prototype: { page: "prompts", selector: ".grid2 p.note" },
+    live: { page: "prompt", selector: ".admin-prompt-note" },
+  },
+  {
+    name: "prompt: Versions heading",
+    prototype: { page: "prompts", selector: ".grid2 > .panel:last-child h2:nth-of-type(2)" },
+    live: { page: "prompt", selector: ".admin-prompt-versions .admin-prompt-heading" },
+  },
+  {
+    name: "prompt: Versions table",
+    prototype: { page: "prompts", selector: ".grid2 table" },
+    live: { page: "prompt", selector: ".admin-prompt-versions .admin-table" },
+    properties: [...STYLE, "border-collapse", "table-layout"],
+    box: ["width"],
+  },
+  {
+    name: "prompt: Versions cell",
+    prototype: { page: "prompts", selector: ".grid2 td" },
+    live: { page: "prompt", selector: ".admin-prompt-versions td" },
+  },
+  {
+    name: "prompt: Versions chip",
+    prototype: { page: "prompts", selector: ".grid2 td .key" },
+    live: { page: "prompt", selector: ".admin-prompt-versions td .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "prompt: Versions pill (Active)",
+    prototype: { page: "prompts", selector: ".grid2 .pill.s-pub" },
+    live: { page: "prompt", selector: ".admin-prompt-versions .admin-pill-published" },
+    box: ["height"],
+  },
+  {
+    name: "prompts list: panel",
+    prototype: { page: "characters", selector: ".panel" },
+    live: { page: "promptList", selector: ".admin-panel" },
+    box: ["x", "width"],
+  },
+  {
+    name: "prompts list: table",
+    prototype: { page: "characters", selector: "table" },
+    live: { page: "promptList", selector: ".admin-table" },
+    properties: [...STYLE, "border-collapse", "table-layout"],
+    box: ["width"],
+  },
+  {
+    name: "prompts list: head cell",
+    prototype: { page: "characters", selector: "th" },
+    live: { page: "promptList", selector: ".admin-table th" },
+    box: ["height"],
+  },
+  {
+    name: "prompts list: cell",
+    prototype: { page: "characters", selector: "td" },
+    live: { page: "promptList", selector: ".admin-table td" },
+  },
+  {
+    name: "prompts list: id chip",
+    prototype: { page: "characters", selector: "td .key" },
+    live: { page: "promptList", selector: ".admin-table .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "prompts list: pill (Active)",
+    prototype: { page: "characters", selector: ".pill.s-pub" },
+    live: { page: "promptList", selector: ".admin-table .admin-pill-published" },
   },
   // #445: App text (ADM-07), the prototype's `uitext` screen: the header with Publish changes, and
   // one line per key with its text edited in place. Rows read the first line (ui.F3.fail.body),
@@ -1357,6 +1491,23 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
       "A switch of the drawing only, to show both roles. Live shows the writer's view to a " +
       "writer; it is compared as the `status, writer:` rows.",
   },
+  // #446: ADM-08 Prompts.
+  {
+    component: "prompt: header secondary button (Save draft)",
+    properties: ["min-width", "min-height"],
+    reason:
+      "Live sets 0 to switch off the phone app's 44 px tap minimum inside the admin " +
+      "(ADMIN-DESKTOP); the prototype has none (auto). Neither draws a minimum.",
+  },
+  {
+    component: "prompt: header secondary button (Save draft)",
+    properties: ["box height"],
+    reason:
+      "The prototype's action row also holds the model list (a select, 36 px tall), and the row " +
+      "stretches its buttons to it, so Test draft is 36 px. Live has no model list (an owner " +
+      "decision: no per-prompt model in the data), so Save draft keeps its own 33.5 px, the " +
+      "height of the prototype's own secondary button (compared in `secondary button`).",
+  },
   // #445: App text.
   {
     component: "text, edited in place (App text)",
@@ -1707,7 +1858,10 @@ for (const width of WIDTHS) {
   }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width, height: HEIGHT });
-    await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+    const account = await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
+    // #446: this account reads the seeded prompts only, so drafts other tests save while the gate
+    // runs never change the prompt pages it measures.
+    await useSeededPrompts(account.token);
     await page.goto("/admin/companions");
     const origin = new URL(page.url()).origin;
     await servePrototype(page, await adminFontFaces(page));
