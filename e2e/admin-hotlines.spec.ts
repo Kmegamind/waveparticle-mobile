@@ -21,10 +21,17 @@ test("test_448_ac1_list_has_a_full_size_add_an_entry_in_the_header_row", async (
   await expect(add).toBeVisible();
   await expect(add).toHaveClass(/button-filled/);
   await expect(add).not.toHaveClass(/button-small/);
-  await expect(actions.getByLabel("Add an entry for a country with none")).toBeVisible();
-  // The table sits in a panel, with no form below it.
+  // Beside the lede, not wrapped under it.
+  const head = page.locator(".admin-head");
+  const lede = await head.locator(".admin-lede").boundingBox();
+  const row = await actions.boundingBox();
+  expect(row!.x).toBeGreaterThan(lede!.x + lede!.width);
+  // The table sits in a panel; the country list is under it, and the header button submits it.
   await expect(page.locator(".admin-panel .admin-table")).toBeVisible();
-  await expect(page.locator(".admin-main > form")).toHaveCount(0);
+  await page.getByLabel("Add an entry for a country with none").selectOption("NZ");
+  await add.click();
+  await expect(page).toHaveURL(/\/admin\/hotlines\/NZ$/);
+  await expect(page.getByText("Nothing is published for New Zealand")).toBeVisible();
 });
 
 test("test_448_ac1_entry_has_header_buttons_two_panels_and_a_versions_table", async ({
@@ -55,12 +62,7 @@ test("test_448_ac1_entry_has_header_buttons_two_panels_and_a_versions_table", as
   expect(left!.width / right!.width).toBeCloseTo(1.3, 1);
 
   const versions = preview.getByRole("table", { name: "Versions" });
-  await expect(versions.getByRole("columnheader")).toHaveText([
-    "Version",
-    "State",
-    "Saved",
-    "Shows",
-  ]);
+  await expect(versions.getByRole("columnheader")).toHaveText(["Version", "State", "Saved"]);
   const row = versions.getByRole("row", { name: /v1/ });
   await expect(row).toContainText("Published");
   await expect(row).toContainText("11-23");

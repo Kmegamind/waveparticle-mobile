@@ -4779,8 +4779,8 @@ textarea.admin-prompt-code {
 
 /* Issue 448, ADM-14 Hotlines and ADM-15 Hotline entry, as drawn in
    docs/design/prototype/admin-hotlines_2026-11-23_v1.html. The list: the table in a scrolling
-   panel (.panel.scroll) with its note 12 px under it, and Add an entry with its country list in the
-   header row. The entry: the legal note as the drawing's grey banner (.est), then the Entry panel
+   panel (.panel.scroll) with its note 12 px under it; Add an entry in the header row submits the
+   country list under the panel. The entry: the legal note as the drawing's grey banner (.est), then the Entry panel
    beside the Preview on S1 panel (1.3fr and 1fr, 16 px apart), headings 10 px above their content,
    the Versions heading 18 px under the preview. */
 .admin-hotline-list {
@@ -4792,13 +4792,7 @@ textarea.admin-prompt-code {
 }
 
 .admin-hotline-add {
-  align-items: center;
-  display: flex;
-  gap: var(--adm-gap-small);
-}
-
-.admin-hotline-add .admin-text-field {
-  width: auto;
+  margin-top: var(--adm-gap);
 }
 
 .admin-hotline-legal {
@@ -4851,8 +4845,14 @@ textarea.admin-prompt-code {
   overflow-wrap: anywhere;
 }
 
+/* What a version shows, under its chip (not in the drawing, whose sample has one version). */
+.admin-hotline-version-shows {
+  margin-top: var(--adm-gap-hair);
+  overflow-wrap: anywhere;
+}
+
 /* The Versions headings are short fixed words and stay whole, as the drawing's do (with anywhere,
-   the long Shows column squeezed "Version" to a letter or two per line). */
+   a long cell squeezed "Version" to a letter or two per line). */
 .admin-hotline-grid .admin-table th {
   overflow-wrap: normal;
 }

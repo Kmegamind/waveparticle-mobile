@@ -369,7 +369,6 @@ export function HotlineEditor({
                   <th scope="col">Version</th>
                   <th scope="col">State</th>
                   <th scope="col">Saved</th>
-                  <th scope="col">Shows</th>
                 </tr>
               </thead>
               <tbody>
@@ -377,6 +376,10 @@ export function HotlineEditor({
                   <tr key={version.version}>
                     <td>
                       <KeyChip>v{version.version}</KeyChip>
+                      <p className="admin-note admin-hotline-version-shows">
+                        {preview(version.row).line} · checked {version.row.checked_on} by{" "}
+                        {version.row.checked_by}
+                      </p>
                     </td>
                     <td>
                       <StatePill state={version.state}>{STATE_LABEL[version.state]}</StatePill>
@@ -401,10 +404,6 @@ export function HotlineEditor({
                       ) : null}
                     </td>
                     <td className="admin-note">{versionDay(version.row.created_at)}</td>
-                    <td className="admin-note">
-                      {preview(version.row).line} · checked {version.row.checked_on} by{" "}
-                      {version.row.checked_by}
-                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -12,8 +12,8 @@ export const instant = false;
 
 // ADM-14 Hotlines (#118, HOTLINES; drawn in docs/design/prototype/admin-hotlines_2026-11-23_v1.html):
 // the help line S1 shows for each country. Only the admin role edits and publishes; writers read.
-// #448: in the prototype's layout: Add an entry (with its country list) is the header row's main
-// button, and the table sits in a panel with its note under it.
+// #448: in the prototype's layout: Add an entry is the header row's main button, and the table
+// sits in a panel with its note under it. The button submits the country list under the panel.
 export default async function AdminHotlines({ searchParams }: PageProps<"/admin/hotlines">) {
   await connection();
   const client = await createSupabaseServerClient();
@@ -33,22 +33,10 @@ export default async function AdminHotlines({ searchParams }: PageProps<"/admin/
       <PageHead
         actions={
           ok && role === "admin" ? (
-            <form action="/admin/hotlines" className="admin-hotline-add" method="get">
-              <select
-                aria-label="Add an entry for a country with none"
-                className="admin-text-field"
-                name="add"
-              >
-                {free.map((country) => (
-                  <option key={country.code} value={country.code}>
-                    {country.name} ({country.code})
-                  </option>
-                ))}
-              </select>
-              <button className="button-filled" type="submit">
-                Add an entry
-              </button>
-            </form>
+            // Submits the country list under the table (the form named here).
+            <button className="button-filled" form="hotline-add" type="submit">
+              Add an entry
+            </button>
           ) : null
         }
         lede={
@@ -116,6 +104,22 @@ export default async function AdminHotlines({ searchParams }: PageProps<"/admin/
           </p>
         </div>
       )}
+      {ok && role === "admin" ? (
+        // The country for Add an entry (header row). A country is chosen from the list and is fixed
+        // once saved (#118); the drawing's empty entry with a typed country is not built.
+        <form action="/admin/hotlines" className="admin-form admin-hotline-add" id="hotline-add">
+          <label>
+            Add an entry for a country with none
+            <select className="admin-text-field" name="add">
+              {free.map((country) => (
+                <option key={country.code} value={country.code}>
+                  {country.name} ({country.code})
+                </option>
+              ))}
+            </select>
+          </label>
+        </form>
+      ) : null}
     </>
   );
 }

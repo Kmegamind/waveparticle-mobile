@@ -589,6 +589,8 @@ const COMPONENTS: Component[] = [
     name: "hotlines: header action row",
     prototype: { page: "hotlines", selector: ".head .btns" },
     live: { page: "hotlines", selector: ".admin-head .admin-actions" },
+    // Beside the lede, not wrapped under it (the same lede text on both sides).
+    box: ["x", "y"],
   },
   {
     // The issue's finding: a small main button (12 px, 3 x 9 px) where the drawing has a full one.
@@ -1972,9 +1974,10 @@ const EXCEPTIONS: { component: string; properties: string[]; reason: string }[] 
     reason:
       "The drawing's Add an entry opens an empty entry whose Country field is typed. Live keeps " +
       "its list of the countries with no entry (#118: a country is chosen from the list, and is " +
-      "fixed once saved) beside the button in the header action row. It is the admin's text " +
-      "field (compared as `hotline: list field (Main contact)`); the button beside it keeps its " +
-      "own 33.5 px height (compared).",
+      "fixed once saved) as a labelled field under the table, which the header's Add an entry " +
+      "submits; in the header it made the action row wrap under the lede. It is the admin's " +
+      "form field and label (compared as `hotline: list field (Main contact)` and `hotline: " +
+      "field label (Service name)`).",
   },
   {
     component: "hotline: legal review note (box y, not measured)",
