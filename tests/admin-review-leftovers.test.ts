@@ -40,7 +40,9 @@ describe("#314 leftovers", () => {
 
   it("test_317_ac2_the_publish_history_table_has_a_name", () => {
     const page = read("src/app/admin/publish-history/page.tsx");
-    expect(page).toMatch(/<table aria-label="Publish history" className="admin-table">/);
+    expect(page).toMatch(
+      /<table aria-label="Publish history" className="admin-table admin-publish-history">/,
+    );
   });
 
   it("test_317_ac4_the_orphan_admin_comment_in_tokens_is_gone", () => {
