@@ -136,9 +136,11 @@ Today only Trinity has three openers; the other 25 Oppenheimer stories have one 
 
 A slice is one sub-task of the Companion's goal for the episode (SLICE-SUBTASK). The goal is split into sub-tasks (the plan's aims; five by default, adjustable), and each sub-task is one slice. In the database, `story_parts.part` 1 to 5 are the sub-tasks, and `story_cards.slice` is `s<part>`. A slice holds the facts of its sub-task; the fictional stories have three to five per slice. Facts are backend-only and may contain clock times or outcomes; they are never shown.
 
-A separate AI step splits each slice into story cards (2.2, CARDS-PER-PART). A card shows what he is doing now, from his own point of view and in his own voice: "I want to do this." "I am thinking about this." "Since this happened, I have to go somewhere." Earlier events appear only as the reason for what he does now. There is no authored fallback (NO-BACKUP, NO-FALLBACK-TABLES).
+A separate AI step splits each slice into story cards (2.2, CARDS-PER-PART). A card shows what he is doing now, from his own point of view and in his own voice: "I want to do this." "I am thinking about this." "Since this happened, I have to go somewhere." Earlier events appear only as the reason for what he does now.
 
 A slice is not the user's Step: a Step covers one or more slices, or part of one, in order, and the Step count stays separate (T3). A slice is not a key slice either: key slices (`keySlices`, two to four per story, section 4) are cut points inside the story.
+
+Reference data from the two authored demo stories (the old eight-slice shape); this table is not the slice definition above.
 
 | Field | Type | Example (`site-search`, slice s4) |
 |---|---|---|
