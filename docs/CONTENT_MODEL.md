@@ -26,7 +26,7 @@ Words used with a fixed meaning:
 | Step | One part of the user's plan, with a title, a short description and a number of minutes. |
 | Story | One episode of a companion's life, for example "The Canyon and the Mesa". The database calls it a story; the map calls it a chapter. |
 | Part | One of the Companion's tasks in a story. A story has 2 to 5 parts (STORY-PARTS). Story cards are made per part, and the app spreads the parts across the user's steps (CARDS-PER-PART, section 3). |
-| Slice | One small unit of a story, holding one to three facts. Slices exist only for the two stories with authored cards, which are reference examples and evaluation material only (NO-FALLBACK-TABLES). |
+| Slice | One sub-task of the Companion's goal for the episode, with the facts of that sub-task (three to five in the fictional stories). Story cards are written from slices (SLICE-SUBTASK, 2.3). |
 | Entry state | What the companion knows and is living through just before a given slice. Used by the authored reference cards. |
 | Fate link | The rule that the story moves forward only when the user taps Done. A step's cards may move within the step's own parts of the story but never into the next step's (section 3). |
 | Background card | The card told in the character's own voice that opens the first step of a goal (2.13). Made ahead once per story (SHARED-STORY). |
@@ -134,15 +134,17 @@ Today only Trinity has three openers; the other 25 Oppenheimer stories have one 
 
 ### 2.3 Slice
 
-For the two stories with authored cards, the story is cut into slices. A slice holds one to three facts from the book. Facts are backend-only and may contain clock times or outcomes; they are never shown. Slices belong to the authored reference cards only (NO-FALLBACK-TABLES); story cards are made per part from the story facts (2.2, CARDS-PER-PART).
+A slice is one sub-task of the Companion's goal for the episode (SLICE-SUBTASK). The goal is split into sub-tasks (the plan's aims; five by default, adjustable), and each sub-task is one slice. In the database, `story_parts.part` 1 to 5 are the sub-tasks, and `story_cards.slice` is `s<part>`. A slice holds the facts of its sub-task; the fictional stories have three to five per slice. Facts are backend-only and may contain clock times or outcomes; they are never shown.
+
+A separate AI step splits each slice into story cards (2.2, CARDS-PER-PART). A card shows what he is doing now, from his own point of view and in his own voice: "I want to do this." "I am thinking about this." "Since this happened, I have to go somewhere." Earlier events appear only as the reason for what he does now. There is no authored fallback (NO-BACKUP, NO-FALLBACK-TABLES).
+
+A slice is not the user's Step: a Step covers one or more slices, or part of one, in order, and the Step count stays separate (T3). A slice is not a key slice either: key slices (`keySlices`, two to four per story, section 4) are cut points inside the story.
 
 | Field | Type | Example (`site-search`, slice s4) |
 |---|---|---|
 | id | text | `s4` |
 | priority | integer 1 to 3 | `2`. Used by the removed cut-by-slice rule; reference data only. |
 | facts | list of text | `["We were still arguing when General Groves showed up.", "Groves took one look at Jemez Springs and said, \"This will never do.\""]` |
-| landing_card | card id | `site-search.s4.land` |
-| where_now | text | "I'm in the canyon, arguing the case against it to an officer who has made up his mind." (the entry state of s4, in his voice, only what has already happened) |
 | current, done, plan | text, text, text | `current`: "I'm waiting on Dudley's answer." `done`: "I heard the general's verdict." `plan`: "I want to hear who has the last word." At most 10 words each, first person. `plan` states an intention only and presupposes no fact. |
 | key (draft) | boolean | Missing from the JSON. See section 4. For other stories the key moments are marked on the story facts (2.2). |
 | key_line (draft) | text | Missing from the JSON. At most 18 words, first person, past tense, no future. |

@@ -46,7 +46,7 @@ The founder also experienced the effect in three "gold standard" moments with ch
 | Run | One attempt at a Goal: its Steps, current Step, clock position and the story it is bound to. A Goal has at most one open Run. |
 | Story | One episode of the Companion's life (for Oppenheimer, one chapter such as a night, a lunch or a hearing). A story has 2 to 5 parts (STORY-PARTS). |
 | Part | One of the Companion's tasks in a story. Story cards are made ahead for each part, and the app spreads the parts across the user's Steps (CARDS-PER-PART). |
-| Slice | A short unit of a story, built from one to three historical facts. Slices supply the facts the story cards are made from. |
+| Slice | One sub-task of the Companion's goal for the episode. The goal is split into sub-tasks (the plan's aims; five by default), and each sub-task is one slice (`story_parts.part`; a card's `slice` is `s<part>`). A slice holds the facts of its sub-task; the fictional stories have three to five. A separate AI step splits each slice into story cards, each showing what he is doing now, from his own point of view and in his own voice; earlier events appear only as the reason for what he does now. A slice is not the user's Step (a Step covers one or more slices, or part of one, in order) and not a key slice (a cut point inside the story, section 4 of the content model) (SLICE-SUBTASK). |
 | Card | One short first-person text from the Companion shown on the focus page. Story cards are made ahead once per story part, published and shared by all users, and read by a person after publishing (SHARED-STORY, PUBLISH-FIRST); one extra background card opens the Goal. |
 | Fate link | The rule that the story advances only when the user finishes a Step. |
 | N | The number of Steps in the user's plan. |
@@ -190,7 +190,7 @@ Yue decided (S1, 2026-11-04) that release 1 contains everything in the current w
 | ID | Requirement | Priority | Decision |
 |---|---|---|---|
 | FR-CONTENT-1 | The story library is the single source of truth. Each story has a sequence number, a period, a title, 2 to 5 parts, slices, key slices, his lines and people. The exact date stays in the notebook for writers, is visible only in the admin and is never passed to a card prompt. `{age}` in a Companion's period text is likewise visible only in the admin and never reaches a prompt. | Must | PERIODS, DATES-ADMIN-ONLY, STORY-PARTS, AGE-TEXT |
-| FR-CONTENT-2 | Each slice has one to three first-person past-tense facts. | Must | NO-FALLBACK-TABLES |
+| FR-CONTENT-2 | Each slice is one sub-task of the Companion's goal for the episode and holds the first-person past-tense facts of that sub-task. Story cards are written from slices. | Must | SLICE-SUBTASK, NO-FALLBACK-TABLES |
 | FR-CONTENT-3 | Content for chapter 1 ("The Trade of a Theorist") must be written. The existing authored cards (chapter 8, the site search, and the Trinity night) are reference examples and evaluation material only. | Must | M1, NO-BACKUP |
 | FR-CONTENT-4 | Each story has 2 to 4 key slices, each with a first-person past-tense key line of at most 18 words, confirmed by the content owner, and an optional bridge of at most 10 words. The machine-derived key moments are stored as unconfirmed until that review. | Must | C2, KEY-MOMENTS-DRAFT, KEY-UNCONFIRMED |
 | FR-CONTENT-5 | Each story lists its people and what each one knows, as input for the background card. Later cards carry no introduction phrases. | Should | M2 |
