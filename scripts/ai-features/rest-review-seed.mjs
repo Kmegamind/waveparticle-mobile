@@ -31,7 +31,7 @@ export const REVIEW_FEATURE = {
   /** One purpose line from the owner's decision, marked as a draft for the owner to edit. */
   purpose: [
     {
-      text: "Call two of the rest chat: reads call one's reply as the person would and returns it unchanged or rewritten, as JSON with the reply.",
+      text: "Call two of the rest chat: a second look at call one's reply from the person's side, which keeps it or replaces it with a better one.",
       source: "GitHub issue #517 (REST-TWO-CALLS, 2026-11-27)",
       draft: true,
     },
