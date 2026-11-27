@@ -176,7 +176,7 @@ export function RegistryTable({
                     </td>
                     <td>
                       <StatusPill status={row.status} statuses={statuses} />
-                      {admin && row.category === "runtime" ? (
+                      {admin ? (
                         <>
                           {" "}
                           <Link

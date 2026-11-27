@@ -277,8 +277,10 @@ describe("feature detail (#474, FR-AIREG-2 and FR-AIREG-4)", () => {
   });
 });
 
-describe("working editors stay on the Runtime rows (#474)", () => {
-  it("test_474_pipeline_and_gate_rows_are_read_only_until_475", async () => {
+// #475 replaces #474's "read only until #475": every row's pass standard and status are edited
+// now; Purpose and Current approach stay on the Runtime rows (they exist on those rows only).
+describe("which editors work on which rows (#475)", () => {
+  it("test_475_pass_and_status_work_on_every_row_purpose_and_approach_on_runtime_rows", async () => {
     expect(editable({ category: "runtime" })).toBe(true);
     expect(editable({})).toBe(true);
     expect(editable({ category: "pipeline" })).toBe(false);
@@ -294,17 +296,25 @@ describe("working editors stay on the Runtime rows (#474)", () => {
       },
     };
     expect(
-      await saveFeatureSections({ slug: "g01_judge_plan", loadedAt: null, sections: {} }, deps),
-    ).toEqual({ ok: false, error: "not-allowed" });
-    expect(
-      await changeFeatureStatus({ slug: "g01_judge_plan", status: "passed", note: "" }, deps),
+      await saveFeatureSections(
+        { slug: "g01_judge_plan", loadedAt: null, sections: { purpose: [] } },
+        deps,
+      ),
     ).toEqual({ ok: false, error: "not-allowed" });
     expect(calls).toEqual([]);
-    // A Runtime row still saves.
-    const runtime = { ...deps, readFeature: async () => feature({ category: "runtime" }) };
     expect(
-      await changeFeatureStatus({ slug: "plan_split", status: "passed", note: "" }, runtime),
+      await saveFeatureSections(
+        {
+          slug: "g01_judge_plan",
+          loadedAt: null,
+          sections: { pass_questions: [{ from: null, text: "Invented question?" }] },
+        },
+        deps,
+      ),
     ).toEqual({ ok: true });
-    expect(calls).toEqual(["set_ai_feature_status"]);
+    expect(
+      await changeFeatureStatus({ slug: "g01_judge_plan", status: "passed", note: "" }, deps),
+    ).toEqual({ ok: true });
+    expect(calls).toEqual(["save_ai_feature_sections", "set_ai_feature_status"]);
   });
 });

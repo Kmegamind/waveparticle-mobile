@@ -432,3 +432,21 @@
   background: var(--adm-bad-soft);
   color: var(--adm-bad);
 }
+
+/* Issue 475: the registry editor (/admin/ai-features/<slug>/fields). The form and its side panel
+   are the AIF-7 editor; the example, category and history panels follow in the feature page's
+   stack, one section gap below. A box grows with its text, as the purpose editor's. */
+.admin-after-editor {
+  margin-top: var(--adm-gap);
+}
+
+.admin-registry-form textarea,
+.admin-registry-example {
+  field-sizing: content;
+}
+
+/* An old or new value in the history keeps its line breaks and wraps inside its cell. */
+.admin-table td.admin-history-value {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}

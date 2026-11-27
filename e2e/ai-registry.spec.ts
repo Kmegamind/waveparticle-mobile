@@ -394,20 +394,20 @@ test.describe("#474 the registry read view", () => {
     await expect(firstRow.locator("td").nth(7).locator(".admin-pill")).toBeInViewport();
   });
 
-  test("test_474_an_admin_sees_change_on_the_runtime_rows_only", async ({ page, context }) => {
+  // #475: the status of every row is changed now (the drawing draws Change on every row for an
+  // admin); #474 showed it on the 7 Runtime rows only, until #475.
+  test("test_475_an_admin_sees_change_on_every_row", async ({ page, context }) => {
     await registryAccount(page, context, "admin");
     await page.goto("/admin/ai-features");
     await expect(page.locator(".admin-head")).toContainText("Viewing as admin");
     const change = table(page).getByRole("link", { name: /^Change the status of / });
-    await expect(change).toHaveCount(7);
+    await expect(change).toHaveCount(19);
     await expect(
       table(page).getByRole("link", { name: "Change the status of R-07" }),
     ).toHaveAttribute("href", "/admin/ai-features/safety_classifier#status");
     await expect(
-      table(page)
-        .locator("tbody tr", { hasText: "P-01" })
-        .getByRole("link", { name: /^Change/ }),
-    ).toHaveCount(0);
+      table(page).getByRole("link", { name: "Change the status of P-01" }),
+    ).toHaveAttribute("href", "/admin/ai-features/p01_find_episodes#status");
   });
 
   test("test_474_ac2_ac3_a_pipeline_row_shows_every_field_and_not_written_yet", async ({
@@ -465,15 +465,23 @@ test.describe("#474 the registry read view", () => {
     // Pipeline prompts are not edited on the Prompts page.
     await expect(prompt.getByRole("link", { name: "Prompts page" })).toHaveCount(0);
 
-    // A Pipeline row is read only until #475: no editor link, no status control.
-    await expect(page.getByRole("link", { name: /^Edit / })).toHaveCount(0);
+    // #475: a Pipeline row is edited too (it was read only until #475): the registry editor and
+    // the pass standard; it has no Purpose or Current approach, so no editor for them. A writer
+    // gets no status control.
+    await expect(page.getByRole("link", { name: /^Edit / })).toHaveText([
+      "Edit fields",
+      "Edit pass standard",
+    ]);
     await expect(page.getByRole("textbox")).toHaveCount(0);
-    for (const target of ["purpose", "pass", "status"]) {
+    await page.goto("/admin/ai-features/p02_select_stories/purpose");
+    await expect(
+      page.getByRole("heading", { name: "This page could not be found." }),
+    ).toBeVisible();
+    for (const target of ["fields", "pass", "status"]) {
       await page.goto(`/admin/ai-features/p02_select_stories/${target}`);
-      await expect(
-        page.getByRole("heading", { name: "This page could not be found." }),
-        target,
-      ).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1 }), target).toContainText(
+        target === "fields" ? "P-02 Select stories" : "Select stories",
+      );
     }
   });
 
