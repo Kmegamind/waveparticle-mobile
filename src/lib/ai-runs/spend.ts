@@ -10,8 +10,10 @@ export type UserSpend = {
   userId: string | null;
   email: string | null;
   runs: number;
-  /** Runs with no cost: no price set for the model, or no tokens reported. */
+  /** Runs with no cost: no price set for the model, no tokens reported, or still running. */
   unpricedRuns: number;
+  /** Runs started and never ended: a call that may have been billed with no record of its end. */
+  runningRuns: number;
   /** US dollars, the sum of the known costs. */
   cost: number;
 };
@@ -20,6 +22,7 @@ export type RunSpend = {
   day: string;
   runs: number;
   unpricedRuns: number;
+  runningRuns: number;
   cost: number;
   byUser: UserSpend[];
 };
@@ -58,12 +61,14 @@ export async function readRunSpend(
       email: typeof row.email === "string" ? row.email : null,
       runs: num(row.runs),
       unpricedRuns: num(row.unpriced_runs),
+      runningRuns: num(row.running_runs),
       cost: round(num(row.cost)),
     }));
     return {
       day: window.day,
       runs: byUser.reduce((sum, row) => sum + row.runs, 0),
       unpricedRuns: byUser.reduce((sum, row) => sum + row.unpricedRuns, 0),
+      runningRuns: byUser.reduce((sum, row) => sum + row.runningRuns, 0),
       cost: round(byUser.reduce((sum, row) => sum + row.cost, 0)),
       byUser,
     };

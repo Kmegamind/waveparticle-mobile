@@ -10,14 +10,20 @@ import type { LabModel } from "./model";
 // prompt lab. Server code only; every outside part is a dependency, so the tests pass a fake
 // (stub) model and an in-memory run log. Admin and writer may run; anyone else is refused before
 // anything is read or sent. The lab sends only a prompt and a sample, never user text. There is no
-// spending cap: every run that reached the model is recorded, an error included.
+// spending cap: a run's row is written (status running) before the model is called, and ended as
+// ok or error after it; a run whose row cannot be written never reaches the model.
 
 /** The longest pasted prompt (as the prompt editor, PROMPT_BODY_MAX_LENGTH). */
 export const PASTED_MAX_LENGTH = 20_000;
-/** One lab call's waiting time. Pipeline prompts write long answers. */
+/**
+ * One lab call's waiting time. Pipeline prompts write long answers. The route's `maxDuration`
+ * (150 s) leaves 30 s for the reads and the two run log writes around it.
+ */
 export const LAB_TIME_LIMIT_MS = 120_000;
 /** The answer's token ceiling unless the version's settings give `max_tokens`. */
 export const LAB_MAX_TOKENS = 4096;
+/** The hard ceiling: a version's `max_tokens` above it is lowered to it. */
+export const LAB_MAX_TOKENS_CAP = 8192;
 
 export type RunPrompt =
   | { source: "published" }
@@ -49,8 +55,11 @@ export type LabSample = {
 
 export type RunFeature = { slug: string; category: string; prompt_keys: string[] };
 
-/** The row record_ai_run stores (who and when are set by the database). */
-export type RunRecord = {
+/**
+ * What start_ai_run stores BEFORE the model call, with the status running (who and when are set
+ * by the database).
+ */
+export type RunStart = {
   feature_slug: string;
   prompt_key: string;
   prompt_source: "published" | "draft" | "pasted";
@@ -59,15 +68,25 @@ export type RunRecord = {
   sample_id: string | null;
   model: string;
   input: string;
+  stub: boolean;
+};
+
+/** What finish_ai_run stores after the call: the run ends as ok or error. */
+export type RunFinish = {
   output: string | null;
   input_tokens: number | null;
   output_tokens: number | null;
   cost: number | null;
-  stub: boolean;
   status: "ok" | "error";
   error_reason: string | null;
   /** The steps of a multi-step run (FR-AILAB-8); empty for a one-call run. */
   steps: RunStepRecord[];
+};
+
+/** The run log: start gives the run's id (null when it could not be written), finish true when stored. */
+export type RunLog = {
+  start: (run: RunStart) => Promise<string | null>;
+  finish: (runId: string, result: RunFinish) => Promise<boolean>;
 };
 
 export type RunStepRecord = {
@@ -94,8 +113,8 @@ export type RunDeps = {
   /** Null when the server has no model configured. */
   model: LabModel | null;
   prices: PriceTable;
-  /** Records a run and gives its id (null when it failed); null when there is no run log. */
-  record: ((run: RunRecord) => Promise<string | null>) | null;
+  /** Null when there is no run log (no server token): nothing is sent to the model then. */
+  runLog: RunLog | null;
   timeLimitMs?: number;
 };
 
@@ -111,13 +130,18 @@ export type RunError =
   | "unknown-model"
   | "no-model"
   | "no-run-log"
+  | "not-recorded"
   | "prompt-problem"
   | "failed";
 
+/**
+ * `recorded` is false when the run was started (its row exists, status running) but its end could
+ * not be stored: the row stays running and still counts in the spend.
+ */
 export type RunResult =
   | {
       ok: true;
-      runId: string | null;
+      runId: string;
       recorded: boolean;
       output: string;
       checks: RunChecks;
@@ -133,7 +157,7 @@ export type RunResult =
       ok: false;
       error: "model-error";
       reason: "request" | "timeout";
-      runId: string | null;
+      runId: string;
       recorded: boolean;
       stub: boolean;
       model: string;
@@ -174,7 +198,8 @@ function validRequest(value: unknown): value is RunRequest {
 
 function maxTokens(params: Record<string, unknown>): number {
   const value = params.max_tokens;
-  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : LAB_MAX_TOKENS;
+  if (typeof value !== "number" || !Number.isInteger(value) || value <= 0) return LAB_MAX_TOKENS;
+  return Math.min(value, LAB_MAX_TOKENS_CAP);
 }
 
 class LabTimeout extends Error {}
@@ -208,7 +233,8 @@ export async function runPrompt(request: RunRequest, deps: RunDeps): Promise<Run
   if (!validRequest(request)) return { ok: false, error: "invalid" };
   if (!deps.model) return { ok: false, error: "no-model" };
   if (request.model !== deps.model.name) return { ok: false, error: "unknown-model" };
-  if (!deps.record) return { ok: false, error: "no-run-log" };
+  if (!deps.runLog) return { ok: false, error: "no-run-log" };
+  const runLog = deps.runLog;
 
   const feature = await deps.readFeature(request.feature);
   if (feature === null) return { ok: false, error: "failed" };
@@ -221,7 +247,7 @@ export async function runPrompt(request: RunRequest, deps: RunDeps): Promise<Run
   if (rows === null) return { ok: false, error: "failed" };
   const keyRows = rows.filter((row) => row.key === request.promptKey);
   const active = keyRows.find((row) => row.active) ?? null;
-  let source: RunRecord["prompt_source"];
+  let source: RunStart["prompt_source"];
   let version: number | null;
   let body: string;
   let params: Record<string, unknown>;
@@ -283,17 +309,32 @@ export async function runPrompt(request: RunRequest, deps: RunDeps): Promise<Run
   }
 
   const model = deps.model;
-  const base = {
-    feature_slug: feature.slug,
-    prompt_key: request.promptKey,
-    prompt_source: source,
-    prompt_version: version,
-    pasted_text: pasted,
-    sample_id: sample?.id ?? null,
-    model: model.name,
-    input,
-    stub: model.stub,
-    steps: [],
+  // The row is written BEFORE the model call (status running). If it cannot be written, the model
+  // is not called: no spend without a record.
+  let runId: string | null;
+  try {
+    runId = await runLog.start({
+      feature_slug: feature.slug,
+      prompt_key: request.promptKey,
+      prompt_source: source,
+      prompt_version: version,
+      pasted_text: pasted,
+      sample_id: sample?.id ?? null,
+      model: model.name,
+      input,
+      stub: model.stub,
+    });
+  } catch {
+    runId = null;
+  }
+  if (runId === null) return { ok: false, error: "not-recorded" };
+  const startedId = runId;
+  const finish = async (result: RunFinish) => {
+    try {
+      return await runLog.finish(startedId, result);
+    } catch {
+      return false;
+    }
   };
 
   let answer: Awaited<ReturnType<LabModel["call"]>>;
@@ -307,40 +348,40 @@ export async function runPrompt(request: RunRequest, deps: RunDeps): Promise<Run
   } catch (error) {
     // Only a fixed reason is kept: never the provider's message, which could quote a setting.
     const reason = error instanceof LabTimeout ? "timeout" : "request";
-    const runId = await deps.record({
-      ...base,
+    const recorded = await finish({
       output: null,
       input_tokens: null,
       output_tokens: null,
       cost: null,
       status: "error",
       error_reason: reason,
+      steps: [],
     });
     return {
       ok: false,
       error: "model-error",
       reason,
-      runId,
-      recorded: runId !== null,
+      runId: startedId,
+      recorded,
       stub: model.stub,
       model: model.name,
     };
   }
 
   const { cost, note: costNote } = runCost(model.name, answer, deps.prices);
-  const runId = await deps.record({
-    ...base,
+  const recorded = await finish({
     output: answer.text,
     input_tokens: answer.inputTokens,
     output_tokens: answer.outputTokens,
     cost,
     status: "ok",
     error_reason: null,
+    steps: [],
   });
   return {
     ok: true,
-    runId,
-    recorded: runId !== null,
+    runId: startedId,
+    recorded,
     output: answer.text,
     checks: check ? { applied: true, ...check(answer.text) } : { applied: false, note },
     inputTokens: answer.inputTokens,

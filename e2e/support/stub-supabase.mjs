@@ -94,9 +94,11 @@
 //                                     key as the SQL of scripts/ai-features/import-pipeline-prompts.mjs
 //                                     would (version 1, active, only when the key is missing);
 //                                     reset: true or reset: "<key>" removes it again
-//   #476 (run log, 20261203000000_ai_runs.sql): POST /rest/v1/rpc/record_ai_run { server_token,
-//                                     run } (the prompt reader token and a content editor; run_by
-//                                     and run_at set here), GET /rest/v1/ai_runs | ai_run_steps
+//   #476 (run log, 20261203000000_ai_runs.sql): POST /rest/v1/rpc/start_ai_run { server_token,
+//                                     run } (status running; run_by and run_at set here) and
+//                                     finish_ai_run { server_token, run_id, result } (the starter,
+//                                     once), both with the prompt reader token and a content
+//                                     editor, GET /rest/v1/ai_runs | ai_run_steps
 //                                     (editors), POST /rest/v1/rpc/ai_run_spend { from_time,
 //                                     to_time } (editors), as the migration
 //   POST /__ai_features { token, purpose: { "<slug>": [items] } | null }   for that account only,
@@ -459,7 +461,7 @@ let storyCardsFailReads = false;
 const port = Number(process.env.STUB_SUPABASE_PORT ?? process.env.E2E_SUPABASE_PORT ?? "3198");
 /** token → { user, tables } */
 const datasets = new Map();
-/** #476: the prompt lab's runs and their steps, as record_ai_run writes them. */
+/** #476: the prompt lab's runs and their steps, as start_ai_run and finish_ai_run write them. */
 const aiRuns = [];
 const aiRunSteps = [];
 
@@ -1211,29 +1213,71 @@ createServer(async (request, response) => {
     return json(response, 200, rows);
   }
 
-  // #476: the prompt lab's run log, as 20261203000000_ai_runs.sql. record_ai_run needs the
-  // server's prompt reader token and a content editor; content editors read every run and step;
-  // ai_run_spend sums the costs between two times by account.
-  if (path === "/rest/v1/rpc/record_ai_run" && request.method === "POST") {
+  // #476: the prompt lab's run log, as 20261203000000_ai_runs.sql. start_ai_run (status running,
+  // before the model call) and finish_ai_run (ok or error, by the account that started it, once)
+  // need the server's prompt reader token and a content editor; content editors read every run
+  // and step; ai_run_spend sums the costs between two times by account.
+  const runWrite = path.match(/^\/rest\/v1\/rpc\/(start_ai_run|finish_ai_run)$/);
+  if (runWrite && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
     const editor = dataset && !dataset.deleted && ["admin", "writer"].includes(dataset.contentRole);
     const tokenOk = promptReaderToken.length > 0 && body.server_token === promptReaderToken;
     if (!tokenOk || !editor) {
       return json(response, 403, { code: "42501", message: "not allowed" });
     }
-    const run = body.run ?? {};
-    const features = aiFeatureState(dataset).features;
-    if (!features.some((row) => row.slug === run.feature_slug)) {
-      return json(response, 409, { code: "23503", message: "unknown feature" });
+    if (runWrite[1] === "start_ai_run") {
+      const run = body.run ?? {};
+      const features = aiFeatureState(dataset).features;
+      if (!features.some((row) => row.slug === run.feature_slug)) {
+        return json(response, 409, { code: "23503", message: "unknown feature" });
+      }
+      if (typeof run.stub !== "boolean") {
+        return json(response, 400, { code: "23502", message: "bad run" });
+      }
+      const id = randomUUID();
+      const fields = [
+        "feature_slug",
+        "prompt_key",
+        "prompt_source",
+        "prompt_version",
+        "pasted_text",
+        "sample_id",
+        "model",
+        "input",
+        "stub",
+      ];
+      aiRuns.push({
+        id,
+        run_by: dataset.user.id,
+        run_at: new Date().toISOString(),
+        finished_at: null,
+        ...Object.fromEntries(fields.map((name) => [name, run[name] ?? null])),
+        output: null,
+        input_tokens: null,
+        output_tokens: null,
+        cost: null,
+        status: "running",
+        error_reason: null,
+      });
+      return json(response, 200, id);
     }
-    if (!["ok", "error"].includes(run.status) || typeof run.stub !== "boolean") {
-      return json(response, 400, { code: "23514", message: "bad run" });
+    const result = body.result ?? {};
+    if (!["ok", "error"].includes(result.status)) {
+      return json(response, 400, { code: "22023", message: "a run ends as ok or error" });
     }
-    const id = randomUUID();
-    const { steps, ...fields } = run;
-    aiRuns.push({ id, run_by: dataset.user.id, run_at: new Date().toISOString(), ...fields });
-    for (const step of Array.isArray(steps) ? steps : []) aiRunSteps.push({ run_id: id, ...step });
-    return json(response, 200, id);
+    const row = aiRuns.find(
+      (item) =>
+        item.id === body.run_id && item.run_by === dataset.user.id && item.status === "running",
+    );
+    if (!row) return json(response, 404, { code: "P0002", message: "no running run" });
+    for (const name of ["output", "input_tokens", "output_tokens", "cost", "status"]) {
+      row[name] = result[name] ?? null;
+    }
+    row.error_reason = result.error_reason ?? null;
+    row.finished_at = new Date().toISOString();
+    const steps = Array.isArray(result.steps) ? result.steps : [];
+    for (const step of steps) aiRunSteps.push({ run_id: row.id, ...step });
+    return json(response, 204);
   }
 
   if (path === "/rest/v1/rpc/ai_run_spend" && request.method === "POST") {
@@ -1252,9 +1296,11 @@ createServer(async (request, response) => {
           [...datasets.values()].find((item) => item.user?.id === run.run_by)?.user?.email ?? null,
         runs: 0,
         unpriced_runs: 0,
+        running_runs: 0,
         cost: 0,
       };
       row.runs += 1;
+      if (run.status === "running") row.running_runs += 1;
       if (run.cost === null || run.cost === undefined) row.unpriced_runs += 1;
       else row.cost += Number(run.cost);
       byUser.set(run.run_by, row);

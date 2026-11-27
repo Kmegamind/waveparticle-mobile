@@ -279,19 +279,38 @@ export const NEW_SLUGS = [
 ];
 
 /**
- * The undo: removes the 12 new rows (their history and test runs go with them; they had none before
- * the seed) and empties the registry fields of the Runtime rows that the seed filled, back to the
- * state the migration left them in. A Runtime row whose fields or example were saved in the admin
- * after the seed (fields_updated_at or example_set_at set) is left as it is.
+ * The undo: removes the 12 new rows (their field, example and status history and imported test
+ * runs go with them, by cascade) and empties the registry fields of the Runtime rows that the seed
+ * filled, back to the state the migration left them in. A Runtime row whose fields or example were
+ * saved in the admin after the seed (fields_updated_at or example_set_at set) is left as it is.
+ *
+ * Prompt lab runs (public.ai_runs, #476) do NOT go with them: that foreign key has no cascade, so
+ * the run log (the only guard on spending) is kept. Once one of the 12 rows has a run, the undo
+ * stops at its first line, before anything is deleted, and names the rows. Deleting those runs
+ * first is an owner decision and loses their spend history (docs/api/ai-runs.md).
  */
 export function registryUndoSql() {
   const runtime = Object.values(RUNTIME_SLUGS)
     .map((slug) => `'${slug}'`)
     .join(", ");
+  const slugs = NEW_SLUGS.map((slug) => `'${slug}'`).join(", ");
   return [
     "-- Undo of scripts/ai-features/registry-seed.mjs (#473).",
+    "-- It stops before any change when one of the 12 rows has prompt lab runs (public.ai_runs,",
+    "-- #476): those runs are kept on purpose (no cascade). See docs/api/ai-runs.md.",
     "begin;",
-    `delete from public.ai_features where slug in (${NEW_SLUGS.map((slug) => `'${slug}'`).join(", ")});`,
+    "do $$",
+    "declare used text;",
+    "begin",
+    "  if to_regclass('public.ai_runs') is not null then",
+    `    execute 'select string_agg(distinct feature_slug, '', '') from public.ai_runs where feature_slug in (${slugs.replace(/'/g, "''")})' into used;`,
+    "    if used is not null then",
+    "      raise exception 'These rows have prompt lab runs and are kept: %. Export and delete their runs first (owner decision; loses spend history).', used;",
+    "    end if;",
+    "  end if;",
+    "end;",
+    "$$;",
+    `delete from public.ai_features where slug in (${slugs});`,
     "update public.ai_features",
     `set ${Object.values(TEXT_FIELDS)
       .map((column) => `${column} = ''`)

@@ -75,6 +75,8 @@ test("test_476_a_writer_runs_a_prompt_and_the_run_is_recorded_with_tokens_and_co
     error_reason: null,
   });
   expect(typeof runs[0].input).toBe("string");
+  // Started before the call (status running), then ended.
+  expect(typeof runs[0].finished_at).toBe("string");
 });
 
 test("test_476_a_model_error_is_recorded_with_status_error", async ({ page, context }) => {
@@ -110,8 +112,8 @@ test("test_476_an_app_user_is_refused_and_nothing_is_recorded", async ({ page, c
   // The admin's proxy answers 404 to an account without a content role (#287).
   expect(response.status()).toBe(404);
   expect(await allRunCount(user.token)).toBe(0);
-  // Nor can the account write a run itself: record_ai_run needs the server's token.
-  const direct = await fetch(`${STUB_SUPABASE}/rest/v1/rpc/record_ai_run`, {
+  // Nor can the account write a run itself: start_ai_run needs the server's token.
+  const direct = await fetch(`${STUB_SUPABASE}/rest/v1/rpc/start_ai_run`, {
     method: "POST",
     headers: { authorization: `Bearer ${user.token}`, "content-type": "application/json" },
     body: JSON.stringify({ server_token: "guess", run: {} }),
@@ -126,7 +128,7 @@ test("test_476_anon_is_refused", async ({ page }) => {
 
 test("test_476_a_writer_cannot_record_a_run_without_the_server", async ({ page, context }) => {
   const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
-  const direct = await fetch(`${STUB_SUPABASE}/rest/v1/rpc/record_ai_run`, {
+  const direct = await fetch(`${STUB_SUPABASE}/rest/v1/rpc/start_ai_run`, {
     method: "POST",
     headers: { authorization: `Bearer ${writer.token}`, "content-type": "application/json" },
     body: JSON.stringify({
@@ -135,5 +137,19 @@ test("test_476_a_writer_cannot_record_a_run_without_the_server", async ({ page, 
     }),
   });
   expect(direct.status).toBe(403);
+  expect(await runsOf(writer.token, writer.userId)).toHaveLength(0);
+});
+
+test("test_476_a_request_from_another_site_is_refused_before_any_run", async ({
+  page,
+  context,
+}) => {
+  const writer = await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
+  const response = await page.request.post(RUN, {
+    data: body(),
+    headers: { origin: "https://evil.example.invalid", "sec-fetch-site": "cross-site" },
+  });
+  expect(response.status()).toBe(403);
+  expect(await response.json()).toEqual({ ok: false, error: "cross-origin" });
   expect(await runsOf(writer.token, writer.userId)).toHaveLength(0);
 });

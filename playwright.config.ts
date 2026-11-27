@@ -117,7 +117,7 @@ export default defineConfig({
             // #476: a test price for the stub model only (invented; no real price is written in
             // the repository), so the prompt lab's cost can be tested.
             AI_RUN_PRICES: JSON.stringify({
-              stub: { input_per_million_tokens: 1, output_per_million_tokens: 2 },
+              stub: { input_usd_per_million_tokens: 1, output_usd_per_million_tokens: 2 },
             }),
           },
           reuseExistingServer: !process.env.CI,
