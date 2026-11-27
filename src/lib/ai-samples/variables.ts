@@ -84,6 +84,33 @@ export function unfilledVariables(names: readonly string[]): string[] {
   return [...new Set(names)].filter((name) => !SAMPLE_VARIABLE_NAMES.includes(name));
 }
 
+/** The sample field that fills a variable ("Source excerpt" for {{story_source}}). */
+export function sampleFieldOf(name: string): string {
+  return (
+    SAMPLE_VARIABLES.find((row) => (row.variables as readonly string[]).includes(name))?.field ??
+    name
+  );
+}
+
+/**
+ * The prompt's {{variables}} that the sample leaves empty (its field holds nothing), each once, in
+ * order. With a sample, the Run is refused while this is not empty: no variable is optional for
+ * now (docs/decisions/0037).
+ */
+export function emptyVariables(
+  names: readonly string[],
+  values: Record<string, PromptValue>,
+): string[] {
+  return [...new Set(names)].filter(
+    (name) => Object.hasOwn(values, name) && (values[name] === null || values[name] === undefined),
+  );
+}
+
+/** One problem per empty variable: "This sample has no Source excerpt, which {{story_source}} needs." */
+export function emptyProblems(empty: string[]): string[] {
+  return empty.map((name) => `This sample has no ${sampleFieldOf(name)}, which {{${name}}} needs.`);
+}
+
 /** The {{variables}} of a prompt text, each once, in order (for the Run panel in the browser). */
 export function promptVariables(text: string): string[] {
   return placeholderNames(text);

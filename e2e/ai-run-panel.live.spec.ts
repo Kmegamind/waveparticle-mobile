@@ -231,6 +231,9 @@ test("test_477_a_run_the_database_did_not_record_is_shown_loudly", async ({ page
   await settings(page).getByRole("button", { name: "Run", exact: true }).click();
   const alert = answerPanel(page).getByRole("alert");
   await expect(alert).toContainText("The end of this run was not recorded.");
+  await expect(
+    answerPanel(page).getByRole("button", { name: "Set as candidate example" }),
+  ).toBeDisabled();
   await expect(answerPanel(page).locator('pre[aria-label="Answer"]')).toBeVisible();
   const [run] = await runsOf(admin.token);
   expect(run.status).toBe("running");
@@ -270,4 +273,26 @@ test("test_477_ac2_the_runs_page_lists_a_panel_run_with_its_input_and_output", a
   await expect(page.getByRole("table", { name: "Total by user, today" })).toContainText(
     `${admin.userId}@example.invalid`,
   );
+});
+
+test("test_477_ac1_a_sample_with_an_empty_field_the_prompt_needs_is_refused_before_the_model", async ({
+  page,
+  context,
+}) => {
+  const admin = await labAccount(page, context, "admin");
+  await page.goto("/admin/ai-features/p04_plan_historical/run");
+  // Run is enabled once the panel is ready (hydrated), so the choice below reaches its state.
+  await expect(settings(page).getByRole("button", { name: "Run", exact: true })).toBeEnabled();
+  // The invented dialogue scene has no Companion, which the prompt's {{name}} needs.
+  await settings(page).getByRole("combobox", { name: "Sample" }).selectOption("invented-dialogue");
+  await expect(settings(page).locator(".admin-run-empty")).toHaveText(
+    "This sample has no Companion, which {{name}} needs. The run stops before the model is called.",
+  );
+  await settings(page).getByRole("button", { name: "Run", exact: true }).click();
+  const refused = answerPanel(page).getByRole("alert");
+  await expect(refused).toContainText(
+    "The prompt could not be built, so the model was not called.",
+  );
+  await expect(refused).toContainText("This sample has no Companion, which {{name}} needs.");
+  expect(await runsOf(admin.token)).toHaveLength(0);
 });

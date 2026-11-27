@@ -432,9 +432,10 @@ const COMPONENTS: Component[] = [
     box: ["x", "width"],
   },
   {
+    // An empty log: every tile's label is one line, as the drawing's (no run without a cost).
     name: "runs: tile",
-    prototype: { page: "runsAdmin", selector: ".tile" },
-    live: { page: "runsAdmin", selector: ".admin-tile" },
+    prototype: { page: "runsEmpty", selector: ".tile" },
+    live: { page: "runsEmpty", selector: ".admin-tile" },
     box: ["width", "height"],
   },
   {
@@ -696,15 +697,6 @@ const EXCEPTIONS: Gate["exceptions"] = [
       "a line. The drawing's sample names are short. Font, colour, padding and borders are " +
       "compared; the log scrolls inside its panel as the drawing's .panel.scroll.",
   })),
-  {
-    component: "runs: tile",
-    properties: ["box height"],
-    reason:
-      "The spend tile's label also says how many runs of today have no cost ('· 2 without a " +
-      "cost', data), which wraps to a second line at 1024 px and the row of tiles grows with it. " +
-      "The drawing has no run without a cost. The tile's width, padding, border and type are " +
-      "compared.",
-  },
   {
     component: "Cancel, a second model, runs running state (not in COMPONENTS)",
     properties: ["(whole component)"],

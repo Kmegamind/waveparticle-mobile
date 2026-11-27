@@ -9,6 +9,7 @@ import { labModelFromEnv } from "@/lib/ai-runs/model";
 import { formatUsd } from "@/lib/ai-runs/panel";
 import { readRunSpend } from "@/lib/ai-runs/spend";
 import { readSampleLibrary } from "@/lib/ai-samples/library";
+import { sampleValues } from "@/lib/ai-samples/variables";
 import { readPromptVersions } from "@/lib/prompts/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Breadcrumb, PageHead } from "../../../admin-ui";
@@ -170,7 +171,14 @@ async function Run({ params }: { params: PageProps<"/admin/ai-features/[slug]/ru
           model={model}
           prompts={prompts}
           samples={
-            samples === null ? null : samples.map((item) => ({ id: item.id, name: item.name }))
+            samples === null
+              ? null
+              : samples.map((item) => {
+                  // The variables this sample leaves empty, so the panel can say so before Run.
+                  const values = sampleValues(item);
+                  const empty = Object.keys(values).filter((name) => values[name] === null);
+                  return { id: item.id, name: item.name, empty };
+                })
           }
           slug={slug}
           spendLine={spendLine}
