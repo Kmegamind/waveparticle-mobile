@@ -2,7 +2,7 @@ import type { ContentRole } from "@/lib/admin/roles";
 import { buildLabCall, isLabCallKey } from "@/lib/model-gateway/gateway";
 import type { PromptVersionRow } from "@/lib/prompts/admin";
 import type { PromptRow } from "@/lib/prompts/repository";
-import { sampleProblem } from "@/lib/ai-samples/variables";
+import { emptyProblems, emptyVariables, sampleProblem } from "@/lib/ai-samples/variables";
 import { placeholderNames, renderPrompt, type PromptValue } from "@/lib/prompts/template";
 import { runCost, type CostNote, type PriceTable } from "./cost";
 import type { LabModel } from "./model";
@@ -303,12 +303,18 @@ export async function runPrompt(request: RunRequest, deps: RunDeps): Promise<Run
     note = "";
   } else {
     if (sample) {
-      // #477 (docs/decisions/0037): a {{variable}} the sample does not fill stops the Run here,
-      // before the row and the model call, and is named.
+      // #477 (docs/decisions/0037): a {{variable}} the sample does not fill, or fills with an
+      // empty field, stops the Run here, before the row and the model call, and is named. No
+      // variable is optional for now: a half-filled prompt is never sent.
       const values = sample.values;
-      const missing = placeholderNames(body).filter((name) => !Object.hasOwn(values, name));
+      const names = placeholderNames(body);
+      const missing = names.filter((name) => !Object.hasOwn(values, name));
       if (missing.length > 0) {
         return { ok: false, error: "prompt-problem", problems: [sampleProblem(missing)] };
+      }
+      const empty = emptyVariables(names, values);
+      if (empty.length > 0) {
+        return { ok: false, error: "prompt-problem", problems: emptyProblems(empty) };
       }
       try {
         input = renderPrompt(body, values);

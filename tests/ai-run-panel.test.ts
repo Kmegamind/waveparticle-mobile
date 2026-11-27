@@ -25,6 +25,7 @@ import {
 } from "@/lib/ai-runs/run";
 import { librarySamples, type ExcerptRow, type SampleRow } from "@/lib/ai-samples/library";
 import {
+  emptyVariables,
   factsText,
   planText,
   readLabSample,
@@ -94,7 +95,7 @@ describe("#477 how a sample fills a prompt's {{variables}} (docs/decisions/0037)
     expect(SAMPLE_VARIABLES.map((row) => row.field)).toContain("Source excerpt");
   });
 
-  it("test_477_an_empty_field_drops_its_line", () => {
+  it("test_477_an_empty_field_gives_no_value", () => {
     const values = sampleValues(library());
     const prompt = "Persona: {{persona}}\nBackground: {{background}}\nTask: {{standing_task}}";
     expect(renderPrompt(prompt, values)).toBe("Persona: A careful maker of lamps.");
@@ -228,7 +229,7 @@ describe("#477 a Run with a sample of the library", () => {
   it("test_477_a_pipeline_prompt_is_filled_from_the_sample", async () => {
     const model = fakeModel();
     const d = deps(
-      "You write for {{character_name}} ({{mode}}).\n{{persona}}\nSource:\n{{story_source}}\nBackground: {{background}}",
+      "You write for {{character_name}} ({{mode}}).\n{{persona}}\nSource:\n{{story_source}}",
       model,
     );
     const result = await runPrompt(request(), d);
@@ -250,6 +251,27 @@ describe("#477 a Run with a sample of the library", () => {
     });
     expect(model.prompts).toHaveLength(0);
     expect(d.started).toBe(0);
+  });
+
+  it("test_477_an_empty_known_variable_stops_the_run_before_the_model", async () => {
+    const model = fakeModel();
+    const d = deps("{{persona}}\nSource:\n{{story_source}}\nPlan: {{plan}}\n{{facts}}", model);
+    const [bare] = librarySamples([{ ...SAMPLE, source_excerpt_id: null, plan: null }], []);
+    d.readSample = async (id: string) => ({ id, values: sampleValues(bare) });
+    expect(await runPrompt(request(), d)).toEqual({
+      ok: false,
+      error: "prompt-problem",
+      problems: [
+        "This sample has no Source excerpt, which {{story_source}} needs.",
+        "This sample has no Finished plan, which {{plan}} needs.",
+      ],
+    });
+    // Refused before the run's row is started and before anything reaches the model.
+    expect(d.started).toBe(0);
+    expect(model.prompts).toHaveLength(0);
+    expect(
+      emptyVariables(["persona", "story_source", "plan", "facts"], sampleValues(bare)),
+    ).toEqual(["story_source", "plan"]);
   });
 
   it("test_477_no_sample_sends_the_prompt_as_written", async () => {

@@ -11,6 +11,7 @@ import {
   type PromptSource,
 } from "@/lib/ai-runs/panel";
 import {
+  emptyProblems,
   promptVariables,
   SAMPLE_VARIABLE_NAMES,
   unfilledVariables,
@@ -33,7 +34,8 @@ export type PanelPrompt = {
   draft: { version: number; body: string } | null;
 };
 
-export type PanelSample = { id: string; name: string };
+/** A sample of the library, with the {{variables}} it leaves empty (src/lib/ai-samples/variables.ts). */
+export type PanelSample = { id: string; name: string; empty: string[] };
 
 type Settings = {
   key: string;
@@ -122,6 +124,11 @@ export function RunPanel({
         ? (prompt?.draft?.body ?? "")
         : (prompt?.published?.body ?? "");
   const unfilled = settings.sample === SAMPLE_NONE ? [] : unfilledVariables(promptVariables(body));
+  const sampleEmpty = samples?.find((item) => item.id === settings.sample)?.empty ?? [];
+  const emptyHere =
+    settings.sample === SAMPLE_NONE
+      ? []
+      : promptVariables(body).filter((name) => sampleEmpty.includes(name));
   const sourceReady =
     settings.source === "pasted"
       ? settings.pasted.trim() !== ""
@@ -346,6 +353,11 @@ export function RunPanel({
                 {SAMPLE_VARIABLE_NAMES.map((name) => `{{${name}}}`).join(", ")}.
               </p>
             ) : null}
+            {emptyHere.length > 0 ? (
+              <p className="admin-note admin-run-empty" role="note">
+                {emptyProblems(emptyHere).join(" ")} The run stops before the model is called.
+              </p>
+            ) : null}
             <label>
               Model
               <select
@@ -532,7 +544,7 @@ function AnswerView({
       <div className="admin-run-buttons">
         <button
           className="button-gray"
-          disabled={examplePending}
+          disabled={examplePending || !answer.recorded}
           onClick={() => onExample("candidate")}
           type="button"
         >
@@ -540,7 +552,7 @@ function AnswerView({
         </button>
         <button
           className="button-gray"
-          disabled={examplePending}
+          disabled={examplePending || !answer.recorded}
           onClick={() => onExample("confirmed")}
           type="button"
         >
@@ -548,7 +560,9 @@ function AnswerView({
         </button>
       </div>
       <p className="admin-src">
-        Confirm records who and when; a replaced confirmed example stays in history.
+        {answer.recorded
+          ? "Confirm records who and when; a replaced confirmed example stays in history."
+          : "An answer whose run was not recorded cannot become the example."}
       </p>
       {exampleMessage ? (
         <p className="admin-src" role="status">
