@@ -16,12 +16,13 @@ async function adminWithDrafts(
   context: BrowserContext,
   baseURL: string,
   role: "admin" | "writer" = "admin",
+  extraVersions = 0,
 ) {
   const account = await signIn(context, baseURL, undefined, { contentRole: role });
   const loaded = await fetch(`${STUB_SUPABASE}/__drafts`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ token: account.token, load: true }),
+    body: JSON.stringify({ token: account.token, load: true, extraVersions }),
   });
   if (!loaded.ok) throw new Error(`stub drafts failed: ${loaded.status}`);
   return account;
@@ -112,4 +113,27 @@ test("test_502_ac3_phones_get_no_snape_card_and_cannot_enter_him", async ({ page
   await page.goto("/companions");
   await page.getByRole("radio", { name: /Snape/ }).click();
   await expect(page.getByRole("button", { name: "Enter" })).toBeDisabled();
+});
+
+test("test_514_fix3_the_lists_read_every_card_past_the_apis_1000_row_limit", async ({
+  page,
+  context,
+}) => {
+  // 1100 later draft versions of one card: 1122 card rows, more than one API page, and the rows
+  // after them (the rest of the first story) would be cut off without paging.
+  await adminWithDrafts(context, baseUrlOf(page), "admin", 1100);
+  await page.goto("/admin/stories?companion=snape");
+  const first = page
+    .getByRole("table", { name: "Stories" })
+    .getByRole("row", { name: "Invented story 1" });
+  await expect(first.getByTestId("parts")).toHaveText("5 parts");
+  await expect(first.getByTestId("cards")).toHaveText("10 part cards and a background card");
+
+  await page.goto(`/admin/stories/${STORY}`);
+  const cards = page.getByRole("region", { name: "Cards" });
+  await expect(cards.locator("article")).toHaveCount(11);
+  await expect(page.getByRole("article", { name: `crd.snp.${STORY}.p5.c2` })).toBeVisible();
+  await expect(page.getByRole("article", { name: KEY })).toContainText(
+    "Invented later version 1101.",
+  );
 });

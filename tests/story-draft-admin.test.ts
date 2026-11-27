@@ -15,27 +15,47 @@ import { companionOfPage, readStoryCardsData } from "@/lib/story-cards/reader";
 const root = path.join(import.meta.dirname, "..");
 const read = (file: string) => readFileSync(path.join(root, file), "utf8");
 
-type Call = { table: string; filters: [string, string, unknown][] };
+type Call = { table: string; filters: [string, string, unknown][]; ranges: [number, number][] };
 
-/** A Supabase client stand-in that records each query's filters and answers from the rows. */
+/** The hosted API's row limit, which the stand-in enforces like Supabase does. */
+const CAP = 1000;
+
+/**
+ * A Supabase client stand-in that records each query's filters and answers from the rows, at most
+ * CAP rows per request (`range` picks the page), as the hosted API does.
+ */
 function fakeClient(tables: Record<string, Record<string, unknown>[]>) {
   const calls: Call[] = [];
   const client = {
     from(table: string) {
-      const call: Call = { table, filters: [] };
+      const call: Call = { table, filters: [], ranges: [] };
       calls.push(call);
+      let window: [number, number] = [0, CAP - 1];
       const builder = {
         select: () => builder,
         eq: (column: string, value: unknown) => {
           call.filters.push(["eq", column, value]);
           return builder;
         },
+        in: (column: string, values: unknown[]) => {
+          call.filters.push(["in", column, values]);
+          return builder;
+        },
         order: () => builder,
+        range: (from: number, to: number) => {
+          call.ranges.push([from, to]);
+          window = [from, Math.min(to, from + CAP - 1)];
+          return builder;
+        },
         then: (resolve: (answer: { data: unknown; error: null }) => void) =>
           resolve({
-            data: (tables[table] ?? []).filter((row) =>
-              call.filters.every(([, column, value]) => row[column] === value),
-            ),
+            data: (tables[table] ?? [])
+              .filter((row) =>
+                call.filters.every(([op, column, value]) =>
+                  op === "in" ? (value as unknown[]).includes(row[column]) : row[column] === value,
+                ),
+              )
+              .slice(window[0], window[1] + 1),
             error: null,
           }),
       };
@@ -97,6 +117,37 @@ describe("#502 AC2 the Stories pages read any Companion", () => {
     expect(snape.stories.map((row) => row.id)).toEqual(["inv-door"]);
     expect(snape.cards).toHaveLength(2);
     expect(snape.companion?.key_code).toBe("snp");
+  });
+
+  it("test_514_fix3_more_than_1000_card_rows_are_all_read_and_filtered_by_the_database", async () => {
+    // 1200 Snape card versions after 900 of another Companion: without paging or a filter, the
+    // hosted API's 1000-row limit would hide most of them.
+    const many = {
+      ...tables,
+      story_cards: [
+        ...Array.from({ length: 900 }, (_, at) =>
+          card({ key: `crd.opp.opp-one.p1.c${at + 1}`, story_id: "opp-one" }),
+        ),
+        ...Array.from({ length: 1200 }, (_, at) =>
+          card({ key: "crd.snp.inv-door.p1.c1", version: at + 1 }),
+        ),
+      ],
+    };
+    const { client, calls } = fakeClient(many);
+    const snape = await readStoryCardsData(client, undefined, "snape");
+    expect(snape.ok).toBe(true);
+    expect(snape.cards).toHaveLength(1200);
+    expect(snape.cards.every((row) => row.story_id === "inv-door")).toBe(true);
+    const cardCalls = calls.filter((call) => call.table === "story_cards");
+    // Filtered by his story ids in the database, two pages of at most 1000 rows.
+    expect(cardCalls.map((call) => call.filters)).toEqual([
+      [["in", "story_id", ["inv-door"]]],
+      [["in", "story_id", ["inv-door"]]],
+    ]);
+    expect(cardCalls.map((call) => call.ranges[0])).toEqual([
+      [0, 999],
+      [1000, 1999],
+    ]);
   });
 
   it("test_502_ac2_one_story_is_read_whatever_its_companion", async () => {

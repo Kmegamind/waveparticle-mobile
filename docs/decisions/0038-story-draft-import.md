@@ -17,15 +17,17 @@ The owner asked for the twelve Severus Snape stories in the app as drafts, so th
 | **Title and period written straight into the story row** | The admin lists the stories by period | They are stored as the shown text |
 
 ## Decision
-- `scripts/content/import-drafts.mjs <export folder> [--dry-run | --check | --undo | --source-check]` reads `app/companion.json`, `app/parts_and_cards.json`, `app/stories.json`, `app/stage0/<story>.stage0.json` and `<id>/periods.json`, refuses a folder inside the repository, connects to nothing and prints SQL.
+- `scripts/content/import-drafts.mjs <export folder> [--dry-run | --check | --undo | --source-check]` reads `app/companion.json`, `app/parts_and_cards.json`, `app/stories.json`, `app/stage0/<story>.stage0.json` and `<id>/periods.json`, refuses a folder inside the repository (compared by device and inode after following links), connects to nothing and prints SQL.
 - Cards are version 1 with `published = false` and no `published_at`; the goal sentence, "Who I am" and opening are version 1 drafts in `content_fields`; key moments are stored unconfirmed (KEY-UNCONFIRMED); the Companion row keeps `enter_href` null. Slices are `s<part>` (SLICE-SUBTASK). The plan page's merged titles are not stored.
 - The Companion's short fields (name, short name, tags, line, mode, key code) and his 300 px portrait are committed in `src/content/companions.json` and `public/companions/`, with `enterHref` null; the script refuses an export that disagrees with them.
-- The import refuses to print anything when a gap would have to be invented (an empty line, a missing stage 0 file or screen line, an empty key line, a missing period, a part without a title or cards, a missing background card, a slice other than `s<part>`), and refuses to run again once any card or field of the Companion was published. The undo refuses to remove anything when something was published.
+- The import refuses to print anything when a gap would have to be invented (an empty line, a missing stage 0 file or screen line, an empty key line, a missing period, a part without a title or cards, a missing background card, a slice other than `s<part>`), and refuses to run again once any card or field of the Companion was published. Before anything is published, a run with a changed export removes this Companion's stories, part titles and cards that the export no longer has; the dry run lists what the run adds, changes and removes, and the check compares both ways (#514 review). The undo removes every story of the Companion and refuses to remove anything when something was published.
 - `story_inputs.provenance.outsideRepository` is set to true, and the content export (`scripts/content/export.mjs`) never writes such a story back to the files.
 - The admin's Stories pages read any Companion: `/admin/stories?companion=<id>` (Oppenheimer by default) and `/admin/stories/<story>` for a story of any Companion. A list of cards none of which was ever published shows "Imported as drafts" instead of "Published first, read afterwards".
 
 ## Consequences
 - The owner runs the SQL in the SQL editor (dry run, run, check, undo); nothing is stored by the pull request.
-- Until each story has a scene table (the pause and rest-chat inputs of stage 0), the existing card check marks every Snape card "The scene check could not run" and an admin cannot publish it. Supplying the scene tables, or a decision to publish without them, is an owner decision.
+- Until each story has a scene table (the pause and rest-chat inputs of stage 0), the existing card check marks every Snape card "The scene check could not run" and an admin cannot publish it. That work moved to #515.
 - The phone's Companions list shows Snape (no Enter) once his Companion row exists, as it shows Moriarty.
-- The undo also removes the Companion row; `scripts/content/import.mjs` adds it back from `companions.json`.
+- The undo keeps the Companion row, because it may have been there before the run (`scripts/content/import.mjs` writes it from `companions.json`); it holds only the committed short fields with `enter_href` null.
+- The admin's Stories pages filter parts and cards by the Companion's story ids in the database and read them page by page, so the API's 1000-row limit never hides a card.
+- Publishing the Snape cards needs a scene table per story or an owner rule (#515).

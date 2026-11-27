@@ -4,9 +4,11 @@
 // temporary directory, outside the repository: every text here is short and invented, never a
 // text of the owner's files.
 //
-//   POST /__drafts { token, load: true | false }   that account reads Snape's invented draft
-//        stories, part titles, cards (version 1, never published) and draft fields with the seed
-//        rows, so other tests never see them; save_story_card_draft works on its cards.
+//   POST /__drafts { token, load: true | false, extraVersions?: n }   that account reads Snape's
+//        invented draft stories, part titles, cards (version 1, never published) and draft fields
+//        with the seed rows, so other tests never see them; save_story_card_draft works on its
+//        cards. extraVersions adds n later draft versions of one card (#514: more rows than one
+//        API page; the story tables answer at most 1000 rows per request, as the hosted API).
 //   get_story_content returns the invented stories for every reader (phones show only
 //        Oppenheimer's stories, and his Companion row has no Enter), as after the real import.
 
@@ -101,8 +103,19 @@ function inventedExport() {
 
 const rows = readDraftExport(inventedExport());
 
-/** The rows one account reads after loading the drafts, fresh each time. */
-export function draftTables() {
+/**
+ * The rows one account reads after loading the drafts, fresh each time. `extraVersions` adds that
+ * many later draft versions of the first story's first card (#514: more rows than one API page).
+ */
+export function draftTables(extraVersions = 0) {
+  const first = rows.cards.find((card) => card.kind === "part");
+  const extra = Array.from({ length: extraVersions }, (_, at) => ({
+    ...first,
+    version: at + 2,
+    body: `Invented later version ${at + 2}.`,
+    published: false,
+    published_at: null,
+  }));
   return {
     stories: rows.stories.map((story) => ({
       ...story,
@@ -112,12 +125,15 @@ export function draftTables() {
       path: "",
     })),
     story_parts: rows.parts.map((part) => ({ ...part })),
-    story_cards: rows.cards.map((card) => ({
-      ...card,
-      version: 1,
-      published: false,
-      published_at: null,
-    })),
+    story_cards: [
+      ...rows.cards.map((card) => ({
+        ...card,
+        version: 1,
+        published: false,
+        published_at: null,
+      })),
+      ...extra,
+    ],
     content_fields: rows.fields.map((field) => ({
       key: field.key,
       version: 1,

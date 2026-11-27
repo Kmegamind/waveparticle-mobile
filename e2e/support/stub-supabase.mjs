@@ -173,6 +173,8 @@ let contentFields = [];
 /** What get_story_content returns: without the two #309 columns, as the real function. */
 const without = (row, column) =>
   Object.fromEntries(Object.entries(row).filter(([name]) => name !== column));
+/** The hosted API's row limit per request (Supabase's default max_rows), for the story tables. */
+const STORY_PAGE_ROWS = 1000;
 /** #502: the invented draft stories of e2e/support/stub-drafts.mjs, as after the import. */
 const drafted = draftStoryContent();
 const storyContentDocument = () =>
@@ -1157,7 +1159,14 @@ createServer(async (request, response) => {
     const visible = open || editor ? [...all, ...own] : [];
     const params = [...url.searchParams.entries()];
     const found = visible.filter((row) => matches(row, params));
-    return json(response, 200, ordered(found, url.searchParams.get("order")));
+    // #514: at most 1000 rows per request, from `offset` (supabase-js `range`), as the hosted API.
+    const offset = Number(url.searchParams.get("offset") ?? 0);
+    const limit = Math.min(
+      Number(url.searchParams.get("limit") ?? STORY_PAGE_ROWS),
+      STORY_PAGE_ROWS,
+    );
+    const page = ordered(found, url.searchParams.get("order")).slice(offset, offset + limit);
+    return json(response, 200, page);
   }
 
   // #502: this account reads the invented draft import too (e2e/support/stub-drafts.mjs).
@@ -1165,7 +1174,7 @@ createServer(async (request, response) => {
     const body = (await readBody(request)) ?? {};
     const target = datasets.get(body.token);
     if (!target) return json(response, 404, { error: "no such token" });
-    target.drafts = body.load === true ? draftTables() : undefined;
+    target.drafts = body.load === true ? draftTables(Number(body.extraVersions ?? 0)) : undefined;
     return json(response, 200, { ok: true });
   }
 

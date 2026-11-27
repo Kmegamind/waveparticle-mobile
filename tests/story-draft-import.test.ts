@@ -1,5 +1,13 @@
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -208,32 +216,90 @@ describe("#502 the draft import script prints SQL and connects to nothing", () =
     const guard = sql.indexOf("do $guard$");
     expect(guard).toBeGreaterThan(-1);
     expect(guard).toBeLessThan(sql.indexOf("insert into"));
-    expect(sql).toMatch(/published_at is not null/);
+    expect(guard).toBeLessThan(sql.indexOf("delete from"));
+    // The same published condition as the undo, for cards and fields alike (review M3).
+    expect(sql).toMatch(/c\.published or c\.published_at is not null/);
+    expect(sql).toMatch(/f\.published or f\.published_at is not null/);
     expect(sql).toMatch(/companion_id <> 'snape'/);
   });
 
-  it("test_502_ac1_dry_run_ends_in_rollback", () => {
+  it("test_502_fix1_a_rerun_removes_this_companions_drafts_the_export_no_longer_has", () => {
+    // The export shrinks between runs: the second story and the second card of part 5 go.
+    const shrunk = run(
+      exportFolder(path.join(work, "shrunk"), (files) => {
+        files["app/stories.json"] = (files["app/stories.json"] as Json[]).slice(0, 1);
+        files["app/stage0/inv-second-room.stage0.json"] = undefined;
+        files["snape/periods.json"] = [{ name: "Invented period one", storyIds: [STORIES[0]] }];
+        const data = files["app/parts_and_cards.json"] as { stories: { cards: Json[] }[] };
+        data.stories = data.stories.slice(0, 1);
+        data.stories[0].cards = data.stories[0].cards.filter(
+          (card) => card.key !== "crd.snp.inv-first-door.p5.c2",
+        );
+      }),
+    );
+    expect(shrunk.status, shrunk.stderr).toBe(0);
+    const sql = shrunk.stdout;
+    // Comment lines left out, so each statement starts with its own verb.
+    const statements = sql.replace(/^--.*\n/gm, "").split(";\n");
+    const deletes = statements.filter((statement) =>
+      statement.trimStart().startsWith("delete from"),
+    );
+    // Every removal is scoped to this Companion; the guard has already stopped a published row.
+    expect(deletes).toHaveLength(3);
+    for (const statement of deletes) expect(statement).toContain("companion_id = 'snape'");
+    const [stories, parts, cards] = deletes;
+    expect(stories).toContain(
+      "delete from public.stories where companion_id = 'snape' and id not in ('inv-first-door')",
+    );
+    expect(parts).toContain(
+      "not in ('inv-first-door.p1', 'inv-first-door.p2', 'inv-first-door.p3', 'inv-first-door.p4', 'inv-first-door.p5')",
+    );
+    expect(cards).toContain("k.key not in (");
+    expect(cards).not.toContain("'crd.snp.inv-first-door.p5.c2'");
+    expect(cards).toContain("'crd.snp.inv-first-door.p5.c1'");
+    expect(cards).not.toContain("inv-second-room");
+    // Removals come before the writes, after the guard.
+    expect(sql.indexOf("delete from")).toBeLessThan(sql.indexOf("insert into"));
+  });
+
+  it("test_502_fix1_dry_run_lists_what_the_run_adds_changes_and_removes", () => {
     const dry = run(exportFolder(path.join(work, "dry")), "--dry-run");
     expect(dry.status, dry.stderr).toBe(0);
     expect(dry.stdout).toContain("DRY RUN");
     expect(dry.stdout.trimEnd().endsWith("rollback;")).toBe(true);
     expect(dry.stdout).not.toMatch(/^commit;$/m);
+    // A snapshot of this Companion's rows before any write, compared with them after the run.
+    const snapshot = dry.stdout.indexOf("create temporary table draft_import_before");
+    expect(snapshot).toBeGreaterThan(dry.stdout.indexOf("$guard$;"));
+    expect(snapshot).toBeLessThan(dry.stdout.indexOf("delete from"));
+    for (const column of ["added", "changed", "removed", "unchanged"]) {
+      expect(dry.stdout).toMatch(new RegExp(`as ${column}`));
+    }
+    expect(dry.stdout).toContain("full join draft_import_before");
   });
 
-  it("test_502_ac1_check_compares_by_md5_and_prints_no_text", () => {
+  it("test_502_ac1_check_compares_by_md5_both_ways_and_prints_no_text", () => {
     const check = run(exportFolder(path.join(work, "check")), "--check");
     expect(check.status, check.stderr).toBe(0);
     expect(check.stdout).toContain("'ok'");
     expect(check.stdout).toMatch(/md5\(/);
     expect(check.stdout).not.toContain("Invented");
     expect(check.stdout).not.toMatch(/\b(insert|update|delete|begin|commit)\b/i);
-    // Every card, part, story, inputs row and draft field is compared.
+    // Every card, part and draft field of the file is compared ...
     expect(check.stdout.match(/\('card', /g)).toHaveLength(22);
     expect(check.stdout.match(/\('part', /g)).toHaveLength(10);
     expect(check.stdout.match(/\('field', /g)).toHaveLength(6);
+    // ... and every row of this Companion in the database, so a row the file lost is reported.
+    expect(check.stdout).toContain("full join stored");
+    expect(check.stdout).toContain("'only in the database, not in the file'");
+    expect(check.stdout).toMatch(
+      /from public\.story_cards k join public\.stories s on s\.id = k\.story_id where s\.companion_id = 'snape'/,
+    );
+    // A published field differs, as a published card does (review M2).
+    expect(check.stdout).toMatch(/f\.published or f\.published_at is not null then 'published'/);
   });
 
-  it("test_502_ac1_undo_refuses_when_anything_was_published", () => {
+  it("test_502_fix1_undo_removes_every_story_of_the_companion_and_keeps_his_row", () => {
     const undo = run(exportFolder(path.join(work, "undo")), "--undo");
     expect(undo.status, undo.stderr).toBe(0);
     const sql = undo.stdout;
@@ -241,10 +307,12 @@ describe("#502 the draft import script prints SQL and connects to nothing", () =
     const guard = sql.indexOf("raise exception");
     expect(guard).toBeGreaterThan(-1);
     expect(guard).toBeLessThan(sql.indexOf("delete from"));
-    expect(sql).toMatch(/published or c\.published_at is not null/);
-    expect(sql).toContain(
-      "delete from public.stories where companion_id = 'snape' and id in ('inv-first-door', 'inv-second-room');",
-    );
+    expect(sql).toMatch(/c\.published or c\.published_at is not null/);
+    // Every story of his, not only the ids of the current export.
+    expect(sql).toContain("delete from public.stories where companion_id = 'snape';");
+    expect(sql).not.toMatch(/id in \(/);
+    // His Companion row stays: it may have been there before the run.
+    expect(sql).not.toMatch(/delete from public\.companions/);
     expect(sql.trimEnd().endsWith("commit;")).toBe(true);
   });
 
@@ -277,6 +345,27 @@ describe("#502 the import refuses folders in the repository and gaps it would ha
     expect(none.status).toBe(2);
     expect(none.stderr).toContain("Usage:");
     expect(read("scripts/content/import-drafts.mjs")).not.toMatch(/\/Users\/|Documents|2_Areas/);
+  });
+
+  it("test_502_fix2_refuses_a_link_into_the_repository_and_a_different_letter_case", () => {
+    // A symbolic link outside the repository that points into it.
+    const link = path.join(work, "link-into-repo");
+    symlinkSync(path.join(root, "tests", "fixtures"), link);
+    const linked = run(link);
+    expect(linked.status).toBe(1);
+    expect(linked.stderr).toContain("outside the repository");
+    // A link to a real export folder outside the repository is fine.
+    const real = exportFolder(path.join(work, "real-export"));
+    const outside = path.join(work, "link-outside");
+    symlinkSync(real, outside);
+    expect(run(outside).status).toBe(0);
+    // The same folder in other letters, on a disk that ignores case (macOS by default).
+    const upper = path.join(root, "tests", "fixtures").toUpperCase();
+    const caseless = existsSync(upper);
+    const cased = run(upper);
+    expect(cased.status).toBe(1);
+    expect(cased.stderr).toContain(caseless ? "outside the repository" : "no folder");
+    expect(cased.stdout).toBe("");
   });
 
   it("test_502_ac5_refuses_to_run_when_a_gap_would_have_to_be_invented", () => {
@@ -326,6 +415,11 @@ describe("#502 the import refuses folders in the repository and gaps it would ha
       ["empty-card", (f) => (decks(f)[0].cards[2].body = ""), "empty"],
       ["long-card", (f) => (decks(f)[0].cards[2].body = "x".repeat(2001)), "2000"],
       ["other-code", (f) => ((f["app/companion.json"] as Json).keyCode = "sev"), "keyCode"],
+      [
+        "other-name",
+        (f) => ((f["app/companion.json"] as Json).name = "Invented Name"),
+        "name differs",
+      ],
       ["unknown", (f) => ((f["app/companion.json"] as Json).id = "nobody"), "companions.json"],
       [
         "story-sets-differ",

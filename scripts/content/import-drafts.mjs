@@ -27,10 +27,14 @@
 // them; phones show only Oppenheimer's stories). The plan page's merged titles are not stored.
 // A gap the import would have to invent (an empty line, stage 0 file, key line, period, part
 // title, background card or part without cards) stops it before any SQL is printed.
+// Run again with a changed export (before anything is published), the run brings the database to
+// the export: this Companion's stories, part titles and cards the export no longer has are
+// removed. The dry run lists what the run adds, changes and removes; the check compares both
+// ways; the undo removes every story of this Companion and keeps his Companion row (#514 review).
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -74,13 +78,47 @@ function readJson(folder, file, problems) {
   }
 }
 
-/** Refuses a folder inside the repository: the texts never enter it. */
-function outsideRepository(folder) {
-  const resolved = path.resolve(folder);
-  if (resolved === REPO || resolved.startsWith(`${REPO}${path.sep}`)) {
-    throw new Error("the export folder stays outside the repository (#502)");
+/** A file system object's identity: the same folder by any path, link or letter case. */
+const identity = (file) => {
+  const stat = statSync(file);
+  return `${stat.dev}:${stat.ino}`;
+};
+
+/**
+ * The repository's working folders: this checkout, and the main checkout when this one is a
+ * git worktree (both hold tracked files).
+ */
+function repositoryRoots() {
+  const roots = [REPO];
+  const common = spawnSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], {
+    cwd: REPO,
+    encoding: "utf8",
+  });
+  if (common.status === 0 && common.stdout.trim()) roots.push(path.dirname(common.stdout.trim()));
+  return roots.filter((root) => existsSync(root));
+}
+
+/**
+ * Refuses a folder inside the repository: the texts never enter it. The folder's real path (links
+ * followed) is walked up to the root, and each folder on the way is compared with the repository
+ * roots by device and inode, so a symbolic link, a different letter case on a case-insensitive
+ * disk or the main checkout seen from a worktree cannot slip past.
+ */
+export function outsideRepository(folder) {
+  let real;
+  try {
+    real = realpathSync.native(path.resolve(folder));
+  } catch {
+    throw new Error(`no folder ${folder}`);
   }
-  return resolved;
+  const roots = new Set(repositoryRoots().map(identity));
+  for (let at = real; ; at = path.dirname(at)) {
+    if (roots.has(identity(at))) {
+      throw new Error("the export folder stays outside the repository (#502)");
+    }
+    if (path.dirname(at) === at) break;
+  }
+  return real;
 }
 
 /**
@@ -116,6 +154,8 @@ export function readDraftExport(folder, { repo = REPO } = {}) {
       `keyCode ${exported.keyCode} / ${decks?.key_code} does not match ${own.keyCode} in ${COMPANIONS_FILE}`,
     );
   }
+  if (exported.name !== own.name)
+    problems.push(`app/companion.json: name differs from ${COMPANIONS_FILE}`);
   if (exported.mode !== own.mode)
     problems.push(`mode ${exported.mode} does not match ${COMPANIONS_FILE}`);
   if (own.enterHref !== null) {
@@ -338,6 +378,13 @@ const literal = (value) => {
 };
 const ids = (rows) => rows.map((row) => `'${row.id}'`).join(", ");
 
+/** A published card or field of this Companion (any version, ever published). */
+const publishedCondition = (id) => [
+  "exists (select 1 from public.story_cards c join public.stories s on s.id = c.story_id",
+  `    where s.companion_id = '${id}' and (c.published or c.published_at is not null))`,
+  `    or exists (select 1 from public.content_fields f where f.companion_id = '${id}' and (f.published or f.published_at is not null))`,
+];
+
 /** Stops before any write when the import would overwrite something published or not his. */
 function guard(rows) {
   const id = rows.companion.id;
@@ -347,12 +394,8 @@ function guard(rows) {
     `  if exists (select 1 from public.stories where id in (${ids(rows.stories)}) and companion_id <> '${id}') then`,
     "    raise exception 'a story id of this import belongs to another Companion; nothing was written';",
     "  end if;",
-    "  if exists (select 1 from public.story_cards c join public.stories s on s.id = c.story_id",
-    `    where s.companion_id = '${id}' and (c.published or c.published_at is not null)) then`,
-    "    raise exception 'a card of this Companion was published: the import does not run again; edit in the admin';",
-    "  end if;",
-    `  if exists (select 1 from public.content_fields f where f.companion_id = '${id}' and f.published_at is not null) then`,
-    "    raise exception 'a field of this Companion was published: the import does not run again; edit in the admin';",
+    `  if ${publishedCondition(id).join("\n")} then`,
+    "    raise exception 'a card or field of this Companion was published: the import does not run again; edit in the admin';",
     "  end if;",
     "end",
     "$guard$;",
@@ -360,13 +403,51 @@ function guard(rows) {
 }
 
 /**
- * The SQL, in one transaction. Comments name ids and counts only, never a text. Running it again
- * before anything is published updates the same rows (later versions saved in the admin stay).
+ * Every row of this Companion that the import writes, as (kind, item, digest), read from the
+ * database: his Companion row, his stories, their inputs, part titles, cards (version 1) and the
+ * three draft fields per story (version 1). Built the same way as `digests` below.
+ * @param {string} id
+ */
+function currentRowsSql(id) {
+  const own = `join public.stories s on s.id = %.story_id where s.companion_id = '${id}'`;
+  return [
+    "  select 'companion'::text as kind, co.id as item,",
+    "      md5(concat_ws('|', co.name, co.short_name, co.tags, co.line, co.portrait, coalesce(co.enter_href, 'null'), co.mode, co.key_code)) as digest",
+    `    from public.companions co where co.id = '${id}'`,
+    "  union all",
+    "  select 'story', s.id, md5(concat_ws('|', s.companion_id, s.sequence::text, s.title, s.period, s.goal_short, s.who, s.opening))",
+    `    from public.stories s where s.companion_id = '${id}'`,
+    "  union all",
+    "  select 'inputs', i.story_id, md5(concat_ws('|', i.date, i.goal, i.facts::text, i.forbidden_terms::text, i.key_moments::text, i.provenance::text, i.stage_zero::text))",
+    `    from public.story_inputs i ${own.replace("%", "i")}`,
+    "  union all",
+    "  select 'part', p.story_id || '.p' || p.part, md5(p.title)",
+    `    from public.story_parts p ${own.replace("%", "p")}`,
+    "  union all",
+    "  select 'card', k.key, md5(concat_ws('|', k.story_id, k.kind, coalesce(k.part::text, ''), coalesce(k.slice, ''), k.position::text, k.body,",
+    "      case when k.published or k.published_at is not null then 'published' else 'draft' end))",
+    `    from public.story_cards k ${own.replace("%", "k")} and k.version = 1`,
+    "  union all",
+    "  select 'field', f.key, md5(concat_ws('|', f.story_id, f.field, f.body,",
+    "      case when f.published or f.published_at is not null then 'published' else 'draft' end))",
+    `    from public.content_fields f where f.companion_id = '${id}' and f.version = 1`,
+    "      and f.story_id is not null and f.field in ('goal', 'who', 'opening')",
+  ];
+}
+
+/**
+ * The SQL, in one transaction. Comments name ids and counts only, never a text. Run again before
+ * anything is published, it brings the database to the export: rows the export no longer has
+ * (stories, part titles, cards of this Companion only) are removed, the others written again.
+ * Later versions saved in the admin stay for the cards still in the export. The dry run lists,
+ * per kind, how many rows the run adds, changes and removes, then rolls back.
  * @param {ReturnType<typeof readDraftExport>} rows
  * @param {{ dryRun?: boolean }} [options]
  */
 export function importSql(rows, { dryRun = false } = {}) {
   const c = rows.companion;
+  const partItems = rows.parts.map((part) => `'${part.story_id}.p${part.part}'`).join(", ");
+  const cardKeys = rows.cards.map((card) => literal(card.key)).join(", ");
   const lines = [
     `-- Draft import of ${c.id} (scripts/content/import-drafts.mjs, #502): ${rows.stories.length} stories, ${rows.parts.length} part titles, ${rows.cards.length} cards, ${rows.fields.length} draft fields. Nothing is published.`,
     "-- Holds story text: run it in the SQL editor only; never save it in the repository.",
@@ -375,6 +456,20 @@ export function importSql(rows, { dryRun = false } = {}) {
     "set local standard_conforming_strings = on;",
     "set constraints all deferred;",
     ...guard(rows),
+    ...(dryRun
+      ? [
+          "create temporary table draft_import_before on commit drop as",
+          ...currentRowsSql(c.id),
+          ";",
+        ]
+      : []),
+    "-- What the export no longer has: this Companion's stories (their inputs, parts, cards and fields",
+    "-- go with them), part titles and cards. The guard above made sure none of it was published.",
+    `delete from public.stories where companion_id = '${c.id}' and id not in (${ids(rows.stories)});`,
+    "delete from public.story_parts p using public.stories s",
+    `  where s.id = p.story_id and s.companion_id = '${c.id}' and p.story_id || '.p' || p.part not in (${partItems});`,
+    "delete from public.story_cards k using public.stories s",
+    `  where s.id = k.story_id and s.companion_id = '${c.id}' and k.key not in (${cardKeys});`,
     "insert into public.companions (id, position, name, short_name, tags, line, portrait, enter_href, mode, key_code)",
     `  values ('${c.id}', ${c.position}, ${quote(c.name)}, ${quote(c.short_name)}, ${quote(c.tags)}, ${quote(c.line)}, ${quote(c.portrait)}, null, '${c.mode}', '${c.key_code}')`,
     "  on conflict (id) do update set line = excluded.line, portrait = excluded.portrait, enter_href = null, mode = excluded.mode, key_code = excluded.key_code, updated_at = now();",
@@ -419,13 +514,18 @@ export function importSql(rows, { dryRun = false } = {}) {
   }
   if (dryRun) {
     lines.push(
-      "select",
-      `  (select count(*) from public.stories where companion_id = '${c.id}') as stories,`,
-      `  (select count(*) from public.story_parts p join public.stories s on s.id = p.story_id where s.companion_id = '${c.id}') as part_titles,`,
-      `  (select count(*) from public.story_cards k join public.stories s on s.id = k.story_id where s.companion_id = '${c.id}') as cards,`,
-      `  (select count(*) from public.story_cards k join public.stories s on s.id = k.story_id where s.companion_id = '${c.id}' and k.published) as published_cards,`,
-      `  (select count(*) from public.content_fields where companion_id = '${c.id}' and not published) as draft_fields,`,
-      `  (select enter_href from public.companions where id = '${c.id}') as enter_href;`,
+      "-- What the run would add, change and remove, per kind (a Companion row added means it was",
+      "-- not in the database before the run).",
+      "with after as (",
+      ...currentRowsSql(c.id),
+      ")",
+      "select coalesce(a.kind, b.kind) as kind,",
+      "  count(*) filter (where b.item is null) as added,",
+      "  count(*) filter (where a.item is not null and b.item is not null and a.digest <> b.digest) as changed,",
+      "  count(*) filter (where a.item is null) as removed,",
+      "  count(*) filter (where a.digest = b.digest) as unchanged",
+      "from after a full join draft_import_before b on b.kind = a.kind and b.item = a.item",
+      "group by 1 order by 1;",
       "rollback;",
       "",
     );
@@ -435,10 +535,12 @@ export function importSql(rows, { dryRun = false } = {}) {
   return lines.join("\n");
 }
 
-/** The md5 of each stored item, built the same way as the check query builds it in Postgres. */
+/** The md5 of each stored item, built the same way as `currentRowsSql` builds it in Postgres. */
 const digests = {
-  companion: (c) => md5([c.line, c.portrait, "null", c.mode, c.key_code].join("|")),
-  story: (s, companionId) => md5([companionId, String(s.sequence), s.title, s.period].join("|")),
+  companion: (c) =>
+    md5([c.name, c.short_name, c.tags, c.line, c.portrait, "null", c.mode, c.key_code].join("|")),
+  story: (s, companionId) =>
+    md5([companionId, String(s.sequence), s.title, s.period, "", "", ""].join("|")),
   inputs: (i) =>
     md5(
       [i.date, i.goal, i.facts, i.forbidden_terms, i.key_moments, i.provenance, i.stage_zero].join(
@@ -458,13 +560,14 @@ const digests = {
         "draft",
       ].join("|"),
     ),
-  field: (f) => md5(f.body),
+  field: (f) => md5([f.story_id, f.field, f.body, "draft"].join("|")),
 };
 
 /**
- * A read-only SELECT: one row per stored item (the Companion, each story, its inputs, each part
- * title, each card's version 1 and each draft field) saying ok, missing or differs. Only ids and
- * md5 sums are printed, never a text. A card that was published says "differs".
+ * A read-only SELECT comparing the database with the export, both ways: one row per item of
+ * either, saying ok, missing (in the file, not in the database), "only in the database" (a row of
+ * this Companion the file no longer has) or "differs from the file" (a published card or field
+ * differs too). Only ids and md5 sums are printed, never a text.
  * @param {ReturnType<typeof readDraftExport>} rows
  */
 export function checkSql(rows) {
@@ -478,40 +581,29 @@ export function checkSql(rows) {
     ...rows.fields.map((f) => `('field', '${f.key}', '${digests.field(f)}')`),
   ];
   return [
-    `-- Read only: compares the draft import of ${c.id} with the export folder (#502). Every row should say ok.`,
+    `-- Read only: compares the draft import of ${c.id} with the export folder, both ways (#502). Every row should say ok.`,
     "with expected (kind, item, digest) as (values",
     expected.map((row) => `  ${row}`).join(",\n"),
+    "), stored as (",
+    ...currentRowsSql(c.id),
     ")",
-    "select x.kind, x.item,",
-    "  case when a.digest is null then 'missing' when a.digest <> x.digest then 'differs from the file' else 'ok' end as result",
-    "from expected x",
-    "left join lateral (",
-    "  select md5(concat_ws('|', co.line, co.portrait, coalesce(co.enter_href, 'null'), co.mode, co.key_code)) as digest",
-    "    from public.companions co where x.kind = 'companion' and co.id = x.item",
-    "  union all",
-    "  select md5(concat_ws('|', s.companion_id, s.sequence::text, s.title, s.period))",
-    "    from public.stories s where x.kind = 'story' and s.id = x.item",
-    "  union all",
-    "  select md5(concat_ws('|', i.date, i.goal, i.facts::text, i.forbidden_terms::text, i.key_moments::text, i.provenance::text, i.stage_zero::text))",
-    "    from public.story_inputs i where x.kind = 'inputs' and i.story_id = x.item",
-    "  union all",
-    "  select md5(p.title) from public.story_parts p where x.kind = 'part' and p.story_id || '.p' || p.part = x.item",
-    "  union all",
-    "  select md5(concat_ws('|', k.story_id, k.kind, coalesce(k.part::text, ''), coalesce(k.slice, ''), k.position::text, k.body,",
-    "      case when k.published or k.published_at is not null then 'published' else 'draft' end))",
-    "    from public.story_cards k where x.kind = 'card' and k.key = x.item and k.version = 1",
-    "  union all",
-    "  select md5(f.body) from public.content_fields f where x.kind = 'field' and f.key = x.item and f.version = 1",
-    ") a on true",
-    "order by x.kind, x.item;",
+    "select coalesce(x.kind, s.kind) as kind, coalesce(x.item, s.item) as item,",
+    "  case when s.item is null then 'missing'",
+    "    when x.item is null then 'only in the database, not in the file'",
+    "    when s.digest <> x.digest then 'differs from the file'",
+    "    else 'ok' end as result",
+    "from expected x full join stored s on s.kind = x.kind and s.item = x.item",
+    "order by 1, 2;",
     "",
   ].join("\n");
 }
 
 /**
- * The undo: removes the Companion's imported stories (their inputs, parts, cards and fields go
- * with them) and his Companion row. It stops with an error, and removes nothing, when a card or a
- * field of his was ever published.
+ * The undo: removes every story of this Companion (their inputs, parts, cards and fields go with
+ * them), whichever export they came from. It stops with an error, and removes nothing, when a
+ * card or a field of his was ever published. His Companion row stays: it may have been there
+ * before the import (scripts/content/import.mjs writes it from companions.json), and it holds only
+ * the committed short fields with enter_href null.
  * @param {ReturnType<typeof readDraftExport>} rows
  */
 export function undoSql(rows) {
@@ -521,15 +613,13 @@ export function undoSql(rows) {
     "begin;",
     "do $guard$",
     "begin",
-    "  if exists (select 1 from public.story_cards c join public.stories s on s.id = c.story_id",
-    `    where s.companion_id = '${id}' and (c.published or c.published_at is not null))`,
-    `    or exists (select 1 from public.content_fields f where f.companion_id = '${id}' and (f.published or f.published_at is not null)) then`,
+    `  if ${publishedCondition(id).join("\n")} then`,
     "    raise exception 'something of this Companion was published; the undo removes nothing';",
     "  end if;",
     "end",
     "$guard$;",
-    `delete from public.stories where companion_id = '${id}' and id in (${ids(rows.stories)});`,
-    `delete from public.companions where id = '${id}' and not exists (select 1 from public.stories where companion_id = '${id}');`,
+    `delete from public.stories where companion_id = '${id}';`,
+    "-- The Companion row stays (see the Human steps for removing it when the run added it).",
     "commit;",
     "",
   ].join("\n");
@@ -599,8 +689,9 @@ function sourceCheck(folder, base, extras) {
   // What this branch adds: the added lines of each changed tracked file, and every new file.
   // Lines already on the base branch are not this change's text.
   const files = {};
-  for (const file of lines(git("diff", "--name-only", "--diff-filter=AM", base))) {
-    files[file] = lines(git("diff", "-U0", "--no-color", base, "--", file))
+  const since = git("merge-base", base, "HEAD").trim() || base;
+  for (const file of lines(git("diff", "--name-only", "--diff-filter=AM", since))) {
+    files[file] = lines(git("diff", "-U0", "--no-color", since, "--", file))
       .filter((line) => line.startsWith("+") && !line.startsWith("+++"))
       .map((line) => line.slice(1))
       .join("\n");

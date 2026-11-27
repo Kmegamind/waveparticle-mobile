@@ -101,39 +101,77 @@ export async function readStoryCardsData(
 ): Promise<StoryCardsData> {
   try {
     let stories = client.from("stories").select("id, title, sequence, companion_id");
-    let parts = client.from("story_parts").select("story_id, part, title");
-    let cards = client.from("story_cards").select(CARD_COLUMNS);
-    if (storyId) {
-      stories = stories.eq("id", storyId);
-      parts = parts.eq("story_id", storyId);
-      cards = cards.eq("story_id", storyId);
-    } else {
-      stories = stories.eq("companion_id", companionId);
-    }
-    const [storyRows, partRows, cardRows, companionRows] = await Promise.all([
+    stories = storyId ? stories.eq("id", storyId) : stories.eq("companion_id", companionId);
+    const [storyRows, companionRows] = await Promise.all([
       stories.order("sequence"),
-      parts.order("part"),
-      cards.order("key"),
       client.from("companions").select("id, key_code, short_name"),
     ]);
-    const ok = !storyRows.error && !partRows.error && !cardRows.error;
     const rows = <T>(answer: { data: unknown; error: unknown }) =>
       !answer.error && Array.isArray(answer.data) ? (answer.data as T[]) : [];
     const own = rows<StoryRow>(storyRows);
-    const ids = new Set(own.map((row) => row.id));
+    const ids = own.map((row) => row.id);
+    // #514 review: only this Companion's parts and cards, filtered by the database and read page
+    // by page, so the API's row limit can never silently cut a list short.
+    const [parts, cards] = await Promise.all([
+      allRowsIn<StoryPartRow>(ids, (chunk) =>
+        client
+          .from("story_parts")
+          .select("story_id, part, title")
+          .in("story_id", chunk)
+          .order("story_id")
+          .order("part"),
+      ),
+      allRowsIn<StoryCardRow>(ids, (chunk) =>
+        client
+          .from("story_cards")
+          .select(CARD_COLUMNS)
+          .in("story_id", chunk)
+          .order("key")
+          .order("version"),
+      ),
+    ]);
     const companionOf = storyId ? (own[0]?.companion_id ?? null) : companionId;
     const companion =
       rows<StoriesCompanion>(companionRows).find((row) => row.id === companionOf) ?? null;
     return {
-      ok,
+      ok: !storyRows.error && parts !== null && cards !== null,
       companion: companion
         ? { id: companion.id, key_code: companion.key_code, short_name: companion.short_name }
         : null,
       stories: own,
-      parts: rows<StoryPartRow>(partRows).filter((row) => ids.has(row.story_id)),
-      cards: rows<StoryCardRow>(cardRows).filter((row) => ids.has(row.story_id)),
+      parts: parts ?? [],
+      cards: cards ?? [],
     };
   } catch {
     return { ok: false, companion: null, stories: [], parts: [], cards: [] };
   }
+}
+
+/** The API returns at most this many rows per request (Supabase's default `max_rows`). */
+export const PAGE_ROWS = 1000;
+/** Story ids per `in` filter, so a long list never makes one request URL too long. */
+const ID_CHUNK = 100;
+
+type Page = PromiseLike<{ data: unknown; error: unknown }>;
+type RangeQuery = { range(from: number, to: number): Page };
+
+/**
+ * Every row of a query filtered by story ids, chunk by chunk and page by page; null when any
+ * request fails, so a page never shows a list with rows silently missing.
+ */
+async function allRowsIn<T>(
+  ids: string[],
+  query: (chunk: string[]) => RangeQuery,
+): Promise<T[] | null> {
+  const all: T[] = [];
+  for (let start = 0; start < ids.length; start += ID_CHUNK) {
+    const chunk = ids.slice(start, start + ID_CHUNK);
+    for (let from = 0; ; from += PAGE_ROWS) {
+      const answer = await query(chunk).range(from, from + PAGE_ROWS - 1);
+      if (answer.error || !Array.isArray(answer.data)) return null;
+      all.push(...(answer.data as T[]));
+      if (answer.data.length < PAGE_ROWS) break;
+    }
+  }
+  return all;
 }
