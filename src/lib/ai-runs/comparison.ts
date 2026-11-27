@@ -138,6 +138,93 @@ export function hiddenNow(blind: boolean, answersA: PassAnswer[], answersB: Pass
   );
 }
 
+/** A side of the lab: "a" or "b", whichever panel shows it. */
+export type LabSide = "a" | "b";
+
+/**
+ * #478 fix round 1: the part of the lab's state that decides what is saved. Answers are kept by
+ * side ("a", "b"), never by panel position, so Blind's shuffle cannot swap them. `peeked` is true
+ * when Blind was unticked before every question was answered.
+ */
+export type AnswerState = {
+  blind: boolean;
+  peeked: boolean;
+  order: [LabSide, LabSide];
+  a: { runId: string | null; answers: PassAnswer[] };
+  b: { runId: string | null; answers: PassAnswer[] };
+};
+
+/**
+ * A blind comparison whose names are shown (every question of both sides answered, Blind kept
+ * on): its answers can no longer change, so a row saved with blind = true holds only answers
+ * given while the sides were hidden.
+ */
+export function answersLocked(state: AnswerState): boolean {
+  const count = state.a.answers.length;
+  return (
+    state.blind &&
+    !state.peeked &&
+    answersComplete(state.a.answers, count) &&
+    answersComplete(state.b.answers, count)
+  );
+}
+
+/** One answer of one side; unchanged (the same object) when the answers are locked. */
+export function setAnswer<T extends AnswerState>(
+  state: T,
+  side: LabSide,
+  index: number,
+  value: boolean,
+): T {
+  if (answersLocked(state)) return state;
+  const answers = state[side].answers.map((item, i) => (i === index ? value : item));
+  return { ...state, [side]: { ...state[side], answers } };
+}
+
+/**
+ * A side's new reply (after Run both or Retry): that side gets the run id and fresh answers; the
+ * other side keeps the answers given meanwhile.
+ */
+export function withSideReply<T extends AnswerState>(
+  state: T,
+  side: LabSide,
+  runId: string | null,
+): T {
+  return {
+    ...state,
+    [side]: { ...state[side], runId, answers: state[side].answers.map(() => null) },
+  };
+}
+
+/** What Save result sends: side A's answers with run A, side B's with run B; null until ready. */
+export function comparisonWrite(state: AnswerState): ComparisonWrite | null {
+  const { a, b } = state;
+  const count = a.answers.length;
+  if (!a.runId || !b.runId) return null;
+  if (!answersComplete(a.answers, count) || !answersComplete(b.answers, count)) return null;
+  return {
+    runA: a.runId,
+    runB: b.runId,
+    blind: state.blind && !state.peeked,
+    answersA: a.answers as boolean[],
+    answersB: b.answers as boolean[],
+  };
+}
+
+/**
+ * The model line of a side's answer: "shown" when the names are shown; while hidden, "stub" when
+ * both sides are the stub (the marker tells nothing apart), else "hidden" (one neutral line), so
+ * the marker cannot say which side is which.
+ */
+export function hiddenModelLabel(
+  hidden: boolean,
+  stubA: boolean,
+  stubB: boolean,
+): "shown" | "stub" | "hidden" {
+  if (!hidden) return "shown";
+  return stubA && stubB ? "stub" : "hidden";
+}
+
 /** What the lab saves: the two runs, whether the sides were hidden, and the answers of each. */
 export type ComparisonWrite = {
   runA: string;

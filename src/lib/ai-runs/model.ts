@@ -6,7 +6,7 @@ import { createHttpModelCall, type ModelCall } from "@/lib/model-gateway/http";
 // fields, an answer, an error or the run log.
 
 export type LabModel = {
-  /** The configured model name (MODEL_NAME); the only model the lab offers for now. */
+  /** The configured model name: MODEL_NAME, or LAB_MODEL_2_NAME for the lab's second model. */
   name: string;
   /** True for the test stub model (e2e/support/stub-model.mjs): every test and e2e run. */
   stub: boolean;
