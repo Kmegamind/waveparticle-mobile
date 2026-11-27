@@ -85,7 +85,8 @@ export async function readTestRuns(
 
 /** "Pause message (stuck_story + pause_predicament)" → "Pause message". */
 export function featureName(title: string): string {
-  return title.replace(/\s*\([^)]*\)\s*$/, "") || title;
+  // The last bracket group holds the prompt keys; it never holds a "(" itself (#475).
+  return title.replace(/\s*\([^()]*\)\s*$/, "") || title;
 }
 
 /** A run time as "2026-11-25 20:15" in UTC. */

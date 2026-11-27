@@ -77,6 +77,7 @@ export type FeatureWriteError =
   // #475: the registry editor.
   | "name-empty"
   | "name-brackets"
+  | "name-unbalanced"
   | "name-too-long"
   | "field-too-long"
   | "example-needs-text"

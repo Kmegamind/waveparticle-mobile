@@ -61,6 +61,8 @@ as $$
 declare
   old public.ai_features%rowtype;
   keys text;
+  name_text text;
+  depth integer := 0;
   next_title text;
   saved_at timestamptz;
 begin
@@ -70,8 +72,24 @@ begin
   if new_name is null then
     raise exception 'a registry field is text, never null' using errcode = '22004';
   end if;
-  if btrim(new_name) = '' then
+  -- Trimmed of every white space, as the server's trim() (re-review R1-M1).
+  name_text := btrim(new_name, E' \t\r\n\f' || chr(11));
+  if name_text = '' then
     raise exception 'a feature needs a name' using errcode = '22023';
+  end if;
+  -- Every "(" is closed by a later ")": an unclosed one would join the prompt keys' group for good.
+  for i in 1 .. char_length(name_text) loop
+    if substr(name_text, i, 1) = '(' then
+      depth := depth + 1;
+    elsif substr(name_text, i, 1) = ')' then
+      depth := depth - 1;
+    end if;
+    if depth < 0 then
+      exit;
+    end if;
+  end loop;
+  if depth <> 0 then
+    raise exception 'the brackets of a name do not balance' using errcode = '22023';
   end if;
 
   -- Locks the row, so two saves of one feature run one after the other.
@@ -85,15 +103,16 @@ begin
   end if;
 
   -- The bracket part of the title (" (plan_split)"), kept as it is (AI-PAGE-TITLES).
-  keys := coalesce(substring(old.title from '\s*\([^)]*\)\s*$'), '');
+  -- The group holds no "(" itself, so a name's own brackets never join it.
+  keys := coalesce(substring(old.title from '\s*\([^()]*\)\s*$'), '');
   -- A name may hold brackets, also at its end ("Plan (historical)"): the prompt keys follow it, and
   -- the page takes only the last bracket group as the keys. Without a keys group in the title, a
   -- name ending in brackets would lose that end on the page, so it is refused.
-  if keys = '' and btrim(new_name) ~ '\([^)]*\)$' then
+  if keys = '' and name_text ~ '\([^()]*\)$' then
     raise exception 'a name ends in brackets but the title has no prompt keys after it'
       using errcode = '22023';
   end if;
-  next_title := btrim(new_name) || keys;
+  next_title := name_text || keys;
   if next_title is distinct from old.title then
     update public.ai_features set title = next_title where slug = target_feature;
     perform private.record_ai_feature_field(target_feature, 'title',

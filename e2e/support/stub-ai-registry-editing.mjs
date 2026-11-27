@@ -39,6 +39,16 @@ export async function registryEditingRoute(ctx) {
       json(response, 400, { code: "22023", message: "a feature needs a name" });
       return true;
     }
+    // As the database: every "(" of the name is closed by a later ")".
+    let depth = 0;
+    for (const character of body.new_name) {
+      depth += character === "(" ? 1 : character === ")" ? -1 : 0;
+      if (depth < 0) break;
+    }
+    if (depth !== 0) {
+      json(response, 400, { code: "22023", message: "the brackets of a name do not balance" });
+      return true;
+    }
     if (values.some((value, index) => value.length > ctx.fieldMax[index])) {
       json(response, 400, { code: "23514", message: "violates check constraint" });
       return true;
@@ -52,9 +62,9 @@ export async function registryEditingRoute(ctx) {
       json(response, 409, { code: "40001", message: "saved after it was loaded" });
       return true;
     }
-    const keys = feature.title.match(/\s*\([^)]*\)\s*$/)?.[0] ?? "";
+    const keys = feature.title.match(/\s*\([^()]*\)\s*$/)?.[0] ?? "";
     // As the database: a name ending in brackets needs a keys group after it in the title.
-    if (keys === "" && /\([^)]*\)$/.test(body.new_name.trim())) {
+    if (keys === "" && /\([^()]*\)$/.test(body.new_name.trim())) {
       json(response, 400, {
         code: "22023",
         message: "a name ends in brackets with no keys after it",

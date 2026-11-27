@@ -1,7 +1,10 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { featureName } from "@/lib/ai-features/admin";
 import type { RegistryFeature } from "@/lib/ai-features/registry";
+import { readFeatureSeed } from "../scripts/ai-features/seed.mjs";
+import { readRegistrySeed } from "../scripts/ai-features/registry-seed.mjs";
 import {
   changeFeatureCategory,
   confirmFeatureExample,
@@ -194,8 +197,67 @@ describe("#475 AC1: an admin or a writer edits every field but status and catego
     ).toMatchObject({ ok: true });
     // The database refuses a name ending in brackets only when no keys group follows it.
     const body = fn(EDITING, "public.save_ai_feature_registry_fields");
-    expect(body).toMatch(/if keys = '' and btrim\(new_name\) ~ '\\\(\[\^\)\]\*\\\)\$' then/);
+    expect(body).toContain("if keys = '' and name_text ~ '\\([^()]*\\)$' then");
+    // Trimmed of every white space, as the server's trim() (re-review R1-M1).
+    expect(body).toContain("name_text := btrim(new_name, E' \\t\\r\\n\\f' || chr(11));");
     expect(body).not.toMatch(/new_name ~ '\[\(\)\]'/);
+  });
+
+  // Re-review R1-I1: an unclosed "(" made the keys group swallow part of the name for good.
+  it("test_475_ac1_a_name_whose_brackets_do_not_balance_is_refused", async () => {
+    const p04 = feature({
+      slug: "p04_plan_historical",
+      feature_id: "P-04",
+      title: "Plan (historical) (p04_plan_historical)",
+    });
+    for (const name of ["Plan (historical", "Plan historical)", "Plan )historical(", "Plan ((x)"]) {
+      const db = fakeDb("writer", p04);
+      expect(
+        await saveRegistryFields(write({ slug: "p04_plan_historical", name }), db.deps),
+        name,
+      ).toEqual({ ok: false, error: "name-unbalanced" });
+      expect(db.calls, name).toEqual([]);
+    }
+    const ok = fakeDb("writer", p04, { data: "2026-11-26T10:00:00Z" });
+    expect(
+      await saveRegistryFields(
+        write({ slug: "p04_plan_historical", name: "Plan (historical)" }),
+        ok.deps,
+      ),
+    ).toMatchObject({ ok: true });
+    // The database refuses it too, and its keys group holds no "(" (the same in the stand-in).
+    const body = fn(EDITING, "public.save_ai_feature_registry_fields");
+    expect(body).toMatch(/raise exception 'the brackets of a name do not balance'/);
+    expect(body).toContain("substring(old.title from '\\s*\\([^()]*\\)\\s*$')");
+    expect(
+      readFileSync(path.join(root, "e2e/support/stub-ai-registry-editing.mjs"), "utf8"),
+    ).toContain("/\\s*\\([^()]*\\)\\s*$/");
+  });
+
+  it("test_475_a_keys_group_never_holds_an_open_bracket", () => {
+    // A title already broken by an unclosed "(" reads its keys as the last whole group only.
+    expect(titleKeys("Plan (historical (p04_plan_historical)")).toBe(" (p04_plan_historical)");
+    expect(featureName("Plan (historical (p04_plan_historical)")).toBe("Plan (historical");
+  });
+
+  it("test_475_every_seed_title_parses_to_the_same_name_and_keys", () => {
+    // The 7 Runtime titles (docs/ai/AI_11) and the 19 registry rows of the fixture seed.
+    const titles = [
+      ...readFeatureSeed().map((row: { title: string }) => row.title),
+      ...readRegistrySeed(path.join(root, "tests/fixtures/ai-registry/registry-seed.json")).map(
+        (row: { title: string }) => row.title,
+      ),
+    ];
+    expect(titles.length).toBe(7 + 19);
+    const oldKeys = (title: string) => title.match(/\s*\([^)]*\)\s*$/)?.[0] ?? "";
+    const oldName = (title: string) => title.replace(/\s*\([^)]*\)\s*$/, "") || title;
+    for (const title of titles) {
+      expect(titleKeys(title), title).toBe(oldKeys(title));
+      expect(featureName(title), title).toBe(oldName(title));
+      expect(featureName(title) + titleKeys(title), title).toBe(title);
+      expect(titleKeys(title), title).not.toBe("");
+    }
+    expect(titles).toContain("Plan (historical) (p04_plan_historical)");
   });
 
   it("test_475_ac1_a_name_ending_in_brackets_is_refused_on_a_title_without_keys", async () => {

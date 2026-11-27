@@ -48,7 +48,18 @@ const SLUG = /^[a-z][a-z0-9_]*$/;
 
 /** The bracket part of a title (" (plan_split)"), which the editor never changes (AI-PAGE-TITLES). */
 export function titleKeys(title: string): string {
-  return title.match(/\s*\([^)]*\)\s*$/)?.[0] ?? "";
+  return title.match(/\s*\([^()]*\)\s*$/)?.[0] ?? "";
+}
+
+/** True when every "(" of a name is closed by a later ")" and no ")" comes first. */
+export function bracketsBalance(name: string): boolean {
+  let depth = 0;
+  for (const character of name) {
+    if (character === "(") depth += 1;
+    if (character === ")") depth -= 1;
+    if (depth < 0) return false;
+  }
+  return depth === 0;
 }
 
 function refusal(error: unknown): FeatureWriteResult {
@@ -88,6 +99,8 @@ export async function saveRegistryFields(
   }
   const name = write.name.trim();
   if (name === "") return { ok: false, error: "name-empty" };
+  // An unclosed "(" would join the prompt keys' group for good (re-review R1-I1).
+  if (!bracketsBalance(name)) return { ok: false, error: "name-unbalanced" };
   if (REGISTRY_TEXT_FIELDS.some((field) => write[field].length > REGISTRY_FIELD_MAX[field])) {
     return { ok: false, error: "field-too-long" };
   }
@@ -97,7 +110,7 @@ export async function saveRegistryFields(
   // A name may hold brackets, also at its end ("Plan (historical)"): the prompt keys follow it and
   // the page takes only the last bracket group as keys (featureName). On a title with no keys
   // group, a name ending in brackets would lose that end on the page: refused, as in the database.
-  if (titleKeys(feature.title) === "" && /\([^)]*\)$/.test(name)) {
+  if (titleKeys(feature.title) === "" && /\([^()]*\)$/.test(name)) {
     return { ok: false, error: "name-brackets" };
   }
   if ((name + titleKeys(feature.title)).length > TITLE_MAX_LENGTH) {

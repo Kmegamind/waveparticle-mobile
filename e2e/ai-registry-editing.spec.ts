@@ -121,6 +121,30 @@ test("test_475_ac1_a_name_with_brackets_is_saved_and_keeps_its_prompt_key", asyn
   expect((await readRow(writer.token, "p04_plan_historical")).title).toBe(
     "Plan (historic) (p04_plan_historical)",
   );
+
+  // Re-review R1-I1: an unclosed "(" is refused in the editor and by the stand-in (as the
+  // database), and the title stays whole.
+  await page.goto("/admin/ai-features/p04_plan_historical/fields");
+  await form(page).getByRole("textbox", { name: "Name" }).fill("Plan (historical");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByRole("status")).toHaveText("Close every bracket you open in the name.");
+  const row = await readRow(writer.token, "p04_plan_historical");
+  const direct = await stub("/rest/v1/rpc/save_ai_feature_registry_fields", writer.token, {
+    target_feature: "p04_plan_historical",
+    loaded_at: row.fields_updated_at,
+    new_name: "Plan (historical",
+    new_where_used: String(row.where_used),
+    new_requirement: String(row.requirement),
+    new_output_format: String(row.output_format),
+    new_design_rationale: String(row.design_rationale),
+    new_room_to_improve: String(row.room_to_improve),
+    new_notes: String(row.notes),
+  });
+  expect(direct.status).toBe(400);
+  expect((await direct.json()).code).toBe("22023");
+  expect((await readRow(writer.token, "p04_plan_historical")).title).toBe(
+    "Plan (historic) (p04_plan_historical)",
+  );
 });
 
 test("test_475_ac1_an_admin_edits_a_runtime_row_and_a_stale_editor_overwrites_nothing", async ({
