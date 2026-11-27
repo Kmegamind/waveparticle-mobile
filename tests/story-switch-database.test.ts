@@ -427,6 +427,75 @@ describe("#516 AC4 a switch-over of one story, end to end, and its undo", () => 
     expect(await attempt(db, switchOver(folder, THREE, ...by, "--undo"))).toBe("ok");
   });
 
+  it("test_522_r2_a_session_pinned_during_the_switch_over_keeps_every_card_after_the_undo", async () => {
+    // A phone session starts while the story is switched over and pins the cards it reads.
+    expect(await attempt(db, switchOver(folder, THREE, ...by))).toBe("ok");
+    const pinned = await phoneCards(db, THREE);
+    const versions = Object.fromEntries(pinned.map((card) => [card.key, card.version]));
+    const user = "00000000-0000-4000-8000-00000000a5e1";
+    const goal = "00000000-0000-4000-8000-00000000a5e2";
+    await db.exec(`insert into auth.users (id, email) values ('${user}', 'reader@invented.test');
+      insert into goals (id, user_id, title, text) values ('${goal}', '${user}', 'Invented', 'Invented');
+      insert into sessions (user_id, goal_id, step_count, seed, companion_id, story_id, card_versions)
+      values ('${user}', '${goal}', 2, 's', 'oppenheimer', '${THREE}', '${JSON.stringify(versions)}'::jsonb)`);
+    // The undo's dry run counts the versions it keeps for that session.
+    const report = await dryRunReport(db, switchOver(folder, THREE, ...by, "--undo", "--dry-run"));
+    expect(report.find((row) => row.what === "versions kept for a pinned session")?.count).toBe(
+      newKeys(STORIES[0]).length,
+    );
+    expect(await attempt(db, switchOver(folder, THREE, ...by, "--undo"))).toBe("ok");
+    // Phones starting now read the placeholders; the pinned session still reads every card.
+    expect(await phoneCards(db, THREE)).toEqual(phoneBefore[THREE]);
+    const still = (
+      await rows<{ doc: { cards: { key: string; version: number }[] } }>(
+        db,
+        `select get_story_cards('${READER_KEY}', '${THREE}', '${JSON.stringify(versions)}'::jsonb) as doc`,
+      )
+    )[0].doc.cards;
+    expect(Object.fromEntries(still.map((card) => [card.key, card.version]))).toEqual(versions);
+    // The kept versions are earlier versions now (published once, not published).
+    for (const [key, version] of Object.entries(versions)) {
+      const [row] = await rows<{ published: boolean; at: string | null }>(
+        db,
+        `select published, published_at::text at from story_cards where key = '${key}' and version = ${version}`,
+      );
+      expect(row.published).toBe(false);
+      expect(row.at).not.toBeNull();
+    }
+    // Clean up as if the session had ended long ago, so the later tests start from drafts.
+    await db.exec(`delete from sessions where user_id = '${user}'`);
+    for (const [key, version] of Object.entries(versions)) {
+      await db.exec(
+        `update story_cards set published_at = null, published_by = null where key = '${key}' and version = ${version}`,
+      );
+    }
+  });
+
+  it("test_522_r2_m2_a_version_published_before_the_switch_over_keeps_its_publish_time", async () => {
+    const key = `crd.opp.${FIVE}.p1.c1`;
+    const draft = (
+      await rows<{ v: number }>(db, `select max(version) v from story_cards where key = '${key}'`)
+    )[0].v;
+    // An admin published the new draft by hand earlier, then rolled back to the placeholder.
+    const earlier = "2026-11-20 10:00:00+00";
+    await db.exec(
+      `update story_cards set published_at = '${earlier}' where key = '${key}' and version = ${draft}`,
+    );
+    expect(await attempt(db, switchOver(folder, FIVE, ...by))).toBe("ok");
+    expect(await attempt(db, switchOver(folder, FIVE, ...by, "--undo"))).toBe("ok");
+    const [row] = await rows<{ at: string | null; published: boolean }>(
+      db,
+      `select published_at::text at, published from story_cards where key = '${key}' and version = ${draft}`,
+    );
+    expect(row.published).toBe(false);
+    expect(row.at).toBe(
+      (await rows<{ t: string }>(db, `select '${earlier}'::timestamptz::text t`))[0].t,
+    );
+    await db.exec(
+      `update story_cards set published_at = null where key = '${key}' and version = ${draft}`,
+    );
+  });
+
   it("test_516_the_import_undo_waits_for_a_switch_undo_and_removes_only_the_drafts", async () => {
     expect(await attempt(db, switchOver(folder, FOUR, ...by))).toBe("ok");
     expect(await attempt(db, keep(folder, "--undo"))).toMatch(/undo the switch-over/);

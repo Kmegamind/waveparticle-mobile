@@ -35,7 +35,11 @@ create table private.story_switches (
   cards_after jsonb not null check (jsonb_typeof(cards_after) = 'object'),
   -- [{ "part": n, "title": "..." }] in part order.
   parts_before jsonb not null check (jsonb_typeof(parts_before) = 'array'),
-  parts_after jsonb not null check (jsonb_typeof(parts_after) = 'array')
+  parts_after jsonb not null check (jsonb_typeof(parts_after) = 'array'),
+  -- Card key -> the earlier publish time of a version the switch-over published again (one that
+  -- was published before and rolled back past), so the undo restores it (#522 review).
+  earlier_published_at jsonb not null default '{}'::jsonb
+    check (jsonb_typeof(earlier_published_at) = 'object')
 );
 
 -- At most one switch-over of a story that is not undone.
