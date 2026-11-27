@@ -140,6 +140,7 @@ import { readStoryDecks, storyCardRows } from "../../scripts/story-cards/import.
 import { readFeatureSeed, RUNTIME_FEATURE_IDS, STATUSES } from "../../scripts/ai-features/seed.mjs";
 import { readRegistrySeed } from "../../scripts/ai-features/registry-seed.mjs";
 import { readPipelinePrompts } from "../../scripts/ai-features/import-pipeline-prompts.mjs";
+import { registryEditingRoute } from "./stub-ai-registry-editing.mjs";
 import { handleAiSamples } from "./stub-ai-samples.mjs";
 /** #473: the text fields save_ai_feature_fields writes, in its argument order, and their limits. */
 const REGISTRY_TEXT_FIELDS = [
@@ -1506,6 +1507,25 @@ createServer(async (request, response) => {
     feature.sections_updated_at = new Date().toISOString();
     feature.sections_updated_by = dataset.user.id;
     return json(response, 204);
+  }
+
+  // #475: the name and fields in one save, and who changed them (e2e/support/stub-ai-registry-editing.mjs).
+  if (
+    await registryEditingRoute({
+      path,
+      request,
+      response,
+      dataset,
+      datasets,
+      state: aiFeatureState(dataset),
+      readBody,
+      json,
+      record: recordAiFeatureField,
+      textFields: REGISTRY_TEXT_FIELDS,
+      fieldMax: REGISTRY_FIELD_MAX,
+    })
+  ) {
+    return;
   }
 
   // #473: the registry fields (editors), the example (editors) and the category (admin only).

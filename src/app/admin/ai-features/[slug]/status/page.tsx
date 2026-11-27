@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { readContentRole } from "@/lib/admin/roles";
 import { featureName } from "@/lib/ai-features/admin";
-import { editable, statusHistory } from "@/lib/ai-features/edit";
+import { statusHistory } from "@/lib/ai-features/edit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Breadcrumb, PageHead } from "../../../admin-ui";
 import { FeatureStatusPill } from "../../feature-ui";
@@ -27,8 +27,8 @@ export default async function AdminAiFeatureStatus({
     readPeople(client, slug),
     readContentRole(client),
   ]);
-  // #474: Pipeline and Quality gate rows are read only until #475.
-  if (feature === undefined || (feature && !editable(feature))) notFound();
+  // #475: an admin changes the status of every row.
+  if (feature === undefined) notFound();
   const name = feature ? featureName(feature.title) : slug;
   const crumbs = [
     { label: "AI rules" },
