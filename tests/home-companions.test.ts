@@ -20,9 +20,17 @@ const { CompanionsList, enterFor, reasonFor } = await import("@/app/companions/c
 const root = path.resolve(import.meta.dirname, "..");
 
 describe("#268 AC7 companion data", () => {
-  it("companions list holds Oppenheimer and Moriarty only", () => {
-    expect(COMPANIONS.map((companion) => companion.id)).toEqual(["oppenheimer", "moriarty"]);
-    const [opp, mor] = COMPANIONS;
+  it("companions list holds Oppenheimer, Moriarty and Snape, and only Oppenheimer can be entered", () => {
+    // #502: Snape is added like Moriarty, with no Enter (enterHref null) until the owner says so.
+    expect(COMPANIONS.map((companion) => companion.id)).toEqual([
+      "oppenheimer",
+      "moriarty",
+      "snape",
+    ]);
+    const [opp, mor, snp] = COMPANIONS;
+    expect(snp.name).toBe("Severus Snape");
+    expect(snp.portrait).toBe("/companions/snape.png");
+    expect(snp.enterHref).toBeNull();
     expect(opp.name).toBe("J. Robert Oppenheimer");
     expect(opp.tags).toBe("Brilliant · Eloquent · Haunted");
     expect(opp.enterHref).toBe("/companions/oppenheimer");
@@ -46,7 +54,7 @@ describe("#268 AC7 the Companions list (COMP)", () => {
   it("Companions shows one radio per companion and Enter starts disabled", () => {
     const html = renderToStaticMarkup(createElement(CompanionsList, { companions: COMPANIONS }));
     expect(html).toContain('role="radiogroup"');
-    expect(html.match(/role="radio"/g)).toHaveLength(2);
+    expect(html.match(/role="radio"/g)).toHaveLength(3);
     expect(html).toContain("J. Robert Oppenheimer");
     expect(html).toContain("Brilliant · Eloquent · Haunted");
     expect(html).toContain("Professor Moriarty");

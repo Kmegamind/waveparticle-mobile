@@ -21,6 +21,7 @@ describe("parseStoryContent (#284)", () => {
     expect(content.companions.map((companion) => companion.id)).toEqual([
       "oppenheimer",
       "moriarty",
+      "snape",
     ]);
     expect(content.companions[1]).toMatchObject({ shortName: "Moriarty", enterHref: null });
     expect(content.stories).toHaveLength(26);

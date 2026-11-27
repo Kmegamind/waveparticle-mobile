@@ -56,6 +56,7 @@ describe("story content seed (#284)", () => {
     expect(rows.companions.map((row: { id: string }) => row.id)).toEqual([
       "oppenheimer",
       "moriarty",
+      "snape",
     ]);
     expect(rows.stories).toHaveLength(26);
     expect(rows.storyInputs).toHaveLength(26);

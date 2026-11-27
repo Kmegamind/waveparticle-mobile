@@ -66,47 +66,74 @@ export async function storedCardProblems(
 // policies show story_parts and story_cards to content editors only. Server code only; the phone
 // screens never call this (they keep their current card source until a later issue).
 
+/** The Companion a Stories page shows: his id, key code (NAMING) and short name. */
+export type StoriesCompanion = { id: string; key_code: string; short_name: string };
+
 export type StoryCardsData = {
   ok: boolean;
+  /** The Companion of the stories read, or null when he cannot be read. */
+  companion: StoriesCompanion | null;
   stories: StoryRow[];
   parts: StoryPartRow[];
   cards: StoryCardRow[];
 };
 
-/** The Companion whose stories have cards. */
+/** The Companion whose stories the Stories list shows when the address names none. */
 export const COMPANION_ID = "oppenheimer";
 
+const COMPANION_PATTERN = /^[a-z][a-z0-9-]*$/;
+
+/** #502: the Companion of /admin/stories?companion=<id>; Oppenheimer when none or not an id. */
+export function companionOfPage(value: string | string[] | undefined): string {
+  const id = Array.isArray(value) ? value[0] : value;
+  return typeof id === "string" && COMPANION_PATTERN.test(id) ? id : COMPANION_ID;
+}
+
+/**
+ * One Companion's stories with their parts and cards (#502: any Companion, Oppenheimer by
+ * default), or one story whatever its Companion when `storyId` is given. Parts and cards of other
+ * Companions' stories are left out, so their drafts never count on this Companion's list.
+ */
 export async function readStoryCardsData(
   client: SupabaseClient,
   storyId?: string,
+  companionId: string = COMPANION_ID,
 ): Promise<StoryCardsData> {
   try {
-    let stories = client
-      .from("stories")
-      .select("id, title, sequence")
-      .eq("companion_id", COMPANION_ID);
+    let stories = client.from("stories").select("id, title, sequence, companion_id");
     let parts = client.from("story_parts").select("story_id, part, title");
     let cards = client.from("story_cards").select(CARD_COLUMNS);
     if (storyId) {
       stories = stories.eq("id", storyId);
       parts = parts.eq("story_id", storyId);
       cards = cards.eq("story_id", storyId);
+    } else {
+      stories = stories.eq("companion_id", companionId);
     }
-    const [storyRows, partRows, cardRows] = await Promise.all([
+    const [storyRows, partRows, cardRows, companionRows] = await Promise.all([
       stories.order("sequence"),
       parts.order("part"),
       cards.order("key"),
+      client.from("companions").select("id, key_code, short_name"),
     ]);
     const ok = !storyRows.error && !partRows.error && !cardRows.error;
     const rows = <T>(answer: { data: unknown; error: unknown }) =>
       !answer.error && Array.isArray(answer.data) ? (answer.data as T[]) : [];
+    const own = rows<StoryRow>(storyRows);
+    const ids = new Set(own.map((row) => row.id));
+    const companionOf = storyId ? (own[0]?.companion_id ?? null) : companionId;
+    const companion =
+      rows<StoriesCompanion>(companionRows).find((row) => row.id === companionOf) ?? null;
     return {
       ok,
-      stories: rows<StoryRow>(storyRows),
-      parts: rows<StoryPartRow>(partRows),
-      cards: rows<StoryCardRow>(cardRows),
+      companion: companion
+        ? { id: companion.id, key_code: companion.key_code, short_name: companion.short_name }
+        : null,
+      stories: own,
+      parts: rows<StoryPartRow>(partRows).filter((row) => ids.has(row.story_id)),
+      cards: rows<StoryCardRow>(cardRows).filter((row) => ids.has(row.story_id)),
     };
   } catch {
-    return { ok: false, stories: [], parts: [], cards: [] };
+    return { ok: false, companion: null, stories: [], parts: [], cards: [] };
   }
 }

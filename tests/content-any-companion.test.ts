@@ -127,14 +127,14 @@ describe("content import for any Companion (#302)", () => {
 
   it("test_302_ac7_imports_the_pipeline_shape_with_no_code_change", () => {
     const sql = importSql(readContentRows(seedWithSecondCharacter()));
-    expect(sql.match(/insert into public\.companions /g)).toHaveLength(3);
+    expect(sql.match(/insert into public\.companions /g)).toHaveLength(4);
     expect(sql.match(/insert into public\.stories /g)).toHaveLength(28);
     expect(sql).toMatch(/insert into public\.stories .*'tst-letter', 'testchar'/);
   });
 
   it("test_302_ac1_companion_option_prints_only_that_companions_stories", () => {
     const rows = readContentRows(seedWithSecondCharacter(), { companion: "testchar" });
-    expect(rows.companions).toHaveLength(3);
+    expect(rows.companions).toHaveLength(4);
     expect(rows.stories.map((row) => row.id)).toEqual(["tst-letter", "tst-falls"]);
     expect(rows.storyInputs.map((row) => row.story_id)).toEqual(["tst-letter", "tst-falls"]);
     expect(() => readContentRows(root, { companion: "nobody" })).toThrow(/nobody/);
@@ -169,6 +169,7 @@ describe("content import for any Companion (#302)", () => {
     ).toEqual([
       ["oppenheimer", "historical", "opp"],
       ["moriarty", "fictional", "mor"],
+      ["snape", "fictional", "snp"],
     ]);
     const sql = importSql(rows);
     expect(sql).toMatch(/insert into public\.companions \(.*mode, key_code.*\)/);
@@ -177,7 +178,7 @@ describe("content import for any Companion (#302)", () => {
   it("test_302_ac4_a_companion_without_mode_or_key_code_is_refused_by_name", () => {
     const directory = seedWithSecondCharacter();
     const companions = readJson(directory, CONTENT_FILES.companions);
-    delete companions[2].keyCode;
+    delete companions.find((row: { id: string }) => row.id === "testchar").keyCode;
     companions[1].mode = "legend";
     writeJson(directory, CONTENT_FILES.companions, companions);
     expect(() => readContentRows(directory)).toThrow(/moriarty: mode/);

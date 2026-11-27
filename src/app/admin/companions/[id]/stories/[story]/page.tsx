@@ -23,6 +23,9 @@ async function readInputs(storyId: string): Promise<StoryInputs | null> {
   }
 }
 
+/** #502: an input this story does not have yet. Nothing is invented in its place. */
+const NOT_WRITTEN = <span className="admin-note">Not written yet</span>;
+
 const textList = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 
@@ -51,6 +54,7 @@ export default async function AdminStoryFields({
     (stage.people ?? {}) as Record<string, { role?: unknown; line?: unknown }>,
   );
   const laterWords = textList((stage.scene as { laterWords?: unknown } | undefined)?.laterWords);
+  const scene = inputs?.scene ?? null;
 
   return (
     <>
@@ -114,29 +118,42 @@ export default async function AdminStoryFields({
                 </dd>
                 <dt>People</dt>
                 <dd>
-                  <ul>
-                    {people.map(([name, person]) => (
-                      <li key={name}>
-                        {name}
-                        {typeof person?.line === "string" ? `: ${person.line}` : ""}
-                      </li>
-                    ))}
-                  </ul>
+                  {people.length === 0 ? (
+                    NOT_WRITTEN
+                  ) : (
+                    <ul>
+                      {people.map(([name, person]) => (
+                        <li key={name}>
+                          {name}
+                          {typeof person?.line === "string" ? `: ${person.line}` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </dd>
                 <dt>Forbidden words</dt>
                 <dd>{inputs.forbiddenTerms.join(" · ") || "None"}</dd>
                 <dt>Later words</dt>
-                <dd>{laterWords.join(" · ") || "None"}</dd>
+                <dd>{scene ? laterWords.join(" · ") || "None" : NOT_WRITTEN}</dd>
+                <dt>Scene table (pause and rest-chat inputs)</dt>
+                <dd>
+                  {scene
+                    ? `${scene.present.join(" · ") || "No one present"}; pause prop: ${scene.pauseProp || "none"}`
+                    : NOT_WRITTEN}
+                </dd>
                 <dt>Key moments</dt>
                 <dd>
                   <ol>
                     {inputs.keySlices.map((slice) => (
                       <li key={slice.id}>
-                        {slice.keyLine} {slice.confirmed ? "(confirmed)" : "(not confirmed yet)"}
+                        {slice.keyLine || NOT_WRITTEN}{" "}
+                        {slice.confirmed ? "(confirmed)" : "(not confirmed yet)"}
                       </li>
                     ))}
                   </ol>
                 </dd>
+                <dt>Closing line and carried line</dt>
+                <dd>{NOT_WRITTEN}</dd>
               </dl>
             )}
             <p className="admin-history-note">Editing the model inputs comes later.</p>
