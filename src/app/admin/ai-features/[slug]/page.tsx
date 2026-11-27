@@ -167,6 +167,10 @@ async function FeatureDetail({
         actions={
           <>
             <RolePill role={admin ? "admin" : "writer"} />
+            {/* #477: the Run panel (drawing #reg-run); admin and writer both run. */}
+            <Link className="button-gray" href={`${base}/run`}>
+              Run
+            </Link>
             <Link className="button-gray" href={`${base}/fields`}>
               Edit fields
             </Link>

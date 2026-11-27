@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { readContentRole } from "@/lib/admin/roles";
+import { readLabSample } from "@/lib/ai-samples/variables";
 import { readPrices } from "@/lib/ai-runs/cost";
 import { labModelFromEnv } from "@/lib/ai-runs/model";
 import { RUN_BODY_MAX_BYTES, runRequestProblem } from "@/lib/ai-runs/request-guard";
@@ -85,8 +86,13 @@ export async function POST(request: Request) {
         const { data, error } = await client.rpc(name, args);
         return { data, error };
       }),
-    // The sample library comes in #479; until then no sample id is known.
-    readSample: async () => undefined,
+    // #477: a sample of the library (#479), read with the user's own client; its fields fill the
+    // prompt's {{variables}} as docs/decisions/0037 says (src/lib/ai-samples/variables.ts).
+    readSample: (id) =>
+      readLabSample(async (table, column, value) => {
+        const { data, error } = await client.from(table).select("*").eq(column, value).limit(1);
+        return { data, error };
+      }, id),
     model: labModelFromEnv(process.env),
     prices: readPrices(process.env, warnPrices),
     runLog: serverToken

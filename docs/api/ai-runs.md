@@ -1,6 +1,6 @@
 # Prompt lab runs and the run log (#476)
 
-The server side of the prompt lab's Run (docs/PRD.md section 4.15, FR-AILAB-1 to FR-AILAB-3 and FR-AILAB-8; AI-RUN-PERMISSION, AI-RUN-LIVE, AI-LAB-STUB; `docs/decisions/0034`). There is no screen yet: the Run panel and the Runs page come in #477, the sample library in #479.
+The server side of the prompt lab's Run (docs/PRD.md section 4.15, FR-AILAB-1 to FR-AILAB-3 and FR-AILAB-8; AI-RUN-PERMISSION, AI-RUN-LIVE, AI-LAB-STUB; `docs/decisions/0034`). The screens are the Run panel and the Runs page (#477, below); the sample library is #479 (`docs/api/ai-samples.md`).
 
 ## The tables (`supabase/migrations/20261203000000_ai_runs.sql`)
 
@@ -34,7 +34,7 @@ Body (`content-type: application/json`, at most 128 KiB):
 }
 ```
 
-`prompt` is `{ "source": "published" }` (the active version), `{ "source": "draft", "version": n }` (a stored version; recorded as `published` if it is the active one) or `{ "source": "pasted", "text": "..." }` (at most 20 000 characters, trimmed; it takes the published version's settings for its checks). `promptKey` must be one of the feature's `prompt_keys`. `model` must be the configured `MODEL_NAME`, the only model offered for now. `sample` is a sample id or null; until #479 every id is unknown.
+`prompt` is `{ "source": "published" }` (the active version), `{ "source": "draft", "version": n }` (a stored version; recorded as `published` if it is the active one) or `{ "source": "pasted", "text": "..." }` (at most 20 000 characters, trimmed; it takes the published version's settings for its checks). `promptKey` must be one of the feature's `prompt_keys`. `model` must be the configured `MODEL_NAME`, the only model offered for now. `sample` is a sample id (`public.ai_samples.id`) or null. #477: the route reads the sample and its excerpt with the user's own client (`readLabSample` in `src/lib/ai-samples/variables.ts`); an id the account cannot read is `404 unknown-sample`.
 
 Order of checks:
 
@@ -46,7 +46,7 @@ Order of checks:
 
 Nothing reaches the model before all of these pass.
 
-The prompt sent: for a runtime feature with a sample that carries the gateway call's input (`sample.calls[<key>]`), the gateway builds the prompt with its own builder and checks the answer with its own parse and line checks (`buildLabCall` in `src/lib/model-gateway/gateway.ts`; one answer, no retry). With a sample that has no call input, `{{variables}}` are filled from `sample.values` (`renderPrompt`). Without a sample, the prompt is sent as written. No user text is ever sent: only a prompt and a sample.
+The prompt sent: for a runtime feature with a sample that carries the gateway call's input (`sample.calls[<key>]`), the gateway builds the prompt with its own builder and checks the answer with its own parse and line checks (`buildLabCall` in `src/lib/model-gateway/gateway.ts`; one answer, no retry). With a sample that has no call input, `{{variables}}` are filled from `sample.values` (`renderPrompt`). #477 (`docs/decisions/0037`): a library sample fills the names of the table `SAMPLE_VARIABLES` (Companion → `{{name}}`, `{{character_name}}`; mode → `{{mode}}`; persona → `{{persona}}`; the excerpt → `{{source_excerpt}}`, `{{story_source}}`; the source named → `{{source_label}}`; background, facts (one per line, "- "), world record, standing task → their snake_case names; the finished plan → `{{plan}}` and its goal → `{{goal}}`). An empty field drops the lines that have only its variables. Any other `{{variable}}` stops the run with `422 prompt-problem` naming it, before the row and the model call; with no sample the prompt is sent as written. A runtime prompt run with a library sample answers `checks: { applied: false, note: "The checks need the call's input, which this sample does not hold." }`. Without a sample, the prompt is sent as written. No user text is ever sent: only a prompt and a sample.
 
 Answer `200`:
 
@@ -88,3 +88,26 @@ A model error is also `200`, and the run ends with `status: "error"`: `{ "ok": f
 ## Tests
 
 `tests/ai-runs.test.ts` (fake models with stub = true and fixed token counts, an invented test price) and `e2e/ai-runs.live.spec.ts` (the "mobile-live" app with the stub model, which answers with 120 input and 30 output tokens and a provider error for the exact prompt `STUB MODEL ERROR`; test price in `playwright.config.ts`). The e2e Supabase stand-in serves `start_ai_run`, `finish_ai_run`, `ai_run_spend`, `ai_runs` and `ai_run_steps`. No test calls a real model.
+
+## The Run panel (#477): `/admin/ai-features/<slug>/run`
+
+Drawing AIR-3 (`#reg-run`), opened by **Run** in the feature page's header. `src/app/admin/ai-features/[slug]/run/page.tsx` reads the row, its prompt versions (`list_prompt_versions`), the sample library and today's spend with the signed-in user's own client and gives the browser only the model's name and stub flag (never the key). `run-panel.tsx` posts the body above to the route.
+
+- Settings: the prompt key (only when the row has more than one), Published, Draft (the newest draft) or Pasted text, the sample (first sample by default, or "No sample (the prompt as written)"), the model (the configured `MODEL_NAME` only), Run, and "Today's spend (UTC day): $x. Not a cap." Before Run the panel names the prompt's variables a sample does not fill.
+- In progress: "Run in progress", what runs, "started by you", the stub marker and a still bar; Run is disabled. There is no Cancel (the server keeps the call once sent).
+- Answer: the stub marker "Fake model (stub)" when the fake model ran, the text, the checks that apply (Pass, or each failed rule, or why none ran), tokens, cost ("$0.000180 (stub, no charge)"; "Price not set" when `AI_RUN_PRICES` has no price), prompt version, sample. `recorded: false` shows an alert above the answer: the end was not recorded.
+- Errors: a model error and every refusal show an error box with **Retry** (the same settings again).
+- **Set as candidate example** and **Confirm** call `setRunExampleAction` (`src/app/admin/ai-runs/actions.ts`, logic `setExampleFromRun` in `src/lib/ai-runs/example.ts`): the run's output is read again on the server by the run's id (only an `ok` run of this feature) and stored through #475's `setFeatureExample` / `set_ai_feature_example`, as candidate or as confirmed (one action, AI-EXAMPLE-CONFIRM), with the "changed since" check and the history.
+
+## The Runs page (#477): `/admin/ai-runs`
+
+Drawing AIR-5 (`#reg-runs`), menu "Runs" (AIR-5). `src/app/admin/ai-runs/page.tsx`, logic in `src/lib/ai-runs/log.ts`; read only, calls no model.
+
+- Tiles: today's spend (`readRunSpend`, with the count of runs without a cost), runs today, stub runs and real model runs (today is the UTC day).
+- Total by user, today (UTC): runs and spend per account (`ai_run_spend`), by email.
+- Filter: feature, user, model, "Stub runs only"; in the address (`?feature=&user=&model=&stub=1`).
+- The log: the newest 500 runs (`RUNS_SHOWN`): when, who, feature, version, sample, model, tokens, cost, stub, result. A run still `running` 180 s after it started (`RUN_END_WAIT_MS`, the route's 150 s plus 30 s) shows "End not recorded".
+- Detail (`?run=<id>`, the newest by default): who and when, feature and prompt key, version, sample, model with tokens and cost, result, the input and the output (or the model error with Retry to the Run panel, or the run in progress, or "The end of this run was not recorded"), and the steps of a multi-step run.
+- Names: `ai_run_spend` over all time gives each account's email.
+
+The e2e stand-in gives an account its own run log (`e2e/support/stub-ai-runs.mjs`): `POST /__ai_runs { token, log: "own" | "seeded" | null, failFinish? }`.

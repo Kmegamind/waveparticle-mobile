@@ -34,6 +34,8 @@ export type LibrarySample = {
   id: string;
   name: string;
   companion: string | null;
+  /** #477: historical or fictional; null when the sample does not say. */
+  mode: "historical" | "fictional" | null;
   persona: string;
   /** The source named on the excerpt row; null when the sample has no excerpt. */
   source: string | null;
@@ -82,6 +84,7 @@ export function librarySamples(samples: SampleRow[], excerpts: ExcerptRow[]): Li
         id: row.id,
         name: row.name,
         companion: row.companion,
+        mode: row.mode === "historical" || row.mode === "fictional" ? row.mode : null,
         persona: row.persona,
         source: excerpt ? excerpt.source_label : null,
         excerpt: excerpt ? excerpt.body : null,

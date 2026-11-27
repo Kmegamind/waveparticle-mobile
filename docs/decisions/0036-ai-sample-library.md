@@ -23,5 +23,5 @@ Two tables, `public.ai_source_excerpts` (with `source_label` required and the pa
 
 ## Consequences
 - App users and anon read nothing; nobody writes through the API.
-- "Add a finished story as a sample" is not built: no finished story with its persona and source excerpt exists in the data model to pick from. It needs an owner decision (see #479's pull request).
+- "Add a finished story as a sample" is not built: no finished story with its persona and source excerpt exists in the data model to pick from. Owner decided (2026-11-27): "Add a finished story as a sample" moved to #500.
 - The Run route (#476) still answers `unknown-sample` for every id; #477 wires `readSample` to this library and decides how the sample's fields map to prompt variable names.

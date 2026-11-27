@@ -1,0 +1,149 @@
+/* The Run panel (AIR-3, /admin/ai-features/<slug>/run) and Runs (AIR-5, /admin/ai-runs), issue
+   477, drawn in docs/design/prototype/admin-ai-features.html (#reg-run, #reg-runs). Loaded by the
+   admin layout through src/app/admin/styles.ts, after src/app/admin/admin.css. Every selector here
+   names a class of these two pages only, so the rules do nothing on other admin pages. */
+
+/* "Run in progress" in the drawing's colour (.s-gen). */
+.admin-pill-running {
+  background: var(--adm-info-soft);
+  color: var(--adm-info);
+}
+
+/* The panel titles (the drawing's .panel > h2): a flex row, so a pill could sit beside a title. */
+.admin-main .admin-run > .admin-panel > h2,
+.admin-main .admin-runs-top > .admin-panel > h2 {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-gap-small);
+}
+
+/* The version buttons take the label's weight, as the drawing's buttons inside its label. */
+.admin-shell .admin-run .admin-seg button {
+  font-weight: inherit;
+}
+
+/* An error box ends its panel here, so it keeps no gap under it (the drawing's has none). */
+.admin-run .admin-errbox,
+.admin-runs-detail .admin-errbox {
+  margin-bottom: 0;
+}
+
+/* The answer: the stub marker line above the text (as the drawing). */
+.admin-main .admin-run-model {
+  margin: 0 0 var(--adm-gap-small);
+}
+
+/* The checks, the fields and the buttons each sit one form gap under the part above (as the drawing). */
+.admin-run-checks,
+.admin-run-fields,
+.admin-run-buttons {
+  margin-top: var(--adm-form-gap);
+}
+
+.admin-run-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-gap-small);
+}
+
+.admin-main .admin-run-spend,
+.admin-main .admin-run-progress {
+  margin: 0;
+}
+
+/* A run in progress (the drawing's .bar): a still bar, no animation. */
+.admin-run-bar {
+  background: var(--adm-soft);
+  border-radius: var(--adm-r-pill);
+  height: var(--adm-bar-height);
+  margin: var(--adm-gap-small) 0;
+  overflow: hidden;
+}
+
+.admin-run-bar > i {
+  background: var(--adm-accent);
+  display: block;
+  height: 100%;
+  width: var(--adm-bar-fill);
+}
+
+/* The note under the panels and under the Runs page (as the drawing). */
+.admin-main .admin-run-after,
+.admin-main .admin-runs-after {
+  margin-bottom: var(--adm-note-after);
+  margin-top: var(--adm-h2-after);
+}
+
+/* Runs: the two panels under the tiles (as the drawing). */
+.admin-runs-top {
+  margin-bottom: var(--adm-gap);
+}
+
+/* "Stub runs only" (the drawing's .check inside .filters, whose label gap wins): a box beside its
+   words, in the text's colour. The box keeps the browser's own checkbox margins, as the drawing's. */
+.admin-filters label.admin-check {
+  align-items: center;
+  color: var(--adm-ink);
+  display: flex;
+  font-weight: 400;
+}
+
+.admin-check input {
+  accent-color: var(--adm-accent);
+  height: var(--adm-check-size);
+  margin: var(--adm-check-margin);
+  width: var(--adm-check-size);
+}
+
+/* The chosen run's row (the drawing's tr.sel); its time is a link that opens the detail. */
+.admin-runs .admin-row-sel td {
+  background: var(--adm-accent-soft);
+}
+
+.admin-shell .admin-runs .admin-runs-when {
+  color: inherit;
+  font-weight: inherit;
+}
+
+.admin-runs-unpriced {
+  color: var(--adm-muted);
+}
+
+/* The chosen run's detail, under the table (as the drawing). */
+.admin-runs-detail {
+  margin-top: var(--adm-gap);
+}
+
+.admin-main .admin-runs-detail > h2 {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-gap-small);
+  margin: 0 0 var(--adm-h2-after);
+}
+
+.admin-runs-fields {
+  margin-bottom: var(--adm-form-gap);
+}
+
+/* The run tables size each column to its longest word (the admin's body breaks anywhere, which
+   split "Runs", "stub" and amounts mid-word); a long email still wraps, and the log scrolls inside
+   its panel when it is wider. */
+.admin-runs th,
+.admin-runs td,
+.admin-runs-top .admin-table th,
+.admin-runs-top .admin-table td {
+  overflow-wrap: break-word;
+}
+
+/* Who ran it: an email is one long word, so it may break anywhere and never widens its panel. */
+.admin-runs td:nth-child(2),
+.admin-runs-top .admin-table td:first-child {
+  overflow-wrap: anywhere;
+}
+
+/* In the wide log the Who column keeps a readable width; the log scrolls inside its panel. */
+.admin-runs td:nth-child(2) {
+  min-width: var(--adm-runs-who-column);
+}

@@ -142,6 +142,7 @@ import { readRegistrySeed } from "../../scripts/ai-features/registry-seed.mjs";
 import { readPipelinePrompts } from "../../scripts/ai-features/import-pipeline-prompts.mjs";
 import { registryEditingRoute } from "./stub-ai-registry-editing.mjs";
 import { handleAiSamples } from "./stub-ai-samples.mjs";
+import { handleAiRuns } from "./stub-ai-runs.mjs";
 /** #473: the text fields save_ai_feature_fields writes, in its argument order, and their limits. */
 const REGISTRY_TEXT_FIELDS = [
   "where_used",
@@ -802,6 +803,8 @@ createServer(async (request, response) => {
   // #479: the sample library (e2e/support/stub-ai-samples.mjs).
   const ctx = { path, request, response, url, dataset, datasets, json, matches, ordered, readBody };
   if (await handleAiSamples(ctx)) return;
+  // #477: an account's own run log (e2e/support/stub-ai-runs.mjs).
+  if (await handleAiRuns({ ...ctx, promptReaderToken, aiFeatureState })) return;
 
   // Sign out runs in the browser (another origin than the stub), so only this endpoint answers
   // cross-origin requests (#287: Sign out in the admin).

@@ -2,7 +2,8 @@ import type { ContentRole } from "@/lib/admin/roles";
 import { buildLabCall, isLabCallKey } from "@/lib/model-gateway/gateway";
 import type { PromptVersionRow } from "@/lib/prompts/admin";
 import type { PromptRow } from "@/lib/prompts/repository";
-import { renderPrompt, type PromptValue } from "@/lib/prompts/template";
+import { sampleProblem } from "@/lib/ai-samples/variables";
+import { placeholderNames, renderPrompt, type PromptValue } from "@/lib/prompts/template";
 import { runCost, type CostNote, type PriceTable } from "./cost";
 import type { LabModel } from "./model";
 
@@ -12,6 +13,13 @@ import type { LabModel } from "./model";
 // anything is read or sent. The lab sends only a prompt and a sample, never user text. There is no
 // spending cap: a run's row is written (status running) before the model is called, and ended as
 // ok or error after it; a run whose row cannot be written never reaches the model.
+
+/**
+ * #477: a runtime prompt run with a library sample. The gateway's checks need the call's own input
+ * (`calls`), which the library's samples do not hold.
+ */
+export const SAMPLE_WITHOUT_CALL_NOTE =
+  "The checks need the call's input, which this sample does not hold.";
 
 /** The longest pasted prompt (as the prompt editor, PROMPT_BODY_MAX_LENGTH). */
 export const PASTED_MAX_LENGTH = 20_000;
@@ -36,7 +44,7 @@ export type RunRequest = {
   /** One of the feature's prompt keys. */
   promptKey: string;
   prompt: RunPrompt;
-  /** A sample id (the sample library comes in #479); null runs the prompt as written. */
+  /** A sample id (public.ai_samples.id, #479); null runs the prompt as written. */
   sample: string | null;
   /** The model name; only the configured model (MODEL_NAME) for now. */
   model: string;
@@ -295,17 +303,28 @@ export async function runPrompt(request: RunRequest, deps: RunDeps): Promise<Run
     note = "";
   } else {
     if (sample) {
+      // #477 (docs/decisions/0037): a {{variable}} the sample does not fill stops the Run here,
+      // before the row and the model call, and is named.
+      const values = sample.values;
+      const missing = placeholderNames(body).filter((name) => !Object.hasOwn(values, name));
+      if (missing.length > 0) {
+        return { ok: false, error: "prompt-problem", problems: [sampleProblem(missing)] };
+      }
       try {
-        input = renderPrompt(body, sample.values);
+        input = renderPrompt(body, values);
       } catch {
         return {
           ok: false,
           error: "prompt-problem",
-          problems: ["The sample has no value for a {{variable}} of the prompt."],
+          problems: ["The prompt could not be filled from the sample."],
         };
       }
     }
-    note = runtime ? "The checks need a sample." : `No checks for a ${feature.category} feature.`;
+    note = !runtime
+      ? `No checks for a ${feature.category} feature.`
+      : sample
+        ? SAMPLE_WITHOUT_CALL_NOTE
+        : "The checks need a sample.";
   }
 
   const model = deps.model;
