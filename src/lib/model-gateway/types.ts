@@ -194,7 +194,7 @@ export type RestReplyInput = {
 };
 
 /**
- * Call two of the rest chat (REST-TWO-CALLS, #517): the rest call's input and call one's reply,
+ * The second rest chat call (#517, REST-TWO-CALLS): the rest call's input and call one's reply,
  * which the review prompt reads as `{{draft}}` and returns unchanged or rewritten.
  */
 export type RestReviewInput = RestReplyInput & { draft: string };

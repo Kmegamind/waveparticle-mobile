@@ -40,7 +40,7 @@ export const PROMPT_PURPOSE: Record<PromptKey, string> = {
     "Pause, call two: the message he shows, his own words about the stuck story and how he feels",
   rest_reply: "His reply in the rest chat",
   rest_reply_review:
-    "Rest chat, call two: reads call one's reply as the user would and returns it unchanged or rewritten (#517)",
+    "Rest chat, call two: a second look at call one's reply from the user's side, kept or replaced (#517)",
   return_popup: "His line in the return pop-up, after the rest chat or an absence",
   closing_line: "His closing line and the line he carries, on the summary",
   retry_hints: "The fix added to a prompt after a rejected answer, one per failed check",
