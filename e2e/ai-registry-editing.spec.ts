@@ -86,6 +86,43 @@ test("test_475_ac1_a_writer_edits_the_name_and_fields_of_a_pipeline_row_with_his
   });
 });
 
+// Review C1: P-04 "Plan (historical)" has brackets in its name; saving another field works, the
+// title keeps its prompt key, and a renamed name ending in brackets is kept whole.
+test("test_475_ac1_a_name_with_brackets_is_saved_and_keeps_its_prompt_key", async ({
+  page,
+  context,
+}) => {
+  const writer = await registryAccount(page, context, "writer");
+  await page.goto("/admin/ai-features/p04_plan_historical/fields");
+  await expect(form(page).getByRole("textbox", { name: "Name" })).toHaveValue("Plan (historical)");
+  await form(page).getByRole("textbox", { name: "Requirement" }).fill("Invented need for P-04.");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByRole("status")).toHaveText("Saved.");
+  await expect(historyRows(page)).toHaveCount(1);
+  await expect(historyRows(page).first().locator("td").nth(2)).toHaveText("Requirement");
+  expect(await readRow(writer.token, "p04_plan_historical")).toMatchObject({
+    title: "Plan (historical) (p04_plan_historical)",
+    requirement: "Invented need for P-04.",
+  });
+
+  // A new name that ends in brackets is kept whole; the prompt key still follows it.
+  await form(page).getByRole("textbox", { name: "Name" }).fill("Plan (historic)");
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByRole("status")).toHaveText("Saved.");
+  await expect(historyRows(page).first().locator("td")).toHaveText([
+    /\d{2}:\d{2}$/,
+    writer.email,
+    "Name",
+    "Plan (historical)",
+    "Plan (historic)",
+  ]);
+  await page.goto("/admin/ai-features/P-04");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("P-04 Plan (historic)");
+  expect((await readRow(writer.token, "p04_plan_historical")).title).toBe(
+    "Plan (historic) (p04_plan_historical)",
+  );
+});
+
 test("test_475_ac1_an_admin_edits_a_runtime_row_and_a_stale_editor_overwrites_nothing", async ({
   page,
   context,

@@ -35,8 +35,8 @@ export async function registryEditingRoute(ctx) {
       json(response, 400, { code: "22004", message: "a registry field is text, never null" });
       return true;
     }
-    if (body.new_name.trim() === "" || /[()]/.test(body.new_name)) {
-      json(response, 400, { code: "22023", message: "a feature needs a name without brackets" });
+    if (body.new_name.trim() === "") {
+      json(response, 400, { code: "22023", message: "a feature needs a name" });
       return true;
     }
     if (values.some((value, index) => value.length > ctx.fieldMax[index])) {
@@ -53,6 +53,14 @@ export async function registryEditingRoute(ctx) {
       return true;
     }
     const keys = feature.title.match(/\s*\([^)]*\)\s*$/)?.[0] ?? "";
+    // As the database: a name ending in brackets needs a keys group after it in the title.
+    if (keys === "" && /\([^)]*\)$/.test(body.new_name.trim())) {
+      json(response, 400, {
+        code: "22023",
+        message: "a name ends in brackets with no keys after it",
+      });
+      return true;
+    }
     const title = body.new_name.trim() + keys;
     if (title.length > 120) {
       json(response, 400, { code: "23514", message: "violates check constraint" });

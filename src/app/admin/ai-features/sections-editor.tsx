@@ -25,7 +25,8 @@ export const WRITE_PROBLEMS: Record<FeatureWriteError, string> = {
   failed: "Could not save the change. Please try again.",
   // #475: the registry editor.
   "name-empty": "Give the feature a name.",
-  "name-brackets": "Leave brackets out of the name: they hold the prompt keys.",
+  "name-brackets":
+    "This feature's title has no prompt keys in brackets, so its name cannot end in brackets.",
   "name-too-long": "Shorten the name: with its prompt keys it must fit in 120 characters.",
   "field-too-long":
     "A text is too long: Where it appears takes 300 characters, the example 8000, the others 4000.",

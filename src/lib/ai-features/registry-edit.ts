@@ -88,13 +88,18 @@ export async function saveRegistryFields(
   }
   const name = write.name.trim();
   if (name === "") return { ok: false, error: "name-empty" };
-  if (/[()]/.test(name)) return { ok: false, error: "name-brackets" };
   if (REGISTRY_TEXT_FIELDS.some((field) => write[field].length > REGISTRY_FIELD_MAX[field])) {
     return { ok: false, error: "field-too-long" };
   }
   const feature = await deps.readFeature(write.slug);
   if (feature === null) return { ok: false, error: "failed" };
   if (feature === undefined) return { ok: false, error: "unknown-feature" };
+  // A name may hold brackets, also at its end ("Plan (historical)"): the prompt keys follow it and
+  // the page takes only the last bracket group as keys (featureName). On a title with no keys
+  // group, a name ending in brackets would lose that end on the page: refused, as in the database.
+  if (titleKeys(feature.title) === "" && /\([^)]*\)$/.test(name)) {
+    return { ok: false, error: "name-brackets" };
+  }
   if ((name + titleKeys(feature.title)).length > TITLE_MAX_LENGTH) {
     return { ok: false, error: "name-too-long" };
   }

@@ -10,7 +10,9 @@
 -- 1. The Name. PRD section 4.14 lets an admin or a writer edit it, but no function writes
 --    public.ai_features.title and the field history does not accept the field "title". The title is
 --    the name followed by the prompt keys in brackets (AI-PAGE-TITLES), so the editor sends the
---    name only and the function keeps the bracket part as it is.
+--    name only and the function keeps the last bracket part as it is. A name may hold brackets,
+--    also at its end ("Plan (historical)"); only on a title with no keys group is a name that ends
+--    in brackets refused (the page would read that end as the keys).
 --    public.save_ai_feature_registry_fields saves the name and the six text fields in one
 --    transaction, with one history row for each field that changed, and refuses the save when
 --    someone else saved the fields after the editor loaded them (fields_updated_at), so a newer
@@ -71,9 +73,6 @@ begin
   if btrim(new_name) = '' then
     raise exception 'a feature needs a name' using errcode = '22023';
   end if;
-  if new_name ~ '[()]' then
-    raise exception 'a name has no brackets: they hold the prompt keys' using errcode = '22023';
-  end if;
 
   -- Locks the row, so two saves of one feature run one after the other.
   select * into old from public.ai_features where slug = target_feature for update;
@@ -87,6 +86,13 @@ begin
 
   -- The bracket part of the title (" (plan_split)"), kept as it is (AI-PAGE-TITLES).
   keys := coalesce(substring(old.title from '\s*\([^)]*\)\s*$'), '');
+  -- A name may hold brackets, also at its end ("Plan (historical)"): the prompt keys follow it, and
+  -- the page takes only the last bracket group as the keys. Without a keys group in the title, a
+  -- name ending in brackets would lose that end on the page, so it is refused.
+  if keys = '' and btrim(new_name) ~ '\([^)]*\)$' then
+    raise exception 'a name ends in brackets but the title has no prompt keys after it'
+      using errcode = '22023';
+  end if;
   next_title := btrim(new_name) || keys;
   if next_title is distinct from old.title then
     update public.ai_features set title = next_title where slug = target_feature;

@@ -144,13 +144,10 @@ describe("#475 AC1: an admin or a writer edits every field but status and catego
     }
   });
 
-  it("test_475_ac1_a_name_is_needed_has_no_brackets_and_fits_the_title", async () => {
+  it("test_475_ac1_a_name_is_needed_and_fits_the_title", async () => {
     const db = fakeDb("writer");
     expect(await saveRegistryFields(write({ name: "  " }), db.deps)).toMatchObject({
       error: "name-empty",
-    });
-    expect(await saveRegistryFields(write({ name: "Find (x)" }), db.deps)).toMatchObject({
-      error: "name-brackets",
     });
     expect(await saveRegistryFields(write({ name: "n".repeat(110) }), db.deps)).toMatchObject({
       error: "name-too-long",
@@ -159,6 +156,60 @@ describe("#475 AC1: an admin or a writer edits every field but status and catego
       { error: "field-too-long" },
     );
     expect(db.calls).toEqual([]);
+  });
+
+  // Review C1: P-04 "Plan (historical)" and P-05 "Plan (fictional)" have brackets inside the name.
+  it("test_475_ac1_a_name_with_brackets_inside_saves_and_keeps_the_prompt_keys", async () => {
+    const p04 = feature({
+      slug: "p04_plan_historical",
+      feature_id: "P-04",
+      title: "Plan (historical) (p04_plan_historical)",
+    });
+    expect(registryEditorValues(p04).name).toBe("Plan (historical)");
+    expect(titleKeys(p04.title)).toBe(" (p04_plan_historical)");
+    const db = fakeDb("writer", p04, { data: "2026-11-26T10:00:00Z" });
+    // Only Requirement changed; the name goes back as the editor showed it.
+    expect(
+      await saveRegistryFields(
+        write({
+          slug: "p04_plan_historical",
+          name: registryEditorValues(p04).name,
+          requirement: "Invented requirement, edited.",
+        }),
+        db.deps,
+      ),
+    ).toEqual({ ok: true, savedAt: "2026-11-26T10:00:00Z" });
+    expect(db.calls[0].args).toMatchObject({
+      target_feature: "p04_plan_historical",
+      new_name: "Plan (historical)",
+      new_requirement: "Invented requirement, edited.",
+    });
+    // A new name that ends in brackets is fine too: the keys still follow it.
+    const renamed = fakeDb("writer", p04, { data: "2026-11-26T10:00:00Z" });
+    expect(
+      await saveRegistryFields(
+        write({ slug: "p04_plan_historical", name: "Plan (historic)" }),
+        renamed.deps,
+      ),
+    ).toMatchObject({ ok: true });
+    // The database refuses a name ending in brackets only when no keys group follows it.
+    const body = fn(EDITING, "public.save_ai_feature_registry_fields");
+    expect(body).toMatch(/if keys = '' and btrim\(new_name\) ~ '\\\(\[\^\)\]\*\\\)\$' then/);
+    expect(body).not.toMatch(/new_name ~ '\[\(\)\]'/);
+  });
+
+  it("test_475_ac1_a_name_ending_in_brackets_is_refused_on_a_title_without_keys", async () => {
+    const bare = fakeDb("writer", feature({ title: "Find episodes" }));
+    for (const name of ["Find (x)", "Find (x)  "]) {
+      expect(await saveRegistryFields(write({ name }), bare.deps), name).toMatchObject({
+        error: "name-brackets",
+      });
+    }
+    expect(bare.calls).toEqual([]);
+    // Brackets inside the name, with text after them, are fine there too.
+    expect(await saveRegistryFields(write({ name: "Find (x) episodes" }), bare.deps)).toMatchObject(
+      { ok: true },
+    );
   });
 
   it("test_475_ac1_a_newer_save_by_someone_else_is_not_overwritten", async () => {
@@ -239,8 +290,10 @@ describe("#475 AC1: every change is kept with who and when (the database)", () =
     const names = readdirSync(migrations)
       .filter((file) => file.endsWith(".sql"))
       .sort();
-    expect(names.at(-1)).toBe(EDITING);
+    // Order only, so a later migration does not break it (review I1).
+    expect(names).toContain(EDITING);
     expect(names.indexOf(EDITING)).toBeGreaterThan(names.indexOf(REGISTRY));
+    expect(names.indexOf(EDITING)).toBeGreaterThan(names.indexOf("20261203000000_ai_runs.sql"));
   });
 });
 
