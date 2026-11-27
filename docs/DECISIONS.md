@@ -381,6 +381,14 @@ The owner's decisions of 2026-11-26, from the story-pipeline handoff (`story-pip
 | AI-PGLITE-DEV | 2026-11-26 | (owner answer, #491) `@electric-sql/pglite` is allowed as a dev dependency, for tests only: it runs the registry migration and seeds on a fresh Postgres in the test run. It is never imported by app code or shipped. | The work is tracked in #492, which checks the latest stable version and records the reason in a new `docs/decisions/` file (AGENTS.md, Stack). |
 | AI-PROTOTYPE-REFS | 2026-11-26 | (owner answer, #491) The admin prototype keeps the leaner set of about 38 reference pictures (both widths for each default state, 1280 px only for the other states), not the 72 committed in #472. | The work is tracked in #493: `docs/design/reference/admin/ai-registry-*` is reduced and the list goes in `docs/design/README.md`; nothing the visual gate or a test reads is removed. |
 
+### Slice definition (2026-11-27)
+
+Owner definition, issue #505.
+
+| Id | Date | Decision | Consequences |
+|---|---|---|---|
+| SLICE-SUBTASK | 2026-11-27 | A story is one episode and the Companion's own goal for that moment. His goal is split into sub-tasks (the plan's aims; five by default), and **each sub-task is one slice**: `story_parts.part` 1 to 5 are the sub-tasks, and `story_cards.slice` is `s<part>`. A slice holds the facts of its sub-task (three to five in the fictional stories). A separate AI step splits each slice into story cards; a card shows what he is doing now, from his own point of view and in his own voice, and earlier events appear only as the reason for what he does now. A slice is not the user's Step (a Step covers one or more slices, or part of one, in order) and not a key slice (`keySlices`, two to four per story, which are cut points). | Replaces the glossary meaning "one to three historical facts" (PRD glossary, FR-CONTENT-2, CONTENT_MODEL 2.3) and the rule that slices serve only the authored fallback cards (follows NO-BACKUP, D5, NO-FALLBACK-TABLES). The 1-to-3-facts limit is no check on fictional stories. T3 (Step count is separate from slices) and the key slices (C2, FR-CONTENT-4) are unchanged. |
+
 ## 2. Superseded rules (do not implement)
 
 | Rule | Replaced by |
