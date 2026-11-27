@@ -426,6 +426,10 @@
   --adm-check-size: 16px;
   --adm-check-margin: 3px 3px 3px 4px;
   --adm-runs-who-column: 170px;
+  /* #478: the comparison lab (drawing #reg-lab: .side gap, .yn row padding). */
+  --adm-lab-side-gap: 10px;
+  --adm-yn-pad: 6px 0;
+  --adm-yn-label-after: 4px;
 }
 
 @media (prefers-color-scheme: dark) {

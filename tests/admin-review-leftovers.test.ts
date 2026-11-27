@@ -79,6 +79,8 @@ describe("#311 leftovers: prompt versions made active outside the admin", () => 
       "20261204000000_ai_registry_editing.sql",
       // #479: the sample library.
       "20261205000000_ai_samples.sql",
+      // #478: the comparison lab's saved answers.
+      "20261206000000_ai_comparisons.sql",
     ]);
   });
 

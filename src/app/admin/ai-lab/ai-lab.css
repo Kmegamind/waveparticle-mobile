@@ -1,0 +1,90 @@
+/* The comparison lab (AIR-4, /admin/ai-lab), issue 478, drawn in
+   docs/design/prototype/admin-ai-features.html (#reg-lab). Loaded by the admin layout through
+   src/app/admin/styles.ts, after src/app/admin/admin.css. Every selector here names a class of
+   this page only, so the rules do nothing on other admin pages. */
+
+/* The settings panel, one gap above the two answers (as the drawing). */
+.admin-lab-form {
+  margin-bottom: var(--adm-gap);
+}
+
+/* Blind and Run both (the drawing's .btns row, 12 px under the fields). */
+.admin-lab-actions,
+.admin-lab-save {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-gap-small);
+}
+
+.admin-lab-actions {
+  margin-top: var(--adm-form-gap);
+}
+
+.admin-lab-save {
+  align-items: normal;
+  margin-top: var(--adm-gap);
+}
+
+/* Blind: a box beside its words, in the text's colour (the drawing's .check). */
+.admin-lab-actions label.admin-check {
+  align-items: center;
+  color: var(--adm-ink);
+  display: flex;
+  font-weight: 400;
+  gap: var(--adm-gap-small);
+}
+
+.admin-main .admin-lab-warning {
+  margin: var(--adm-form-gap) 0 0;
+}
+
+/* One side: its title, the stub marker, the answer and the pass questions (the drawing's .side). */
+.admin-lab-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--adm-lab-side-gap);
+}
+
+.admin-main .admin-lab-side > h2 {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-gap-small);
+  margin: 0 0 var(--adm-h2-after);
+}
+
+/* The drawing's error box is a paragraph of the side, which keeps 8 px under it. */
+.admin-main .admin-lab-side .admin-errbox {
+  margin: 0 0 var(--adm-gap-small);
+}
+
+.admin-main .admin-lab-model,
+.admin-main .admin-lab-side .admin-run-progress {
+  margin: 0;
+}
+
+.admin-main .admin-lab-questions {
+  margin: 0 0 var(--adm-yn-label-after);
+}
+
+/* One pass question with Yes and No (the drawing's .yn). */
+.admin-yn {
+  align-items: center;
+  border-bottom: 1px solid var(--adm-line);
+  display: grid;
+  gap: var(--adm-qrow-gap);
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: var(--adm-yn-pad);
+}
+
+.admin-yn:last-child {
+  border-bottom: 0;
+}
+
+/* The note under the page (as the drawing's note, 10 px under the buttons). */
+.admin-main .admin-lab-message,
+.admin-main .admin-lab-after {
+  margin-bottom: var(--adm-note-after);
+  margin-top: var(--adm-h2-after);
+}

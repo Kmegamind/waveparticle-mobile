@@ -143,6 +143,7 @@ import { readPipelinePrompts } from "../../scripts/ai-features/import-pipeline-p
 import { registryEditingRoute } from "./stub-ai-registry-editing.mjs";
 import { handleAiSamples } from "./stub-ai-samples.mjs";
 import { handleAiRuns } from "./stub-ai-runs.mjs";
+import { handleAiComparisons } from "./stub-ai-comparisons.mjs";
 /** #473: the text fields save_ai_feature_fields writes, in its argument order, and their limits. */
 const REGISTRY_TEXT_FIELDS = [
   "where_used",
@@ -805,6 +806,8 @@ createServer(async (request, response) => {
   if (await handleAiSamples(ctx)) return;
   // #477: an account's own run log (e2e/support/stub-ai-runs.mjs).
   if (await handleAiRuns({ ...ctx, promptReaderToken, aiFeatureState })) return;
+  // #478: the comparison lab's saved answers (e2e/support/stub-ai-comparisons.mjs).
+  if (await handleAiComparisons({ ...ctx, aiFeatureState })) return;
 
   // Sign out runs in the browser (another origin than the stub), so only this endpoint answers
   // cross-origin requests (#287: Sign out in the admin).

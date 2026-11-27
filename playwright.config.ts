@@ -113,6 +113,10 @@ export default defineConfig({
             MODEL_API_URL: `http://127.0.0.1:${stubPort}/v1/chat/completions`,
             MODEL_NAME: "stub",
             // The test stage runs with no per-browser daily limit (#256, TEST-NO-CAP).
+            // #478: the comparison lab's second model, the same stub on this machine.
+            LAB_MODEL_2_API_KEY: "stub",
+            LAB_MODEL_2_API_URL: `http://127.0.0.1:${stubPort}/v1/chat/completions`,
+            LAB_MODEL_2_NAME: "stub-b",
             MODEL_CALL_LIMIT_ENABLED: "0",
             // #476: a test price for the stub model only (invented; no real price is written in
             // the repository), so the prompt lab's cost can be tested.

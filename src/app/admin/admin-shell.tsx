@@ -30,6 +30,8 @@ const GROUPS = [
       // #479: the sample library (drawing AIR-6). Owner decided (2026-11-27): AIR-6 stays its
       // menu id.
       { href: "/admin/ai-samples", id: "AIR-6", label: "Samples" },
+      // #478: the comparison lab (drawing AIR-4); its menu id is the drawing's, as AIR-5 and AIR-6.
+      { href: "/admin/ai-lab", id: "AIR-4", label: "Comparison lab" },
       // #477: the run log (drawing AIR-5).
       { href: "/admin/ai-runs", id: "AIR-5", label: "Runs" },
       { href: "/admin/prompts", id: "ADM-08", label: "Prompts" },
