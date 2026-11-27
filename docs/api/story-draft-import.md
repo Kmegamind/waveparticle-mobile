@@ -69,6 +69,7 @@ node scripts/content/switch-story.mjs <export folder> <story> --by <admin email>
 - **Check:** every card of the new set published, no other card of the story published, the part titles as in the file, and the switch-over on record.
 - **Card checks.** The SQL cannot run the admin's TypeScript checks. Run `CARD_EXPORT="<export folder>" npm run check:export-cards` first: per story, how many cards fail and the kinds of problem, with keys only. The admin story page also shows each draft's problems.
 - The Publish history page shows a retired card as "Retired" and a switch-over as "Story switch-over", neither with a Roll back button.
+- The admin story page marks a retired card "Retired" (no version published now, one before, no draft); the Stories list counts neither retired cards nor a part that holds only retired cards and has no title, so a story switched to 3 parts reads "3 parts".
 
 ## Admin pages
 - `/admin/stories?companion=<id>` lists that Companion's stories by Life Path period (Oppenheimer without the parameter); `/admin/stories/<story>` opens a story of any Companion, with the breadcrumb back to its Companion's list. Parts and cards are filtered by the Companion's story ids in the database and read page by page (1000 rows per request), so the API's row limit never cuts a list short.

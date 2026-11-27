@@ -7,7 +7,7 @@ import {
   newPartTitle,
   writeInventedCardExport,
 } from "../e2e/support/invented-card-export.mjs";
-import { storyDetail, type StoryCardRow } from "@/lib/story-cards/admin";
+import { storyDetail, storyList, type StoryCardRow } from "@/lib/story-cards/admin";
 import {
   ADMIN,
   READER_KEY,
@@ -329,6 +329,23 @@ describe("#516 AC4 a switch-over of one story, end to end, and its undo", () => 
       expect(await phoneCards(db, other)).toEqual(phoneBefore[other]);
     const check = await rows<{ result: string }>(db, switchOver(folder, THREE, "--check"));
     expect(check.filter((row) => row.result !== "ok")).toEqual([]);
+  });
+
+  it("test_516_ac4_the_admin_marks_retired_cards_and_counts_only_the_new_parts", async () => {
+    const story = { id: THREE, title: "Invented", sequence: 1 };
+    const parts = (await partsOf(db, THREE)).map((part) => ({ ...part, story_id: THREE }));
+    const cards = await cardsOf(db, THREE);
+    const detail = storyDetail(story, parts, cards)!;
+    const all = detail.parts.flatMap((part) => part.cards);
+    const old = all.find((card) => card.key === `crd.opp.${THREE}.p4.c1`)!;
+    expect(old.retired).toBe(true);
+    expect(old.draft).toBeNull();
+    const current = all.find((card) => card.key === `crd.opp.${THREE}.p1.c1`)!;
+    expect(current.retired).toBe(false);
+    expect(current.published).toBe(true);
+    const [row] = storyList([story], parts, cards);
+    expect(row.parts).toBe(STORIES[0].cards.length);
+    expect(row.cards).toBe(STORIES[0].cards.reduce((a, b) => a + b, 0));
   });
 
   it("test_516_ac4_a_second_switch_is_refused_and_five_parts_switch_too", async () => {
