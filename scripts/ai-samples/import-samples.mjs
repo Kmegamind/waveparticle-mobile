@@ -47,10 +47,14 @@ const KEYS = [
  *   plan: Record<string, unknown> | null, file: string }} Sample
  */
 
-/** A dollar-quoted SQL text that cannot be closed by the text itself. */
+/**
+ * A dollar-quoted SQL text that cannot be closed by the text itself: the first place the closing
+ * tag occurs in text + tag must be the closing tag, so the text neither contains the tag nor ends
+ * in a part of it (for example "... $sample" before "$sample$").
+ */
 export function quote(text) {
   let tag = "$sample$";
-  for (let n = 1; text.includes(tag); n += 1) tag = `$sample_${n}$`;
+  for (let n = 1; `${text}${tag}`.indexOf(tag) !== text.length; n += 1) tag = `$sample_${n}$`;
   return `${tag}${text}${tag}`;
 }
 

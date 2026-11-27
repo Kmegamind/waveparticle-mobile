@@ -11,6 +11,7 @@ import {
   type ExcerptRow,
   type SampleRow,
 } from "@/lib/ai-samples/library";
+import { quote } from "../scripts/ai-samples/import-samples.mjs";
 
 // #479 (AI-LAB-SAMPLES, AI-SOURCE-EXCERPTS, AI-SAMPLES-LOCAL): the sample library. The migration's
 // shape is read from the SQL here; its role rules were also run on Postgres (PGlite) during
@@ -86,6 +87,35 @@ describe("#479 the sample library migration", () => {
     ]);
     expect(sql).not.toMatch(/for (insert|update|delete|all)/);
     expect(sql).not.toMatch(/security definer/);
+  });
+
+  it("test_479_ac1_the_two_editor_policies_are_the_only_rules_on_the_tables_in_any_migration", () => {
+    // Permissive policies are ORed: one more `for select ... using (true)` would let every app
+    // user read the excerpts. So the exact set of policies, grants and row level security
+    // statements on both tables, across every migration, is pinned here.
+    const all = readdirSync(migrations)
+      .filter((file) => file.endsWith(".sql"))
+      .sort()
+      .map((file) => readFileSync(path.join(migrations, file), "utf8").replace(/--.*$/gm, ""))
+      .join("\n");
+    const onTables = (pattern: RegExp) =>
+      (all.match(pattern) ?? [])
+        .map((statement) => statement.replace(/\s+/g, " ").trim())
+        .filter((statement) => /public\.(ai_samples|ai_source_excerpts)\b/.test(statement));
+    expect(onTables(/create policy[^;]*;/gi)).toEqual([
+      "create policy ai_source_excerpts_read on public.ai_source_excerpts for select to authenticated using ((select public.is_content_editor()));",
+      "create policy ai_samples_read on public.ai_samples for select to authenticated using ((select public.is_content_editor()));",
+    ]);
+    expect(onTables(/(alter|drop) policy[^;]*;/gi)).toEqual([]);
+    expect(onTables(/grant [^;]*;/gi)).toEqual([
+      "grant select on public.ai_source_excerpts to authenticated;",
+      "grant select on public.ai_samples to authenticated;",
+    ]);
+    expect(onTables(/alter table [^;]*row level security[^;]*;/gi)).toEqual([
+      "alter table public.ai_source_excerpts enable row level security;",
+      "alter table public.ai_samples enable row level security;",
+    ]);
+    expect(code()).not.toMatch(/\bto (anon|public)\b/i);
   });
 
   it("test_479_ai_runs_sample_id_references_the_library_without_cascade", () => {
@@ -270,6 +300,28 @@ describe("#479 the import script (AI-SAMPLES-LOCAL)", () => {
       "$sample_1$An invented persona with a quote ' and $sample$ inside.$sample_1$",
     );
     expect(sql).not.toContain("Not stored.");
+  });
+
+  it("test_479_ac3_the_quote_tag_never_closes_early", () => {
+    // How Postgres reads a dollar-quoted text: the opening tag, then up to the first copy of it.
+    const unquote = (sql: string) => {
+      const tag = /^\$[A-Za-z0-9_]*\$/.exec(sql)?.[0] ?? "";
+      const close = sql.indexOf(tag, tag.length);
+      expect(close + tag.length, sql).toBe(sql.length);
+      return sql.slice(tag.length, close);
+    };
+    for (const text of [
+      "",
+      "Invented line.",
+      "Invented line ending in $sample",
+      "Invented line ending in $sample_1",
+      "Invented line with $sample$ inside",
+      "Invented $sample$ and $sample_1$ and ends $sample_2",
+      "Invented $$ and ' quotes",
+      "$",
+    ]) {
+      expect(unquote(quote(text)), text).toBe(text);
+    }
   });
 
   it("test_479_ac3_the_folder_is_an_argument_never_a_path_in_the_code", () => {
