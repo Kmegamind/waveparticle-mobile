@@ -23,7 +23,8 @@ export type LogFeature =
   | "goal-dialogue"
   | "safety"
   | "cost-cap"
-  | "research";
+  | "research"
+  | "ai-runs";
 
 export type LogLevel = "warn" | "error";
 

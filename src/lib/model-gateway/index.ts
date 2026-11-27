@@ -1,9 +1,13 @@
 export {
   DEFAULT_MAX_ATTEMPTS,
   DEFAULT_TIME_LIMIT_MS,
+  LAB_CALL_KEYS,
+  buildLabCall,
   createModelGateway,
+  isLabCallKey,
   promptRowProblems,
 } from "./gateway";
+export type { LabCall, LabCallKey } from "./gateway";
 export { cardNouns, checkRunList, similarity } from "./run-list";
 export type {
   GatewayAttempt,

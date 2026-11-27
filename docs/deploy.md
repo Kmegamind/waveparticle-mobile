@@ -36,7 +36,7 @@ never go in the repository.
 |---|---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Production, Preview | yes | The Supabase project address |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Production, Preview | yes | The Supabase public (anon) key |
-| `PROMPTS_READ_TOKEN` | Production, Preview | no | Reads the prompts table (Secrets, below) |
+| `PROMPTS_READ_TOKEN` | Production, Preview | no | Reads the prompts table, and guards the safety alarm days and the prompt lab run log (Secrets, below) |
 | `CONTENT_READ_KEY` | Production, Preview | no | Reads the story content (Secrets, below) |
 | `GOAL_DIALOGUE_SECRET` | Production, Preview | no | Signs the goal dialogue's turns (Secrets, below) |
 | `MODEL_API_KEY` | Production, Preview | no | The model gateway's key |
@@ -47,6 +47,7 @@ never go in the repository.
 | `SAFETY_MODEL_NAME` | Production, Preview (optional) | no | The safety classifier's own model |
 | `SAFETY_ALARM_WEBHOOK_URL` | Production, Preview | no | The same-day safety alarm (Secrets, below) |
 | `MODEL_CALL_LIMIT_ENABLED` | Production (`0` in the test stage), Preview | no | Switches the per-browser daily limit off (Test path flag, below) |
+| `AI_RUN_PRICES` | Production, Preview | no | The prompt lab's price per million tokens for each model, in US dollars (`docs/api/ai-runs.md`); unset: costs are "price not set" |
 | `PROTOTYPE_ENABLED` | Preview only, never Production | no | Turns on the test path `/try` (Test path flag, below) |
 
 Not Vercel settings: `SUPABASE_DB_URL` (psql connection, your own shell), and
@@ -79,7 +80,7 @@ Any other value keeps it on and logs one warning (`limit_switch_invalid`). Never
 During the test stage there is no daily cap on model calls; revisit before public release.
 
 ## Secrets
-`PROMPTS_READ_TOKEN` (server only, Production and Preview) lets the server read the prompts table; see `docs/ai/prompts/README.md` (#282).
+`PROMPTS_READ_TOKEN` (server only, Production and Preview) lets the server read the prompts table; see `docs/ai/prompts/README.md` (#282). It also guards the safety alarm days (#117) and the prompt lab's run log (#476, `docs/api/ai-runs.md`): only a server that holds it can start and end a run. To rotate it, add the new token's hash row to `private.prompt_reader` first, switch the server setting and redeploy, then delete the old row; while the server's token has no row, the lab answers `not-recorded` and never calls the model.
 `CONTENT_READ_KEY` (server only, Production and Preview) lets the server read the story content (#284, `docs/decisions/0019`). Make one with `node scripts/content/token.mjs`: it prints the key for Vercel and one SQL line that stores only its SHA-256 in `private.content_reader`. Then load the content with `node scripts/content/import.mjs` (prints SQL for the SQL editor) and redeploy. Without the migration, the key and the import, the pages that show story content fail.
 Before the next content import after #302, run `supabase/migrations/20261122000000_companion_mode.sql` (each Companion's `mode` and `key_code`, `docs/decisions/0022`). The import loads every Companion in `src/content/companions.json`; `node scripts/content/import.mjs --companion <id>` loads only that Companion's stories. A story whose screen lines are missing stops the import and is listed.
 `GOAL_DIALOGUE_SECRET` (server only, Production and Preview, at least 32 characters) signs the goal dialogue's turns (#31, `docs/decisions/0026`). Make one with `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`. Without it, every goal dialogue in that environment shows the failure screen (GD-F) and the log has `secret_missing`. Changing it ends only the dialogues open at that moment.
