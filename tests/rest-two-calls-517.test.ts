@@ -264,25 +264,102 @@ describe("#517 AC3 no active rest_reply_review: one call, exactly as before", ()
     expect(logs.map((event) => event.call)).toEqual(["rest_reply"]);
   });
 
-  it("test_517_ac3_with_no_active_review_every_outcome_is_the_same_as_the_seed_gateway", async () => {
-    // The seed prompts have no rest_reply_review (it is not in docs/ai/prompts): the same answers
-    // give the same results, prompts and logs with and without the new code path.
-    for (const answers of [
-      [reply(DRAFT)],
-      ["no json", reply(DRAFT)],
-      ["no json", "no json", "no json"],
-      [reply("I keep my notes dry — under my coat."), reply(DRAFT)],
-    ]) {
-      const strip = (event: GatewayLog) => ({ ...event, latencyMs: 0 });
-      const plain = scripted(answers, { source: seedPromptSource() });
+  it("test_517_ac3_with_no_active_review_only_call_1s_attempts_and_log_happen", async () => {
+    // Fix round 1 (M-1): explicit expectations, not a comparison of the new code with itself.
+    // With no active review, every outcome is call 1's own: its attempts, its result, its one log.
+    const cases: { answers: Answer[]; result: unknown; attempts: number; source: string }[] = [
+      {
+        answers: [reply(DRAFT)],
+        result: { source: "generated", text: DRAFT },
+        attempts: 1,
+        source: "generated",
+      },
+      {
+        answers: ["no json", reply(DRAFT)],
+        result: { source: "generated", text: DRAFT },
+        attempts: 2,
+        source: "generated",
+      },
+      {
+        answers: ["no json", "no json", "no json"],
+        result: { source: "failed", reason: "checks" },
+        attempts: 3,
+        source: "failed",
+      },
+    ];
+    for (const { answers, result, attempts, source } of cases) {
       const none = scripted(answers, { review: null });
-      expect(await none.gateway.writeRestReply(INPUT)).toEqual(
-        await plain.gateway.writeRestReply(INPUT),
-      );
-      expect(none.sent).toEqual(plain.sent);
-      expect(none.logs.map(strip)).toEqual(plain.logs.map(strip));
+      expect(await none.gateway.writeRestReply(INPUT)).toEqual(result);
+      expect(none.sent).toHaveLength(attempts);
+      expect(none.sent.every((prompt) => !prompt.includes("Draft:"))).toBe(true);
+      expect(none.logs).toHaveLength(1);
+      expect(none.logs[0]).toMatchObject({ call: "rest_reply", source, attempts });
     }
     expect(seedRows().some((row) => row.key === "rest_reply_review")).toBe(false);
+  });
+
+  it("test_517_ac3_the_review_lookup_shares_call_1s_read_when_the_cache_expires_during_call_1", async () => {
+    // Fix round 1 (I-1): the cache is filled, then expires while call 1 waits for the model. The
+    // review lookup started with call 1's own read, so no read happens after call 1.
+    let clock = 0;
+    let reads = 0;
+    const logs: PromptLog[] = [];
+    const repository = createPromptRepository({
+      readRows: async () => {
+        reads += 1;
+        return seedRows();
+      },
+      cacheMs: 1_000,
+      now: () => clock,
+      log: (event) => logs.push(event),
+    });
+    await repository.getActivePrompt("rest_reply"); // fills the cache at 0
+    clock = 900; // 100 ms before it expires
+    const sent: string[] = [];
+    const gateway = createModelGateway({
+      prompts: repository.getActivePrompt,
+      timeLimitMs: 60_000,
+      provider: async ({ prompt }) => {
+        sent.push(prompt);
+        clock += 5_000; // call 1 takes long enough for the cache to expire
+        return reply(DRAFT);
+      },
+    });
+    expect(await gateway.writeRestReply(INPUT)).toEqual({ source: "generated", text: DRAFT });
+    expect(sent).toHaveLength(1);
+    expect(reads).toBe(1);
+    expect(logs).toEqual([]);
+  });
+
+  it("test_517_ac3_a_failed_prompt_read_logs_only_call_1s_keys_as_before", async () => {
+    const logs: PromptLog[] = [];
+    const repository = createPromptRepository({
+      readRows: async () => {
+        throw new Error("down");
+      },
+      log: (event) => logs.push(event),
+    });
+    const sent: string[] = [];
+    const gateway = createModelGateway({
+      prompts: repository.getActivePrompt,
+      provider: async ({ prompt }) => {
+        sent.push(prompt);
+        return reply(DRAFT);
+      },
+    });
+    expect(await gateway.writeRestReply(INPUT)).toEqual({ source: "failed", reason: "prompt" });
+    expect(sent).toHaveLength(0);
+    expect(logs.map((event) => event.key).sort()).toEqual(["rest_reply", "retry_hints"]);
+  });
+
+  it("test_517_ac3_a_row_of_another_key_never_turns_call_2_on", async () => {
+    // A prompt source that answers every key with the same row (as some test fakes do).
+    const seed = seedPromptSource();
+    const source: PromptSource = async (key) =>
+      key === "rest_reply_review" ? { ...REVIEW_ROW, key: "rest_reply" } : seed(key);
+    const { gateway, sent } = scripted([reply(DRAFT), reply(REWRITE)], { source });
+    expect(await gateway.writeRestReply(INPUT)).toEqual({ source: "generated", text: DRAFT });
+    expect(sent).toHaveLength(1);
   });
 
   it("test_517_ac3_a_missing_review_prompt_is_not_logged_as_a_missing_prompt", async () => {

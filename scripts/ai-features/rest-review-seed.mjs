@@ -8,6 +8,10 @@
 //   node scripts/ai-features/rest-review-seed.mjs --check     # a read-only SELECT
 //   node scripts/ai-features/rest-review-seed.mjs --undo      # the undo SQL
 //
+// The Supabase SQL editor shows only the last statement's result, so each output ends with the
+// listing it is checked by: the dry run with the row it would add (after its rollback), the check
+// with the R-08 row.
+//
 // Run it after supabase/migrations/20261202000000_ai_registry.sql. The row is inserted only when
 // its slug has no row yet, with status "exploring" (AI-PAGE-STATUS), the next free position and
 // empty registry fields ("Not written yet"); it stops before any change when R-08 belongs to
@@ -59,15 +63,34 @@ const select = [
   `from public.ai_features where slug = '${REVIEW_FEATURE.slug}' or feature_id = '${REVIEW_FEATURE.featureId}';`,
 ];
 
-/** The insert; with dryRun it lists the row and ends in ROLLBACK, so nothing is kept. */
+/**
+ * The dry run's last statement, after its rollback: the row the seed would add (or "skipped" when
+ * the slug already has a row), so the SQL editor shows it.
+ */
+const preview = [
+  "select",
+  `  '${REVIEW_FEATURE.slug}' as slug, '${REVIEW_FEATURE.featureId}' as feature_id, '${REVIEW_FEATURE.category}' as category,`,
+  `  array['${REVIEW_FEATURE.promptKeys.join("', '")}'] as prompt_keys, '${REVIEW_FEATURE.status}' as status,`,
+  "  (select coalesce(max(position), 0) + 1 from public.ai_features) as position,",
+  `  case when exists (select 1 from public.ai_features where slug = '${REVIEW_FEATURE.slug}')`,
+  "    then 'skipped: the row is already there' else 'would add' end as dry_run;",
+];
+
+/**
+ * The insert. With dryRun the insert runs inside a transaction that ends in ROLLBACK (so the
+ * guard and every constraint are tried and nothing is kept), then the last statement lists the row
+ * it would add.
+ */
 export function reviewSeedSql({ dryRun = false } = {}) {
   return [
     `-- ${REVIEW_FEATURE.featureId} ${REVIEW_FEATURE.title}: the registry row of rest_reply_review (#517).`,
-    ...(dryRun ? ["-- DRY RUN: ends in ROLLBACK; nothing is kept."] : []),
+    ...(dryRun
+      ? ["-- DRY RUN: the insert ends in ROLLBACK; nothing is kept. The last result lists the row."]
+      : []),
     "begin;",
     ...guard,
     ...insert,
-    ...(dryRun ? [...select, "rollback;"] : ["commit;"]),
+    ...(dryRun ? ["rollback;", ...preview] : ["commit;"]),
     "",
   ].join("\n");
 }
@@ -75,10 +98,10 @@ export function reviewSeedSql({ dryRun = false } = {}) {
 /** Read only: the row, and the stored versions of its prompt (never their text). */
 export function reviewCheckSql() {
   return [
-    "-- Check of the R-08 registry row (#517). Read only.",
-    ...select,
+    "-- Check of the R-08 registry row (#517). Read only. The last result is the R-08 row.",
     "select key, version, active, activated_at from public.prompts",
     `where key = '${REVIEW_FEATURE.slug}' order by version;`,
+    ...select,
     "",
   ].join("\n");
 }

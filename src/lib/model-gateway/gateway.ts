@@ -309,6 +309,12 @@ export function createModelGateway(options: {
    */
   async function restReply(input: RestReplyInput): Promise<LineResult> {
     const startedAt = Date.now();
+    // Started together with call one's own prompt read, so it shares that read and its cache:
+    // with no active review, the rest chat makes no extra read after call one (fix round 1, I-1).
+    const reviewRow = options.prompts("rest_reply_review").then(
+      (row) => row,
+      () => null,
+    );
     const first: { accept?: (raw: string) => Attempt<Generated<LineResult>> } = {};
     const draft = await run("rest_reply", "rest_reply", (row) => {
       const built = BUILDERS.rest_reply(row, input);
@@ -316,11 +322,12 @@ export function createModelGateway(options: {
       return built;
     });
     if (draft.source !== "generated" || !first.accept) return draft;
-    return reviewRestReply(input, draft, startedAt + timeLimitMs, first.accept);
+    return reviewRestReply(input, reviewRow, draft, startedAt + timeLimitMs, first.accept);
   }
 
   async function reviewRestReply(
     input: RestReplyInput,
+    reviewRow: Promise<PromptRow | null>,
     draft: Generated<LineResult>,
     deadline: number,
     acceptDraft: (raw: string) => Attempt<Generated<LineResult>>,
@@ -340,13 +347,14 @@ export function createModelGateway(options: {
     };
     let row: PromptRow | null;
     try {
-      row = await withinTime(options.prompts("rest_reply_review"), deadline - started);
+      row = await withinTime(reviewRow, deadline - started);
     } catch {
       // The review prompt could not be read in time: call one's reply, which passed its checks.
       return draft;
     }
     // No active version: the rest chat stays one call, exactly as before (REST-TWO-CALLS).
-    if (!row) return draft;
+    // A row of another key (a prompt source that ignores the key) never turns call two on.
+    if (!row || row.key !== "rest_reply_review") return draft;
     let built: Built<Generated<LineResult>>;
     try {
       built = BUILDERS.rest_reply_review(row, { ...input, draft: draft.text });

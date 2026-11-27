@@ -87,8 +87,9 @@ export function createPromptRepository(options: {
       try {
         rows = await activeRows();
       } catch {
-        // A failed read is not kept: the next call reads again.
-        log({ event: "prompt_read_failed", key });
+        // A failed read is not kept: the next call reads again. An optional key is not logged:
+        // the required keys read with it already log the failed read (#517).
+        if (!isOptional(key)) log({ event: "prompt_read_failed", key });
         return null;
       }
       const row = rows.get(key) ?? null;
