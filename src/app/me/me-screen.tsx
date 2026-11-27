@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useReducer, useRef, useState } from "react";
 import {
   applyPrefs,
+  changePrefs,
   DEFAULT_PREFS,
   readPrefs,
-  writePrefs,
   type Appearance,
   type Prefs,
   deviceStorage,
@@ -57,17 +57,22 @@ const sinceDate = (iso: string) =>
     timeZone: "UTC",
   });
 
-function usePrefs(): [Prefs, (next: Prefs) => void] {
+function usePrefs(): [Prefs, (change: (current: Prefs) => Prefs) => Prefs] {
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
-  useEffect(() => {
-    // Device settings are read after hydration so the server HTML stays the same everywhere.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPrefs(readPrefs(deviceStorage()));
+  // This visit's last change. A change starts from it or from storage, never from `prefs` (#490).
+  const held = useRef<Prefs | null>(null);
+  useLayoutEffect(() => {
+    // Device settings are read after hydration so the server HTML stays the same everywhere. A
+    // layout effect runs inside the hydration commit, before any tap is handled, so the controls
+    // never accept a tap while they still show the defaults (#490).
+    setPrefs(held.current ?? readPrefs(deviceStorage()));
   }, []);
-  function update(next: Prefs) {
+  function update(change: (current: Prefs) => Prefs) {
+    const next = changePrefs(deviceStorage(), held.current, change);
+    held.current = next;
     setPrefs(next);
-    writePrefs(deviceStorage(), next);
     applyPrefs(document.documentElement, next);
+    return next;
   }
   return [prefs, update];
 }
@@ -233,7 +238,7 @@ export function MeScreen({
   /** From #69's `continueHref`; null when the Goal cannot be continued in this build. */
   continueHref: string | null;
 }) {
-  const [prefs, setPrefs] = usePrefs();
+  const [prefs, updatePrefs] = usePrefs();
   // #83: a setting change is said aloud once, in words (the buttons also carry their state).
   const [settingAnnounce, setSettingAnnounce] = useState("");
   const router = useRouter();
@@ -244,13 +249,13 @@ export function MeScreen({
   }, [helpLine]);
 
   function setAppearance(appearance: Appearance) {
-    setPrefs({ ...prefs, appearance });
+    updatePrefs((current) => ({ ...current, appearance }));
     setSettingAnnounce(`Appearance: ${APPEARANCE_LABEL[appearance]}.`);
   }
 
   function togglePlainText() {
-    const plainText = !prefs.plainText;
-    setPrefs({ ...prefs, plainText });
+    // Said aloud from the state the change produced, not from the state this render showed.
+    const { plainText } = updatePrefs((current) => ({ ...current, plainText: !current.plainText }));
     setSettingAnnounce(plainText ? "Plain text on." : "Plain text off.");
   }
 
