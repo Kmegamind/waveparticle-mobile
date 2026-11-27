@@ -329,32 +329,43 @@ export function CategoryForm({
 }
 
 /** Confirm on the feature page: the candidate example becomes confirmed with one action. */
-export function ConfirmExample({ slug, loadedAt }: { slug: string; loadedAt: string | null }) {
+export function ConfirmExample({
+  slug,
+  loadedAt,
+  candidate,
+}: {
+  slug: string;
+  loadedAt: string | null;
+  /** Only a candidate shows the button; the message stays after it is confirmed. */
+  candidate: boolean;
+}) {
   const router = useRouter();
   const ready = useReady();
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
   return (
     <>
-      <button
-        className="button-gray button-small"
-        disabled={!ready || pending}
-        onClick={() => {
-          setMessage("");
-          startTransition(async () => {
-            const result = await confirmExampleAction(slug, loadedAt).catch(failed);
-            if (!result.ok) {
-              setMessage(problem(result));
-              return;
-            }
-            setMessage("Example confirmed.");
-            router.refresh();
-          });
-        }}
-        type="button"
-      >
-        Confirm
-      </button>
+      {candidate ? (
+        <button
+          className="button-gray button-small"
+          disabled={!ready || pending}
+          onClick={() => {
+            setMessage("");
+            startTransition(async () => {
+              const result = await confirmExampleAction(slug, loadedAt).catch(failed);
+              if (!result.ok) {
+                setMessage(problem(result));
+                return;
+              }
+              setMessage("Example confirmed.");
+              router.refresh();
+            });
+          }}
+          type="button"
+        >
+          Confirm
+        </button>
+      ) : null}
       {message ? (
         <span className="admin-toast" role="status">
           {message}

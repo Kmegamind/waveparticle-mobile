@@ -239,12 +239,13 @@ async function FeatureDetail({
                     </>
                   ) : null}
                 </span>
-                {feature.example_state === "candidate" ? (
-                  <>
-                    {" "}
-                    <ConfirmExample loadedAt={feature.example_set_at ?? null} slug={slug} />
-                  </>
-                ) : null}
+                {feature.example_state === "candidate" ? " " : null}
+                {/* Always mounted, so its message stays after the confirmed page comes back. */}
+                <ConfirmExample
+                  candidate={feature.example_state === "candidate"}
+                  loadedAt={feature.example_set_at ?? null}
+                  slug={slug}
+                />
               </p>
               <p className="admin-field-text">{feature.example_text}</p>
               {exampleHistory === null ? (

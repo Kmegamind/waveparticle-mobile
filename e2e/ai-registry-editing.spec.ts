@@ -313,6 +313,11 @@ test("test_475_ac3_an_admin_sets_a_candidate_and_a_state_needs_text", async ({ p
     example_state: "candidate",
     example_set_by: admin.userId,
   });
+  // The save refreshes the page; wait for the refreshed history before leaving, so the refresh
+  // never interrupts the next navigation.
+  await expect(
+    editor.getByRole("table", { name: "Example history" }).locator("tbody tr"),
+  ).toHaveCount(1);
   await page.goto("/admin/ai-features/g03_judge_cards");
   await expect(
     region(page, "Confirmed example").getByRole("button", { name: "Confirm" }),
