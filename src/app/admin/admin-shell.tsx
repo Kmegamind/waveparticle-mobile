@@ -27,8 +27,11 @@ const GROUPS = [
     pages: [
       // #439: one page per AI feature (AI-PAGES-7), above Prompts as in the drawing.
       { href: "/admin/ai-features", id: "ADM-16", label: "AI features" },
-      // #479: the sample library (drawing AIR-6); its menu id is an owner decision.
+      // #479: the sample library (drawing AIR-6). Owner decided (2026-11-27): AIR-6 stays its
+      // menu id.
       { href: "/admin/ai-samples", id: "AIR-6", label: "Samples" },
+      // #477: the run log (drawing AIR-5).
+      { href: "/admin/ai-runs", id: "AIR-5", label: "Runs" },
       { href: "/admin/prompts", id: "ADM-08", label: "Prompts" },
     ],
   },

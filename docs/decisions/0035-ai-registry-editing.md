@@ -19,7 +19,7 @@ Three gaps were found:
 | Save the name with a second call beside `save_ai_feature_fields` | No new function | Two calls: half a save on failure; the "changed since" check is not in one transaction |
 | **One new function `save_ai_feature_registry_fields` (name, six fields, load time) that calls `save_ai_feature_fields`** | One transaction; the load-time check is in the database; the history rules stay in one place | A migration and a production step |
 | Edit each field in place on the feature page | Close to the drawing's page | No drawing for it either; many Save buttons; harder to keep a load-time check |
-| **One editor page `/admin/ai-features/<slug>/fields` built from the drawing's editor parts (AIF-7's form and side panel, AIR-2's status control and tables), linked from the feature page** | Same pattern as the #453 editors; every part is in the visual gate | One more page; its layout is not drawn (owner decision) |
+| **One editor page `/admin/ai-features/<slug>/fields` built from the drawing's editor parts (AIF-7's form and side panel, AIR-2's status control and tables), linked from the feature page** | Same pattern as the #453 editors; every part is in the visual gate | One more page; its layout is not drawn. Owner decided (2026-11-27): keep the editor built from the drawn parts |
 
 ## Decision
 `20261204000000_ai_registry_editing.sql` adds `public.save_ai_feature_registry_fields(target_feature, loaded_at, new_name, …six fields)`: content editors; the title becomes the name plus the title's existing bracketed prompt keys (AI-PAGE-TITLES), with a `title` history row; the six fields go through `save_ai_feature_fields`; a save is refused (`40001`) when `fields_updated_at` is not the one the editor loaded. The field history accepts `title`. `list_ai_feature_people` also names the accounts of the field and example histories and of the last field and example edits.
@@ -29,5 +29,5 @@ The editor is one page, `/admin/ai-features/<slug>/fields`, for every row of eve
 ## Consequences
 - The owner applies the migration to dev and prod (a production step with a dry run, a check and an undo, in the pull request).
 - Until the migration is applied, Save on the editor page answers "Could not save the change" (the function is missing); the example, category, status and Confirm work, since they use #473's functions.
-- A changed category does not change `public.prompts.category` of the row's prompt key: the app's prompt read (runtime keys only) follows the prompt's own category. Owner to decide whether a category change should move the prompt key too.
+- A changed category does not change `public.prompts.category` of the row's prompt key: the app's prompt read (runtime keys only) follows the prompt's own category. Owner decided (2026-11-27): a category change need not move the prompt's category.
 - Set as candidate from a run and the latest run belong to #477/#478; this page sets an example by hand.

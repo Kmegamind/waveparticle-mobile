@@ -883,8 +883,9 @@ const LIVE_REGISTRY_EXCEPTIONS: Gate["exceptions"] = [
     properties: ["(whole component)"],
     reason:
       "The loading lines show only while the server reads, so the gate cannot hold them; they " +
-      "use the drawing's sizes (.admin-skel). The Latest run panel, the Run button and the " +
-      "running state belong to the Run panel and run log (#476); Confirm on an example is an " +
+      "use the drawing's sizes (.admin-skel). The Latest run panel and its running state are " +
+      "not built; #477 adds the Run link (compared above) and the Run panel on its own page " +
+      "(admin-visual-ai-runs). Confirm on an example is an " +
       "edit, built in #475. Live keeps the imported offline runs as 'Test results' at the end.",
   },
 ];

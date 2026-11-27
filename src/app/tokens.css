@@ -419,6 +419,13 @@
   --adm-diff-label-before: 12px;
   --adm-diff-line-pad: 2px 10px;
   --adm-errbox-after: 12px;
+  /* Issue 477: the Run panel and Runs (drawing #reg-run, #reg-runs): the progress bar of a run in
+     progress (.bar) and the "Stub runs only" box (.check input). */
+  --adm-bar-height: 6px;
+  --adm-bar-fill: 40%;
+  --adm-check-size: 16px;
+  --adm-check-margin: 3px 3px 3px 4px;
+  --adm-runs-who-column: 170px;
 }
 
 @media (prefers-color-scheme: dark) {
