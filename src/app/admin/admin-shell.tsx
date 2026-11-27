@@ -27,6 +27,8 @@ const GROUPS = [
     pages: [
       // #439: one page per AI feature (AI-PAGES-7), above Prompts as in the drawing.
       { href: "/admin/ai-features", id: "ADM-16", label: "AI features" },
+      // #479: the sample library (drawing AIR-6); its menu id is an owner decision.
+      { href: "/admin/ai-samples", id: "AIR-6", label: "Samples" },
       { href: "/admin/prompts", id: "ADM-08", label: "Prompts" },
     ],
   },
