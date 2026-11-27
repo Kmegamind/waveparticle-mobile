@@ -98,6 +98,13 @@
 //                                     reads of ai_features show these purpose items (#439: a
 //                                     layout test that no other test, nor the visual gate, sees);
 //                                     null removes them. Reset does not touch them
+//   POST /__ai_features { token, registry: true | null }   (#474) that account reads its own
+//                                     copy of the 19 registry rows, made from the invented fixtures
+//                                     in tests/fixtures/ai-registry/, and its list_prompt_versions
+//                                     answers the seed prompts, the 12 fixture Pipeline and Quality
+//                                     gate prompts and one fixed draft of stuck_story (its prompt
+//                                     writes are refused); null gives both up. __fail_reads with
+//                                     an AI feature table name makes that table's read answer 500
 //   POST /__publish_history { token, own: true | null }   (#447) that account's
 //                                     list_publish_history answers a fixed, seeded history (three
 //                                     rows, as the prototype) instead of the shared one, so the
@@ -123,6 +130,8 @@ import { readAppTextSeed } from "../../scripts/app-text/import.mjs";
 import { appDocument, readContentRows } from "../../scripts/content/content-files.mjs";
 import { readStoryDecks, storyCardRows } from "../../scripts/story-cards/import.mjs";
 import { readFeatureSeed, RUNTIME_FEATURE_IDS, STATUSES } from "../../scripts/ai-features/seed.mjs";
+import { readRegistrySeed } from "../../scripts/ai-features/registry-seed.mjs";
+import { readPipelinePrompts } from "../../scripts/ai-features/import-pipeline-prompts.mjs";
 /** #473: the text fields save_ai_feature_fields writes, in its argument order, and their limits. */
 const REGISTRY_TEXT_FIELDS = [
   "where_used",
@@ -403,6 +412,113 @@ let aiFeatureRuns = [];
 let aiFeatureFieldHistory = [];
 let aiFeatureExampleHistory = [];
 let nextAiFeatureId = 1;
+
+/**
+ * #474: the registry as one account reads it (POST /__ai_features { token, registry: true }): the
+ * 19 rows after the registry migration, the seed script and the prompt import, made from the
+ * invented test fixtures of #473 (tests/fixtures/ai-registry/, never the owner's files): the 7
+ * runtime rows with their registry fields filled and the 12 Pipeline and Quality gate rows. It has
+ * one field history row and one example history row, so the detail page's history tables show.
+ */
+const REGISTRY_FIXTURES = new URL("../../tests/fixtures/ai-registry/", import.meta.url);
+const REGISTRY_EDITOR = "00000000-0000-4000-8000-000000000474";
+const registryFeatures = () => {
+  const seed = readRegistrySeed(fileURLToPath(new URL("registry-seed.json", REGISTRY_FIXTURES)));
+  const fields = (row) => ({
+    ...Object.fromEntries(REGISTRY_TEXT_FIELDS.map((field) => [field, row[field] ?? ""])),
+    example_text: row.example_text,
+    example_state: row.example_state,
+  });
+  const runtime = seededAiFeatures().map((feature) => {
+    const row = seed.find((item) => item.slug === feature.slug);
+    return row ? { ...feature, ...fields(row) } : feature;
+  });
+  const added = seed
+    .filter((row) => row.category !== "runtime")
+    .map((row) => ({
+      slug: row.slug,
+      position: row.position,
+      title: row.title,
+      prompt_keys: [row.slug],
+      purpose: [],
+      pass_questions: [],
+      approach: [],
+      status: row.status,
+      created_at: "2026-11-26T00:00:00Z",
+      sections_updated_at: null,
+      sections_updated_by: null,
+      feature_id: row.feature_id,
+      category: row.category,
+      ...fields(row),
+      example_set_by: null,
+      example_set_at: null,
+      fields_updated_at: null,
+      fields_updated_by: null,
+    }));
+  return {
+    features: [...runtime, ...added],
+    history: [],
+    fieldHistory: [
+      {
+        id: 474001,
+        feature_slug: "pause_message",
+        field: "requirement",
+        old_value: "",
+        new_value: "Invented requirement for R-03.",
+        changed_by: REGISTRY_EDITOR,
+        changed_at: "2026-11-20T10:00:00Z",
+      },
+    ],
+    exampleHistory: [
+      {
+        id: 474002,
+        feature_slug: "p02_select_stories",
+        example_text: "Invented example for P-02.",
+        example_state: "confirmed",
+        set_by: REGISTRY_EDITOR,
+        set_at: "2026-11-20T10:00:00Z",
+      },
+    ],
+  };
+};
+
+/**
+ * #474: the prompts as the registry account reads them: the seed prompts, the 12 Pipeline and
+ * Quality gate prompts of the fixture folder (as scripts/ai-features/import-pipeline-prompts.mjs
+ * imports them), and one fixed draft of stuck_story with one invented line, so the prompt panel
+ * shows a draft and its changed lines. Read only, as the seeded view of #446.
+ */
+const registryPrompts = () => {
+  const seeded = seededPrompts();
+  const stuck = seeded.find((row) => row.key === "stuck_story");
+  return [
+    ...seeded,
+    ...readPipelinePrompts(fileURLToPath(new URL("en", REGISTRY_FIXTURES))).map((row) => ({
+      key: row.key,
+      version: 1,
+      active: true,
+      body: row.body,
+      params: {},
+      note: row.note,
+      created_at: "2026-11-26T00:00:00Z",
+      activated_at: "2026-11-26T00:00:00Z",
+      category: row.category,
+    })),
+    {
+      ...stuck,
+      version: 2,
+      active: false,
+      // The last line replaced: the changed lines show one removed and one added line.
+      body: [
+        ...stuck.body.replace(/\n+$/, "").split("\n").slice(0, -1),
+        "An invented draft line for {{name}}.",
+      ].join("\n"),
+      note: "#474 registry view draft",
+      created_at: "2026-11-26T10:00:00Z",
+      activated_at: null,
+    },
+  ];
+};
 
 /**
  * #453: the feature rows and status history an account reads and writes: its own copy when it has
@@ -778,11 +894,18 @@ createServer(async (request, response) => {
     if (needsAdmin ? role !== "admin" : !["admin", "writer"].includes(role)) {
       return json(response, 403, { code: "42501", message: "not allowed" });
     }
-    if (promptRpc[1] !== "list_prompt_versions" && dataset.promptsSeededView) {
+    if (
+      promptRpc[1] !== "list_prompt_versions" &&
+      (dataset.promptsSeededView || dataset.promptsRegistryView)
+    ) {
       return json(response, 409, { message: "this account reads the seeded prompts only" });
     }
     if (promptRpc[1] === "list_prompt_versions") {
-      const source = dataset.promptsSeededView ? seededPrompts() : promptVersions;
+      const source = dataset.promptsRegistryView
+        ? registryPrompts()
+        : dataset.promptsSeededView
+          ? seededPrompts()
+          : promptVersions;
       const rows = [...source].sort((left, right) =>
         left.key === right.key ? right.version - left.version : left.key < right.key ? -1 : 1,
       );
@@ -1140,6 +1263,18 @@ createServer(async (request, response) => {
           : undefined;
       return json(response, 200, { ok: true });
     }
+    if (typeof body.token === "string" && "registry" in body) {
+      // #474: the account reads its own copy of the registry (19 rows from the test fixtures,
+      // registryFeatures) and the prompts with the 12 imported keys and one fixed draft
+      // (registryPrompts), or gives both up with null. Its prompt writes are refused, so the
+      // visual gate never reads a row another test writes.
+      const account = datasets.get(body.token);
+      if (!account) return json(response, 404, { message: "no such account" });
+      const on = body.registry === true;
+      account.aiFeaturesOwn = on ? registryFeatures() : undefined;
+      account.promptsRegistryView = on ? true : undefined;
+      return json(response, 200, { ok: true });
+    }
     if (typeof body.token === "string" && "purpose" in body) {
       const account = datasets.get(body.token);
       if (!account) return json(response, 404, { message: "no such account" });
@@ -1181,6 +1316,10 @@ createServer(async (request, response) => {
   if (aiFeatureTable && request.method === "GET") {
     const user = dataset && !dataset.deleted ? dataset : null;
     if (!user) return json(response, 401, { code: "42501", message: "permission denied" });
+    // #474: POST /__fail_reads { token, tables: ["ai_features"] } makes this read fail.
+    if ((user.failReads ?? []).includes(aiFeatureTable[1])) {
+      return json(response, 500, { message: "stub read failure" });
+    }
     const editor = ["admin", "writer"].includes(user.contentRole);
     // The account's own purpose items (POST /__ai_features { token, purpose }), if any.
     const purpose = user.aiFeaturePurpose ?? {};
