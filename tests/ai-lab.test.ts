@@ -4,9 +4,14 @@ import { describe, expect, it, vi } from "vitest";
 import { postRun } from "@/lib/ai-runs/client";
 import {
   answersComplete,
+  answersLocked,
+  comparisonWrite,
   defaultSides,
   hiddenNow,
+  hiddenModelLabel,
   LAB_SAVE_PROBLEMS,
+  setAnswer,
+  withSideReply,
   saveComparison,
   sideOptions,
   sideOrder,
@@ -433,5 +438,121 @@ describe("#478 the page, the menu and the stub model", () => {
     expect(config).toContain('LAB_MODEL_2_NAME: "stub-b"');
     const e2e = read("e2e/ai-lab.live.spec.ts");
     expect(e2e).not.toMatch(/deepseek|api\.openai|https:\/\//i);
+  });
+});
+
+// #478 fix round 1 (review of PR #511, I-1, I-2, M-1, M-2): the lab's state rules as pure
+// functions, so the answers' sides, the blind lock, Retry and the hidden labels are tested here.
+describe("#478 fix round 1: which answers are saved with which run, and blind integrity", () => {
+  const RUN_A = "11111111-1111-4111-8111-111111111111";
+  const RUN_B = "22222222-2222-4222-8222-222222222222";
+  type State = Parameters<typeof comparisonWrite>[0];
+  const start = (blind: boolean, order: ["a", "b"] | ["b", "a"]): State => ({
+    blind,
+    peeked: false,
+    order,
+    a: { runId: RUN_A, answers: [null, null, null] },
+    b: { runId: RUN_B, answers: [null, null, null] },
+  });
+  /** Answers by display panel (0 left, 1 right), as a person clicks them. */
+  const answerPanel = (state: State, panel: 0 | 1, values: boolean[]) =>
+    values.reduce((current, value, i) => setAnswer(current, current.order[panel], i, value), state);
+
+  const cases: [boolean, ["a", "b"] | ["b", "a"]][] = [
+    [false, ["a", "b"]],
+    [true, ["a", "b"]],
+    [true, ["b", "a"]],
+  ];
+  for (const [blind, order] of cases) {
+    it(`test_478_side_a_answers_go_with_run_a_blind_${blind}_left_${order[0]}`, () => {
+      // The left panel gets yes, no, yes; the right panel no, no, yes.
+      const left = [true, false, true];
+      const right = [false, false, true];
+      let state = answerPanel(start(blind, order), 0, left);
+      state = answerPanel(state, 1, right);
+      expect(comparisonWrite(state)).toEqual({
+        runA: RUN_A,
+        runB: RUN_B,
+        blind,
+        answersA: order[0] === "a" ? left : right,
+        answersB: order[0] === "a" ? right : left,
+      });
+    });
+  }
+
+  it("test_478_no_write_until_both_runs_and_every_answer", () => {
+    const state = answerPanel(start(true, ["a", "b"]), 0, [true, true, true]);
+    expect(comparisonWrite(state)).toBeNull();
+    const done = answerPanel(state, 1, [true, true, true]);
+    expect(comparisonWrite({ ...done, b: { ...done.b, runId: null } })).toBeNull();
+  });
+
+  it("test_478_blind_answers_lock_once_the_sides_are_revealed", () => {
+    let state = answerPanel(start(true, ["b", "a"]), 0, [true, false, true]);
+    state = answerPanel(state, 1, [false, false]);
+    expect(answersLocked(state)).toBe(false);
+    state = setAnswer(state, state.order[1], 2, true);
+    // Every question answered: the names show, and no answer can change any more.
+    expect(answersLocked(state)).toBe(true);
+    const changed = setAnswer(state, "b", 0, false);
+    expect(changed).toBe(state);
+    expect(comparisonWrite(changed)?.blind).toBe(true);
+    expect(comparisonWrite(changed)?.answersB).toEqual([true, false, true]);
+  });
+
+  it("test_478_not_blind_or_peeked_answers_stay_editable_and_save_not_blind", () => {
+    let normal = answerPanel(start(false, ["a", "b"]), 0, [true, true, true]);
+    normal = answerPanel(normal, 1, [true, true, true]);
+    expect(answersLocked(normal)).toBe(false);
+    expect(setAnswer(normal, "a", 0, false).a.answers[0]).toBe(false);
+
+    let peeked: State = {
+      ...answerPanel(start(true, ["a", "b"]), 0, [true, true, true]),
+      peeked: true,
+    };
+    peeked = answerPanel(peeked, 1, [true, true, true]);
+    expect(answersLocked(peeked)).toBe(false);
+    expect(comparisonWrite(peeked)?.blind).toBe(false);
+  });
+
+  it("test_478_a_retry_on_one_side_keeps_the_other_sides_answers", () => {
+    // Side B is retried; meanwhile side A is answered. B's reply must not undo A's answers.
+    let state: State = {
+      ...start(true, ["a", "b"]),
+      b: { runId: null, answers: [true, null, null] },
+    };
+    state = setAnswer(state, "a", 0, true);
+    state = setAnswer(state, "a", 1, false);
+    const after = withSideReply(state, "b", RUN_B);
+    expect(after.a.answers).toEqual([true, false, null]);
+    expect(after.b).toEqual({ runId: RUN_B, answers: [null, null, null] });
+    expect(read("src/app/admin/ai-lab/lab.tsx")).toMatch(/setComparison\(\(current\)/);
+  });
+
+  it("test_478_hidden_sides_do_not_show_which_is_the_stub_when_they_differ", () => {
+    expect(hiddenModelLabel(true, true, true)).toBe("stub");
+    expect(hiddenModelLabel(true, true, false)).toBe("hidden");
+    expect(hiddenModelLabel(true, false, true)).toBe("hidden");
+    expect(hiddenModelLabel(false, true, false)).toBe("shown");
+  });
+
+  it("test_478_the_lab_uses_these_rules", () => {
+    const lab = read("src/app/admin/ai-lab/lab.tsx");
+    for (const name of [
+      "comparisonWrite(",
+      "answersLocked(",
+      "setAnswer(",
+      "withSideReply(",
+      "hiddenModelLabel(",
+    ]) {
+      expect(lab).toContain(name);
+    }
+  });
+
+  it("test_478_no_stale_one_model_comments", () => {
+    expect(read("src/lib/ai-runs/model.ts")).not.toContain("the only model the lab offers");
+    expect(read("src/lib/ai-runs/run.ts")).not.toContain(
+      "only the configured model (MODEL_NAME) for now",
+    );
   });
 });

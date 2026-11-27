@@ -46,7 +46,7 @@ export type RunRequest = {
   prompt: RunPrompt;
   /** A sample id (public.ai_samples.id, #479); null runs the prompt as written. */
   sample: string | null;
-  /** The model name; only the configured model (MODEL_NAME) for now. */
+  /** The model name: one of the lab's configured models (labModelsFromEnv, src/lib/ai-runs/model.ts). */
   model: string;
 };
 

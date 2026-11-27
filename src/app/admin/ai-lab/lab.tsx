@@ -3,15 +3,21 @@
 import { useState, useSyncExternalStore, useTransition } from "react";
 import { postRun, type RunReply } from "@/lib/ai-runs/client";
 import {
-  answersComplete,
+  answersLocked,
+  comparisonWrite,
   defaultSides,
+  hiddenModelLabel,
   hiddenNow,
   LAB_SAVE_PROBLEMS,
+  setAnswer,
   sideOptions,
   sideOrder,
   sideRequest,
   sideVariables,
+  withSideReply,
+  type AnswerState,
   type LabModelName,
+  type LabSide,
   type LabPrompt,
   type PassAnswer,
   type SideChoice,
@@ -39,25 +45,40 @@ export type LabFeature = {
 /** A sample of the library, with the {{variables}} it leaves empty. */
 export type LabSample = { id: string; name: string; empty: string[] };
 
-type Side = "a" | "b";
+type Side = LabSide;
 
 type SideResult = {
   choice: SideChoice;
   label: string;
   reply: RunReply | null;
+  /** The run of this side's answer; null while it runs or when it has no answer. */
+  runId: string | null;
   answers: PassAnswer[];
 };
 
-type Comparison = {
+/** The answers are kept by side, not by panel (AnswerState, src/lib/ai-runs/comparison.ts). */
+type Comparison = AnswerState & {
   feature: string;
   key: string;
   sample: string;
   questions: string[];
-  blind: boolean;
-  order: [Side, Side];
   a: SideResult;
   b: SideResult;
 };
+
+/** A side's reply: its run id, fresh answers for it, the other side's answers kept. */
+function applyReply(current: Comparison, side: Side, reply: RunReply): Comparison {
+  const next = withSideReply(current, side, reply.kind === "answer" ? reply.answer.runId : null);
+  return { ...next, [side]: { ...next[side], reply } };
+}
+
+/** Whether a side ran on the stub, when its reply says so. */
+function stubOf(result: SideResult): boolean {
+  const reply = result.reply;
+  if (reply?.kind === "answer") return reply.answer.stub;
+  if (reply?.kind === "model-error") return reply.stub;
+  return false;
+}
 
 const SAMPLE_NONE = "";
 const noSubscription = () => () => {};
@@ -89,7 +110,6 @@ export function ComparisonLab({
     startPrompt ? defaultSides(startPrompt, models) : { a: "", b: "" },
   );
   const [blind, setBlind] = useState(true);
-  const [peeked, setPeeked] = useState(false);
   const [busy, setBusy] = useState(false);
   const [comparison, setComparison] = useState<Comparison | null>(null);
   const [saved, setSaved] = useState(false);
@@ -162,59 +182,54 @@ export function ComparisonLab({
       choice,
       label: labelOf(choice),
       reply: null,
+      runId: null,
       answers: feature.questions.map(() => null),
     });
-    const next: Comparison = {
+    setComparison({
       feature: feature.slug,
       key: prompt.key,
       sample,
       questions: feature.questions,
       blind,
+      peeked: false,
       order,
       a: start(sides.a),
       b: start(sides.b),
-    };
-    setComparison(next);
-    setPeeked(false);
+    });
     setSaved(false);
     setMessage("");
     setBusy(true);
     const [a, b] = await Promise.all([postRun(requests.a), postRun(requests.b)]);
     setBusy(false);
-    setComparison({ ...next, a: { ...next.a, reply: a }, b: { ...next.b, reply: b } });
+    setComparison((current) => current && applyReply(applyReply(current, "a", a), "b", b));
   }
 
   async function retry(side: Side) {
     if (!comparison) return;
-    const current = comparison;
-    const chosenPrompt = feature.prompts.find((item) => item.key === current.key);
+    const chosenPrompt = feature.prompts.find((item) => item.key === comparison.key);
     const request = chosenPrompt
       ? sideRequest({
-          feature: current.feature,
+          feature: comparison.feature,
           prompt: chosenPrompt,
-          choice: current[side].choice,
-          sample: current.sample || null,
+          choice: comparison[side].choice,
+          sample: comparison.sample || null,
           models,
         })
       : null;
     if (!request) return;
-    const waiting = { ...current, [side]: { ...current[side], reply: null } };
-    setComparison(waiting);
+    // Functional updates only: answers given on the other side while this one runs are kept.
+    setComparison(
+      (current) =>
+        current && { ...current, [side]: { ...current[side], reply: null, runId: null } },
+    );
     setBusy(true);
     const reply = await postRun(request);
     setBusy(false);
-    setComparison({
-      ...waiting,
-      [side]: { ...current[side], reply, answers: current.questions.map(() => null) },
-    });
+    setComparison((current) => current && applyReply(current, side, reply));
   }
 
   const answer = (side: Side, index: number, value: boolean) => {
-    setComparison((current) => {
-      if (!current) return current;
-      const answers = current[side].answers.map((item, i) => (i === index ? value : item));
-      return { ...current, [side]: { ...current[side], answers } };
-    });
+    setComparison((current) => current && setAnswer(current, side, index, value));
   };
 
   const count = comparison?.questions.length ?? 0;
@@ -222,36 +237,25 @@ export function ComparisonLab({
     !!comparison && comparison.blind && blind && count > 0
       ? hiddenNow(true, comparison.a.answers, comparison.b.answers)
       : false;
-  const answered = (side: Side) =>
-    comparison?.[side].reply?.kind === "answer" && answersComplete(comparison[side].answers, count);
+  // A blind comparison whose names are shown: the answers can no longer change.
+  const locked = comparison ? answersLocked(comparison) : false;
+  const modelLine = comparison
+    ? hiddenModelLabel(hidden, stubOf(comparison.a), stubOf(comparison.b))
+    : "shown";
   const recorded = (side: Side) => {
     const reply = comparison?.[side].reply;
     return reply?.kind === "answer" && reply.answer.recorded;
   };
-  const canSave =
-    ready &&
-    !busy &&
-    !saving &&
-    !saved &&
-    answered("a") &&
-    answered("b") &&
-    recorded("a") &&
-    recorded("b");
+  const write = comparison ? comparisonWrite(comparison) : null;
+  const canSave = ready && !busy && !saving && !saved && !!write && recorded("a") && recorded("b");
 
   function save() {
-    if (!comparison) return;
-    const a = comparison.a.reply;
-    const b = comparison.b.reply;
-    if (a?.kind !== "answer" || b?.kind !== "answer") return;
+    if (!write) return;
     setMessage("");
     startSaving(async () => {
-      const result = await saveComparisonAction({
-        runA: a.answer.runId,
-        runB: b.answer.runId,
-        blind: comparison.blind && !peeked,
-        answersA: comparison.a.answers as boolean[],
-        answersB: comparison.b.answers as boolean[],
-      }).catch(() => ({ ok: false, error: "failed" }) as const);
+      const result = await saveComparisonAction(write).catch(
+        () => ({ ok: false, error: "failed" }) as const,
+      );
       if (!result.ok) {
         setMessage(LAB_SAVE_PROBLEMS[result.error]);
         return;
@@ -372,7 +376,10 @@ export function ComparisonLab({
               checked={blind}
               disabled={busy}
               onChange={(event) => {
-                if (!event.target.checked && hidden) setPeeked(true);
+                // Names shown before every answer: the comparison is saved as not blind.
+                if (!event.target.checked && hidden) {
+                  setComparison((current) => current && { ...current, peeked: true });
+                }
                 setBlind(event.target.checked);
               }}
               type="checkbox"
@@ -460,12 +467,13 @@ export function ComparisonLab({
                         </p>
                       )}
                       <p className="admin-lab-model">
-                        {reply.answer.stub ? (
+                        {modelLine === "hidden" ? (
+                          // The sides differ (stub and a real model): one neutral line on both.
+                          <span className="admin-note">Model hidden until answered</span>
+                        ) : reply.answer.stub ? (
                           <span className="admin-pill admin-pill-mark">Fake model (stub)</span>
                         ) : (
-                          <span className="admin-note">
-                            {hidden ? "Real model" : `Model: ${reply.answer.model}`}
-                          </span>
+                          <span className="admin-note">Model: {reply.answer.model}</span>
                         )}
                       </p>
                       <pre aria-label="Answer" className="admin-code">
@@ -475,7 +483,9 @@ export function ComparisonLab({
                         <p className="admin-note admin-lab-questions">
                           {comparison.questions.length === 0
                             ? "This feature has no pass questions yet. Write them on its feature page (Pass standard) to answer and save a comparison."
-                            : "Pass questions (yes or no)."}
+                            : locked
+                              ? "Pass questions (yes or no). The sides are shown, so the answers are locked: they were given blind."
+                              : "Pass questions (yes or no)."}
                         </p>
                         {comparison.questions.map((question, i) => (
                           <div className="admin-yn" key={`${i}-${question}`}>
@@ -494,7 +504,7 @@ export function ComparisonLab({
                                 <button
                                   aria-pressed={result.answers[i] === value}
                                   className="button-gray button-small"
-                                  disabled={saved || !ready}
+                                  disabled={saved || locked || !ready}
                                   key={word}
                                   onClick={() => answer(side, i, value)}
                                   type="button"

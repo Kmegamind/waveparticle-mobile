@@ -46,17 +46,22 @@ async function noSample(page: Page) {
   await expect(page.locator(".admin-lab-warning")).toHaveCount(0);
 }
 
-/** Answers every pass question of one side panel: yes for even questions, no for odd ones. */
-async function answerAll(page: Page, panel: number) {
+/** The left panel's answers: yes for even questions, no for odd ones. */
+const LEFT = (i: number) => i % 2 === 0;
+/** The right panel's answers, different from the left: no, then yes for the rest. */
+const RIGHT = (i: number) => i !== 0;
+
+/** Answers every pass question of one side panel with `pattern`; gives the answers given. */
+async function answerAll(page: Page, panel: number, pattern: (i: number) => boolean) {
   const groups = sides(page).nth(panel).getByRole("group");
   const count = await groups.count();
   for (let i = 0; i < count; i += 1) {
     await groups
       .nth(i)
-      .getByRole("button", { name: i % 2 === 0 ? "Yes" : "No", exact: true })
+      .getByRole("button", { name: pattern(i) ? "Yes" : "No", exact: true })
       .click();
   }
-  return count;
+  return Array.from({ length: count }, (_, i) => pattern(i));
 }
 
 test("test_478_ac1_run_both_two_prompt_versions_side_by_side_with_blind", async ({
@@ -115,17 +120,22 @@ test("test_478_ac1_run_both_two_prompt_versions_side_by_side_with_blind", async 
   // Save result waits for every answer; answering both sides reveals the names.
   const save = page.getByRole("button", { name: "Save result" });
   await expect(save).toBeDisabled();
-  const count = await answerAll(page, 0);
-  expect(count).toBeGreaterThan(0);
+  const left = await answerAll(page, 0, LEFT);
+  const count = left.length;
+  expect(count).toBeGreaterThan(1);
   await expect(sides(page).nth(0).locator("h2")).toContainText("Hidden until answered");
   await expect(save).toBeDisabled();
-  await answerAll(page, 1);
+  const right = await answerAll(page, 1, RIGHT);
   const titles = (await sides(page).locator("h2").allTextContents()).map((text) => text.trim());
   expect([...titles].sort()).toEqual([
     "Side A · Published version (v1)",
     "Side B · Draft version (v2)",
   ]);
   await expect(page.locator(".admin-lab-cmp")).not.toContainText("Hidden until answered");
+  // Shown: the blind answers are locked, so the saved row holds only answers given blind.
+  await expect(page.locator(".admin-lab-side .admin-yn button:enabled")).toHaveCount(0);
+  await expect(sides(page).nth(0)).toContainText("the answers are locked");
+  const leftIsA = titles[0].startsWith("Side A");
 
   await save.click();
   await expect(
@@ -137,15 +147,15 @@ test("test_478_ac1_run_both_two_prompt_versions_side_by_side_with_blind", async 
   const [saved] = await rowsOf(writer.token, "ai_comparisons");
   const published = runs.find((run) => run.prompt_version === 1)!;
   const draft = runs.find((run) => run.prompt_version === 2)!;
-  const pattern = Array.from({ length: count }, (_, i) => i % 2 === 0);
+  // Side A's answers (whichever panel showed it) are saved with run A, side B's with run B.
   expect(saved).toMatchObject({
     feature_slug: "pause_message",
     sample_id: null,
     run_a: published.id,
     run_b: draft.id,
     blind: true,
-    answers_a: pattern,
-    answers_b: pattern,
+    answers_a: leftIsA ? left : right,
+    answers_b: leftIsA ? right : left,
   });
   expect((saved.questions as string[]).length).toBe(count);
 });
@@ -173,16 +183,23 @@ test("test_478_ac1_two_models_not_blind_a_on_the_left", async ({ page, context }
   expect(runs.map((run) => run.model).sort()).toEqual(["stub", "stub-b"]);
   expect(runs.every((run) => run.stub === true && run.prompt_source === "published")).toBe(true);
 
-  await answerAll(page, 0);
-  await answerAll(page, 1);
+  const left = await answerAll(page, 0, LEFT);
+  const right = await answerAll(page, 1, RIGHT);
+  // Not blind: answers stay editable; change and restore one to show it.
+  const first = sides(page).nth(0).getByRole("group").first();
+  await first.getByRole("button", { name: "No", exact: true }).click();
+  await first.getByRole("button", { name: "Yes", exact: true }).click();
   await page.getByRole("button", { name: "Save result" }).click();
   await expect(page.getByText("Result saved with both runs.")).toBeVisible();
   const [saved] = await rowsOf(admin.token, "ai_comparisons");
+  // Not blind: side A is the left panel.
   expect(saved).toMatchObject({
     feature_slug: "closing_line",
     run_a: runs.find((run) => run.model === "stub")!.id,
     run_b: runs.find((run) => run.model === "stub-b")!.id,
     blind: false,
+    answers_a: left,
+    answers_b: right,
   });
 });
 
