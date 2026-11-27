@@ -27,7 +27,9 @@
 //                                     signed-in account, parts and cards for content editors only
 //   POST /rest/v1/rpc/get_story_cards  { reader_key, story, versions } → the seed deck's cards as
 //        version 1, published (#300), then as edited (#304); POST /__story_cards { failReads }
-//        makes it fail, { reset: true } puts the cards, part titles and their history back
+//        makes it fail, { reset: true } puts the cards, part titles and their history back;
+//        { deck: { story, cards } } publishes an invented deck for one story, { restore: story }
+//        puts that story's seed cards back (#516)
 //   POST /rest/v1/rpc/save_story_card_draft | save_story_part_title (editors),
 //        publish_story_card | roll_back_story_card (admin only), as 20261123000000 (#304)
 //   GET  /rest/v1/companions | content_fields   the Companions (signed in) and the field versions
@@ -142,7 +144,12 @@ import { readRegistrySeed } from "../../scripts/ai-features/registry-seed.mjs";
 import { readPipelinePrompts } from "../../scripts/ai-features/import-pipeline-prompts.mjs";
 import { registryEditingRoute } from "./stub-ai-registry-editing.mjs";
 import { handleAiSamples } from "./stub-ai-samples.mjs";
-import { draftStoryContent, draftTables } from "./stub-drafts.mjs";
+import {
+  draftStoryContent,
+  draftTables,
+  inventedDeckRows,
+  keptDraftTables,
+} from "./stub-drafts.mjs";
 import { handleAiRuns } from "./stub-ai-runs.mjs";
 import { handleAiComparisons } from "./stub-ai-comparisons.mjs";
 /** #473: the text fields save_ai_feature_fields writes, in its argument order, and their limits. */
@@ -197,6 +204,8 @@ const seededCardVersions = () =>
   }));
 let cardVersions = seededCardVersions();
 let partTitles = storyCards.parts.map((part) => ({ ...part }));
+/** #516 AC5: story id -> the invented published deck get_story_cards answers instead. */
+const deckOverrides = new Map();
 
 /** Every prompt version (#308): the seed as version 1, active, as after the import. */
 const seededPrompts = () =>
@@ -983,7 +992,7 @@ createServer(async (request, response) => {
     }
     const versions = body.versions ?? null;
     // As the migration: published cards, or exactly the pinned versions that were ever published.
-    const cards = cardVersions
+    const cards = (deckOverrides.get(body.story) ?? cardVersions)
       .filter((card) => card.story_id === body.story)
       .filter((card) =>
         versions === null
@@ -1009,6 +1018,13 @@ createServer(async (request, response) => {
       partTitles = storyCards.parts.map((part) => ({ ...part }));
       publishHistory = publishHistory.filter((row) => row.kind !== "story_card");
     }
+    // #516 AC5: get_story_cards answers an invented deck for one story ({ deck: { story, cards } },
+    // cards per part) until { restore: story }. Kept apart from the card rows, so another file's
+    // { reset: true } does not undo it in the middle of a test.
+    if (typeof body.deck?.story === "string" && Array.isArray(body.deck.cards)) {
+      deckOverrides.set(body.deck.story, inventedDeckRows(body.deck.story, body.deck.cards));
+    }
+    if (typeof body.restore === "string") deckOverrides.delete(body.restore);
     // A published version 1 that differs from the seed, as when the database still holds a card
     // the seed has since fixed (#46): { published: { key, body } }.
     if (typeof body.published?.key === "string" && typeof body.published?.body === "string") {
@@ -1177,7 +1193,12 @@ createServer(async (request, response) => {
     const body = (await readBody(request)) ?? {};
     const target = datasets.get(body.token);
     if (!target) return json(response, 404, { error: "no such token" });
-    target.drafts = body.load === true ? draftTables(Number(body.extraVersions ?? 0)) : undefined;
+    target.drafts =
+      body.load === true
+        ? draftTables(Number(body.extraVersions ?? 0))
+        : body.load === "oppenheimer"
+          ? keptDraftTables(new Set(storyCards.cards.map((card) => card.key)))
+          : undefined;
     return json(response, 200, { ok: true });
   }
 

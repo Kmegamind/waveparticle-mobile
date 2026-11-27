@@ -12,6 +12,9 @@
 //   node scripts/content/import-drafts.mjs <export folder> --source-check [--base <ref>] [--extra <file>]...
 //        compares 40-character windows of the folder's texts with the text this branch adds
 //        and prints only file names and counts (#502 AC4)
+//   node scripts/content/import-drafts.mjs <export folder> --keep-published [--dry-run | --check | --undo]
+//        #516: the cards of a Companion who already has published cards (Oppenheimer's
+//        regenerated decks), as drafts next to them; see "Keep published" below
 //
 // The export folder holds app/companion.json, app/parts_and_cards.json, app/stories.json,
 // app/stage0/<story>.stage0.json and <id>/periods.json. The Companion must already be in
@@ -31,6 +34,20 @@
 // the export: this Companion's stories, part titles and cards the export no longer has are
 // removed. The dry run lists what the run adds, changes and removes; the check compares both
 // ways; the undo removes every story of this Companion and keeps his Companion row (#514 review).
+//
+// Keep published (#516). The default run refuses a Companion with anything published. With
+// --keep-published the export may hold only app/companion.json and app/parts_and_cards.json, the
+// stories must already be his in the database, and every published row stays exactly as it is:
+//   - a key in both sets gets the file's text as a new draft version (the history is kept);
+//   - a new key (a seventh card, a fifth part) is added as a draft, version 1;
+//   - an old key the file does not have stays published until that story's switch-over
+//     (scripts/content/switch-story.mjs), which also sets the part titles to the new count;
+//   - no Companion, story, part title, input or field row is written.
+// The import's own drafts are the versions no editor wrote (created_by null) and nobody ever
+// published, above the key's last published version. A run writes them again with the file's
+// text and removes those of keys the file no longer has; a key whose newest version already holds
+// the file's text is left alone, so running it twice changes nothing. The undo removes only those
+// drafts, and waits until any switch-over of these stories was undone.
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -133,7 +150,14 @@ export function readDraftExport(folder, { repo = REPO } = {}) {
   const exported = readJson(base, path.join("app", "companion.json"), problems);
   const decks = readJson(base, path.join("app", "parts_and_cards.json"), problems);
   const records = readJson(base, path.join("app", "stories.json"), problems);
-  if (problems.length > 0) throw new Error(refusal(problems));
+  if (problems.length > 0) {
+    if (decks !== undefined && records === undefined) {
+      problems.push(
+        "an export of cards only: for a Companion who already has published cards, run it with --keep-published (#516)",
+      );
+    }
+    throw new Error(refusal(problems));
+  }
 
   // The Companion: his committed short fields win; the export must agree with them.
   const companions = JSON.parse(readFileSync(path.join(repo, COMPANIONS_FILE), "utf8"));
@@ -368,6 +392,65 @@ const refusal = (problems) =>
   `Nothing was printed. Fix these in the export first; the import does not invent them:\n${problems
     .map((problem) => `- ${problem}`)
     .join("\n")}`;
+
+/** The longest part title the admin saves (PART_TITLE_MAX_LENGTH, src/lib/story-cards/write.ts). */
+const PART_TITLE_LIMIT = 200;
+
+/**
+ * #516: reads a cards-only export (app/companion.json and app/parts_and_cards.json) for the
+ * --keep-published mode. The Companion must be in companions.json with the same id, name, mode
+ * and key code; his line, tags and portrait are not compared, because this mode writes no
+ * Companion row. merged_titles, when present, must be a list; it is not stored (no merged-title
+ * step exists yet). Throws with one line per problem; nothing is printed then.
+ * @param {string} folder
+ * @param {{ repo?: string }} [options]
+ */
+export function readCardExport(folder, { repo = REPO } = {}) {
+  const base = outsideRepository(folder);
+  const problems = [];
+  const exported = readJson(base, path.join("app", "companion.json"), problems);
+  const decks = readJson(base, path.join("app", "parts_and_cards.json"), problems);
+  if (problems.length > 0) throw new Error(refusal(problems));
+  const companions = JSON.parse(readFileSync(path.join(repo, COMPANIONS_FILE), "utf8"));
+  const own = companions.find((row) => row.id === exported?.id);
+  if (!own) throw new Error(refusal([`no Companion ${exported?.id} in ${COMPANIONS_FILE}`]));
+  if (exported.keyCode !== own.keyCode || decks?.key_code !== own.keyCode) {
+    problems.push(
+      `keyCode ${exported.keyCode} / ${decks?.key_code} does not match ${own.keyCode} in ${COMPANIONS_FILE}`,
+    );
+  }
+  if (exported.name !== own.name)
+    problems.push(`app/companion.json: name differs from ${COMPANIONS_FILE}`);
+  if (exported.mode !== own.mode)
+    problems.push(`mode ${exported.mode} does not match ${COMPANIONS_FILE}`);
+  const deckList = Array.isArray(decks?.stories) ? decks.stories : [];
+  if (deckList.length === 0) problems.push("app/parts_and_cards.json: no stories");
+  const stories = [];
+  const parts = [];
+  const cards = [];
+  for (const deck of deckList) {
+    const id = deck?.id;
+    if (typeof id !== "string" || !SAFE_ID.test(id)) {
+      problems.push(`${String(id)}: the story id is not a slug`);
+      continue;
+    }
+    if (stories.some((story) => story.id === id)) problems.push(`${id}: the story appears twice`);
+    if (deck.merged_titles !== undefined && !Array.isArray(deck.merged_titles)) {
+      problems.push(`${id}: merged_titles is not a list`);
+    }
+    readDeck(deck, id, own.keyCode, parts, cards, problems);
+    stories.push({ id });
+  }
+  for (const part of parts) {
+    if (part.title.length > PART_TITLE_LIMIT) {
+      problems.push(
+        `${part.story_id}: the title of part ${part.part} is longer than ${PART_TITLE_LIMIT} characters`,
+      );
+    }
+  }
+  if (problems.length > 0) throw new Error(refusal(problems));
+  return { companion: { id: own.id, key_code: own.keyCode }, stories, parts, cards };
+}
 
 /** Ids, keys, kinds and slices, already checked against their patterns (no quote inside). */
 const literal = (value) => {
@@ -625,6 +708,204 @@ export function undoSql(rows) {
   ].join("\n");
 }
 
+// ---- #516: keep published --------------------------------------------------------------------
+
+/** The cards and part titles of the file, as two temporary tables (dropped at the end). */
+export function exportTables(rows, { bodies = true } = {}) {
+  const cardValues = rows.cards.map((card) => {
+    const values = [card.key, card.story_id, card.kind, card.part, card.slice, card.position]
+      .map(literal)
+      .join(", ");
+    return `  (${values}, ${bodies ? quote(card.body) : `'${md5(card.body)}'`})`;
+  });
+  const partValues = rows.parts.map(
+    (part) => `  (${literal(part.story_id)}, ${part.part}, ${quote(part.title)})`,
+  );
+  return [
+    `create temporary table import_cards (key text primary key, story_id text not null, kind text not null, part integer, slice text, position integer not null, ${bodies ? "body" : "digest"} text not null) on commit drop;`,
+    `insert into import_cards (key, story_id, kind, part, slice, position, ${bodies ? "body" : "digest"}) values`,
+    `${cardValues.join(",\n")};`,
+    "create temporary table import_parts (story_id text not null, part integer not null, title text not null, primary key (story_id, part)) on commit drop;",
+    "insert into import_parts (story_id, part, title) values",
+    `${partValues.join(",\n")};`,
+  ];
+}
+
+/** This import's own drafts of a key: written by no editor, never published, above the last published version. */
+const importDraft = (alias) =>
+  `${alias}.created_by is null and not ${alias}.published and ${alias}.published_at is null
+    and ${alias}.version > coalesce((select max(e.version) from public.story_cards e where e.key = ${alias}.key and e.published_at is not null), 0)`;
+
+/**
+ * #516: the SQL of --keep-published, in one transaction. Every published row stays as it is; see
+ * the file's header. The dry run lists what the run would do, the part titles the switch-over
+ * will set, and how many published rows changed (always 0), then rolls back.
+ * @param {ReturnType<typeof readCardExport>} rows
+ * @param {{ dryRun?: boolean }} [options]
+ */
+export function keepPublishedSql(rows, { dryRun = false } = {}) {
+  const c = rows.companion;
+  const stories = ids(rows.stories);
+  const lines = [
+    `-- Draft import of the regenerated cards of ${c.id} next to his published cards (scripts/content/import-drafts.mjs --keep-published, #516): ${rows.stories.length} stories, ${rows.parts.length} part titles (set at each story's switch-over), ${rows.cards.length} cards. Nothing published changes.`,
+    "-- Holds story text: run it in the SQL editor only; never save it in the repository.",
+    ...(dryRun ? ["-- DRY RUN: ends in ROLLBACK; nothing is kept."] : []),
+    "begin;",
+    "set local standard_conforming_strings = on;",
+    ...exportTables(rows),
+    "do $guard$",
+    "begin",
+    `  if not exists (select 1 from public.companions where id = '${c.id}') then`,
+    `    raise exception 'no Companion ${c.id} in the database; nothing was written';`,
+    "  end if;",
+    "  if exists (select 1 from (select distinct story_id from import_cards) e",
+    `      where not exists (select 1 from public.stories s where s.id = e.story_id and s.companion_id = '${c.id}')) then`,
+    "    raise exception 'a story of the export is not one of this Companion''s stories in the database; nothing was written';",
+    "  end if;",
+    "end",
+    "$guard$;",
+    ...(dryRun
+      ? [
+          "create temporary table import_before on commit drop as",
+          `  select key, version, body, published, published_at from public.story_cards where story_id in (${stories});`,
+          "create temporary table import_parts_before on commit drop as",
+          `  select story_id, part, title from public.story_parts where story_id in (${stories});`,
+        ]
+      : []),
+    "-- 1. Drafts of an earlier run of this import whose keys the export no longer has.",
+    "delete from public.story_cards k",
+    `  where k.story_id in (${stories}) and not exists (select 1 from import_cards i where i.key = k.key)`,
+    `    and ${importDraft("k")};`,
+    "-- 2. This import's own draft, when it is still the key's newest version: the file's text again.",
+    "update public.story_cards k",
+    "  set story_id = i.story_id, kind = i.kind, part = i.part, slice = i.slice, position = i.position, body = i.body",
+    "  from import_cards i",
+    "  where k.key = i.key and (k.body <> i.body or k.slice is distinct from i.slice)",
+    "    and k.version = (select max(e.version) from public.story_cards e where e.key = k.key)",
+    `    and ${importDraft("k")};`,
+    "-- 3. Every other card whose newest version does not hold the file's text: a new draft version",
+    "--    (version 1 for a new key). Published versions are not touched, so the history stays.",
+    "insert into public.story_cards (key, version, story_id, kind, part, slice, position, body, published, published_at, created_by)",
+    "  select i.key, coalesce(n.version, 0) + 1, i.story_id, i.kind, i.part, i.slice, i.position, i.body, false, null, null",
+    "  from import_cards i",
+    "  left join lateral (select e.version, e.body from public.story_cards e where e.key = i.key order by e.version desc limit 1) n on true",
+    "  where n.body is distinct from i.body;",
+  ];
+  if (!dryRun) {
+    lines.push("commit;", "");
+    return lines.join("\n");
+  }
+  const changed =
+    "a.key is null or b.key is null or a.body <> b.body or a.published <> b.published or a.published_at is distinct from b.published_at";
+  const isPublished = (alias) =>
+    `(coalesce(${alias}.published, false) or ${alias}.published_at is not null)`;
+  lines.push(
+    "-- What the run would do (counts), then each part title of the file next to the one stored now.",
+    "with after as (",
+    `  select key, version, body, published, published_at from public.story_cards where story_id in (${stories})`,
+    "), newest as (",
+    "  select distinct on (key) key, body, published, published_at from after order by key, version desc",
+    "), pairs as (",
+    "  select a.key as a_key, b.key as b_key, a.version, a.body, b.body as b_body, a.published, a.published_at,",
+    `    ${isPublished("a")} or ${isPublished("b")} as live, (${changed}) as differs`,
+    "  from after a full join import_before b on b.key = a.key and b.version = a.version",
+    ")",
+    "select what, count, detail from (",
+    "  select 1 as at, 'stories in the export' as what, (select count(distinct story_id) from import_cards)::int as count, null::text as detail",
+    "  union all select 2, 'part titles in the export (set at the switch-over)', (select count(*) from import_parts)::int, null",
+    "  union all select 3, 'cards in the export', (select count(*) from import_cards)::int, null",
+    "  union all select 4, 'drafts added', (select count(*) from pairs where b_key is null)::int, null",
+    "  union all select 5, 'drafts changed', (select count(*) from pairs where a_key is not null and b_key is not null and differs)::int, null",
+    "  union all select 6, 'drafts removed', (select count(*) from pairs where a_key is null)::int, null",
+    "  union all select 7, 'cards of the export that are drafts after the run', (select count(*) from import_cards i join newest n on n.key = i.key",
+    "    where n.body = i.body and not n.published and n.published_at is null)::int, null",
+    "  union all select 8, 'cards of the export already published with this text', (select count(*) from import_cards i join newest n on n.key = i.key",
+    "    where n.body = i.body and (n.published or n.published_at is not null))::int, null",
+    "  union all select 9, 'published cards not in the export (retired at the switch-over)', (select count(*) from after a",
+    "    where a.published and not exists (select 1 from import_cards i where i.key = a.key))::int, null",
+    "  union all select 10, 'published rows changed', (select count(*) from pairs where live and differs)::int, null",
+    "  union all select 11, 'part titles changed', (select count(*) from import_parts_before b",
+    "    full join public.story_parts p on p.story_id = b.story_id and p.part = b.part",
+    `    where (p.story_id is null or p.story_id in (${stories})) and (p.story_id is null or b.story_id is null or p.title <> b.title))::int, null`,
+    "  union all select 12, 'part title', null, x.story_id || ' part ' || x.part || ': now ' || coalesce(p.title, 'none') || '; new ' || x.title",
+    "    from import_parts x left join public.story_parts p on p.story_id = x.story_id and p.part = x.part",
+    "  union all select 12, 'part title', null, p.story_id || ' part ' || p.part || ': now ' || p.title || '; removed at the switch-over'",
+    "    from public.story_parts p",
+    `    where p.story_id in (${stories}) and not exists (select 1 from import_parts x where x.story_id = p.story_id and x.part = p.part)`,
+    ") summary",
+    "order by at, detail;",
+    "rollback;",
+    "",
+  );
+  return lines.join("\n");
+}
+
+/**
+ * #516: a read-only SELECT comparing his database cards with the file by md5, one row per key of
+ * either: the newest version against the file, and the old published keys the file does not have.
+ * Only keys and results are printed, never a text.
+ * @param {ReturnType<typeof readCardExport>} rows
+ */
+export function keepPublishedCheckSql(rows) {
+  const expected = rows.cards.map((card) => `  ('${card.key}', '${md5(card.body)}')`);
+  return [
+    `-- Read only: the regenerated cards of ${rows.companion.id} against the file (#516). Every row should start with ok.`,
+    "with expected (key, digest) as (values",
+    expected.join(",\n"),
+    "), cards as (",
+    `  select key, version, body, published, published_at from public.story_cards where story_id in (${ids(rows.stories)})`,
+    "), newest as (",
+    "  select distinct on (key) key, md5(body) as digest, published, published_at from cards order by key, version desc",
+    ")",
+    "select coalesce(x.key, n.key) as item,",
+    "  case",
+    "    when n.key is null then 'missing'",
+    "    when x.key is null and exists (select 1 from cards c where c.key = n.key and c.published) then 'ok, published now; retired at the switch-over'",
+    "    when x.key is null and exists (select 1 from cards c where c.key = n.key and c.published_at is not null) then 'ok, retired'",
+    "    when x.key is null then 'only in the database, not in the file'",
+    "    when n.digest <> x.digest then 'differs from the file (a later edit in the admin, or a changed export)'",
+    "    when n.published then 'ok, published'",
+    "    when n.published_at is not null then 'ok, published before (the switch-over was undone)'",
+    "    else 'ok, draft'",
+    "  end as result",
+    "from expected x full join newest n on n.key = x.key",
+    "order by 1;",
+    "",
+  ].join("\n");
+}
+
+/**
+ * #516: the undo of --keep-published: removes this import's own drafts of these stories, and
+ * nothing else (published versions, versions that were ever published and editors' drafts stay).
+ * It stops, removing nothing, while a switch-over of one of these stories is not undone.
+ * @param {ReturnType<typeof readCardExport>} rows
+ */
+export function keepPublishedUndoSql(rows) {
+  const stories = ids(rows.stories);
+  return [
+    `-- Undo of the draft import of the regenerated cards of ${rows.companion.id} (scripts/content/import-drafts.mjs --keep-published, #516).`,
+    "begin;",
+    "do $guard$",
+    "declare",
+    "  switched boolean := false;",
+    "begin",
+    "  if to_regclass('private.story_switches') is not null then",
+    "    execute 'select exists (select 1 from private.story_switches where undone_at is null and story_id = any ($1))'",
+    `      into switched using array[${stories}]::text[];`,
+    "  end if;",
+    "  if switched then",
+    "    raise exception 'a story of the export is switched over: undo the switch-over first (scripts/content/switch-story.mjs --undo); nothing was removed';",
+    "  end if;",
+    "end",
+    "$guard$;",
+    "delete from public.story_cards k",
+    `  where k.story_id in (${stories})`,
+    `    and ${importDraft("k")};`,
+    "commit;",
+    "",
+  ].join("\n");
+}
+
 // ---- #502 AC4: no text of the export in the changed files --------------------------------------
 
 const WINDOW = 40;
@@ -721,12 +1002,18 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
   const valued = new Set(
     args.flatMap((arg, at) => (arg === "--extra" || arg === "--base" ? [at + 1] : [])),
   );
-  const flags = args.filter((arg) => arg.startsWith("--") && arg !== "--extra" && arg !== "--base");
+  const keep = args.includes("--keep-published");
+  const flags = args.filter(
+    (arg) =>
+      arg.startsWith("--") && arg !== "--extra" && arg !== "--base" && arg !== "--keep-published",
+  );
   const folders = args.filter((arg, at) => !arg.startsWith("--") && !valued.has(at));
-  const known = ["--dry-run", "--check", "--undo", "--source-check"];
+  const known = keep
+    ? ["--dry-run", "--check", "--undo"]
+    : ["--dry-run", "--check", "--undo", "--source-check"];
   if (flags.some((flag) => !known.includes(flag)) || flags.length > 1 || folders.length !== 1) {
     console.error(
-      "Usage: node scripts/content/import-drafts.mjs <export folder> [--dry-run | --check | --undo | --source-check [--base <ref>] [--extra <file>]...]",
+      "Usage: node scripts/content/import-drafts.mjs <export folder> [--keep-published] [--dry-run | --check | --undo | --source-check [--base <ref>] [--extra <file>]...]",
     );
     process.exit(2);
   }
@@ -734,14 +1021,25 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
     if (flags[0] === "--source-check") {
       process.exit(sourceCheck(folders[0], valueOf("--base") ?? "origin/main", extras) ? 0 : 1);
     }
-    const rows = readDraftExport(folders[0]);
-    process.stdout.write(
-      flags[0] === "--check"
-        ? checkSql(rows)
-        : flags[0] === "--undo"
-          ? undoSql(rows)
-          : importSql(rows, { dryRun: flags[0] === "--dry-run" }),
-    );
+    if (keep) {
+      const cards = readCardExport(folders[0]);
+      process.stdout.write(
+        flags[0] === "--check"
+          ? keepPublishedCheckSql(cards)
+          : flags[0] === "--undo"
+            ? keepPublishedUndoSql(cards)
+            : keepPublishedSql(cards, { dryRun: flags[0] === "--dry-run" }),
+      );
+    } else {
+      const rows = readDraftExport(folders[0]);
+      process.stdout.write(
+        flags[0] === "--check"
+          ? checkSql(rows)
+          : flags[0] === "--undo"
+            ? undoSql(rows)
+            : importSql(rows, { dryRun: flags[0] === "--dry-run" }),
+      );
+    }
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);

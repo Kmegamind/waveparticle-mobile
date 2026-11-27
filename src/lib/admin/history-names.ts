@@ -48,6 +48,11 @@ function name(kind: string, key: string, lookup: NameLookup): string | null {
     if (!title) return null;
     return card[3] ? `${title} · part ${card[3]}, card ${card[4]}` : `${title} · background card`;
   }
+  if (kind === "story_switch") {
+    // #516: the item key is the story id.
+    const story = lookup.stories.find((s) => s.id === key);
+    return story ? `${story.title} · switch-over to the new cards` : null;
+  }
   if (kind === "companion_field") {
     const field = key.match(/^chr\.([^.]+)\.(?:period\.(\d+)|([^.]+))$/);
     const companion = field && lookup.companions.find((c) => c.key_code === field[1]);

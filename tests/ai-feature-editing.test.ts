@@ -59,14 +59,15 @@ describe("who changed a feature: the migration (#453)", () => {
       .sort();
     // Was "the latest migration"; #473 adds the AI registry after it, which needs this function's
     // tables, #476 the run log, #475 the registry editor (which replaces this function with a
-    // wider list of people), #479 the sample library and #478 the comparison lab's answers. It
-    // must still run after the AI feature tables.
+    // wider list of people), #479 the sample library, #478 the comparison lab's answers and #516
+    // the story switch-over. It must still run after the AI feature tables.
     expect(names.slice(names.indexOf(MIGRATION) + 1)).toEqual([
       "20261202000000_ai_registry.sql",
       "20261203000000_ai_runs.sql",
       "20261204000000_ai_registry_editing.sql",
       "20261205000000_ai_samples.sql",
       "20261206000000_ai_comparisons.sql",
+      "20261207000000_story_switch.sql",
     ]);
     expect(names.indexOf(MIGRATION)).toBeGreaterThan(
       names.indexOf("20261130000000_ai_features.sql"),
