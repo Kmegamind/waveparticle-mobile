@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { readContentRole } from "@/lib/admin/roles";
 import { readLabSample } from "@/lib/ai-samples/variables";
 import { readPrices } from "@/lib/ai-runs/cost";
-import { labModelFromEnv } from "@/lib/ai-runs/model";
+import { labModelsFromEnv, pickLabModel } from "@/lib/ai-runs/model";
 import { RUN_BODY_MAX_BYTES, runRequestProblem } from "@/lib/ai-runs/request-guard";
 import { runPrompt, type RunDeps, type RunError, type RunFeature } from "@/lib/ai-runs/run";
 import { logEvent } from "@/lib/logging/server-log";
@@ -93,7 +93,9 @@ export async function POST(request: Request) {
         const { data, error } = await client.from(table).select("*").eq(column, value).limit(1);
         return { data, error };
       }, id),
-    model: labModelFromEnv(process.env),
+    // #478: the model the request names, of the lab's configured models (the comparison lab may
+    // run a second model); runPrompt refuses a name that is not one of them (unknown-model).
+    model: pickLabModel(labModelsFromEnv(process.env), (body as { model?: unknown } | null)?.model),
     prices: readPrices(process.env, warnPrices),
     runLog: serverToken
       ? {

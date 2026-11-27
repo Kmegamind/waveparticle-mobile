@@ -2,6 +2,7 @@
 
 import { useState, useSyncExternalStore, useTransition } from "react";
 import type { ExampleState } from "@/lib/ai-features/registry-filter";
+import { postRun, type RunAnswer, type RunReply } from "@/lib/ai-runs/client";
 import {
   costText,
   modelErrorText,
@@ -44,32 +45,9 @@ type Settings = {
   sample: string;
 };
 
-type Answer = {
-  ok: true;
-  runId: string;
-  recorded: boolean;
-  output: string;
-  checks:
-    { applied: true; passed: boolean; failedRules: string[] } | { applied: false; note: string };
-  inputTokens: number | null;
-  outputTokens: number | null;
-  cost: number | null;
-  costNote: string | null;
-  stub: boolean;
-  model: string;
-  promptVersion: number | null;
-};
+type Answer = RunAnswer;
 
-type Outcome =
-  | { kind: "answer"; answer: Answer; settings: Settings }
-  | {
-      kind: "model-error";
-      reason: string;
-      recorded: boolean;
-      stub: boolean;
-      settings: Settings;
-    }
-  | { kind: "refused"; error: string; problems: string[]; settings: Settings };
+type Outcome = RunReply & { settings: Settings };
 
 const noSubscription = () => () => {};
 
@@ -173,37 +151,10 @@ export function RunPanel({
     setRunning(chosen);
     setOutcome(null);
     setExampleMessage("");
-    let next: Outcome;
-    try {
-      const response = await fetch("/admin/ai-runs/run", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(request),
-      });
-      const result = (await response.json().catch(() => null)) as Record<string, unknown> | null;
-      if (result?.ok === true) {
-        next = { kind: "answer", answer: result as unknown as Answer, settings: chosen };
-      } else if (result?.error === "model-error") {
-        next = {
-          kind: "model-error",
-          reason: String(result.reason ?? "request"),
-          recorded: result.recorded !== false,
-          stub: result.stub === true,
-          settings: chosen,
-        };
-      } else {
-        next = {
-          kind: "refused",
-          error: typeof result?.error === "string" ? result.error : "failed",
-          problems: Array.isArray(result?.problems) ? result.problems.map(String) : [],
-          settings: chosen,
-        };
-      }
-    } catch {
-      next = { kind: "refused", error: "network", problems: [], settings: chosen };
-    }
+    // #478: the shared client of the Run route (src/lib/ai-runs/client.ts), as the comparison lab.
+    const reply = await postRun(request);
     setRunning(null);
-    setOutcome(next);
+    setOutcome({ ...reply, settings: chosen });
   }
 
   function saveExample(answer: Answer, state: "candidate" | "confirmed") {

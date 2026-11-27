@@ -111,3 +111,22 @@ Drawing AIR-5 (`#reg-runs`), menu "Runs" (AIR-5). `src/app/admin/ai-runs/page.ts
 - Names: `ai_run_spend` over all time gives each account's email.
 
 The e2e stand-in gives an account its own run log (`e2e/support/stub-ai-runs.mjs`): `POST /__ai_runs { token, log: "own" | "seeded" | null, failFinish? }`.
+
+## The comparison lab (#478): `/admin/ai-lab`
+
+`src/app/admin/ai-lab/` (page, `lab.tsx`, `actions.ts`), the logic in `src/lib/ai-runs/comparison.ts`; drawing AIR-4 (`#reg-lab`); `docs/decisions/0038`. FR-AILAB-4, FR-AILAB-5.
+
+- Settings: Feature (every registry row; `?feature=<slug>` chooses the first one), Prompt (only for a row with more than one key), Sample (the same for both sides, or "No sample"), Side A and Side B, Blind (on by default) and **Run both**. A side is a prompt version (published or draft, on the first model) or a model (the published version, or the draft when there is none, on that model). By default side A is the published version and side B the draft, else the second model.
+- **Run both** posts each side to `POST /admin/ai-runs/run` at the same time, through the browser's shared client of the route (`postRun`, `src/lib/ai-runs/client.ts`, also used by the Run panel). Each side is an ordinary run: checked, refused before the model when the sample leaves a variable empty, recorded and priced. A side that fails shows its own error with Retry.
+- **Blind** shows the two answers in a random order as "Side 1" and "Side 2", with "Hidden until answered", until every pass question of both sides is answered; then each panel says which side and which version or model it is. Not blind: side A on the left.
+- Each side lists the feature's pass questions (`public.ai_features.pass_questions`) with **Yes** and **No**. **Save result** is enabled when both sides have an answer whose run was recorded and every question has yes or no; it calls the server action `saveComparisonAction`, which checks the account and role and calls `public.save_ai_comparison`. A feature without pass questions cannot be saved (the panel says to write them on the feature page).
+- Models: the gateway's model (`MODEL_*`), and a second one only when `LAB_MODEL_2_API_KEY`, `LAB_MODEL_2_API_URL` and `LAB_MODEL_2_NAME` are all set and the name differs (`labModelsFromEnv`, `src/lib/ai-runs/model.ts`). The Run route runs the model a request names (`pickLabModel`); any other name is `400 unknown-model`. The browser gets only the names and whether each is the stub. The Run panel still offers the first model only.
+
+### The table (`supabase/migrations/20261206000000_ai_comparisons.sql`)
+
+- `public.ai_comparisons`, one row per saved comparison: `id`, `saved_by`, `saved_at`, `feature_slug`, `sample_id` (null when both ran without one), `run_a`, `run_b` (each `public.ai_runs.id`, each in at most one comparison), `blind` (true when the names stayed hidden until every answer was given), `questions` (the pass questions' texts when the answers were given), `answers_a`, `answers_b` (one boolean per question: true yes, false no).
+- `public.save_ai_comparison(comparison jsonb) returns uuid`; `comparison` holds `run_a`, `run_b`, `blind`, `answers_a`, `answers_b`. Only a signed-in content editor (`42501`); both runs must exist (`P0002`), be the caller's own, ended `ok`, different, of one feature and one sample (`22023`); the feature must have pass questions and each list one boolean per question (`22023`); a run already in a comparison is `23505`. Who, when and the questions are set by the function.
+- Content editors read every row; no API role writes the table.
+- Undo: `drop function public.save_ai_comparison(jsonb); drop table public.ai_comparisons;` (before the run log's own undo).
+
+The e2e stand-in keeps an account's comparisons with its own run log (`e2e/support/stub-ai-comparisons.mjs`): `POST /rest/v1/rpc/save_ai_comparison` and `GET /rest/v1/ai_comparisons`, as the migration.

@@ -324,7 +324,14 @@ describe("#477 the panel's words and numbers", () => {
     const panel = read("src/app/admin/ai-features/[slug]/run/run-panel.tsx");
     expect(panel).toMatch(/^"use client";/);
     expect(panel).not.toMatch(/MODEL_API_KEY|process\.env|labModelFromEnv/);
-    expect(panel).toContain('fetch("/admin/ai-runs/run"');
+    // #478: the panel posts through the shared client of the Run route (src/lib/ai-runs/client.ts).
+    expect(panel).toContain(
+      'import { postRun, type RunAnswer, type RunReply } from "@/lib/ai-runs/client";',
+    );
+    expect(panel).toContain("await postRun(request)");
+    const client = read("src/lib/ai-runs/client.ts");
+    expect(client).toContain('fetchImpl("/admin/ai-runs/run"');
+    expect(client).not.toMatch(/MODEL_API_KEY|process\.env|labModelFromEnv/);
   });
 
   it("test_477_the_feature_page_links_the_run_panel_and_the_menu_lists_runs", () => {

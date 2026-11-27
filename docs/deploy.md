@@ -48,6 +48,9 @@ never go in the repository.
 | `SAFETY_ALARM_WEBHOOK_URL` | Production, Preview | no | The same-day safety alarm (Secrets, below) |
 | `MODEL_CALL_LIMIT_ENABLED` | Production (`0` in the test stage), Preview | no | Switches the per-browser daily limit off (Test path flag, below) |
 | `AI_RUN_PRICES` | Production, Preview | no | The prompt lab's price per million tokens for each model, in US dollars (`docs/api/ai-runs.md`); unset: costs are "price not set" |
+| `LAB_MODEL_2_API_KEY` | Production, Preview (optional) | no | The comparison lab's second model: its key (`docs/api/ai-runs.md`, #478) |
+| `LAB_MODEL_2_API_URL` | Production, Preview (optional) | no | The comparison lab's second model: its address |
+| `LAB_MODEL_2_NAME` | Production, Preview (optional) | no | The comparison lab's second model: its name; offered only when all three are set |
 | `PROTOTYPE_ENABLED` | Preview only, never Production | no | Turns on the test path `/try` (Test path flag, below) |
 
 Not Vercel settings: `SUPABASE_DB_URL` (psql connection, your own shell), and
