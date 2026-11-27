@@ -279,7 +279,7 @@ From the owner's `registry-seed.json` (`story-pipeline/admin-handoff_2026-11-26/
 | P-02 | Select stories | Pipeline | After find episodes | S2_select-stories v1.0 | `p02_select_stories` (pipeline) |
 | P-03 | Cut source | Pipeline | After selection | S3_cut-source v1.0 | `p03_cut_source` (pipeline) |
 | P-04 | Plan (historical) | Pipeline | Story library, historical Companions | S4_notebook-historical v4-final | `p04_plan_historical` (pipeline) |
-| P-05 | Plan (fictional) | Pipeline | Story library, fictional Companions | S4_notebook-fictional v3.5 | `p05_plan_fictional` (pipeline) |
+| P-05 | Plan (fictional) | Pipeline | Story library, fictional Companions | S4_notebook-fictional v4.1 (the prompt file's version; the seed says v3.5, AI-P05-VERSION) | `p05_plan_fictional` (pipeline) |
 | P-06 | Merged titles | Pipeline | Plan page when the user has fewer than five steps | S4e_merged-titles v0.4 | `p06_merged_titles` (pipeline) |
 | P-07 | Story cards | Pipeline | Focus page, one by one while the user works | scripts/deepseek_cards v0.5 (DeepSeek, one call) | `p07_story_cards` (pipeline) |
 | G-01 | Judge plan | Quality gate | After two plan runs | S5_judge-two-runs v1.0 | `g01_judge_plan` (gate) |
@@ -288,7 +288,7 @@ From the owner's `registry-seed.json` (`story-pipeline/admin-handoff_2026-11-26/
 | G-04 | Fix cards | Quality gate | After judging cards | S6c_fix-cards v0.1 | `g04_fix_cards` (gate) |
 | G-05 | Simulated user | Quality gate | End of each round, before the owner reads | S7_simulated-user v0.1 | `g05_simulated_user` (gate) |
 | R-01 | Goal split | Runtime | Goal dialogue, after the user types a goal and minutes | plan_split v2 | `plan_split` (runtime) |
-| R-02 | Step cards | Runtime | Focus page, per step | step_cards v2 (v4 proposed) | `step_cards` (runtime) |
+| R-02 | Step cards | Runtime | Focus page, per step | step_cards v2 (the seed adds "v4 proposed", not shown: AI-PROPOSED-SEED-TEXT) | `step_cards` (runtime) |
 | R-03 | Pause message | Runtime | When the user pauses (two calls) | stuck_story v3 + pause_predicament v1 | `stuck_story`, `pause_predicament` (runtime) |
 | R-04 | Rest reply | Runtime | Rest chat | rest_reply v1 | `rest_reply` (runtime) |
 | R-05 | Return pop-up | Runtime | After Back or a long absence | return_popup v1 | `return_popup` (runtime) |
