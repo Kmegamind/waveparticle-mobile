@@ -34,6 +34,7 @@ import type {
   PlanSplitInput,
   PlanSplitResult,
   RestReplyInput,
+  RestReviewInput,
   ReturnPopupInput,
   ClosingLineInput,
   ClosingLineResult,
@@ -295,6 +296,95 @@ export function createModelGateway(options: {
     return { source: "failed", reason };
   }
 
+  /**
+   * The rest chat reply (REST-TWO-CALLS, #517). Call one (`rest_reply`) runs exactly as before:
+   * generated again with the failure reason until it passes, the attempts run out or the time
+   * limit ends; a failure is returned as is (the failure message with Retry). When it passes and
+   * `rest_reply_review` has an active version, call two reads that reply as `{{draft}}` and returns
+   * it unchanged or rewritten. Both calls share one time limit counted from when the message
+   * started: call one may use all of it, call two gets one attempt in the time call one left.
+   * Call two's reply is shown only when it passes the review row's checks and every check of call
+   * one (the rest_reply limits, AI-6, CHAT-USER-WORD, CHAT-SPOILER-CHECK); otherwise call one's
+   * reply is shown. With no active `rest_reply_review` nothing is added: one call, as before.
+   */
+  async function restReply(input: RestReplyInput): Promise<LineResult> {
+    const startedAt = Date.now();
+    const first: { accept?: (raw: string) => Attempt<Generated<LineResult>> } = {};
+    const draft = await run("rest_reply", "rest_reply", (row) => {
+      const built = BUILDERS.rest_reply(row, input);
+      first.accept = built.accept;
+      return built;
+    });
+    if (draft.source !== "generated" || !first.accept) return draft;
+    return reviewRestReply(input, draft, startedAt + timeLimitMs, first.accept);
+  }
+
+  async function reviewRestReply(
+    input: RestReplyInput,
+    draft: Generated<LineResult>,
+    deadline: number,
+    acceptDraft: (raw: string) => Attempt<Generated<LineResult>>,
+  ): Promise<LineResult> {
+    const call: GatewayCall = "rest_reply_review";
+    const started = Date.now();
+    const failed = (reason: GatewayFailureReason, rejectedRules: string[], attempts: number) => {
+      log({
+        call,
+        source: "failed",
+        reason,
+        rejectedRules,
+        latencyMs: Date.now() - started,
+        attempts,
+      });
+      return draft;
+    };
+    let row: PromptRow | null;
+    try {
+      row = await withinTime(options.prompts("rest_reply_review"), deadline - started);
+    } catch {
+      // The review prompt could not be read in time: call one's reply, which passed its checks.
+      return draft;
+    }
+    // No active version: the rest chat stays one call, exactly as before (REST-TWO-CALLS).
+    if (!row) return draft;
+    let built: Built<Generated<LineResult>>;
+    try {
+      built = BUILDERS.rest_reply_review(row, { ...input, draft: draft.text });
+    } catch {
+      return failed("prompt", [], 0);
+    }
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return failed("timeout", ["timeout"], 0);
+    const controller = new AbortController();
+    try {
+      const raw = await withTimeout(
+        options.provider({ prompt: built.prompt, signal: controller.signal }),
+        remaining,
+        controller,
+      );
+      const reviewed = built.accept(raw);
+      // The final reply passes every check of call one too, so a review row cannot loosen them.
+      const final = reviewed.ok
+        ? acceptDraft(JSON.stringify({ reply: reviewed.value.text }))
+        : reviewed;
+      report({ call, attempt: 1, rejectedRules: final.ok ? [] : final.rejectedRules });
+      if (!final.ok) return failed("checks", final.rejectedRules, 1);
+      log({
+        call,
+        source: "generated",
+        rejectedRules: [],
+        latencyMs: Date.now() - started,
+        attempts: 1,
+      });
+      return final.value;
+    } catch (error) {
+      controller.abort();
+      const reason = error instanceof TimeLimitError ? "timeout" : "request";
+      report({ call, attempt: 1, rejectedRules: [reason] });
+      return failed(reason, [reason], 1);
+    }
+  }
+
   return {
     splitPlan: (input): Promise<PlanSplitResult> =>
       run("plan_split", "plan_split", (row) => BUILDERS.plan_split(row, input)),
@@ -309,8 +399,7 @@ export function createModelGateway(options: {
         (row) => BUILDERS.pause_predicament(row, input),
         input.startedAt,
       ),
-    writeRestReply: (input): Promise<LineResult> =>
-      run("rest_reply", "rest_reply", (row) => BUILDERS.rest_reply(row, input)),
+    writeRestReply: (input): Promise<LineResult> => restReply(input),
     writeReturnPopup: (input): Promise<LineResult> =>
       run("return_popup", "return_popup", (row) => BUILDERS.return_popup(row, input)),
     writeClosingLine: (input): Promise<ClosingLineResult> =>
@@ -369,6 +458,14 @@ const BUILDERS = {
     const limits = lineLimits(checks(row), "checks");
     return {
       prompt: restPrompt(input, row),
+      accept: (raw) => acceptRestReply(raw, input, limits),
+    };
+  },
+  rest_reply_review(row: PromptRow, input: RestReviewInput): Built<Generated<LineResult>> {
+    requireCompanionName(input.companionName, "rest_reply_review");
+    const limits = lineLimits(checks(row), "checks");
+    return {
+      prompt: restReviewPrompt(input, row),
       accept: (raw) => acceptRestReply(raw, input, limits),
     };
   },
@@ -448,6 +545,7 @@ const CHECK_CASES: {
     },
   ],
   rest_reply: [{ companionName: "C", facts: "f", userMessage: "u" }],
+  rest_reply_review: [{ companionName: "C", facts: "f", userMessage: "u", draft: "d" }],
   return_popup: [
     { companionName: "C", trigger: "rest", facts: "f", awayMinutes: 5 },
     { companionName: "C", trigger: "absence", facts: "f", awayMinutes: 60 },
@@ -915,6 +1013,11 @@ function predicamentPrompt(input: PausePredicamentInput, row: PromptRow): string
 
 function restPrompt(input: RestReplyInput, row: PromptRow): string {
   return render(row, { facts: input.facts, userMessage: input.userMessage });
+}
+
+/** Call two of the rest chat (#517): call one's reply is `{{draft}}`. */
+function restReviewPrompt(input: RestReviewInput, row: PromptRow): string {
+  return render(row, { facts: input.facts, userMessage: input.userMessage, draft: input.draft });
 }
 
 const RETURN_SITUATION: Record<ReturnTrigger, string> = {

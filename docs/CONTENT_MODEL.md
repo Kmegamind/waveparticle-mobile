@@ -498,7 +498,7 @@ Card count of a step: n, the cards it receives, at least 1 and no upper limit; n
 | Closing line | Made ahead with the story's cards (CLOSING-AHEAD); END-TONE applies | If it fails to load: failure screen with Retry on the summary (CLOSING-FAIL) |
 | His message on the rest page (snag) | Live, in two calls (C1, F1, PAUSE-3, PAUSE-TWO-CALLS), from the story's scene table (SCENE-PER-STORY) and the category and prop chosen by code; receives the pause number | Failure message with Retry |
 | Return pop-up text | Live (T6, R1) | Failure message with Retry |
-| Rest chat reply | Live, no message limit (R2, A3); passes the spoiler check (CHAT-SPOILER-CHECK), where a later word the user typed himself does not fail it (CHAT-USER-WORD); no label for the user's message (CHAT-NO-LABEL) | Failure message with Retry |
+| Rest chat reply | Live, no message limit (R2, A3), in two calls (REST-TWO-CALLS): `rest_reply` writes it, then `rest_reply_review` reads it as `{{draft}}` and returns it unchanged or rewritten; one call only while `rest_reply_review` has no active version. The reply shown passes the spoiler check (CHAT-SPOILER-CHECK), where a later word the user typed himself does not fail it (CHAT-USER-WORD), and every line check of a rest reply; no label for the user's message (CHAT-NO-LABEL) | Call two failed, timed out or failed a check: call one's reply. Call one failed: failure message with Retry |
 | Story goal, where-now | Authored from the story database | None needed |
 | Safety response | Code plus a small classifier (A5b); system voice | Keyword layer alone if the classifier fails |
 

@@ -8,7 +8,8 @@ import type { LabPrompt } from "@/lib/ai-runs/comparison";
 import { labModelsFromEnv } from "@/lib/ai-runs/model";
 import { readSampleLibrary } from "@/lib/ai-samples/library";
 import { promptVariables, sampleValues } from "@/lib/ai-samples/variables";
-import { readPromptVersions } from "@/lib/prompts/admin";
+import { readPromptVersions, versionsOf } from "@/lib/prompts/admin";
+import { callInputNames } from "@/lib/ai-runs/call-inputs";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Breadcrumb, KeyChip, PageHead } from "../admin-ui";
 import { RolePill } from "../ai-features/registry-ui";
@@ -133,6 +134,14 @@ async function Lab({ searchParams }: { searchParams: PageProps<"/admin/ai-lab">[
       draft: prompt.draft
         ? { version: prompt.draft.version, variables: promptVariables(prompt.draft.body) }
         : null,
+      // #517: every stored version of the key, active or not, so a side can run any of them.
+      stored: versionsOf(prompt.key, versions).versions.map((row) => ({
+        version: row.version,
+        active: row.active,
+        variables: promptVariables(row.body),
+      })),
+      // #517: a runtime key's call inputs beside the sample (src/lib/ai-runs/call-inputs.ts).
+      callInputs: feature.category === "runtime" ? callInputNames(prompt.key) : [],
     })),
   }));
   // Only the names and the stub flags reach the browser; the keys stay in this server module.

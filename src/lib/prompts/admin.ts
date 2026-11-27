@@ -6,7 +6,7 @@ import type {
   PromptWriteError,
 } from "@/lib/admin/prompt-editor-types";
 import { lineDiff, settingsText, type DiffLine } from "./diff";
-import { PROMPT_KEYS, type PromptKey, type PromptRow } from "./repository";
+import { ALL_PROMPT_KEYS, PROMPT_KEYS, type PromptKey, type PromptRow } from "./repository";
 
 // ADM-08 Prompts (#308, docs/decisions/0025): what the page lists and shows, and the writes behind
 // its buttons. Server code only. The rows come from public.list_prompt_versions(), which answers
@@ -39,6 +39,8 @@ export const PROMPT_PURPOSE: Record<PromptKey, string> = {
   pause_predicament:
     "Pause, call two: the message he shows, his own words about the stuck story and how he feels",
   rest_reply: "His reply in the rest chat",
+  rest_reply_review:
+    "Rest chat, call two: reads call one's reply as the user would and returns it unchanged or rewritten (#517)",
   return_popup: "His line in the return pop-up, after the rest chat or an absence",
   closing_line: "His closing line and the line he carries, on the summary",
   retry_hints: "The fix added to a prompt after a rejected answer, one per failed check",
@@ -59,8 +61,9 @@ export type PromptListRow = {
   draftVersion: number | null;
 };
 
+/** A key the gateway reads, the optional rest_reply_review included (#517). */
 export const isPromptKey = (key: unknown): key is PromptKey =>
-  typeof key === "string" && (PROMPT_KEYS as readonly string[]).includes(key);
+  typeof key === "string" && (ALL_PROMPT_KEYS as readonly string[]).includes(key);
 
 /** Settings as one line per value: "checks.max_words: 80", "text.situation_first: …". */
 export function settingsLines(params: Record<string, unknown>, prefix = ""): string[] {

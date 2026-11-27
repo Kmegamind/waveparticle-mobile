@@ -7,6 +7,7 @@ export type GatewayCall =
   | "stuck_story"
   | "pause_predicament"
   | "rest_reply"
+  | "rest_reply_review"
   | "return_popup"
   | "closing_line";
 
@@ -191,6 +192,12 @@ export type RestReplyInput = {
   /** The Story's scene table later words (#60). Whole words with their exact capitals. */
   laterWords?: string[];
 };
+
+/**
+ * Call two of the rest chat (REST-TWO-CALLS, #517): the rest call's input and call one's reply,
+ * which the review prompt reads as `{{draft}}` and returns unchanged or rewritten.
+ */
+export type RestReviewInput = RestReplyInput & { draft: string };
 
 /** Why the return pop-up opens: Back from the rest conversation, or back after an absence (R1). */
 export type ReturnTrigger = "rest" | "absence";

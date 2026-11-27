@@ -24,7 +24,19 @@ export const PROMPT_KEYS = [
   "safety_classifier",
 ] as const;
 
-export type PromptKey = (typeof PROMPT_KEYS)[number];
+/**
+ * Prompts the gateway uses only while they have an active version (#517, REST-TWO-CALLS). They are
+ * not in the seed files (docs/ai/prompts), and a missing one is not logged as `prompt_missing`:
+ * with no active `rest_reply_review` the rest chat makes its one call, as before.
+ */
+export const OPTIONAL_PROMPT_KEYS = ["rest_reply_review"] as const;
+
+/** Every key the gateway can read: the seeded keys, then the optional ones. */
+export const ALL_PROMPT_KEYS = [...PROMPT_KEYS, ...OPTIONAL_PROMPT_KEYS] as const;
+
+export type PromptKey = (typeof ALL_PROMPT_KEYS)[number];
+
+const isOptional = (key: PromptKey) => (OPTIONAL_PROMPT_KEYS as readonly string[]).includes(key);
 
 export type PromptRow = {
   key: PromptKey;
@@ -80,7 +92,7 @@ export function createPromptRepository(options: {
         return null;
       }
       const row = rows.get(key) ?? null;
-      if (!row) log({ event: "prompt_missing", key });
+      if (!row && !isOptional(key)) log({ event: "prompt_missing", key });
       return row;
     },
   };
@@ -91,7 +103,7 @@ function isPromptRow(value: unknown): value is PromptRow {
   const row = value as Record<string, unknown>;
   return (
     typeof row.key === "string" &&
-    (PROMPT_KEYS as readonly string[]).includes(row.key) &&
+    (ALL_PROMPT_KEYS as readonly string[]).includes(row.key) &&
     typeof row.version === "number" &&
     typeof row.body === "string" &&
     typeof row.params === "object" &&
