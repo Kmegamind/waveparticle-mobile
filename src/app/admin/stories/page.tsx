@@ -6,7 +6,7 @@ import { storyList } from "@/lib/story-cards/admin";
 import { leaksForStory } from "@/lib/story-cards/checks";
 import { lifePath } from "@/lib/story-cards/life-path";
 import {
-  COMPANION_ID,
+  companionOfPage,
   readStageZeros,
   readStoryCardsData,
   sceneCheckFor,
@@ -15,27 +15,33 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PublishFirstNotice } from "./publish-first-notice";
 import { Breadcrumb, KeyChip, PageHead, StatePill } from "@/app/admin/admin-ui";
 
-// ADM-06 Stories (#293, #304), drawn as the prototype's Life path table (#443): Oppenheimer's
-// stories grouped by Life Path period, each with its number, title, key, Life path description and
+// ADM-06 Stories (#293, #304), drawn as the prototype's Life path table (#443): a Companion's
+// stories (Oppenheimer's, or ?companion=<id> since #502) grouped by Life Path period, each with its number, title, key, Life path description and
 // the state of that description, plus its part and card counts and how many cards fail a check.
 // The layout already checked the role; the rows come through the signed-in user's own client,
 // whose policies show the cards and the field versions to content editors only.
-export default function AdminStories() {
+export default function AdminStories({ searchParams }: PageProps<"/admin/stories">) {
   return (
     <Suspense fallback={null}>
-      <LifePathPage />
+      <LifePathPage searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function LifePathPage() {
+async function LifePathPage({
+  searchParams,
+}: {
+  searchParams: PageProps<"/admin/stories">["searchParams"];
+}) {
   await connection();
+  const companionId = companionOfPage((await searchParams).companion);
   const client = await createSupabaseServerClient();
   const [data, zeros, fields] = await Promise.all([
-    readStoryCardsData(client),
+    readStoryCardsData(client, undefined, companionId),
     readStageZeros(),
-    readCompanionsData(client, COMPANION_ID),
+    readCompanionsData(client, companionId),
   ]);
+  const code = data.companion?.key_code;
   const rows = storyList(
     data.stories,
     data.parts,
@@ -46,8 +52,12 @@ async function LifePathPage() {
         zeros?.get(storyId) ?? null,
       ),
     (storyId) => sceneCheckFor(zeros, storyId),
+    code,
   );
-  const companion = fields.companions.find((row) => row.id === COMPANION_ID);
+  const companion = fields.companions.find((row) => row.id === companionId);
+  // #502: a Companion whose cards were imported as drafts, none of them published yet.
+  const drafts =
+    data.cards.length > 0 && data.cards.every((card) => !card.published && !card.published_at);
   const periods = companion
     ? lifePath(companion.key_code, fields.stories, data.ok ? rows : [], fields.fields)
     : [];
@@ -58,7 +68,7 @@ async function LifePathPage() {
           { label: "Companions", href: "/admin/companions" },
           {
             label: companion?.name ?? "Companion",
-            href: `/admin/companions/${COMPANION_ID}`,
+            href: `/admin/companions/${companionId}`,
           },
         ]}
       />
@@ -66,15 +76,15 @@ async function LifePathPage() {
         title="Stories"
         lede={
           <>
-            Oppenheimer&apos;s stories in story order, by Life Path period. Periods are named, never
-            dated. Open a story to edit its cards and part titles. Description state is the state of
-            the Life path description only (Published, a draft not published yet, or Not written),
-            not of the story&apos;s cards; the description and the period names are edited on the
-            Companion&apos;s page.
+            {companion?.short_name ?? data.companion?.short_name ?? "His"}&apos;s stories in story
+            order, by Life Path period. Periods are named, never dated. Open a story to edit its
+            cards and part titles. Description state is the state of the Life path description only
+            (Published, a draft not published yet, or Not written), not of the story&apos;s cards;
+            the description and the period names are edited on the Companion&apos;s page.
           </>
         }
       />
-      <PublishFirstNotice />
+      <PublishFirstNotice drafts={drafts} />
       {data.ok ? null : (
         <p className="admin-notice" role="alert">
           The stories or their cards could not be read. Try again later.

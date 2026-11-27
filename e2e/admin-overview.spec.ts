@@ -22,10 +22,11 @@ test("test_440_ac1_the_overview_is_the_status_board", async ({ page, context }) 
   // Only the Status board row is current: the other rows do not sit "under" /admin.
   await expect(menu.locator("[aria-current]")).toHaveCount(1);
 
-  // Four count tiles from the seed: two Companions (Oppenheimer has stories), 26 stories with all their cards.
+  // Four count tiles from the seed: three Companions (only Oppenheimer has stories; Snape, #502,
+  // has none until the owner runs the draft import), 26 stories with all their cards.
   const tiles = page.getByRole("region", { name: "Counts" }).locator(".admin-tile");
   await expect(tiles).toHaveCount(4);
-  await expect(tiles.nth(0)).toHaveText("2Companions (1 shown to users, 1 not ready)");
+  await expect(tiles.nth(0)).toHaveText("3Companions (1 shown to users, 2 not ready)");
   await expect(tiles.nth(1)).toHaveText("26stories with all their cards made, of 26");
   await expect(tiles.nth(2)).toContainText(/^\d+drafts waiting for an admin to publish$/);
   await expect(tiles.nth(3)).toContainText(/^\d+stories with every card published$/);

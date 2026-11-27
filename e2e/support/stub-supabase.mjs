@@ -142,6 +142,7 @@ import { readRegistrySeed } from "../../scripts/ai-features/registry-seed.mjs";
 import { readPipelinePrompts } from "../../scripts/ai-features/import-pipeline-prompts.mjs";
 import { registryEditingRoute } from "./stub-ai-registry-editing.mjs";
 import { handleAiSamples } from "./stub-ai-samples.mjs";
+import { draftStoryContent, draftTables } from "./stub-drafts.mjs";
 import { handleAiRuns } from "./stub-ai-runs.mjs";
 import { handleAiComparisons } from "./stub-ai-comparisons.mjs";
 /** #473: the text fields save_ai_feature_fields writes, in its argument order, and their limits. */
@@ -173,11 +174,16 @@ let contentFields = [];
 /** What get_story_content returns: without the two #309 columns, as the real function. */
 const without = (row, column) =>
   Object.fromEntries(Object.entries(row).filter(([name]) => name !== column));
+/** The hosted API's row limit per request (Supabase's default max_rows), for the story tables. */
+const STORY_PAGE_ROWS = 1000;
+/** #502: the invented draft stories of e2e/support/stub-drafts.mjs, as after the import. */
+const drafted = draftStoryContent();
 const storyContentDocument = () =>
   appDocument({
     ...contentRows,
     companions: contentRows.companions.map((row) => without(row, "who")),
-    stories: contentRows.stories.map((row) => without(row, "path")),
+    stories: [...contentRows.stories.map((row) => without(row, "path")), ...drafted.stories],
+    storyInputs: [...contentRows.storyInputs, ...drafted.storyInputs],
   });
 
 const storyCards = storyCardRows(readStoryDecks());
@@ -1034,11 +1040,15 @@ createServer(async (request, response) => {
       return json(response, 204);
     }
     if (cardRpc[1] === "save_story_card_draft") {
-      const rows = cardVersions.filter((row) => row.key === body.card_key);
+      // #502: a card of the account's draft import is saved in its own rows.
+      const pool = dataset.drafts?.story_cards.some((row) => row.key === body.card_key)
+        ? dataset.drafts.story_cards
+        : cardVersions;
+      const rows = pool.filter((row) => row.key === body.card_key);
       if (rows.length === 0) return json(response, 404, { code: "P0002", message: "no card" });
       const newest = rows.reduce((left, right) => (right.version > left.version ? right : left));
       const version = newest.version + 1;
-      cardVersions.push({
+      pool.push({
         ...newest,
         version,
         body: body.card_body,
@@ -1147,10 +1157,28 @@ createServer(async (request, response) => {
       content_fields: contentFields,
     }[storyTable[1]];
     const open = storyTable[1] === "stories" || storyTable[1] === "companions";
-    const visible = open || editor ? all : [];
+    // #502: the account's own draft import, when loaded (the policies as for the seed rows).
+    const own = user.drafts?.[storyTable[1]] ?? [];
+    const visible = open || editor ? [...all, ...own] : [];
     const params = [...url.searchParams.entries()];
     const found = visible.filter((row) => matches(row, params));
-    return json(response, 200, ordered(found, url.searchParams.get("order")));
+    // #514: at most 1000 rows per request, from `offset` (supabase-js `range`), as the hosted API.
+    const offset = Number(url.searchParams.get("offset") ?? 0);
+    const limit = Math.min(
+      Number(url.searchParams.get("limit") ?? STORY_PAGE_ROWS),
+      STORY_PAGE_ROWS,
+    );
+    const page = ordered(found, url.searchParams.get("order")).slice(offset, offset + limit);
+    return json(response, 200, page);
+  }
+
+  // #502: this account reads the invented draft import too (e2e/support/stub-drafts.mjs).
+  if (path === "/__drafts" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    const target = datasets.get(body.token);
+    if (!target) return json(response, 404, { error: "no such token" });
+    target.drafts = body.load === true ? draftTables(Number(body.extraVersions ?? 0)) : undefined;
+    return json(response, 200, { ok: true });
   }
 
   if (path === "/__fail_reads" && request.method === "POST") {

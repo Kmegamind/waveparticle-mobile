@@ -3,7 +3,12 @@ import { connection } from "next/server";
 import { readContentRole } from "@/lib/admin/roles";
 import { storyDetail } from "@/lib/story-cards/admin";
 import { leaksForStory } from "@/lib/story-cards/checks";
-import { readStageZeros, readStoryCardsData, sceneCheckFor } from "@/lib/story-cards/reader";
+import {
+  COMPANION_ID,
+  readStageZeros,
+  readStoryCardsData,
+  sceneCheckFor,
+} from "@/lib/story-cards/reader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { PublishFirstNotice } from "../publish-first-notice";
 import { StoryCardsEditor } from "./story-cards-editor";
@@ -16,7 +21,7 @@ const STORY_ID = /^[a-z0-9][a-z0-9-]*$/;
 // ADM-06, one story (#293, #304), laid out as the prototype's Story cards screen (#444): its
 // background card, then its cards grouped by part with the part title, beside a phone preview. An admin or writer edits a card (a new draft) and the part titles; every version is
 // checked (length, dates, spoilers by part, banned words) and only the admin role publishes a
-// passing draft. An unknown story shows the normal not-found page; the admin layout has already
+// passing draft. Any Companion's story (#502). An unknown story shows the normal not-found page; the admin layout has already
 // started streaming, so the status stays 200.
 export default async function AdminStory({ params }: PageProps<"/admin/stories/[id]">) {
   await connection();
@@ -32,14 +37,27 @@ export default async function AdminStory({ params }: PageProps<"/admin/stories/[
   if (data.ok && !story) notFound();
   const leaks = leaksForStory(data.cards, zeros?.get(id) ?? null);
   const detail = story
-    ? storyDetail(story, data.parts, data.cards, leaks, sceneCheckFor(zeros, id))
+    ? storyDetail(
+        story,
+        data.parts,
+        data.cards,
+        leaks,
+        sceneCheckFor(zeros, id),
+        data.companion?.key_code,
+      )
     : null;
+  // #502: the Stories list of this story's Companion; Oppenheimer's keeps its plain address.
+  const companionId = story?.companion_id ?? COMPANION_ID;
+  const listHref =
+    companionId === COMPANION_ID ? "/admin/stories" : `/admin/stories?companion=${companionId}`;
+  const drafts =
+    data.cards.length > 0 && data.cards.every((card) => !card.published && !card.published_at);
 
   return (
     <>
       <Breadcrumb
         items={[
-          { label: "Stories", href: "/admin/stories" },
+          { label: "Stories", href: listHref },
           { label: detail ? `Story ${detail.sequence} · ${detail.title}` : "Story" },
         ]}
       />
@@ -57,7 +75,7 @@ export default async function AdminStory({ params }: PageProps<"/admin/stories/[
         }
         title="Story cards"
       />
-      <PublishFirstNotice />
+      <PublishFirstNotice drafts={drafts} />
       {zeros === null ? (
         <p className="admin-notice" role="alert">
           The story inputs could not be read, so the spoiler check cannot run. Nothing can be

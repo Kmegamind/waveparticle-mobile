@@ -28,7 +28,8 @@ describe("ADM-06 Stories (#293)", () => {
   // Reworded for PUBLISH-FIRST (2026-11-21, #46): cards are published first and read afterwards.
   it("test_46_both_pages_say_cards_are_published_first_and_read_afterwards", () => {
     for (const file of ["src/app/admin/stories/page.tsx", "src/app/admin/stories/[id]/page.tsx"]) {
-      expect(read(file), file).toContain("<PublishFirstNotice />");
+      // #502: the drafts wording only when none of the shown cards was ever published.
+      expect(read(file), file).toContain("<PublishFirstNotice drafts={drafts} />");
     }
     const notice = read("src/app/admin/stories/publish-first-notice.tsx");
     expect(notice).toContain("Published first, read afterwards.");

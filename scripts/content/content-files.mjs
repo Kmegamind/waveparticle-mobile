@@ -267,6 +267,9 @@ export function contentFilesOf(document) {
   for (const story of document.stories) {
     const inputs = inputsOf.get(story.id);
     if (!inputs) throw new Error(`story ${story.id} has no inputs`);
+    // #502: a story imported as a draft from a folder outside the repository (its text may not be
+    // committed) is never written back to the files.
+    if (inputs.provenance?.outsideRepository === true) continue;
     if (!companionIds.has(story.companion_id)) {
       throw new Error(`story ${story.id} names an unknown Companion: ${story.companion_id}`);
     }

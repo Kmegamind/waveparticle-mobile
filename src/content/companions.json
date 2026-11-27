@@ -20,5 +20,16 @@
     "enterHref": null,
     "mode": "fictional",
     "keyCode": "mor"
+  },
+  {
+    "id": "snape",
+    "name": "Severus Snape",
+    "shortName": "Snape",
+    "tags": "Guarded · Fierce · Loyal",
+    "line": "I have spent most of my life being underestimated. It has proved useful.",
+    "portrait": "/companions/snape.png",
+    "enterHref": null,
+    "mode": "fictional",
+    "keyCode": "snp"
   }
 ]

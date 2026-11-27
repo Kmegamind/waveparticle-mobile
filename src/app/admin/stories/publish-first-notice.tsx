@@ -5,10 +5,22 @@
 const NOTICE =
   "Cards are published first and read afterwards, and phones show the published version. A card that fails an automatic check is marked on this page. Editing a card makes a new draft, and an admin can publish it only once it passes every check. Version 1 of each card was written by AI, loaded without the checks, and has not been read by a person yet.";
 
-export function PublishFirstNotice() {
+// #502: a Companion whose cards were imported as drafts (nothing of his is published yet).
+const DRAFTS_NOTICE =
+  "Version 1 of each card was written by AI and imported as a draft; nothing is published. Phones show none of these cards until an admin publishes them. A card that fails an automatic check is marked on this page, and an admin can publish a card only once it passes every check.";
+
+export function PublishFirstNotice({ drafts = false }: { drafts?: boolean }) {
   return (
     <p className="admin-notice" role="note">
-      <strong>Published first, read afterwards.</strong> {NOTICE}
+      {drafts ? (
+        <>
+          <strong>Imported as drafts.</strong> {DRAFTS_NOTICE}
+        </>
+      ) : (
+        <>
+          <strong>Published first, read afterwards.</strong> {NOTICE}
+        </>
+      )}
     </p>
   );
 }

@@ -14,10 +14,10 @@ describe("story content scripts (#284)", () => {
     expect(sql.startsWith("-- Story content")).toBe(true);
     expect(sql).toMatch(/^begin;$/m);
     expect(sql.trimEnd().endsWith("commit;")).toBe(true);
-    expect(sql.match(/insert into public\.companions /g)).toHaveLength(2);
+    expect(sql.match(/insert into public\.companions /g)).toHaveLength(3);
     expect(sql.match(/insert into public\.stories /g)).toHaveLength(26);
     expect(sql.match(/insert into public\.story_inputs /g)).toHaveLength(26);
-    expect(sql.match(/on conflict \(id\) do update set/g)).toHaveLength(28);
+    expect(sql.match(/on conflict \(id\) do update set/g)).toHaveLength(29);
     expect(sql.match(/on conflict \(story_id\) do update set/g)).toHaveLength(26);
     // Moriarty is a Companion with no stories.
     expect(sql).toMatch(/insert into public\.companions .*\n?.*'moriarty'/);
@@ -36,7 +36,7 @@ describe("story content scripts (#284)", () => {
         .map((statement) => statement.slice(statement.indexOf("do update set")));
     const companionUpdates = updatesOf("companions");
     const storyUpdates = updatesOf("stories");
-    expect(companionUpdates).toHaveLength(2);
+    expect(companionUpdates).toHaveLength(3);
     expect(storyUpdates).toHaveLength(26);
     for (const update of companionUpdates) {
       expect(update).not.toMatch(/\b(name|tags) = excluded/);

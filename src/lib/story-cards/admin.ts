@@ -8,7 +8,7 @@ import { storyRepeatProblems } from "./pool-checks";
 // and `public.story_cards` through the signed-in editor's own client.
 
 /** One row of `public.stories`, as the page reads it. */
-export type StoryRow = { id: string; title: string; sequence: number };
+export type StoryRow = { id: string; title: string; sequence: number; companion_id?: string };
 
 /** One row of `public.story_parts`. */
 export type StoryPartRow = { story_id: string; part: number; title: string };
@@ -89,7 +89,7 @@ export const PART_CARD_MAX_SENTENCES = 3;
 /** The background card is at most 70 words. */
 export const BACKGROUND_CARD_MAX_WORDS = 70;
 
-/** The Companion's short name in keys (NAMING). Oppenheimer is the only Companion with stories. */
+/** The key code (NAMING) used when none is given: Oppenheimer's. #502 passes any Companion's. */
 const COMPANION_SHORT = "opp";
 
 export const wordCount = (text: string) => text.trim().split(/\s+/).filter(Boolean).length;
@@ -211,6 +211,8 @@ export function storyDetail(
   leaksFor: LeaksFor = noLeaks,
   /** The Story's scene check (#64); left out, it does not run; null blocks every card. */
   scene?: SceneCheck | null,
+  /** The Companion's key code (NAMING), for the story's key. */
+  code: string = COMPANION_SHORT,
 ): StoryDetail | null {
   if (!story) return null;
   const own = cards.filter((row) => row.story_id === story.id);
@@ -225,7 +227,7 @@ export function storyDetail(
   );
   return {
     id: story.id,
-    key: `${COMPANION_SHORT}.${story.id}`,
+    key: `${code}.${story.id}`,
     title: story.title,
     sequence: story.sequence,
     background: background ? view(background, own, leaksFor, scene) : null,
@@ -247,11 +249,19 @@ export function storyList(
   cards: StoryCardRow[],
   leaksOf: (storyId: string) => LeaksFor = () => noLeaks,
   sceneOf?: (storyId: string) => SceneCheck | null,
+  code: string = COMPANION_SHORT,
 ): StoryListRow[] {
   return [...stories]
     .sort((left, right) => left.sequence - right.sequence)
     .map((story) => {
-      const detail = storyDetail(story, parts, cards, leaksOf(story.id), sceneOf?.(story.id))!;
+      const detail = storyDetail(
+        story,
+        parts,
+        cards,
+        leaksOf(story.id),
+        sceneOf?.(story.id),
+        code,
+      )!;
       const all = [
         ...(detail.background ? [detail.background] : []),
         ...detail.parts.flatMap((part) => part.cards),
