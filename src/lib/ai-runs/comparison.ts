@@ -15,17 +15,36 @@ export type LabPrompt = {
   key: string;
   published: { version: number; variables: string[] } | null;
   draft: { version: number; variables: string[] } | null;
+  /**
+   * #517: every stored version of the key (public.prompts), active or not, newest first, so a side
+   * can run any of them. Only the number and the {{variables}} reach the browser.
+   */
+  stored?: { version: number; active: boolean; variables: string[] }[];
+  /** #517: the call inputs a runtime key needs beside a sample (src/lib/ai-runs/call-inputs.ts). */
+  callInputs?: string[];
 };
 
 /** A model the lab offers: only its name and whether it is the stub, never its key. */
 export type LabModelName = { name: string; stub: boolean };
 
-/** "published", "draft" (each on the first model) or "model:<name>" (the published version on it). */
+/**
+ * "published", "draft", "version:<n>" (each on the first model; #517: any stored version) or
+ * "model:<name>" (the published version on it).
+ */
 export type SideChoice = string;
 
 export type SideOption = { value: SideChoice; label: string };
 
 const MODEL_PREFIX = "model:";
+const VERSION_PREFIX = "version:";
+
+/** The stored version a "version:<n>" choice names, or null. */
+function storedOf(prompt: LabPrompt, choice: SideChoice) {
+  if (!choice.startsWith(VERSION_PREFIX)) return null;
+  const wanted = choice.slice(VERSION_PREFIX.length);
+  if (!/^[1-9][0-9]*$/.test(wanted)) return null;
+  return (prompt.stored ?? []).find((item) => item.version === Number(wanted)) ?? null;
+}
 
 /** What one side may be: the key's versions, then each configured model. */
 export function sideOptions(prompt: LabPrompt, models: LabModelName[]): SideOption[] {
@@ -35,6 +54,15 @@ export function sideOptions(prompt: LabPrompt, models: LabModelName[]): SideOpti
   }
   if (prompt.draft) {
     options.push({ value: "draft", label: `Draft version (v${prompt.draft.version})` });
+  }
+  // #517: every other stored version (an earlier one, or a draft below the published version).
+  const listed = [prompt.published?.version, prompt.draft?.version];
+  for (const item of [...(prompt.stored ?? [])].sort((l, r) => r.version - l.version)) {
+    if (listed.includes(item.version)) continue;
+    options.push({
+      value: `${VERSION_PREFIX}${item.version}`,
+      label: `Stored version (v${item.version})`,
+    });
   }
   const runs = prompt.published ? "published version" : "draft version";
   for (const model of models) {
@@ -68,17 +96,33 @@ export function sideRequest({
   choice,
   sample,
   models,
+  inputs,
 }: {
   feature: string;
   prompt: LabPrompt;
   choice: SideChoice;
   sample: string | null;
   models: LabModelName[];
+  /** #517: the call inputs beside the sample, the same for both sides. */
+  inputs?: Record<string, string>;
 }): RunRequest | null {
   const first = models[0];
   if (!first) return null;
   let model = first.name;
   let source: "published" | "draft";
+  const stored = storedOf(prompt, choice);
+  if (choice.startsWith(VERSION_PREFIX)) {
+    if (!stored) return null;
+    // The Run route runs any stored version by its number (source "draft" in the request).
+    return {
+      feature,
+      promptKey: prompt.key,
+      prompt: { source: "draft", version: stored.version },
+      sample,
+      model,
+      ...(inputs ? { inputs } : {}),
+    };
+  }
   if (choice.startsWith(MODEL_PREFIX)) {
     const named = models.find((item) => `${MODEL_PREFIX}${item.name}` === choice);
     if (!named) return null;
@@ -100,11 +144,13 @@ export function sideRequest({
         : { source: "published" },
     sample,
     model,
+    ...(inputs ? { inputs } : {}),
   };
 }
 
 /** The {{variables}} of the version a side runs. */
 export function sideVariables(prompt: LabPrompt, choice: SideChoice): string[] {
+  if (choice.startsWith(VERSION_PREFIX)) return storedOf(prompt, choice)?.variables ?? [];
   const draft = choice === "draft" || (choice.startsWith(MODEL_PREFIX) && !prompt.published);
   return (draft ? prompt.draft?.variables : prompt.published?.variables) ?? [];
 }

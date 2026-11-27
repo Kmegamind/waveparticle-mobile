@@ -4,6 +4,7 @@ import type { PromptVersionRow } from "@/lib/prompts/admin";
 import type { PromptRow } from "@/lib/prompts/repository";
 import { emptyProblems, emptyVariables, sampleProblem } from "@/lib/ai-samples/variables";
 import { placeholderNames, renderPrompt, type PromptValue } from "@/lib/prompts/template";
+import { CALL_INPUT_MAX_LENGTH, callInputFrom, callInputNames } from "./call-inputs";
 import { runCost, type CostNote, type PriceTable } from "./cost";
 import type { LabModel } from "./model";
 
@@ -48,6 +49,12 @@ export type RunRequest = {
   sample: string | null;
   /** The model name: one of the lab's configured models (labModelsFromEnv, src/lib/ai-runs/model.ts). */
   model: string;
+  /**
+   * #517: the rest of a runtime call's input beside the sample (the person's message, the draft,
+   * the Pause number ...; src/lib/ai-runs/call-inputs.ts). With a sample, a runtime key then runs
+   * with the gateway's own prompt and checks. Left out: the sample fills {{variables}}, as before.
+   */
+  inputs?: Record<string, string>;
 };
 
 /**
@@ -186,6 +193,7 @@ function validRequest(value: unknown): value is RunRequest {
   ) {
     return false;
   }
+  if (r.inputs !== undefined && !validInputs(r.inputs)) return false;
   const prompt = r.prompt as Record<string, unknown> | null;
   if (typeof prompt !== "object" || prompt === null) return false;
   if (prompt.source === "published") return true;
@@ -203,6 +211,20 @@ function validRequest(value: unknown): value is RunRequest {
   }
   return false;
 }
+
+function validInputs(value: unknown): value is Record<string, string> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const entries = Object.entries(value);
+  return (
+    entries.length <= 10 &&
+    entries.every(
+      ([name, text]) =>
+        SLUG_NAME.test(name) && typeof text === "string" && text.length <= CALL_INPUT_MAX_LENGTH,
+    )
+  );
+}
+
+const SLUG_NAME = /^[A-Za-z][A-Za-z0-9_]{0,40}$/;
 
 function maxTokens(params: Record<string, unknown>): number {
   const value = params.max_tokens;
@@ -289,7 +311,20 @@ export async function runPrompt(request: RunRequest, deps: RunDeps): Promise<Run
   let check: ((raw: string) => { passed: boolean; failedRules: string[] }) | null = null;
   let note: string;
   const runtime = feature.category === "runtime" && isLabCallKey(request.promptKey);
-  const callInput = sample?.calls?.[request.promptKey];
+  let callInput = sample?.calls?.[request.promptKey];
+  if (
+    runtime &&
+    sample &&
+    callInput === undefined &&
+    request.inputs !== undefined &&
+    callInputNames(request.promptKey).length > 0
+  ) {
+    // #517: the call's input from the sample (Companion, facts) and the lab's call inputs. An empty
+    // sample field or call input stops the Run here, before the row and the model call, named.
+    const built = callInputFrom(request.promptKey, sample.values, request.inputs);
+    if (!built.ok) return { ok: false, error: "prompt-problem", problems: built.problems };
+    callInput = built.input;
+  }
   if (runtime && callInput !== undefined) {
     const row = { key: request.promptKey, version: version ?? 0, body, params } as PromptRow;
     const built = buildLabCall(

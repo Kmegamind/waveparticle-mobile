@@ -389,6 +389,14 @@ Owner definition, issue #505.
 |---|---|---|---|
 | SLICE-SUBTASK | 2026-11-27 | A story is one episode and the Companion's own goal for that moment. His goal is split into sub-tasks (the plan's aims; five by default), and **each sub-task is one slice**: `story_parts.part` 1 to 5 are the sub-tasks, and `story_cards.slice` is `s<part>`. A slice holds the facts of its sub-task (three to five in the fictional stories). A separate AI step splits each slice into story cards; a card shows what he is doing now, from his own point of view and in his own voice, and earlier events appear only as the reason for what he does now. A slice is not the user's Step (a Step covers one or more slices, or part of one, in order) and not a key slice (`keySlices`, two to four per story, which are cut points). | Replaces the glossary meaning "one to three historical facts" (PRD glossary, FR-CONTENT-2, CONTENT_MODEL 2.3) and the rule that slices serve only the authored fallback cards (follows NO-BACKUP, D5, NO-FALLBACK-TABLES). The 1-to-3-facts limit is no check on fictional stories. T3 (Step count is separate from slices) and the key slices (C2, FR-CONTENT-4) are unchanged. |
 
+### Rest chat in two calls (2026-11-27)
+
+Owner decision, issue #517 (`story-pipeline/admin-handoff_2026-11-26/8_dialogue_prompts_2026-11-27.md`).
+
+| Id | Date | Decision | Consequences |
+|---|---|---|---|
+| REST-TWO-CALLS | 2026-11-27 | The rest chat reply is two model calls. Call one, `rest_reply`, writes the reply. Call two, `rest_reply_review`, reads that draft as the user would (its new variable `{{draft}}` is call one's reply) and returns it unchanged or rewritten, as JSON `{"reply": "..."}`. The final reply passes every rest chat check (the AI-6 rules, CHAT-USER-WORD, CHAT-SPOILER-CHECK; the safety classifier still runs on the user's message before either call). If call two fails, times out, returns invalid JSON or fails a check, call one's reply is shown (it passed the same checks). If call one fails, it is generated again within the time limit, then the failure message with Retry (NO-BACKUP, FAIL-SCREEN). While `rest_reply_review` has no active version, the rest chat makes call one only, as before. | Both calls share the rest chat's one time limit (12 s, TIME-LIMIT), counted from when the message started: call one, with its retries, may use all of it; call two gets one attempt, no retry, in the time call one left. Call two's reply must also pass call one's checks, so a review prompt cannot loosen the rest_reply limits. `rest_reply_review` is registry row R-08 (category runtime); its row and its prompt versions are owner SQL, inactive until the owner activates a version. The comparison lab runs any stored version of a prompt (#517). Built in #517. |
+
 ## 2. Superseded rules (do not implement)
 
 | Rule | Replaced by |
