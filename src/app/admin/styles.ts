@@ -18,4 +18,5 @@ import "./prompts/prompts.css";
 import "./publish-history/publish-history.css";
 import "./hotlines/hotlines.css";
 import "./ai-features/ai-features.css";
+import "./ai-samples/ai-samples.css";
 import "./app-text/app-text.css";

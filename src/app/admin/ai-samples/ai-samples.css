@@ -1,0 +1,44 @@
+/* AIR-6 Samples (issue 479), drawn in docs/design/prototype/admin-ai-features.html (#reg-samples).
+   Loaded by the admin layout through src/app/admin/styles.ts, after src/app/admin/admin.css. Every
+   selector here names a class of this page only, so the rules do nothing on other admin pages. The
+   list reuses the Companions list's clickable row (.admin-row-click) and the Companion profile's
+   field rows (.admin-fields). */
+
+/* The chosen sample's row (the drawing's tr.sel). */
+.admin-samples .admin-row-sel td {
+  background: var(--adm-accent-soft);
+}
+
+/* The chosen sample's inputs, under the list (the drawing's panel with margin-top 14 px). */
+.admin-samples-detail {
+  margin-top: var(--adm-gap);
+}
+
+/* The drawing's .panel > h2: a flex row, so a pill could sit beside the title. */
+.admin-main .admin-samples-detail > h2 {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-gap-small);
+  margin: 0 0 var(--adm-h2-after);
+}
+
+.admin-samples-list {
+  list-style: disc;
+  margin: 0;
+  padding-left: var(--adm-list-indent);
+}
+
+ol.admin-samples-list {
+  list-style: decimal;
+}
+
+.admin-samples-goal {
+  margin: 0 0 var(--adm-gap-tiny);
+}
+
+/* The note under the page (the drawing's p.note, margin-top 10 px). */
+.admin-samples-after {
+  margin-bottom: var(--adm-note-after);
+  margin-top: var(--adm-h2-after);
+}
