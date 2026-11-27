@@ -118,7 +118,7 @@ describe("registry table (#474, FR-AIREG-1)", () => {
       prompts: [{ key: "p01_find_episodes", published: 1, draft: 2 }],
     });
     // The search covers the category, the prompt version, the status and the example words.
-    for (const words of ["pipeline", "p01_find_episodes", "v1", "exploring", "none"]) {
+    for (const words of ["pipeline", "p01_find_episodes", "v1", "draft v2", "exploring", "none"]) {
       expect(result.search, words).toContain(words);
     }
     // No draft: only the published version.

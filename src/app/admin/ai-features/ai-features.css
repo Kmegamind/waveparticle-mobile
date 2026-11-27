@@ -305,6 +305,13 @@
   overflow-wrap: normal;
 }
 
+/* The two long text cells wrap a token longer than the cell anywhere, so stored text is never
+   clipped and never widens the table (issue 474, review I1). */
+.admin-reg td.admin-reg-wide,
+.admin-reg td.admin-cell-note {
+  overflow-wrap: anywhere;
+}
+
 /* A {{variable}} in a prompt text (the drawing's .var). */
 .admin-var {
   background: var(--adm-accent-soft);

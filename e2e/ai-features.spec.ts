@@ -501,20 +501,58 @@ test.describe("#439 AI feature pages", () => {
         new_notes: "",
       });
       expect(saved.status).toBe(204);
+
+      /**
+       * #474 review I1: the token wraps inside its own box. The box's content is no wider than
+       * the box (nothing hidden or spilling), the text's own box stays within it, and the box is
+       * far narrower than the unbroken token would be, so the token really wraps.
+       */
+      const wrapsInside = (box: import("@playwright/test").Locator) =>
+        box.evaluate((element) => {
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          const text = range.getBoundingClientRect();
+          const outer = element.getBoundingClientRect();
+          return {
+            scrollWidth: element.scrollWidth,
+            clientWidth: element.clientWidth,
+            textLeft: text.left,
+            textRight: text.right,
+            left: outer.left,
+            right: outer.right,
+            width: outer.width,
+          };
+        });
+      const expectWrapped = (found: Awaited<ReturnType<typeof wrapsInside>>) => {
+        expect(found.scrollWidth).toBeLessThanOrEqual(found.clientWidth);
+        expect(found.textLeft).toBeGreaterThanOrEqual(found.left - 0.5);
+        expect(found.textRight).toBeLessThanOrEqual(found.right + 0.5);
+        // 200 "x" at 14 px are about 1440 px wide unbroken (the mutation measured 1440).
+        expect(found.width).toBeLessThan(1000);
+      };
+
+      // The detail page: the requirement sits in a normal panel, no scrolling box around it.
+      await page.goto("/admin/ai-features/pause_message");
+      const requirement = page.locator("#requirement > .admin-field-text");
+      await expect(requirement).toHaveText(token);
+      expectWrapped(await wrapsInside(requirement));
+      const detail = await overflow();
+      expect(detail.outside).toEqual([]);
+      expect(detail.panels).toEqual([]);
+      expect(detail.scrollWidth).toBe(detail.clientWidth);
+
+      // The registry: the wide table scrolls in its panel by design (its 1480 px minimum), so the
+      // helper above skips its cells; the Requirement cell itself must wrap the token.
       await page.goto("/admin/ai-features");
       const table = page.getByRole("table", { name: "AI features" });
-      await expect(table).toContainText(token);
+      const cell = table.locator("tbody tr", { hasText: "R-03" }).locator("td.admin-reg-wide");
+      await expect(cell).toHaveText(token);
+      expectWrapped(await wrapsInside(cell));
       const index = await overflow();
       expect(index.outside).toEqual([]);
       expect(index.panels).toEqual([]);
+      // The page itself never scrolls sideways.
       expect(index.scrollWidth).toBe(index.clientWidth);
-      const panel = page.locator(".admin-reg-scroll");
-      const scroll = await panel.evaluate((element) => ({
-        scrollWidth: element.scrollWidth,
-        clientWidth: element.clientWidth,
-      }));
-      // The token is reachable: the panel scrolls rather than clipping it.
-      expect(scroll.scrollWidth).toBeGreaterThan(scroll.clientWidth);
     } finally {
       await stub("/__prompts", null, { reset: "stuck_story" });
       await stub("/__ai_features", null, { token: writer.token, purpose: null });

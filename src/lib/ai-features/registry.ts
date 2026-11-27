@@ -114,6 +114,7 @@ export function registryRow(
     ...prompts.flatMap((prompt) => [
       prompt.key,
       prompt.published === null ? "" : `v${prompt.published}`,
+      prompt.draft === null ? "" : `Draft v${prompt.draft}`,
     ]),
     AI_FEATURE_STATUS_LABEL[row.status] ?? "",
     EXAMPLE_STATE_LABEL[row.exampleState] ?? "",

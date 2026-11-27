@@ -270,8 +270,8 @@ test.describe("#474 the registry read view", () => {
 
   const table = (page: import("@playwright/test").Page) =>
     page.getByRole("table", { name: "AI features" });
-  const ids = (page: import("@playwright/test").Page) =>
-    table(page).locator("tbody tr td:first-child").allInnerTexts();
+  const idCells = (page: import("@playwright/test").Page) =>
+    table(page).locator("tbody tr td:first-child");
   const section = (page: import("@playwright/test").Page, name: string | RegExp) =>
     page.getByRole("region", { name });
 
@@ -293,7 +293,7 @@ test.describe("#474 the registry read view", () => {
       "Example",
     ]);
     await expect(table(page).locator("tbody tr")).toHaveCount(19);
-    expect(await ids(page)).toEqual(SEED_ORDER);
+    await expect(idCells(page)).toHaveText(SEED_ORDER);
 
     const p01 = table(page).locator("tbody tr").first();
     await expect(p01.locator("td").nth(1)).toHaveText("Find episodes");
@@ -344,15 +344,15 @@ test.describe("#474 the registry read view", () => {
     await expect(table(page).locator("tbody tr")).toHaveCount(19);
 
     await page.getByRole("combobox", { name: "Category" }).selectOption({ label: "Runtime" });
-    expect(await ids(page)).toEqual(SEED_ORDER.filter((id) => id.startsWith("R")));
+    await expect(idCells(page)).toHaveText(SEED_ORDER.filter((id) => id.startsWith("R")));
     await page.getByRole("combobox", { name: "Category" }).selectOption({ label: "Quality gate" });
     await page.getByRole("combobox", { name: "Status" }).selectOption({ label: "Not started" });
-    expect(await ids(page)).toEqual(["G-03", "G-04"]);
+    await expect(idCells(page)).toHaveText(["G-03", "G-04"]);
 
     await page.getByRole("combobox", { name: "Category" }).selectOption({ label: "All" });
     await page.getByRole("combobox", { name: "Status" }).selectOption({ label: "All" });
     await page.getByRole("textbox", { name: "Search" }).fill("judge");
-    expect(await ids(page)).toEqual(["G-01", "G-03"]);
+    await expect(idCells(page)).toHaveText(["G-01", "G-03"]);
     await page.getByRole("textbox", { name: "Search" }).fill("no row says this");
     await expect(table(page).locator("tbody")).toHaveText("No feature matches these filters");
     await page.getByRole("textbox", { name: "Search" }).fill("");
@@ -361,7 +361,7 @@ test.describe("#474 the registry read view", () => {
     await expect(sort).toHaveText("Sort by ID ↑");
     await sort.click();
     await expect(sort).toHaveText("Sort by ID ↓");
-    expect(await ids(page)).toEqual([...SEED_ORDER].reverse());
+    await expect(idCells(page)).toHaveText([...SEED_ORDER].reverse());
   });
 
   test("test_474_ac1_the_wide_table_scrolls_in_its_panel_with_id_and_name_in_view", async ({

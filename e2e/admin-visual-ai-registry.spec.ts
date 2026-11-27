@@ -193,6 +193,10 @@ const LIVE_REGISTRY_PROTOTYPE: Gate["prototypePages"] = {
   featAdmin: { hash: "reg-feature/admin/R-03", file: "aiFeatures" },
   featWriter: { hash: "reg-feature/writer/R-03", file: "aiFeatures" },
   featPipeline: { hash: "reg-feature/admin/P-02", file: "aiFeatures" },
+  // #474 review I2: the parts of the Runtime detail that #reg-feature draws with sample text only
+  // (the pass questions, the draft mark, "No real run yet") are compared with the #439 feature
+  // page of the same drawing (AIF-2), as before this pull request.
+  aif2: { hash: "feature", file: "aiFeatures" },
 };
 
 const LIVE_REGISTRY_PAGES: Gate["livePages"] = {
@@ -399,6 +403,16 @@ const LIVE_REGISTRY_COMPONENTS: Component[] = [
     box: ["height"],
   },
   {
+    name: "registry: status pill dot",
+    prototype: { page: "regAdmin", selector: "table.reg td:nth-child(7) .pill.s-gen" },
+    live: {
+      page: "regAdmin",
+      selector: "table.admin-reg td:nth-child(7) .admin-pill-ai-exploring",
+    },
+    pseudo: "::before",
+    properties: [...STYLE, "width", "height", "content"],
+  },
+  {
     name: "registry: Change",
     prototype: { page: "regAdmin", selector: "table.reg td:nth-child(7) button.small" },
     live: { page: "regAdmin", selector: "table.admin-reg td:nth-child(7) .button-small" },
@@ -549,6 +563,53 @@ const LIVE_REGISTRY_COMPONENTS: Component[] = [
     name: "feature: source line",
     prototype: { page: "featAdmin", selector: ".stack .src" },
     live: { page: "featAdmin", selector: ".admin-sections .admin-src" },
+  },
+  // #474 review I2: Purpose and Current approach (Runtime rows), one item text per line. The
+  // drawing's #reg-feature draws Purpose as one paragraph and no Current approach section; the
+  // live approach line is the same component as the purpose line, so both are compared with it.
+  ...(["purpose", "approach"] as const).map((id): Component => ({
+    name: `feature: ${id === "purpose" ? "Purpose" : "Current approach"} item text`,
+    prototype: { page: "featAdmin", selector: ".stack > .panel:nth-child(2) > p:first-of-type" },
+    live: { page: "featAdmin", selector: `#${id} .admin-items .admin-item-text` },
+  })),
+  {
+    name: "feature: draft mark (Draft - owner to edit)",
+    prototype: { page: "aif2", selector: ".src .pill.s-checked" },
+    live: { page: "featAdmin", selector: "#purpose .admin-src .admin-pill-mark" },
+    box: ["height"],
+  },
+  {
+    name: "feature: draft mark dot",
+    prototype: { page: "aif2", selector: ".src .pill.s-checked" },
+    live: { page: "featAdmin", selector: "#purpose .admin-src .admin-pill-mark" },
+    pseudo: "::before",
+    properties: [...STYLE, "width", "height", "content"],
+  },
+  {
+    name: "feature: item source line",
+    prototype: { page: "aif2", selector: ".stack > .panel:first-child > .src" },
+    live: { page: "featAdmin", selector: "#purpose .admin-items .admin-src" },
+  },
+  {
+    name: "feature: source chip",
+    prototype: { page: "aif2", selector: ".src .key" },
+    live: { page: "featAdmin", selector: "#purpose .admin-src .admin-chip" },
+    box: ["height"],
+  },
+  {
+    name: "feature: pass questions",
+    prototype: { page: "aif2", selector: "ol.qs" },
+    live: { page: "featAdmin", selector: "#pass > .admin-questions" },
+  },
+  {
+    name: "feature: pass question",
+    prototype: { page: "aif2", selector: "ol.qs li" },
+    live: { page: "featAdmin", selector: "#pass > .admin-questions > li" },
+  },
+  {
+    name: "feature: No real run yet",
+    prototype: { page: "aif2", selector: ".stack > .panel:last-child > .empty" },
+    live: { page: "featAdmin", selector: "#tests > .admin-empty.admin-after-table" },
   },
   {
     name: "feature: prompt line",
