@@ -221,3 +221,214 @@
   transform: translateX(-50%);
   z-index: var(--adm-toast-layer);
 }
+
+/* Issue 474: the AI feature registry (drawing #reg-registry) and its feature detail
+   (#reg-feature). The example states and the viewer's role in the drawing's pill colours. */
+.admin-pill-example-none,
+.admin-pill-role-writer {
+  background: var(--adm-soft);
+  color: var(--adm-muted);
+}
+
+.admin-pill-example-candidate {
+  background: var(--adm-warn-soft);
+  color: var(--adm-warn);
+}
+
+.admin-pill-example-confirmed {
+  background: var(--adm-ok-soft);
+  color: var(--adm-ok);
+}
+
+.admin-pill-role-admin {
+  background: var(--adm-accent-soft);
+  color: var(--adm-accent);
+}
+
+/* The filter row above the table (the drawing's .filters). */
+.admin-filters {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-filter-gap);
+  margin-bottom: var(--adm-filter-after);
+}
+
+.admin-filters label {
+  color: var(--adm-muted);
+  display: grid;
+  font-size: var(--adm-note-size);
+  font-weight: 600;
+  gap: var(--adm-label-gap);
+}
+
+.admin-filters select.admin-text-field {
+  width: auto;
+}
+
+.admin-filters input.admin-text-field {
+  width: var(--adm-search-width);
+}
+
+/* The wide table scrolls inside its panel; ID and Name stay in view (the drawing's table.reg). */
+.admin-table.admin-reg {
+  min-width: var(--adm-reg-table-min);
+}
+
+.admin-reg th:nth-child(1),
+.admin-reg td:nth-child(1) {
+  background: var(--adm-panel);
+  left: 0;
+  min-width: var(--adm-reg-id-column);
+  position: sticky;
+  width: var(--adm-reg-id-column);
+  z-index: var(--adm-reg-sticky-layer);
+}
+
+.admin-reg th:nth-child(2),
+.admin-reg td:nth-child(2) {
+  background: var(--adm-panel);
+  box-shadow: inset -1px 0 0 var(--adm-line);
+  left: var(--adm-reg-id-column);
+  min-width: var(--adm-reg-name-column);
+  position: sticky;
+  z-index: var(--adm-reg-sticky-layer);
+}
+
+.admin-reg td.admin-reg-wide {
+  min-width: var(--adm-reg-wide-column);
+}
+
+/* In this wide table a cell is never squeezed below its longest word, as on the old index. */
+.admin-reg th,
+.admin-reg td {
+  overflow-wrap: normal;
+}
+
+/* The two long text cells wrap a token longer than the cell anywhere, so stored text is never
+   clipped and never widens the table (issue 474, review I1). */
+.admin-reg td.admin-reg-wide,
+.admin-reg td.admin-cell-note {
+  overflow-wrap: anywhere;
+}
+
+/* A {{variable}} in a prompt text (the drawing's .var). */
+.admin-var {
+  background: var(--adm-accent-soft);
+  border-radius: var(--adm-r-var);
+  color: var(--adm-accent);
+  font-family: var(--adm-font-mono);
+  padding: var(--adm-var-pad);
+}
+
+/* The loading state (the drawing's .skel lines). */
+.admin-skel {
+  background: var(--adm-soft);
+  border-radius: var(--adm-r-menu);
+  height: var(--adm-skel-height);
+  margin: var(--adm-skel-gap) 0;
+}
+
+.admin-skel-80 {
+  width: var(--adm-skel-long);
+}
+
+.admin-skel-60 {
+  width: var(--adm-skel-short);
+}
+
+/* A read that failed, with Retry (the drawing's .errbox). */
+.admin-errbox {
+  align-items: center;
+  background: var(--adm-bad-soft);
+  border-radius: var(--adm-r-code);
+  color: var(--adm-bad);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--adm-head-gap);
+  justify-content: space-between;
+  margin: 0 0 var(--adm-errbox-after);
+  padding: var(--adm-empty-pad);
+}
+
+/* A text field of the detail page, and the example's line above its text. */
+.admin-field-text,
+.admin-main .admin-example-meta {
+  margin: 0;
+}
+
+.admin-main .admin-example-meta {
+  margin-bottom: var(--adm-cmp-label-after);
+}
+
+/* A stored field keeps its line breaks (as App text, issue 445; the drawing's sample is one line). */
+.admin-field-text {
+  white-space: pre-wrap;
+}
+
+/* The drawing's small buttons centre their word; these are links drawn as buttons. */
+.admin-reg .button-small,
+.admin-errbox .button-small {
+  text-align: center;
+}
+
+/* A chip in a section heading takes the heading's weight, as the drawing's h2 .key. */
+.admin-main .admin-section > h2 .admin-chip {
+  font-weight: inherit;
+}
+
+.admin-after-text {
+  margin-top: var(--adm-note-gap);
+}
+
+/* The prompt panel: each key's published text and draft side by side, then the changed lines. */
+.admin-reg-prompts {
+  display: grid;
+  gap: var(--adm-gap);
+}
+
+.admin-reg-prompt-key .admin-prompt-meta {
+  margin: 0 0 var(--adm-gap-small);
+}
+
+.admin-cmp {
+  display: grid;
+  gap: var(--adm-cmp-gap);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-main .admin-cmp-label {
+  margin: 0 0 var(--adm-cmp-label-after);
+}
+
+.admin-main .admin-diff-label {
+  margin: var(--adm-diff-label-before) 0 var(--adm-cmp-label-after);
+}
+
+.admin-reg-diff {
+  border: 1px solid var(--adm-line);
+  border-radius: var(--adm-r-code);
+  font-family: var(--adm-font-mono);
+  font-size: var(--adm-code-size);
+  list-style: none;
+  margin: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.admin-reg-diff > li {
+  display: block;
+  overflow-wrap: anywhere;
+  padding: var(--adm-diff-line-pad);
+  white-space: pre-wrap;
+}
+
+.admin-reg-diff > .admin-reg-diff-added {
+  background: var(--adm-ok-soft);
+  color: var(--adm-ok);
+}
+
+.admin-reg-diff > .admin-reg-diff-removed {
+  background: var(--adm-bad-soft);
+  color: var(--adm-bad);
+}

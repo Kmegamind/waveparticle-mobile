@@ -76,7 +76,11 @@ export function settingsLines(params: Record<string, unknown>, prefix = ""): str
     });
 }
 
-function versionsOf(key: string, rows: PromptVersionRow[]) {
+/**
+ * Every version of one key, newest first, its active version and its newest draft. Any key, also a
+ * Pipeline or Quality gate key that the gateway does not know (#474, the AI feature registry).
+ */
+export function versionsOf(key: string, rows: PromptVersionRow[]) {
   const versions = rows
     .filter((row) => row.key === key)
     .sort((left, right) => right.version - left.version);

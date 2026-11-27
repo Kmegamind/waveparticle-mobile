@@ -244,25 +244,27 @@ test.describe("#439 AI feature pages", () => {
       "aria-current",
       "page",
     );
+    // #474: the index is now the registry table. The shared stub holds the 7 Runtime rows of the
+    // registry migration (R-01 to R-07, no registry field filled yet).
     const table = page.getByRole("table", { name: "AI features" });
     const rows = table.locator("tbody tr");
     await expect(rows).toHaveCount(7);
     for (const [index, title] of TITLES.entries()) {
       const row = rows.nth(index);
-      await expect(row.getByRole("link", { name: title, exact: true })).toBeVisible();
+      await expect(row.locator("td").first()).toHaveText(`R-0${index + 1}`);
+      await expect(
+        row.getByRole("link", { name: title.replace(/ \(.*\)$/, ""), exact: true }),
+      ).toBeVisible();
       await expect(row.locator(".admin-pill-ai-exploring")).toHaveText("Exploring");
     }
-    // The imported run is the pause message's last run, marked as the fake model.
-    await expect(rows.nth(2)).toContainText("2026-11-25 20:15");
-    await expect(rows.nth(2)).toContainText("Fake model (stub)");
-    await expect(rows.nth(3)).toContainText("No run yet");
-    await expect(rows.nth(0)).toContainText(
-      "Turn the goal the person typed and the minutes they gave into steps they can start.",
-    );
+    await expect(rows.nth(0).locator("td").nth(3)).toHaveText("Not written yet");
 
-    await rows.nth(2).getByRole("link").click();
+    await rows.nth(2).getByRole("link", { name: "Pause message", exact: true }).click();
     await expect(page).toHaveURL(/\/admin\/ai-features\/pause_message$/);
-    await expect(page.getByRole("heading", { level: 1, name: TITLES[2] })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "R-03 Pause message" })).toBeVisible();
+    // The imported run is the pause message's last run, marked as the fake model.
+    await expect(section(page, "Test results")).toContainText("2026-11-25 20:15");
+    await expect(section(page, "Test results")).toContainText("Fake model (stub)");
     // A detail page marks its menu row.
     await expect(menu.getByRole("link", { name: /AI features/ })).toHaveAttribute(
       "aria-current",
@@ -276,19 +278,19 @@ test.describe("#439 AI feature pages", () => {
   }) => {
     await signIn(context, baseUrlOf(page), undefined, { contentRole: "writer" });
     await page.goto("/admin/ai-features/pause_message");
-    const purpose = section(page, "(a) Purpose");
+    const purpose = section(page, "Purpose");
     const first = purpose.getByRole("listitem").first();
     await expect(first).toContainText("Pause opens the rest page");
     await expect(first).toContainText("Draft - owner to edit");
     await expect(first.locator(".admin-chip")).toHaveText("docs/PRD.md:271");
-    const questions = section(page, "(b) Pass standard").getByRole("listitem");
+    const questions = section(page, "Pass standard").getByRole("listitem");
     await expect(questions).toHaveCount(9);
     for (const item of await questions.all()) {
       await expect(item).toContainText("Draft - owner to edit");
       await expect(item).toContainText("Source:");
     }
-    await expect(section(page, "(c) Current approach").getByRole("listitem")).toHaveCount(5);
-    const status = section(page, /^\(d\) Status/);
+    await expect(section(page, "Current approach").getByRole("listitem")).toHaveCount(5);
+    const status = section(page, /^Status/);
     await expect(status.locator(".admin-pill-ai-exploring")).toHaveText("Exploring");
     // Read view: no editor and no status change here (#430 T6).
     await expect(page.getByRole("button")).toHaveText(["Sign out"]);
@@ -305,13 +307,13 @@ test.describe("#439 AI feature pages", () => {
     });
     expect(saved.status).toBe(204);
     await page.goto("/admin/ai-features/closing_line");
-    const purpose = section(page, "(a) Purpose");
+    const purpose = section(page, "Purpose");
     await expect(purpose).toContainText("Owner text.");
     // Owner text is no draft and has no source.
     await expect(purpose).not.toContainText("Draft - owner to edit");
     await expect(purpose).not.toContainText("Source:");
-    await expect(section(page, "(b) Pass standard")).toContainText("Not written yet");
-    await expect(section(page, "(c) Current approach")).toContainText("Not written yet");
+    await expect(section(page, "Pass standard")).toContainText("Not written yet");
+    await expect(section(page, "Current approach")).toContainText("Not written yet");
   });
 
   test("test_439_ac3_prompt_text_is_read_live_published_and_draft", async ({ page, context }) => {
@@ -320,7 +322,7 @@ test.describe("#439 AI feature pages", () => {
     const predicament = await activePrompt(writer.token, "pause_predicament");
     const draftBody = `${stuck}\nA draft line for #439.`;
     await page.goto("/admin/ai-features/pause_message");
-    const prompts = section(page, "(e) Prompt text");
+    const prompts = section(page, "Prompt");
     await expect(prompts.getByRole("region", { name: "stuck_story" })).toBeVisible();
     await expect(
       prompts
@@ -341,14 +343,14 @@ test.describe("#439 AI feature pages", () => {
       expect(saved.status).toBe(200);
       const version = (await saved.json()) as number;
       await page.reload();
-      const key = section(page, "(e) Prompt text").getByRole("region", { name: "stuck_story" });
+      const key = section(page, "Prompt").getByRole("region", { name: "stuck_story" });
       await expect(key).toBeVisible();
       expect(await key.getByLabel("Published stuck_story").textContent()).toBe(stuck);
       expect(
         await key.getByLabel(`Draft v${version} of stuck_story`, { exact: true }).textContent(),
       ).toBe(draftBody);
       expect(
-        await section(page, "(e) Prompt text")
+        await section(page, "Prompt")
           .getByRole("region", { name: "pause_predicament" })
           .textContent(),
       ).toContain("No draft.");
@@ -364,7 +366,7 @@ test.describe("#439 AI feature pages", () => {
     await importFakeRun();
     await signIn(context, baseUrlOf(page), undefined, { contentRole: "admin" });
     await page.goto("/admin/ai-features/pause_message");
-    const results = section(page, "(f) Test results");
+    const results = section(page, "Test results");
     const rows = results.locator("tbody tr");
     await expect(rows).toHaveCount(1);
     await expect(rows.first()).toContainText("2026-11-25 20:15");
@@ -375,8 +377,8 @@ test.describe("#439 AI feature pages", () => {
     await expect(results).toContainText("No real run yet (#413)");
 
     await page.goto("/admin/ai-features/rest_reply");
-    await expect(section(page, "(f) Test results")).toContainText("No run yet");
-    await expect(section(page, "(f) Test results")).toContainText("No real run yet (#413)");
+    await expect(section(page, "Test results")).toContainText("No run yet");
+    await expect(section(page, "Test results")).toContainText("No real run yet (#413)");
   });
 
   test("test_439_ac5_every_page_shows_the_retry_hints_fix", async ({ page, context }) => {
@@ -472,34 +474,89 @@ test.describe("#439 AI feature pages", () => {
       expect(draft.status).toBe(200);
 
       await page.goto("/admin/ai-features/pause_message");
-      const prompt = section(page, "(e) Prompt text").getByRole("region", {
+      const prompt = section(page, "Prompt").getByRole("region", {
         name: "stuck_story",
       });
       await expect(prompt.getByLabel(/^Draft v\d+ of stuck_story$/)).toContainText(token);
-      await expect(section(page, "(a) Purpose")).toContainText(token);
+      await expect(section(page, "Purpose")).toContainText(token);
       const featurePage = await overflow();
       expect(featurePage.outside).toEqual([]);
       expect(featurePage.panels).toEqual([]);
       expect(featurePage.scrollWidth).toBe(featurePage.clientWidth);
 
-      // The index's purpose cell: the table keeps whole words and scrolls inside its panel.
+      // #474: the index is the registry, which shows the requirement, not the purpose. The token
+      // goes into this account's own copy of the features (POST /__ai_features { token, own }),
+      // never into the shared rows the visual gate reads. The table keeps whole words and scrolls
+      // inside its panel.
+      expect((await stub("/__ai_features", null, { token: writer.token, own: true })).status).toBe(
+        200,
+      );
+      const saved = await stub("/rest/v1/rpc/save_ai_feature_fields", writer.token, {
+        target_feature: "pause_message",
+        new_where_used: "",
+        new_requirement: token,
+        new_output_format: "",
+        new_design_rationale: "",
+        new_room_to_improve: "",
+        new_notes: "",
+      });
+      expect(saved.status).toBe(204);
+
+      /**
+       * #474 review I1: the token wraps inside its own box. The box's content is no wider than
+       * the box (nothing hidden or spilling), the text's own box stays within it, and the box is
+       * far narrower than the unbroken token would be, so the token really wraps.
+       */
+      const wrapsInside = (box: import("@playwright/test").Locator) =>
+        box.evaluate((element) => {
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          const text = range.getBoundingClientRect();
+          const outer = element.getBoundingClientRect();
+          return {
+            scrollWidth: element.scrollWidth,
+            clientWidth: element.clientWidth,
+            textLeft: text.left,
+            textRight: text.right,
+            left: outer.left,
+            right: outer.right,
+            width: outer.width,
+          };
+        });
+      const expectWrapped = (found: Awaited<ReturnType<typeof wrapsInside>>) => {
+        expect(found.scrollWidth).toBeLessThanOrEqual(found.clientWidth);
+        expect(found.textLeft).toBeGreaterThanOrEqual(found.left - 0.5);
+        expect(found.textRight).toBeLessThanOrEqual(found.right + 0.5);
+        // 200 "x" at 14 px are about 1440 px wide unbroken (the mutation measured 1440).
+        expect(found.width).toBeLessThan(1000);
+      };
+
+      // The detail page: the requirement sits in a normal panel, no scrolling box around it.
+      await page.goto("/admin/ai-features/pause_message");
+      const requirement = page.locator("#requirement > .admin-field-text");
+      await expect(requirement).toHaveText(token);
+      expectWrapped(await wrapsInside(requirement));
+      const detail = await overflow();
+      expect(detail.outside).toEqual([]);
+      expect(detail.panels).toEqual([]);
+      expect(detail.scrollWidth).toBe(detail.clientWidth);
+
+      // The registry: the wide table scrolls in its panel by design (its 1480 px minimum), so the
+      // helper above skips its cells; the Requirement cell itself must wrap the token.
       await page.goto("/admin/ai-features");
       const table = page.getByRole("table", { name: "AI features" });
-      await expect(table).toContainText(token);
+      const cell = table.locator("tbody tr", { hasText: "R-03" }).locator("td.admin-reg-wide");
+      await expect(cell).toHaveText(token);
+      expectWrapped(await wrapsInside(cell));
       const index = await overflow();
       expect(index.outside).toEqual([]);
       expect(index.panels).toEqual([]);
+      // The page itself never scrolls sideways.
       expect(index.scrollWidth).toBe(index.clientWidth);
-      const panel = page.locator(".admin-panel.admin-scroll");
-      const scroll = await panel.evaluate((element) => ({
-        scrollWidth: element.scrollWidth,
-        clientWidth: element.clientWidth,
-      }));
-      // The token is reachable: the panel scrolls rather than clipping it.
-      expect(scroll.scrollWidth).toBeGreaterThan(scroll.clientWidth);
     } finally {
       await stub("/__prompts", null, { reset: "stuck_story" });
       await stub("/__ai_features", null, { token: writer.token, purpose: null });
+      await stub("/__ai_features", null, { token: writer.token, own: null });
     }
   });
 
@@ -513,7 +570,7 @@ test.describe("#439 AI feature pages", () => {
     await expect(
       page.getByRole("heading", { name: "This page could not be found." }),
     ).toBeVisible();
-    await expect(page.getByRole("region", { name: "(a) Purpose" })).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "Purpose" })).toHaveCount(0);
 
     const plain = await browser.newContext({ baseURL: baseUrlOf(page) });
     const other = await plain.newPage();
@@ -576,20 +633,18 @@ test.describe("#453 editing an AI feature", () => {
       );
 
       await page.goto("/admin/ai-features/return_popup");
-      const a = section(page, "(a) Purpose").getByRole("listitem");
+      const a = section(page, "Purpose").getByRole("listitem");
       await expect(a).toHaveCount(1);
       await expect(a.first()).toContainText("Owner purpose for #453.");
       await expect(a.first()).not.toContainText("Draft - owner to edit");
       await expect(a.first().locator(".admin-chip")).toHaveText("docs/PRD.md:258");
-      const c = section(page, "(c) Current approach").getByRole("listitem");
+      const c = section(page, "Current approach").getByRole("listitem");
       await expect(c).toHaveCount(3);
       await expect(c.first().locator(".admin-chip")).toHaveText("docs/DECISIONS.md:69");
-      await expect(section(page, "(c) Current approach")).not.toContainText(
-        "Draft - owner to edit",
-      );
+      await expect(section(page, "Current approach")).not.toContainText("Draft - owner to edit");
       await expect(c.last()).toHaveText("Owner approach line.");
       // (b) was not on this editor: still drafts.
-      await expect(section(page, "(b) Pass standard")).toContainText("Draft - owner to edit");
+      await expect(section(page, "Pass standard")).toContainText("Draft - owner to edit");
     } finally {
       await disown(account.token);
     }
@@ -603,7 +658,7 @@ test.describe("#453 editing an AI feature", () => {
     await own(account.token);
     try {
       await page.goto("/admin/ai-features/closing_line");
-      const texts = await section(page, "(b) Pass standard")
+      const texts = await section(page, "Pass standard")
         .locator(".admin-question-text")
         .allInnerTexts();
       expect(texts).toHaveLength(4);
@@ -618,7 +673,7 @@ test.describe("#453 editing an AI feature", () => {
       await expect(page.getByRole("status")).toHaveText("Saved.");
 
       await page.goto("/admin/ai-features/closing_line");
-      const pass = section(page, "(b) Pass standard");
+      const pass = section(page, "Pass standard");
       await expect(pass.locator(".admin-question-text")).toHaveText([
         texts[1],
         texts[0],
@@ -632,7 +687,7 @@ test.describe("#453 editing an AI feature", () => {
       );
       await expect(pass.getByRole("listitem").nth(3).locator(".admin-chip")).toHaveCount(0);
       // (a) and (c) were not on this editor: still drafts.
-      await expect(section(page, "(a) Purpose")).toContainText("Draft - owner to edit");
+      await expect(section(page, "Purpose")).toContainText("Draft - owner to edit");
     } finally {
       await disown(account.token);
     }
@@ -676,7 +731,7 @@ test.describe("#453 editing an AI feature", () => {
     await own(admin.token);
     try {
       await page.goto("/admin/ai-features/safety_classifier");
-      await section(page, /^\(d\) Status/)
+      await section(page, /^Status/)
         .getByRole("link", { name: "history and change (admin only)" })
         .click();
       await expect(page).toHaveURL(/\/admin\/ai-features\/safety_classifier\/status$/);
@@ -706,7 +761,7 @@ test.describe("#453 editing an AI feature", () => {
       );
 
       await page.goto("/admin/ai-features/safety_classifier");
-      const status = section(page, /^\(d\) Status/);
+      const status = section(page, /^Status/);
       await expect(status.locator(".admin-pill-ai-passed")).toHaveText("Passed");
       await expect(status).toContainText(`Set to Passed by ${admin.userId}@example.invalid`);
     } finally {

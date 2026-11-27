@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { featureName } from "@/lib/ai-features/admin";
-import { lastSave } from "@/lib/ai-features/edit";
+import { editable, lastSave } from "@/lib/ai-features/edit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Breadcrumb, PageHead } from "../../admin-ui";
 import { readFeature, readPeople } from "../load";
@@ -37,7 +37,8 @@ export async function FeatureEditorPage({
     readFeature(client, slug),
     readPeople(client, slug),
   ]);
-  if (feature === undefined) notFound();
+  // #474: Pipeline and Quality gate rows are read only until #475.
+  if (feature === undefined || (feature && !editable(feature))) notFound();
   const crumbs = [
     { label: "AI rules" },
     { label: "AI features", href: "/admin/ai-features" },

@@ -116,6 +116,8 @@ export async function saveFeatureSections(
   const feature = await deps.readFeature(write.slug);
   if (feature === null) return { ok: false, error: "failed" };
   if (feature === undefined) return { ok: false, error: "unknown-feature" };
+  // #474: Pipeline and Quality gate rows are read only until #475.
+  if (!editable(feature)) return { ok: false, error: "not-allowed" };
   if ((feature.sections_updated_at ?? null) !== (write.loadedAt ?? null)) {
     return { ok: false, error: "changed-since" };
   }
@@ -141,6 +143,13 @@ export async function saveFeatureSections(
   return { ok: true };
 }
 
+/**
+ * #474: the editors of #453 work on the 7 Runtime rows; Pipeline and Quality gate rows are read only
+ * until #475. A row without a category (before the registry migration) is a Runtime row.
+ */
+export const editable = (feature: Pick<AiFeatureRow, "category">) =>
+  !feature.category || feature.category === "runtime";
+
 export type StatusWrite = { slug: string; status: string; note: string };
 
 /** Changes the status with an optional note. The admin role only (AI-PAGE-STATUS). */
@@ -160,6 +169,8 @@ export async function changeFeatureStatus(
   const feature = await deps.readFeature(write.slug);
   if (feature === null) return { ok: false, error: "failed" };
   if (feature === undefined) return { ok: false, error: "unknown-feature" };
+  // #474: Pipeline and Quality gate rows are read only until #475.
+  if (!editable(feature)) return { ok: false, error: "not-allowed" };
   if (feature.status === write.status) return { ok: false, error: "unchanged" };
   const { error } = await deps.rpc("set_ai_feature_status", {
     target_feature: write.slug,

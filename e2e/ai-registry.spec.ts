@@ -241,3 +241,388 @@ test("test_473_a_candidate_or_confirmed_example_needs_text", async ({ page, cont
   ).json()) as Feature[];
   expect(row).toMatchObject({ example_text: "", example_state: "none" });
 });
+
+// #474 (registry slice 2): /admin/ai-features is the registry table and /admin/ai-features/<slug>
+// the feature detail, read only (docs/PRD.md FR-AIREG-1 to FR-AIREG-4). Each test's account reads
+// its own copy of the 19 rows, made from the invented fixtures of #473, and a fixed prompt list
+// (POST /__ai_features { token, registry: true }), so no test here reads a row another test writes.
+// Nothing retries: every check is made once, after the page has loaded.
+test.describe("#474 the registry read view", () => {
+  // The admin is a desktop tool (#313).
+  test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false });
+
+  async function registryAccount(
+    page: import("@playwright/test").Page,
+    context: import("@playwright/test").BrowserContext,
+    contentRole: "admin" | "writer",
+  ) {
+    const account = await signIn(context, baseUrlOf(page), undefined, { contentRole });
+    const answer = await stub("/__ai_features", null, { token: account.token, registry: true });
+    expect(answer.status).toBe(200);
+    return account;
+  }
+
+  const SEED_ORDER = [
+    ...["01", "02", "03", "04", "05", "06", "07"].map((n) => `P-${n}`),
+    ...["01", "02", "03", "04", "05"].map((n) => `G-${n}`),
+    ...["01", "02", "03", "04", "05", "06", "07"].map((n) => `R-${n}`),
+  ];
+
+  const table = (page: import("@playwright/test").Page) =>
+    page.getByRole("table", { name: "AI features" });
+  const idCells = (page: import("@playwright/test").Page) =>
+    table(page).locator("tbody tr td:first-child");
+  const section = (page: import("@playwright/test").Page, name: string | RegExp) =>
+    page.getByRole("region", { name });
+
+  test("test_474_ac1_the_registry_shows_all_19_rows_with_every_column", async ({
+    page,
+    context,
+  }) => {
+    await registryAccount(page, context, "writer");
+    await page.goto("/admin/ai-features");
+    await expect(page.getByRole("heading", { level: 1, name: "AI features" })).toBeVisible();
+    await expect(table(page).locator("thead th")).toHaveText([
+      "ID",
+      "Name",
+      "Category",
+      "Where it appears",
+      "Requirement",
+      "Prompt",
+      "Status",
+      "Example",
+    ]);
+    await expect(table(page).locator("tbody tr")).toHaveCount(19);
+    await expect(idCells(page)).toHaveText(SEED_ORDER);
+
+    const p01 = table(page).locator("tbody tr").first();
+    await expect(p01.locator("td").nth(1)).toHaveText("Find episodes");
+    await expect(p01.locator("td").nth(2)).toHaveText("Pipeline");
+    await expect(p01.locator("td").nth(3)).toHaveText("Invented place for P-01");
+    await expect(p01.locator("td").nth(4)).toHaveText("Invented requirement for P-01.");
+    // The prompt version is read live from public.prompts: the imported version 1, no draft.
+    await expect(p01.locator("td").nth(5).locator(".admin-chip")).toHaveText(
+      "p01_find_episodes v1",
+    );
+    await expect(p01.locator("td").nth(5).locator(".admin-pill-draft")).toHaveCount(0);
+    await expect(p01.locator(".admin-pill-ai-exploring")).toHaveText("Exploring");
+    await expect(p01.locator(".admin-pill-example-candidate")).toHaveText("Candidate");
+
+    // R-03 has two prompt keys; stuck_story has a draft, shown beside the published version.
+    const r03 = table(page).locator("tbody tr", { hasText: "R-03" });
+    await expect(r03.locator("td").nth(5).locator(".admin-chip")).toHaveText([
+      "stuck_story v1",
+      "pause_predicament v1",
+    ]);
+    await expect(r03.locator("td").nth(5).locator(".admin-pill-draft")).toHaveText("Draft v2");
+    // A book-text example is never stored: no example, state None.
+    await expect(r03.locator(".admin-pill-example-none")).toHaveText("None");
+    await expect(table(page).locator("tbody tr", { hasText: "P-03" })).toContainText("Passed");
+    await expect(table(page).locator("tbody tr", { hasText: "P-04" })).toContainText("Frozen");
+    await expect(table(page).locator("tbody tr", { hasText: "G-03" })).toContainText("Not started");
+
+    // A writer sees the status and no Change; the header says the role.
+    await expect(table(page).getByRole("link", { name: /^Change the status/ })).toHaveCount(0);
+    await expect(page.locator(".admin-head")).toContainText("Viewing as writer");
+
+    // Each row opens its detail page; "view" goes to its prompt panel.
+    await expect(r03.getByRole("link", { name: "View the prompt of R-03" })).toHaveAttribute(
+      "href",
+      "/admin/ai-features/pause_message#prompt",
+    );
+    await p01.getByRole("link", { name: "Find episodes" }).click();
+    await expect(page).toHaveURL(/\/admin\/ai-features\/p01_find_episodes$/);
+    await expect(page.getByRole("heading", { level: 1, name: "P-01 Find episodes" })).toBeVisible();
+  });
+
+  test("test_474_ac1_filters_by_category_and_status_search_and_sort_by_id", async ({
+    page,
+    context,
+  }) => {
+    await registryAccount(page, context, "admin");
+    await page.goto("/admin/ai-features");
+    await expect(table(page).locator("tbody tr")).toHaveCount(19);
+
+    await page.getByRole("combobox", { name: "Category" }).selectOption({ label: "Runtime" });
+    await expect(idCells(page)).toHaveText(SEED_ORDER.filter((id) => id.startsWith("R")));
+    await page.getByRole("combobox", { name: "Category" }).selectOption({ label: "Quality gate" });
+    await page.getByRole("combobox", { name: "Status" }).selectOption({ label: "Not started" });
+    await expect(idCells(page)).toHaveText(["G-03", "G-04"]);
+
+    await page.getByRole("combobox", { name: "Category" }).selectOption({ label: "All" });
+    await page.getByRole("combobox", { name: "Status" }).selectOption({ label: "All" });
+    await page.getByRole("textbox", { name: "Search" }).fill("judge");
+    await expect(idCells(page)).toHaveText(["G-01", "G-03"]);
+    await page.getByRole("textbox", { name: "Search" }).fill("no row says this");
+    await expect(table(page).locator("tbody")).toHaveText("No feature matches these filters");
+    await page.getByRole("textbox", { name: "Search" }).fill("");
+
+    const sort = page.getByRole("button", { name: /^Sort by ID/ });
+    await expect(sort).toHaveText("Sort by ID ↑");
+    await sort.click();
+    await expect(sort).toHaveText("Sort by ID ↓");
+    await expect(idCells(page)).toHaveText([...SEED_ORDER].reverse());
+  });
+
+  test("test_474_ac1_the_wide_table_scrolls_in_its_panel_with_id_and_name_in_view", async ({
+    page,
+    context,
+  }) => {
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await registryAccount(page, context, "admin");
+    await page.goto("/admin/ai-features");
+    const scroll = page.locator(".admin-reg-scroll");
+    await expect(table(page).locator("tbody tr")).toHaveCount(19);
+    const before = await scroll.evaluate((box) => ({
+      scrollWidth: box.scrollWidth,
+      clientWidth: box.clientWidth,
+    }));
+    expect(before.scrollWidth).toBeGreaterThan(before.clientWidth);
+    // The page itself never scrolls sideways.
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+      await page.evaluate(() => document.documentElement.clientWidth),
+    );
+    await scroll.evaluate((box) => {
+      box.scrollLeft = box.scrollWidth;
+    });
+    const firstRow = table(page).locator("tbody tr").first();
+    const box = await scroll.boundingBox();
+    const id = await firstRow.locator("td").nth(0).boundingBox();
+    const name = await firstRow.locator("td").nth(1).boundingBox();
+    expect(Math.round(id!.x)).toBe(Math.round(box!.x));
+    expect(Math.round(name!.x)).toBe(Math.round(id!.x + id!.width));
+    await expect(firstRow.locator("td").nth(7).locator(".admin-pill")).toBeInViewport();
+  });
+
+  test("test_474_an_admin_sees_change_on_the_runtime_rows_only", async ({ page, context }) => {
+    await registryAccount(page, context, "admin");
+    await page.goto("/admin/ai-features");
+    await expect(page.locator(".admin-head")).toContainText("Viewing as admin");
+    const change = table(page).getByRole("link", { name: /^Change the status of / });
+    await expect(change).toHaveCount(7);
+    await expect(
+      table(page).getByRole("link", { name: "Change the status of R-07" }),
+    ).toHaveAttribute("href", "/admin/ai-features/safety_classifier#status");
+    await expect(
+      table(page)
+        .locator("tbody tr", { hasText: "P-01" })
+        .getByRole("link", { name: /^Change/ }),
+    ).toHaveCount(0);
+  });
+
+  test("test_474_ac2_ac3_a_pipeline_row_shows_every_field_and_not_written_yet", async ({
+    page,
+    context,
+  }) => {
+    await registryAccount(page, context, "writer");
+    await page.goto("/admin/ai-features/p02_select_stories");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "P-02 Select stories" }),
+    ).toBeVisible();
+    await expect(page.locator(".admin-head .admin-lede")).toHaveText(
+      "Pipeline · Where it appears: Invented place for P-02",
+    );
+    await expect(page.locator(".admin-section > h2")).toHaveText([
+      "Requirement",
+      "Prompt",
+      "Output format and rules",
+      "Design rationale",
+      "Room to improve",
+      "Confirmed example",
+      "Notes",
+      "Pass standard",
+      /^Status/,
+      "Version history",
+      "Test results",
+    ]);
+    await expect(section(page, "Requirement")).toContainText("Invented requirement for P-02.");
+    await expect(section(page, "Output format and rules")).toContainText(
+      "Invented format for P-02.",
+    );
+    await expect(section(page, "Design rationale")).toContainText("Invented rationale for P-02.");
+    await expect(section(page, "Room to improve")).toContainText("Invented idea for P-02.");
+    // FR-AIREG-4: empty fields say so, never filler.
+    await expect(section(page, "Notes")).toHaveText("NotesNot written yet");
+    await expect(section(page, "Pass standard")).toHaveText("Pass standardNot written yet");
+    await expect(section(page, "Version history")).toContainText("No changes yet");
+
+    const example = section(page, "Confirmed example");
+    await expect(example.locator(".admin-pill-example-confirmed")).toHaveCount(2);
+    await expect(example).toContainText("Invented example for P-02.");
+    // A seeded example was set by the setup; its history row names the account that set it.
+    await expect(example).toContainText("Confirmed by Setup");
+    const earlier = example.getByRole("table", { name: "Example history" });
+    await expect(earlier).toContainText("2026-11-20 10:00");
+    await expect(earlier).toContainText("Account 00000000");
+
+    const prompt = section(page, "Prompt").getByRole("region", { name: "p02_select_stories" });
+    await expect(prompt.locator(".admin-prompt-meta")).toContainText("p02_select_stories v1");
+    await expect(prompt.locator(".admin-prompt-meta")).toContainText("category: pipeline");
+    await expect(prompt.getByLabel("Published p02_select_stories")).toContainText(
+      "Invented prompt S2",
+    );
+    await expect(prompt).toContainText("No draft.");
+    // Pipeline prompts are not edited on the Prompts page.
+    await expect(prompt.getByRole("link", { name: "Prompts page" })).toHaveCount(0);
+
+    // A Pipeline row is read only until #475: no editor link, no status control.
+    await expect(page.getByRole("link", { name: /^Edit / })).toHaveCount(0);
+    await expect(page.getByRole("textbox")).toHaveCount(0);
+    for (const target of ["purpose", "pass", "status"]) {
+      await page.goto(`/admin/ai-features/p02_select_stories/${target}`);
+      await expect(
+        page.getByRole("heading", { name: "This page could not be found." }),
+        target,
+      ).toBeVisible();
+    }
+  });
+
+  test("test_474_ac2_a_runtime_row_shows_purpose_requirement_retry_hints_and_the_prompt_diff", async ({
+    page,
+    context,
+  }) => {
+    await registryAccount(page, context, "writer");
+    // A row also opens by its Feature ID.
+    await page.goto("/admin/ai-features/R-03");
+    await expect(page).toHaveURL(/\/admin\/ai-features\/pause_message$/);
+    await expect(page.getByRole("heading", { level: 1, name: "R-03 Pause message" })).toBeVisible();
+    await expect(page.locator(".admin-section > h2")).toHaveText([
+      "Purpose",
+      "Current approach",
+      "Requirement",
+      "Prompt",
+      "Output format and rules",
+      "Design rationale",
+      "Room to improve",
+      "Confirmed example",
+      "Notes",
+      "Pass standard",
+      /^Status/,
+      "Version history",
+      /^Fix added after a rejected answer/,
+      "Test results",
+    ]);
+    await expect(section(page, "Purpose")).toContainText("Draft - owner to edit");
+    await expect(section(page, "Requirement")).toContainText("Invented requirement for R-03.");
+    // The seed stores no book-text example.
+    await expect(section(page, "Confirmed example")).toHaveText("Confirmed exampleNot written yet");
+    await expect(
+      section(page, /^Fix added after a rejected answer/).getByLabel("Published retry_hints"),
+    ).not.toBeEmpty();
+
+    const stuck = section(page, "Prompt").getByRole("region", { name: "stuck_story" });
+    const published = stuck.getByLabel("Published stuck_story");
+    const draft = stuck.getByLabel("Draft v2 of stuck_story");
+    await expect(published).toBeVisible();
+    await expect(draft).toContainText("An invented draft line for {{name}}.");
+    await expect(stuck.locator(".admin-prompt-meta .admin-pill-draft")).toHaveText("Draft v2");
+    // Published and draft side by side.
+    const left = await published.boundingBox();
+    const right = await draft.boundingBox();
+    expect(right!.x).toBeGreaterThan(left!.x + left!.width);
+    expect(Math.round(right!.y)).toBe(Math.round(left!.y));
+    // {{variables}} are marked.
+    await expect(draft.locator(".admin-var").last()).toHaveText("{{name}}");
+    // The diff: the one added line.
+    const diff = stuck.getByRole("list", { name: "Changed lines of stuck_story" });
+    await expect(diff.locator(".admin-reg-diff-added")).toHaveCount(1);
+    await expect(diff.locator(".admin-reg-diff-added")).toContainText(
+      "An invented draft line for {{name}}.",
+    );
+    await expect(diff.locator(".admin-reg-diff-removed")).toHaveCount(1);
+    const predicament = section(page, "Prompt").getByRole("region", {
+      name: "pause_predicament",
+    });
+    await expect(predicament).toContainText("No draft.");
+    await expect(predicament.getByRole("list")).toHaveCount(0);
+
+    const history = section(page, "Version history").getByRole("table", {
+      name: "Version history",
+    });
+    await expect(history.locator("tbody tr")).toHaveCount(1);
+    await expect(history.locator("tbody tr")).toContainText("Requirement");
+
+    // A writer sees the status, marked admin only, with no control.
+    const status = section(page, /^Status/);
+    await expect(status).toContainText("Admin only");
+    await expect(status).toContainText("You can see the status. Only an admin can change it.");
+    await expect(status.getByRole("button")).toHaveCount(0);
+    // The editors of #453 stay linked on a Runtime row.
+    await expect(page.getByRole("link", { name: "Edit purpose and approach" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Edit pass standard" })).toBeVisible();
+  });
+
+  test("test_474_an_admin_changes_a_runtime_status_on_the_detail_page", async ({
+    page,
+    context,
+  }) => {
+    const admin = await registryAccount(page, context, "admin");
+    await page.goto("/admin/ai-features");
+    await table(page).getByRole("link", { name: "Change the status of R-05" }).click();
+    await expect(page).toHaveURL(/\/admin\/ai-features\/return_popup#status$/);
+    const status = section(page, /^Status/);
+    await status.getByRole("button", { name: "Frozen" }).click();
+    await status.getByRole("textbox", { name: "Reason (one line)" }).fill("Invented reason");
+    await status.getByRole("button", { name: "Save status" }).click();
+    await expect(page.getByRole("status")).toHaveText("Status saved.");
+    await expect(status.locator("h2 .admin-pill-ai-frozen")).toHaveText("Frozen");
+    await expect(status).toContainText(`Set to Frozen by ${admin.userId}@example.invalid`);
+    const history = section(page, "Version history").getByRole("table", {
+      name: "Version history",
+    });
+    await expect(history.locator("tbody tr").first()).toContainText("Status");
+    await expect(history.locator("tbody tr").first().locator(".admin-pill-ai-frozen")).toHaveText(
+      "Frozen",
+    );
+    // The status page of #453 still has the history and the reason.
+    await status.getByRole("link", { name: "history and change (admin only)" }).click();
+    await expect(page.getByRole("table", { name: "Status history" })).toContainText(
+      "Invented reason",
+    );
+  });
+
+  test("test_474_ac4_a_read_that_fails_says_so_and_calls_no_model", async ({ page, context }) => {
+    const writer = await registryAccount(page, context, "writer");
+    const failed = await stub("/__fail_reads", null, {
+      token: writer.token,
+      tables: ["ai_features"],
+    });
+    expect(failed.status).toBe(200);
+    await page.goto("/admin/ai-features");
+    await expect(page.locator(".admin-errbox[role=alert]")).toContainText(
+      "The registry could not be read.",
+    );
+    await expect(
+      page.locator(".admin-errbox[role=alert]").getByRole("link", { name: "Retry" }),
+    ).toBeVisible();
+    await expect(table(page).locator("tbody")).toHaveText("Nothing to show");
+  });
+
+  test("test_474_roles_admin_and_writer_read_app_users_and_anonymous_get_nothing", async ({
+    page,
+    context,
+    browser,
+  }) => {
+    await registryAccount(page, context, "writer");
+    expect((await page.goto("/admin/ai-features"))?.status()).toBe(200);
+    expect((await page.goto("/admin/ai-features/g05_simulated_user"))?.status()).toBe(200);
+
+    const plain = await browser.newContext({ baseURL: baseUrlOf(page) });
+    const user = await plain.newPage();
+    const account = await signIn(plain, baseUrlOf(page));
+    for (const target of ["/admin/ai-features", "/admin/ai-features/g05_simulated_user"]) {
+      expect((await user.goto(target))?.status(), target).toBe(404);
+    }
+    // The tables answer no row to an account without a role.
+    const rows = await stub("/rest/v1/ai_features", account.token);
+    expect(await rows.json()).toEqual([]);
+    await plain.close();
+
+    const anonymous = await browser.newContext({ baseURL: baseUrlOf(page) });
+    const visitor = await anonymous.newPage();
+    for (const target of ["/admin/ai-features", "/admin/ai-features/g05_simulated_user"]) {
+      expect((await visitor.goto(target))?.status(), target).toBe(404);
+    }
+    await anonymous.close();
+  });
+});

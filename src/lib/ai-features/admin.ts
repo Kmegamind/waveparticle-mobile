@@ -1,4 +1,4 @@
-import { promptDetail, type PromptVersionRow } from "@/lib/prompts/admin";
+import { versionsOf, type PromptVersionRow } from "@/lib/prompts/admin";
 
 // #439 (part of #430): what the AI features index and the read-only feature pages show. Server
 // code only. The rows come through the signed-in user's own client: public.ai_features and
@@ -25,6 +25,8 @@ export type AiFeatureRow = {
   /** The last save of (a) to (c) in the admin, and who made it (#453). */
   sections_updated_at?: string | null;
   sections_updated_by?: string | null;
+  /** #473: pipeline, gate or runtime (20261202000000_ai_registry.sql). */
+  category?: "pipeline" | "gate" | "runtime";
 };
 
 /** One row of public.ai_feature_test_runs. */
@@ -146,16 +148,17 @@ export type FeaturePrompt = {
   draft: { version: number; body: string } | null;
 };
 
-/** Section (e): each prompt key's published text and its newest draft, as ADM-08 reads them. */
+/**
+ * Section (e): each prompt key's published text and its newest draft, as ADM-08 reads them. #474:
+ * any key, so the Pipeline and Quality gate keys of the registry show their texts too.
+ */
 export function featurePrompts(keys: string[], versions: PromptVersionRow[]): FeaturePrompt[] {
   return keys.map((key) => {
-    const detail = promptDetail(key, versions);
+    const { active, draft } = versionsOf(key, versions);
     return {
       key,
-      published: detail?.active
-        ? { version: detail.active.version, body: detail.active.body }
-        : null,
-      draft: detail?.draft ? { version: detail.draft.version, body: detail.draft.body } : null,
+      published: active ? { version: active.version, body: active.body } : null,
+      draft: draft ? { version: draft.version, body: draft.body } : null,
     };
   });
 }
