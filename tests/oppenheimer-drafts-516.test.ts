@@ -73,6 +73,8 @@ describe("#516 the --keep-published mode reads a cards-only export", () => {
     expect(sql.stdout).toContain(newCardText(STORIES[0].id, 1, 1));
     const dry = run(importScript, folder, "--keep-published", "--dry-run");
     expect(dry.stdout).toMatch(/^rollback;$/m);
+    // #522 I2: the SQL editor shows only the last result, so the report stops the script.
+    expect(dry.stdout).toContain("raise exception 'Dry run: nothing was changed.%'");
     expect(dry.stdout).not.toMatch(/^commit;$/m);
     expect(dry.stdout).toContain("published rows changed");
     expect(dry.stdout).toContain(newPartTitle(5));
@@ -147,6 +149,7 @@ describe("#516 the switch-over script", () => {
     expect(sql.stdout).toContain(newPartTitle(3));
     const dry = run(switchScript, folder, story, "--by", "admin@invented.test", "--dry-run");
     expect(dry.stdout).toMatch(/^rollback;$/m);
+    expect(dry.stdout).toContain("raise exception 'Dry run: nothing was changed.%'");
     expect(dry.stdout).not.toMatch(/^commit;$/m);
     const undo = run(switchScript, folder, story, "--by", "admin@invented.test", "--undo");
     expect(undo.stdout).toContain("'roll_back'");

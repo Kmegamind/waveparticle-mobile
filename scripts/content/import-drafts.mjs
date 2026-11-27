@@ -46,8 +46,12 @@
 // The import's own drafts are the versions no editor wrote (created_by null) and nobody ever
 // published, above the key's last published version. A run writes them again with the file's
 // text and removes those of keys the file no longer has; a key whose newest version already holds
-// the file's text is left alone, so running it twice changes nothing. The undo removes only those
-// drafts, and waits until any switch-over of these stories was undone.
+// the file's text is left alone, so running it twice changes nothing. A key whose newest version
+// is an editor's unpublished draft (created_by set: saved in the admin, before or after an earlier
+// run) is left alone too and reported as "kept: editor draft", so the switch-over publishes the
+// editor's text (#522 review). The undo removes only the import's drafts, refuses stories that
+// are not this Companion's, and waits until any switch-over of these stories was undone. Every
+// dry run stops with its report as an error, because the SQL editor shows only the last result.
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -840,7 +844,7 @@ export function keepPublishedSql(rows, { dryRun = false } = {}) {
     "    where a.published and not exists (select 1 from import_cards i where i.key = a.key))::int, null",
     "  union all select 10, 'published rows changed', (select count(*) from pairs where live and differs)::int, null",
     "  union all select 10, 'kept: editor draft', (select count(*) from import_kept)::int, null",
-    "  union all select 14, 'kept: editor draft key', null, key from import_kept",
+    "  union all select 14, 'editor draft kept', null, key from import_kept",
     "  union all select 11, 'part titles changed', (select count(*) from import_parts_before b",
     "    full join public.story_parts p on p.story_id = b.story_id and p.part = b.part",
     `    where (p.story_id is null or p.story_id in (${stories})) and (p.story_id is null or b.story_id is null or p.title <> b.title))::int, null`,

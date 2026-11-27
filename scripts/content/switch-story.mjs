@@ -56,7 +56,7 @@ function actorSql(by) {
   if (typeof by !== "string" || !EMAIL.test(by)) throw new Error("--by needs an email address");
   return [
     "  select u.id into actor from auth.users u",
-    "    join public.content_roles r on r.user_id = u.id and r.role = 'admin'",
+    "    join public.content_roles cr on cr.user_id = u.id and cr.role = 'admin'",
     `    where lower(u.email) = lower(${quote(by)});`,
     "  if actor is null then",
     "    raise exception 'no admin account with the email given to --by (give it the admin role first); nothing was changed';",

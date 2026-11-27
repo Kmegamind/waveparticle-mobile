@@ -474,7 +474,7 @@ describe("#522 I1 a re-import never buries an editor's draft", () => {
     const report = await dryRunReport(fresh, keep(exportFolder, "--dry-run"));
     expect(report.find((row) => row.what === "kept: editor draft")?.count).toBe(1);
     expect(
-      report.filter((row) => row.what === "kept: editor draft key").map((row) => row.detail),
+      report.filter((row) => row.what === "editor draft kept").map((row) => row.detail),
     ).toEqual([key]);
     expect(await attempt(fresh, keep(exportFolder))).toBe("ok");
     expect((await versionsOf(fresh)).at(-1)).toMatchObject({ body: editorBody, editor: true });

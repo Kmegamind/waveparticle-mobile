@@ -100,12 +100,13 @@ export async function dryRunReport(db: PGlite, sql: string): Promise<ReportLine[
     .slice(1)
     .filter((line) => line.trim() !== "")
     .map((line) => {
+      // "what: 12" (a label may hold ": ", as "kept: editor draft: 0"), or "what: detail".
+      const counted = line.match(/^(.*): (\d+)$/);
+      if (counted) return { what: counted[1], count: Number(counted[2]), detail: null };
       const at = line.indexOf(": ");
-      const what = at === -1 ? line : line.slice(0, at);
-      const rest = at === -1 ? "" : line.slice(at + 2);
-      return /^\d+$/.test(rest)
-        ? { what, count: Number(rest), detail: null }
-        : { what, count: null, detail: rest };
+      return at === -1
+        ? { what: line, count: null, detail: null }
+        : { what: line.slice(0, at), count: null, detail: line.slice(at + 2) };
     });
 }
 

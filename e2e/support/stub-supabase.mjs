@@ -1082,7 +1082,10 @@ createServer(async (request, response) => {
 
   if (path === "/__story_cards" && request.method === "POST") {
     const body = (await readBody(request)) ?? {};
-    storyCardsFailReads = body.failReads === true;
+    // #516: a deck or restore call leaves the read switch of premade-cards.spec.ts as it is.
+    if ("failReads" in body || body.reset === true || (!body.deck && !body.restore)) {
+      storyCardsFailReads = body.failReads === true;
+    }
     if (body.reset === true) {
       cardVersions = seededCardVersions();
       partTitles = storyCards.parts.map((part) => ({ ...part }));
