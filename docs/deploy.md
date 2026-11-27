@@ -47,6 +47,7 @@ never go in the repository.
 | `SAFETY_MODEL_NAME` | Production, Preview (optional) | no | The safety classifier's own model |
 | `SAFETY_ALARM_WEBHOOK_URL` | Production, Preview | no | The same-day safety alarm (Secrets, below) |
 | `MODEL_CALL_LIMIT_ENABLED` | Production (`0` in the test stage), Preview | no | Switches the per-browser daily limit off (Test path flag, below) |
+| `AI_RUN_PRICES` | Production, Preview | no | The prompt lab's price per million tokens for each model, in US dollars (`docs/api/ai-runs.md`); unset: costs are "price not set" |
 | `PROTOTYPE_ENABLED` | Preview only, never Production | no | Turns on the test path `/try` (Test path flag, below) |
 
 Not Vercel settings: `SUPABASE_DB_URL` (psql connection, your own shell), and

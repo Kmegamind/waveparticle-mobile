@@ -487,6 +487,49 @@ export function promptRowProblems(row: PromptRow): string[] {
   return problems;
 }
 
+/** The runtime calls the prompt lab can build and check (#476): every key with a builder. */
+export type LabCallKey = keyof typeof BUILDERS;
+export const LAB_CALL_KEYS = Object.keys(BUILDERS) as LabCallKey[];
+export const isLabCallKey = (key: unknown): key is LabCallKey =>
+  typeof key === "string" && Object.hasOwn(BUILDERS, key);
+
+export type LabCall =
+  | {
+      ok: true;
+      prompt: string;
+      check: (raw: string) => { passed: boolean; failedRules: string[] };
+    }
+  | { ok: false; problems: string[] };
+
+/**
+ * The prompt lab's Run (#476, FR-AILAB-1): builds one runtime call's prompt from a prompt row (the
+ * published or a draft version, or a pasted text with the published version's settings) and the
+ * call's input (from a sample), and checks an answer with the same parse and line checks as the
+ * live call. One answer, no retry: the lab shows what the model gave and which checks failed.
+ */
+export function buildLabCall(key: LabCallKey, row: PromptRow, input: unknown): LabCall {
+  try {
+    const build = BUILDERS[key] as (row: PromptRow, input: unknown) => Built<unknown>;
+    const built = build(row, input);
+    return {
+      ok: true,
+      prompt: built.prompt,
+      check: (raw) => {
+        const attempt = built.accept(raw);
+        return attempt.ok
+          ? { passed: true, failedRules: [] }
+          : { passed: false, failedRules: attempt.rejectedRules };
+      },
+    };
+  } catch (error) {
+    if (error instanceof PromptRowError) return { ok: false, problems: error.problems };
+    if (error instanceof MissingCompanionNameError) {
+      return { ok: false, problems: ["The sample has no Companion name."] };
+    }
+    return { ok: false, problems: ["The prompt cannot be built."] };
+  }
+}
+
 /** The step_cards row's card counts and limits (T7, CARD-LENGTH). */
 type CardRules = {
   maxStoryCards: number;

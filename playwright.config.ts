@@ -114,6 +114,11 @@ export default defineConfig({
             MODEL_NAME: "stub",
             // The test stage runs with no per-browser daily limit (#256, TEST-NO-CAP).
             MODEL_CALL_LIMIT_ENABLED: "0",
+            // #476: a test price for the stub model only (invented; no real price is written in
+            // the repository), so the prompt lab's cost can be tested.
+            AI_RUN_PRICES: JSON.stringify({
+              stub: { input_per_million_tokens: 1, output_per_million_tokens: 2 },
+            }),
           },
           reuseExistingServer: !process.env.CI,
           timeout: 300_000,
