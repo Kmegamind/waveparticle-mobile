@@ -764,6 +764,13 @@ export function keepPublishedSql(rows, { dryRun = false } = {}) {
     "  end if;",
     "end",
     "$guard$;",
+    "-- #522 review: a key whose newest version is an editor's unpublished draft (saved in the admin,",
+    "-- before or after an earlier run) is left alone, so the switch-over publishes the editor's text.",
+    "create temporary table import_kept on commit drop as",
+    "  select i.key from import_cards i",
+    "  join lateral (select e.body, e.published, e.published_at, e.created_by from public.story_cards e",
+    "    where e.key = i.key order by e.version desc limit 1) n on true",
+    "  where n.created_by is not null and not n.published and n.published_at is null and n.body <> i.body;",
     ...(dryRun
       ? [
           "create temporary table import_before on commit drop as",
@@ -784,12 +791,13 @@ export function keepPublishedSql(rows, { dryRun = false } = {}) {
     "    and k.version = (select max(e.version) from public.story_cards e where e.key = k.key)",
     `    and ${importDraft("k")};`,
     "-- 3. Every other card whose newest version does not hold the file's text: a new draft version",
-    "--    (version 1 for a new key). Published versions are not touched, so the history stays.",
+    "--    (version 1 for a new key), except the keys kept for an editor's draft. Published versions",
+    "--    are not touched, so the history stays.",
     "insert into public.story_cards (key, version, story_id, kind, part, slice, position, body, published, published_at, created_by)",
     "  select i.key, coalesce(n.version, 0) + 1, i.story_id, i.kind, i.part, i.slice, i.position, i.body, false, null, null",
     "  from import_cards i",
     "  left join lateral (select e.version, e.body from public.story_cards e where e.key = i.key order by e.version desc limit 1) n on true",
-    "  where n.body is distinct from i.body;",
+    "  where n.body is distinct from i.body and not exists (select 1 from import_kept k where k.key = i.key);",
   ];
   if (!dryRun) {
     lines.push("commit;", "");
@@ -801,6 +809,12 @@ export function keepPublishedSql(rows, { dryRun = false } = {}) {
     `(coalesce(${alias}.published, false) or ${alias}.published_at is not null)`;
   lines.push(
     "-- What the run would do (counts), then each part title of the file next to the one stored now.",
+    "-- The SQL editor shows only the last result, so the report stops the script as an error that",
+    '-- starts "Dry run: nothing was changed." (as scripts/story-cards/fix-published.mjs, #522 review).',
+    "do $report$",
+    "declare",
+    "  report text;",
+    "begin",
     "with after as (",
     `  select key, version, body, published, published_at from public.story_cards where story_id in (${stories})`,
     "), newest as (",
@@ -810,7 +824,8 @@ export function keepPublishedSql(rows, { dryRun = false } = {}) {
     `    ${isPublished("a")} or ${isPublished("b")} as live, (${changed}) as differs`,
     "  from after a full join import_before b on b.key = a.key and b.version = a.version",
     ")",
-    "select what, count, detail from (",
+    "select string_agg(what || coalesce(': ' || count::text, '') || coalesce(': ' || detail, ''), E'\\n' order by at, detail)",
+    "  into report from (",
     "  select 1 as at, 'stories in the export' as what, (select count(distinct story_id) from import_cards)::int as count, null::text as detail",
     "  union all select 2, 'part titles in the export (set at the switch-over)', (select count(*) from import_parts)::int, null",
     "  union all select 3, 'cards in the export', (select count(*) from import_cards)::int, null",
@@ -824,6 +839,8 @@ export function keepPublishedSql(rows, { dryRun = false } = {}) {
     "  union all select 9, 'published cards not in the export (retired at the switch-over)', (select count(*) from after a",
     "    where a.published and not exists (select 1 from import_cards i where i.key = a.key))::int, null",
     "  union all select 10, 'published rows changed', (select count(*) from pairs where live and differs)::int, null",
+    "  union all select 10, 'kept: editor draft', (select count(*) from import_kept)::int, null",
+    "  union all select 14, 'kept: editor draft key', null, key from import_kept",
     "  union all select 11, 'part titles changed', (select count(*) from import_parts_before b",
     "    full join public.story_parts p on p.story_id = b.story_id and p.part = b.part",
     `    where (p.story_id is null or p.story_id in (${stories})) and (p.story_id is null or b.story_id is null or p.title <> b.title))::int, null`,
@@ -832,8 +849,10 @@ export function keepPublishedSql(rows, { dryRun = false } = {}) {
     "  union all select 12, 'part title', null, p.story_id || ' part ' || p.part || ': now ' || p.title || '; removed at the switch-over'",
     "    from public.story_parts p",
     `    where p.story_id in (${stories}) and not exists (select 1 from import_parts x where x.story_id = p.story_id and x.part = p.part)`,
-    ") summary",
-    "order by at, detail;",
+    ") summary;",
+    "  raise exception 'Dry run: nothing was changed.%', E'\\n' || report;",
+    "end",
+    "$report$;",
     "rollback;",
     "",
   );
@@ -853,13 +872,15 @@ export function keepPublishedCheckSql(rows) {
     "with expected (key, digest) as (values",
     expected.join(",\n"),
     "), cards as (",
-    `  select key, version, body, published, published_at from public.story_cards where story_id in (${ids(rows.stories)})`,
+    `  select key, version, body, published, published_at, created_by from public.story_cards where story_id in (${ids(rows.stories)})`,
     "), newest as (",
-    "  select distinct on (key) key, md5(body) as digest, published, published_at from cards order by key, version desc",
+    "  select distinct on (key) key, md5(body) as digest, published, published_at, created_by from cards order by key, version desc",
     ")",
     "select coalesce(x.key, n.key) as item,",
     "  case",
     "    when n.key is null then 'missing'",
+    "    when x.key is not null and n.digest <> x.digest and n.created_by is not null and not n.published and n.published_at is null",
+    "      then 'kept: editor draft'",
     "    when x.key is null and exists (select 1 from cards c where c.key = n.key and c.published) then 'ok, published now; retired at the switch-over'",
     "    when x.key is null and exists (select 1 from cards c where c.key = n.key and c.published_at is not null) then 'ok, retired'",
     "    when x.key is null then 'only in the database, not in the file'",
@@ -877,18 +898,28 @@ export function keepPublishedCheckSql(rows) {
 /**
  * #516: the undo of --keep-published: removes this import's own drafts of these stories, and
  * nothing else (published versions, versions that were ever published and editors' drafts stay).
- * It stops, removing nothing, while a switch-over of one of these stories is not undone.
+ * It stops, removing nothing, when a story of the file is not this Companion's, or while a
+ * switch-over of one of these stories is not undone (the switch-over's undo turns the versions it
+ * published back into drafts, so this undo then removes them too). The dry run reports how many
+ * drafts it would remove, as an error, and changes nothing.
  * @param {ReturnType<typeof readCardExport>} rows
+ * @param {{ dryRun?: boolean }} [options]
  */
-export function keepPublishedUndoSql(rows) {
+export function keepPublishedUndoSql(rows, { dryRun = false } = {}) {
   const stories = ids(rows.stories);
+  const id = rows.companion.id;
   return [
-    `-- Undo of the draft import of the regenerated cards of ${rows.companion.id} (scripts/content/import-drafts.mjs --keep-published, #516).`,
+    `-- Undo of the draft import of the regenerated cards of ${id} (scripts/content/import-drafts.mjs --keep-published, #516).`,
+    ...(dryRun ? ["-- DRY RUN: stops with its report; nothing is kept."] : []),
     "begin;",
     "do $guard$",
     "declare",
     "  switched boolean := false;",
     "begin",
+    `  if exists (select 1 from unnest(array[${stories}]::text[]) e(story_id)`,
+    `      where not exists (select 1 from public.stories s where s.id = e.story_id and s.companion_id = '${id}')) then`,
+    "    raise exception 'a story of the export is not one of this Companion''s stories in the database; nothing was removed';",
+    "  end if;",
     "  if to_regclass('private.story_switches') is not null then",
     "    execute 'select exists (select 1 from private.story_switches where undone_at is null and story_id = any ($1))'",
     `      into switched using array[${stories}]::text[];`,
@@ -898,10 +929,28 @@ export function keepPublishedUndoSql(rows) {
     "  end if;",
     "end",
     "$guard$;",
-    "delete from public.story_cards k",
-    `  where k.story_id in (${stories})`,
-    `    and ${importDraft("k")};`,
-    "commit;",
+    "do $undo$",
+    "declare",
+    "  removed integer;",
+    "  published_removed integer;",
+    "begin",
+    "  with gone as (",
+    "    delete from public.story_cards k",
+    `      where k.story_id in (${stories})`,
+    `        and ${importDraft("k")}`,
+    "      returning k.published, k.published_at",
+    "  )",
+    "  select count(*), count(*) filter (where published or published_at is not null)",
+    "    into removed, published_removed from gone;",
+    ...(dryRun
+      ? [
+          "  raise exception 'Dry run: nothing was changed.%', E'\\n' || 'drafts removed: ' || removed",
+          "    || E'\\n' || 'published rows changed: ' || published_removed;",
+        ]
+      : []),
+    "end",
+    "$undo$;",
+    dryRun ? "rollback;" : "commit;",
     "",
   ].join("\n");
 }
@@ -1011,9 +1060,16 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
   const known = keep
     ? ["--dry-run", "--check", "--undo"]
     : ["--dry-run", "--check", "--undo", "--source-check"];
-  if (flags.some((flag) => !known.includes(flag)) || flags.length > 1 || folders.length !== 1) {
+  // #522: with --keep-published, the undo has a dry run too (--undo --dry-run).
+  const undoDryRun =
+    keep && flags.length === 2 && flags.includes("--undo") && flags.includes("--dry-run");
+  if (
+    flags.some((flag) => !known.includes(flag)) ||
+    (flags.length > 1 && !undoDryRun) ||
+    folders.length !== 1
+  ) {
     console.error(
-      "Usage: node scripts/content/import-drafts.mjs <export folder> [--keep-published] [--dry-run | --check | --undo | --source-check [--base <ref>] [--extra <file>]...]",
+      "Usage: node scripts/content/import-drafts.mjs <export folder> [--keep-published] [--dry-run | --check | --undo | --source-check [--base <ref>] [--extra <file>]...] (with --keep-published also --undo --dry-run)",
     );
     process.exit(2);
   }
@@ -1026,8 +1082,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
       process.stdout.write(
         flags[0] === "--check"
           ? keepPublishedCheckSql(cards)
-          : flags[0] === "--undo"
-            ? keepPublishedUndoSql(cards)
+          : flags.includes("--undo")
+            ? keepPublishedUndoSql(cards, { dryRun: undoDryRun })
             : keepPublishedSql(cards, { dryRun: flags[0] === "--dry-run" }),
       );
     } else {

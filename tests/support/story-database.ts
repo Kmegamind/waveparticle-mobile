@@ -53,7 +53,8 @@ export async function storyDatabase(): Promise<PGlite> {
   await db.exec(printed("scripts/story-cards/import.mjs"));
   const digest = createHash("sha256").update(READER_KEY, "utf8").digest("hex");
   await db.exec(`insert into private.content_reader (token_sha256) values ('${digest}');
-insert into auth.users (id, email) values ('${ADMIN.id}', '${ADMIN.email}');`);
+insert into auth.users (id, email) values ('${ADMIN.id}', '${ADMIN.email}');
+insert into public.content_roles (user_id, role) values ('${ADMIN.id}', 'admin');`);
   return db;
 }
 
@@ -72,8 +73,42 @@ export async function rows<T = Record<string, unknown>>(db: PGlite, sql: string)
   return (await db.query<T>(sql)).rows;
 }
 
-/** The rows of the last statement that returned rows (a printed script's final SELECT). */
+/**
+ * The result of the LAST statement of a printed script, as the Supabase SQL editor shows it: the
+ * editor shows only that one. Empty when the last statement returns no rows (a commit).
+ */
 export async function lastRows<T = Record<string, unknown>>(db: PGlite, sql: string): Promise<T[]> {
   const results = await db.exec(sql);
-  return (results.filter((result) => result.fields.length > 0).at(-1)?.rows ?? []) as T[];
+  return (results.at(-1)?.rows ?? []) as T[];
 }
+
+/** One line of a dry run's report: "what: count" or "what: detail". */
+export type ReportLine = { what: string; count: number | null; detail: string | null };
+
+/**
+ * A dry run's report as the owner sees it in the SQL editor: the script stops with an error that
+ * starts "Dry run: nothing was changed." and lists one line per count (#522 review I2). Throws
+ * when the script does not stop that way.
+ */
+export async function dryRunReport(db: PGlite, sql: string): Promise<ReportLine[]> {
+  const message = await attempt(db, sql);
+  if (!message.startsWith("Dry run: nothing was changed.")) {
+    throw new Error(`not a dry-run report: ${message.slice(0, 200)}`);
+  }
+  return message
+    .split("\n")
+    .slice(1)
+    .filter((line) => line.trim() !== "")
+    .map((line) => {
+      const at = line.indexOf(": ");
+      const what = at === -1 ? line : line.slice(0, at);
+      const rest = at === -1 ? "" : line.slice(at + 2);
+      return /^\d+$/.test(rest)
+        ? { what, count: Number(rest), detail: null }
+        : { what, count: null, detail: rest };
+    });
+}
+
+/** Runs SQL as a signed-in account (auth.uid()), as the admin's own client does. */
+export const asAccount = (id: string, sql: string) =>
+  `begin; set local request.jwt.claim.sub = '${id}'; set local role authenticated; ${sql}; commit;`;

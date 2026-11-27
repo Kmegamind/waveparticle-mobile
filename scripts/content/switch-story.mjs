@@ -25,8 +25,12 @@
 // no earlier version), and stops when any card of the story changed after the switch-over.
 // The cards are named by key and md5 only; the part titles are the only text in the SQL.
 // The card checks of the admin's Publish do not run here: they are TypeScript, and the SQL editor
-// cannot run them. The admin story page shows each draft's problems; the Human step says to
-// switch a story only when none of its drafts fails a check.
+// cannot run them. `npm run check:export-cards` and the admin story page show each card's problems
+// first; whether a story with failing cards is switched anyway is the owner's decision (#516).
+// A card whose newest version is an editor's draft (saved in the admin) is published as the editor
+// left it: the draft import never stacks the file's text on top of it (#522 review).
+// Every dry run (switch and undo) stops with its report as an error that starts "Dry run: nothing
+// was changed.", because the SQL editor shows only the last result.
 
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -51,26 +55,37 @@ function storyRows(rows, storyId) {
 function actorSql(by) {
   if (typeof by !== "string" || !EMAIL.test(by)) throw new Error("--by needs an email address");
   return [
-    `  select id into actor from auth.users where lower(email) = lower(${quote(by)});`,
+    "  select u.id into actor from auth.users u",
+    "    join public.content_roles r on r.user_id = u.id and r.role = 'admin'",
+    `    where lower(u.email) = lower(${quote(by)});`,
     "  if actor is null then",
-    "    raise exception 'no account with the email given to --by; nothing was changed';",
+    "    raise exception 'no admin account with the email given to --by (give it the admin role first); nothing was changed';",
     "  end if;",
   ];
 }
 
-/** Counts of what this transaction wrote for the story; the dry run shows them, then rolls back. */
+/**
+ * Counts of what this transaction wrote for the story. The dry run stops with them as an error
+ * that starts "Dry run: nothing was changed.", so the SQL editor shows them, and nothing is kept.
+ */
 function summarySql(storyId, code) {
   const own = `item_key like 'crd.${code}.${storyId}.%'`;
   return [
-    "select what, count from (",
+    "do $report$",
+    "declare",
+    "  report text;",
+    "begin",
+    "  select string_agg(what || ': ' || count, E'\\n' order by at) into report from (",
     `  select 1 as at, 'cards published' as what, (select count(*) from public.publish_history where acted_at = now() and kind = 'story_card' and action = 'publish' and ${own})::int as count`,
     `  union all select 2, 'cards published again (undo)', (select count(*) from public.publish_history where acted_at = now() and kind = 'story_card' and action = 'roll_back' and ${own})::int`,
     `  union all select 3, 'cards retired', (select count(*) from public.publish_history where acted_at = now() and kind = 'story_card' and action = 'retire' and ${own})::int`,
     `  union all select 4, 'cards published now', (select count(*) from public.story_cards where story_id = '${storyId}' and published)::int`,
     `  union all select 5, 'part titles now', (select count(*) from public.story_parts where story_id = '${storyId}')::int`,
     "  union all select 6, 'publish history rows', (select count(*) from public.publish_history where acted_at = now())::int",
-    ") summary",
-    "order by at;",
+    "  ) summary;",
+    "  raise exception 'Dry run: nothing was changed.%', E'\\n' || report;",
+    "end",
+    "$report$;",
     "rollback;",
   ];
 }
@@ -115,8 +130,12 @@ export function switchSql(rows, storyId, { by, dryRun = false }) {
     "  if exists (select 1 from private.story_switches where story_id = target_story and undone_at is null) then",
     "    raise exception 'story % is already switched over: undo that first; nothing was changed', target_story;",
     "  end if;",
+    "  -- Each card of the new set has the file's text in some version, or an editor's draft on top.",
     "  select i.key into r from import_cards i",
     "    where not exists (select 1 from public.story_cards k where k.key = i.key and md5(k.body) = i.digest)",
+    "      and not exists (select 1 from public.story_cards n where n.key = i.key",
+    "        and n.version = (select max(m.version) from public.story_cards m where m.key = i.key)",
+    "        and n.created_by is not null and not n.published and n.published_at is null)",
     "    order by i.key limit 1;",
     "  if found then",
     "    raise exception 'card % has no version with the text of the file: run the draft import first (import-drafts.mjs --keep-published); nothing was changed', r.key;",
@@ -195,12 +214,17 @@ export function switchUndoSql(rows, storyId, { by, dryRun = false }) {
     "    was := (w.cards_before ->> r.key)::integer;",
     "    became := (w.cards_after ->> r.key)::integer;",
     "    continue when was is not distinct from became;",
+    "    -- A version first published by the switch-over becomes a draft again (#522 M1), so the draft",
+    "    -- import's undo can remove it and the admin shows it as a newer draft.",
     "    if became is not null then",
-    "      update public.story_cards set published = false where key = r.key and version = became;",
+    "      update public.story_cards set published = false,",
+    "          published_at = case when published_at = w.switched_at then null else published_at end,",
+    "          published_by = case when published_at = w.switched_at then null else published_by end",
+    "        where key = r.key and version = became;",
     "    end if;",
+    "    -- The earlier version comes back with its own publish time.",
     "    if was is not null then",
-    "      update public.story_cards set published = true, published_at = now(), published_by = actor",
-    "        where key = r.key and version = was;",
+    "      update public.story_cards set published = true where key = r.key and version = was;",
     `      ${history("story_card", "r.key", "was", "roll_back")}`,
     "    else",
     `      ${history("story_card", "r.key", "became", "retire")}`,

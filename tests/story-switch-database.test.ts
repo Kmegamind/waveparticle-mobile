@@ -11,7 +11,9 @@ import { storyDetail, storyList, type StoryCardRow } from "@/lib/story-cards/adm
 import {
   ADMIN,
   READER_KEY,
+  asAccount,
   attempt,
+  dryRunReport,
   lastRows,
   rows,
   storyDatabase,
@@ -127,16 +129,15 @@ describe("#516 the regenerated cards as drafts next to the published placeholder
 
   it("test_516_ac1_the_dry_run_shows_the_stories_part_titles_drafts_and_no_published_change", async () => {
     const start = await everything(db);
-    const summary = await lastRows<{ what: string; count: number | null; detail: string | null }>(
-      db,
-      keep(folder, "--dry-run"),
-    );
+    // The SQL editor shows only the last result: the dry run stops with its report (#522 I2).
+    const summary = await dryRunReport(db, keep(folder, "--dry-run"));
     const count = (what: string) => summary.find((row) => row.what === what)?.count;
     expect(count("stories in the export")).toBe(STORIES.length);
     expect(count("cards in the export")).toBe(exportedCards());
     expect(count("cards of the export that are drafts after the run")).toBe(exportedCards());
     expect(count("published rows changed")).toBe(0);
     expect(count("part titles changed")).toBe(0);
+    expect(count("kept: editor draft")).toBe(0);
     expect(count("part titles in the export (set at the switch-over)")).toBe(
       STORIES.reduce((sum, story) => sum + story.cards.length, 0),
     );
@@ -176,7 +177,9 @@ describe("#516 the regenerated cards as drafts next to the published placeholder
       // Part titles change only at the switch-over.
       expect(await partsOf(db, story.id)).toHaveLength(4);
     }
-    const check = await rows<{ item: string; result: string }>(db, keep(folder, "--check"));
+    // The check's last statement is its SELECT, so the SQL editor shows every row.
+    const check = await lastRows<{ item: string; result: string }>(db, keep(folder, "--check"));
+    expect(check.length).toBeGreaterThan(exportedCards() - 1);
     expect(check.filter((row) => !row.result.startsWith("ok"))).toEqual([]);
     expect(
       check.filter((row) => row.result.startsWith("ok, published now; retired at")),
@@ -240,9 +243,13 @@ describe("#516 the regenerated cards as drafts next to the published placeholder
     expect(await everything(db)).toEqual(start);
   });
 
-  it("test_516_the_import_refuses_a_story_that_is_not_one_of_his", async () => {
+  it("test_516_the_import_and_its_undo_refuse_a_story_that_is_not_one_of_his", async () => {
     const stranger = writeInventedCardExport({ stories: [{ id: "inv-not-his", cards: [1] }] });
     expect(await attempt(db, keep(stranger))).toMatch(/not one of this Companion's stories/);
+    // #522 M3: the undo has the same guard, so it never removes another Companion's drafts.
+    expect(await attempt(db, keep(stranger, "--undo"))).toMatch(
+      /not one of this Companion's stories/,
+    );
   });
 });
 
@@ -257,17 +264,20 @@ describe("#516 AC4 a switch-over of one story, end to end, and its undo", () => 
       /run the draft import first/,
     );
     expect(await attempt(db, switchOver(folder, THREE, "--by", "nobody@invented.test"))).toMatch(
-      /no account/,
+      /no admin account/,
+    );
+    // #522 M2: an account without the admin role is refused too.
+    await db.exec(`insert into auth.users (id, email)
+      values ('00000000-0000-4000-8000-0000000000f1', 'phone@invented.test')`);
+    expect(await attempt(db, switchOver(folder, THREE, "--by", "phone@invented.test"))).toMatch(
+      /no admin account/,
     );
     expect(await attempt(db, switchOver(folder, THREE, ...by, "--undo"))).toMatch(/no switch-over/);
   });
 
   it("test_516_ac4_the_dry_run_lists_the_changes_and_changes_nothing", async () => {
     const start = await everything(db);
-    const summary = await lastRows<{ what: string; count: number }>(
-      db,
-      switchOver(folder, THREE, ...by, "--dry-run"),
-    );
+    const summary = await dryRunReport(db, switchOver(folder, THREE, ...by, "--dry-run"));
     const count = (what: string) => summary.find((row) => row.what === what)?.count;
     const story = STORIES[0];
     const retired = before[THREE].filter((card) => !newKeys(story).includes(card.key)).length;
@@ -352,6 +362,16 @@ describe("#516 AC4 a switch-over of one story, end to end, and its undo", () => 
     expect(await attempt(db, switchOver(folder, THREE, ...by))).toMatch(/already switched over/);
     expect(await attempt(db, switchOver(folder, FIVE, ...by))).toBe("ok");
     expect(await partsOf(db, FIVE)).toHaveLength(5);
+    // The undo's dry run shows its counts too, and changes nothing.
+    const start = await everything(db);
+    const undoReport = await dryRunReport(
+      db,
+      switchOver(folder, FIVE, ...by, "--undo", "--dry-run"),
+    );
+    const undoCount = (what: string) => undoReport.find((row) => row.what === what)?.count;
+    expect(undoCount("cards published again (undo)")).toBe(before[FIVE].length);
+    expect(undoCount("part titles now")).toBe(4);
+    expect(await everything(db)).toEqual(start);
     expect(await attempt(db, switchOver(folder, FIVE, ...by, "--undo"))).toBe("ok");
     expect(await partsOf(db, FIVE)).toHaveLength(4);
     expect(await phoneCards(db, FIVE)).toEqual(phoneBefore[FIVE]);
@@ -394,9 +414,15 @@ describe("#516 AC4 a switch-over of one story, end to end, and its undo", () => 
     );
     expect(history.some((row) => row.kind === "story_card" && row.action === "retire")).toBe(true);
     expect(history.at(-1)).toEqual({ kind: "story_switch", action: "roll_back" });
-    // The new drafts are still there, as drafts, so the owner can switch again later.
-    const draftsBack = await rows<{ result: string }>(db, keep(folder, "--check"));
+    // #522 M1: exactly as before, publish times included, and the new versions are drafts again.
+    expect(await publishedRows(db)).toEqual(publishedBefore);
+    const draftsBack = await rows<{ item: string; result: string }>(db, keep(folder, "--check"));
     expect(draftsBack.filter((row) => !row.result.startsWith("ok"))).toEqual([]);
+    expect(
+      draftsBack.filter(
+        (row) => row.item.startsWith(`crd.opp.${THREE}.`) && row.result === "ok, draft",
+      ),
+    ).toHaveLength(newKeys(STORIES[0]).length);
     expect(await attempt(db, switchOver(folder, THREE, ...by))).toBe("ok");
     expect(await attempt(db, switchOver(folder, THREE, ...by, "--undo"))).toBe("ok");
   });
@@ -409,9 +435,17 @@ describe("#516 AC4 a switch-over of one story, end to end, and its undo", () => 
     await db.exec(`insert into auth.users (id, email) values ('${editor}', 'writer@invented.test');
       insert into story_cards (key, version, story_id, kind, part, slice, position, body, created_by)
       values ('crd.opp.${FOUR}.p2.c6', 2, '${FOUR}', 'part', 2, 's2', 6, 'Invented edit by an editor.', '${editor}')`);
+    // The undo's dry run shows how many drafts it removes, and changes nothing.
+    const start = await everything(db);
+    const report = await dryRunReport(db, keep(folder, "--undo", "--dry-run"));
+    expect(report.find((row) => row.what === "drafts removed")?.count).toBe(exportedCards());
+    expect(report.find((row) => row.what === "published rows changed")?.count).toBe(0);
+    expect(await everything(db)).toEqual(start);
     expect(await attempt(db, keep(folder, "--undo"))).toBe("ok");
-    // Every published card is as before the import; only an editor's own later draft stays.
+    // Every published card is as before the import, publish times included (#522 M1); only an
+    // editor's own later draft stays.
     expect(await liveRows(db)).toEqual(liveBefore);
+    expect(await publishedRows(db)).toEqual(publishedBefore);
     for (const story of STORIES) {
       const left = (await cardsOf(db, story.id)).filter(
         (card) => !card.published && card.published_at === null,
@@ -421,6 +455,54 @@ describe("#516 AC4 a switch-over of one story, end to end, and its undo", () => 
     for (const story of STORIES)
       expect(await phoneCards(db, story.id)).toEqual(phoneBefore[story.id]);
   });
+});
+
+describe("#522 I1 a re-import never buries an editor's draft", () => {
+  const story = { id: "midnight-pamphlet", cards: [2, 3, 2] };
+  const key = `crd.opp.${story.id}.p1.c1`;
+  const by = ["--by", ADMIN.email];
+  const save = (body: string) =>
+    asAccount(ADMIN.id, `select public.save_story_card_draft('${key}', '${body}')`);
+  const versionsOf = (fresh: PGlite) =>
+    rows<{ version: number; body: string; published: boolean; editor: boolean }>(
+      fresh,
+      `select version, body, published, created_by is not null as editor from story_cards where key = '${key}' order by version`,
+    );
+
+  async function expectEditorKept(fresh: PGlite, exportFolder: string, editorBody: string) {
+    // The dry run and the check name the key; no version with the file's text goes on top.
+    const report = await dryRunReport(fresh, keep(exportFolder, "--dry-run"));
+    expect(report.find((row) => row.what === "kept: editor draft")?.count).toBe(1);
+    expect(
+      report.filter((row) => row.what === "kept: editor draft key").map((row) => row.detail),
+    ).toEqual([key]);
+    expect(await attempt(fresh, keep(exportFolder))).toBe("ok");
+    expect((await versionsOf(fresh)).at(-1)).toMatchObject({ body: editorBody, editor: true });
+    const check = await rows<{ item: string; result: string }>(
+      fresh,
+      keep(exportFolder, "--check"),
+    );
+    expect(check.find((row) => row.item === key)?.result).toBe("kept: editor draft");
+    // The switch-over publishes the editor's version, not the file's.
+    expect(await attempt(fresh, switchOver(exportFolder, story.id, ...by))).toBe("ok");
+    const published = (await versionsOf(fresh)).filter((row) => row.published);
+    expect(published).toEqual([expect.objectContaining({ body: editorBody, editor: true })]);
+  }
+
+  it("test_522_i1_an_edit_saved_after_the_import_survives_a_re_import_and_is_published", async () => {
+    const fresh = await storyDatabase();
+    const exportFolder = writeInventedCardExport({ stories: [story] });
+    expect(await attempt(fresh, keep(exportFolder))).toBe("ok");
+    expect(await attempt(fresh, save("Invented edit after the import."))).toBe("ok");
+    await expectEditorKept(fresh, exportFolder, "Invented edit after the import.");
+  }, 60_000);
+
+  it("test_522_i1_a_draft_saved_before_the_import_is_kept_and_is_published", async () => {
+    const fresh = await storyDatabase();
+    const exportFolder = writeInventedCardExport({ stories: [story] });
+    expect(await attempt(fresh, save("Invented draft before the import."))).toBe("ok");
+    await expectEditorKept(fresh, exportFolder, "Invented draft before the import.");
+  }, 60_000);
 });
 
 describe("#516 the default mode of #514 still refuses a Companion with published rows", () => {
