@@ -37,8 +37,8 @@ export async function FeatureEditorPage({
     readFeature(client, slug),
     readPeople(client, slug),
   ]);
-  // #474: Pipeline and Quality gate rows are read only until #475.
-  if (feature === undefined || (feature && !editable(feature))) notFound();
+  // #475: every row has a pass standard; Purpose and Current approach are Runtime rows only.
+  if (feature === undefined || (kind === "purpose" && feature && !editable(feature))) notFound();
   const crumbs = [
     { label: "AI rules" },
     { label: "AI features", href: "/admin/ai-features" },

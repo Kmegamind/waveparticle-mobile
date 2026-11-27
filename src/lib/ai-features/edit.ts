@@ -73,7 +73,16 @@ export type FeatureWriteError =
   | "note-too-long"
   | "changed-since"
   | "unchanged"
-  | "failed";
+  | "failed"
+  // #475: the registry editor.
+  | "name-empty"
+  | "name-brackets"
+  | "name-unbalanced"
+  | "name-too-long"
+  | "field-too-long"
+  | "example-needs-text"
+  | "example-unchanged"
+  | "category-unchanged";
 
 export type FeatureWriteResult =
   { ok: true; savedAt?: string | null } | { ok: false; error: FeatureWriteError };
@@ -116,8 +125,10 @@ export async function saveFeatureSections(
   const feature = await deps.readFeature(write.slug);
   if (feature === null) return { ok: false, error: "failed" };
   if (feature === undefined) return { ok: false, error: "unknown-feature" };
-  // #474: Pipeline and Quality gate rows are read only until #475.
-  if (!editable(feature)) return { ok: false, error: "not-allowed" };
+  // #475: every row has a pass standard; Purpose and Current approach are Runtime rows only.
+  const runtimeOnly =
+    write.sections?.purpose !== undefined || write.sections?.approach !== undefined;
+  if (runtimeOnly && !editable(feature)) return { ok: false, error: "not-allowed" };
   if ((feature.sections_updated_at ?? null) !== (write.loadedAt ?? null)) {
     return { ok: false, error: "changed-since" };
   }
@@ -144,8 +155,10 @@ export async function saveFeatureSections(
 }
 
 /**
- * #474: the editors of #453 work on the 7 Runtime rows; Pipeline and Quality gate rows are read only
- * until #475. A row without a category (before the registry migration) is a Runtime row.
+ * #475: Purpose and Current approach are kept on the Runtime rows only (AI-REQUIREMENT-FIELD, the
+ * drawing's #reg-feature), so their editor works on those rows only. The pass standard, the status
+ * and the registry fields are edited on every row. A row without a category (before the registry
+ * migration) is a Runtime row.
  */
 export const editable = (feature: Pick<AiFeatureRow, "category">) =>
   !feature.category || feature.category === "runtime";
@@ -169,8 +182,6 @@ export async function changeFeatureStatus(
   const feature = await deps.readFeature(write.slug);
   if (feature === null) return { ok: false, error: "failed" };
   if (feature === undefined) return { ok: false, error: "unknown-feature" };
-  // #474: Pipeline and Quality gate rows are read only until #475.
-  if (!editable(feature)) return { ok: false, error: "not-allowed" };
   if (feature.status === write.status) return { ok: false, error: "unchanged" };
   const { error } = await deps.rpc("set_ai_feature_status", {
     target_feature: write.slug,

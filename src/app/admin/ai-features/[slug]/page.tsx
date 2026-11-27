@@ -31,6 +31,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Breadcrumb, KeyChip, PageHead, StatePill } from "../../admin-ui";
 import { FeatureStatusPill, ItemSource, MarkPill, NotWrittenYet } from "../feature-ui";
 import { readPeople, readStatusHistory } from "../load";
+import { ConfirmExample } from "../registry-editor";
 import { ExamplePill, PromptBody, RolePill } from "../registry-ui";
 import { StatusForm } from "../status-form";
 
@@ -42,10 +43,11 @@ export const instant = false;
 // shows each prompt key's published text and its draft side by side with their `{{variables}}`
 // marked, and the changed lines, read live from public.prompts at page load (the call of ADM-08
 // Prompts). Runtime rows also show Purpose and Current approach (sections (a) and (c) of #439,
-// kept as they are, AI-REQUIREMENT-FIELD) and the retry_hints fix. Read only, except what #453
-// built and keeps on the 7 Runtime rows: the editors of (a) to (c), linked from the header, and
-// the status control (admin only, AI-PAGE-STATUS), which the drawing puts on this page. Pipeline
-// and Quality gate rows are read only until #475. A row may also be opened by its Feature ID
+// kept as they are, AI-REQUIREMENT-FIELD) and the retry_hints fix. #475: every row is edited. The
+// header links to the registry editor (/fields: name, text fields, example, category, field
+// history), the pass standard editor and, on Runtime rows, the purpose and approach editor; the
+// status control (admin only, AI-PAGE-STATUS) sits in the Status section as the drawing, and a
+// candidate example has Confirm (any role, AI-EXAMPLE-CONFIRM). A row may also be opened by its Feature ID
 // (/admin/ai-features/R-03), which goes to its slug. An unknown feature shows the not-found page.
 export default async function AdminAiFeature({ params }: PageProps<"/admin/ai-features/[slug]">) {
   await connection();
@@ -165,16 +167,17 @@ async function FeatureDetail({
         actions={
           <>
             <RolePill role={admin ? "admin" : "writer"} />
+            <Link className="button-gray" href={`${base}/fields`}>
+              Edit fields
+            </Link>
             {runtime ? (
-              <>
-                <Link className="button-gray" href={`${base}/purpose`}>
-                  Edit purpose and approach
-                </Link>
-                <Link className="button-gray" href={`${base}/pass`}>
-                  Edit pass standard
-                </Link>
-              </>
+              <Link className="button-gray" href={`${base}/purpose`}>
+                Edit purpose and approach
+              </Link>
             ) : null}
+            <Link className="button-gray" href={`${base}/pass`}>
+              Edit pass standard
+            </Link>
           </>
         }
       />
@@ -236,6 +239,13 @@ async function FeatureDetail({
                     </>
                   ) : null}
                 </span>
+                {feature.example_state === "candidate" ? " " : null}
+                {/* Always mounted, so its message stays after the confirmed page comes back. */}
+                <ConfirmExample
+                  candidate={feature.example_state === "candidate"}
+                  loadedAt={feature.example_set_at ?? null}
+                  slug={slug}
+                />
               </p>
               <p className="admin-field-text">{feature.example_text}</p>
               {exampleHistory === null ? (
@@ -307,9 +317,7 @@ async function FeatureDetail({
             </>
           }
         >
-          {admin && runtime ? (
-            <StatusForm readOnly={false} slug={slug} status={feature.status} />
-          ) : null}
+          {admin ? <StatusForm readOnly={false} slug={slug} status={feature.status} /> : null}
           {admin ? null : (
             <p className="admin-note">You can see the status. Only an admin can change it.</p>
           )}
@@ -328,12 +336,8 @@ async function FeatureDetail({
                 ) : null}
               </>
             )}
-            {runtime ? (
-              <>
-                {" · "}
-                <Link href={`${base}/status`}>history and change (admin only)</Link>
-              </>
-            ) : null}
+            {" · "}
+            <Link href={`${base}/status`}>history and change (admin only)</Link>
           </p>
         </Section>
 
@@ -379,6 +383,10 @@ async function FeatureDetail({
               </tbody>
             </table>
           )}
+          <p className="admin-src">
+            Each field change with its old and new value is in the{" "}
+            <Link href={`${base}/fields#history`}>field history</Link>.
+          </p>
         </Section>
 
         {runtime ? (
