@@ -22,6 +22,7 @@ import {
   type PassAnswer,
   type SideChoice,
 } from "@/lib/ai-runs/comparison";
+import { LAB_CALL_INPUTS } from "@/lib/ai-runs/call-inputs";
 import { modelErrorText, RUN_REFUSED } from "@/lib/ai-runs/panel";
 import { emptyProblems, unfilledVariables } from "@/lib/ai-samples/variables";
 import { saveComparisonAction } from "./actions";
@@ -32,7 +33,9 @@ import { saveComparisonAction } from "./actions";
 // feature's pass questions to answer yes or no, then Save result. Run both posts each side to the
 // Run route through the shared client (src/lib/ai-runs/client.ts), at the same time and with the
 // same sample, so each side is an ordinary recorded run. Blind shows the sides in a random order
-// as "Side 1" and "Side 2" until every pass question of both sides is answered.
+// as "Side 1" and "Side 2" until every pass question of both sides is answered. #517: a side may run
+// any stored version of the key, and a runtime key on a sample asks for its call inputs (the same
+// for both sides), so the version runs with the gateway's own prompt and checks.
 
 export type LabFeature = {
   slug: string;
@@ -61,6 +64,8 @@ type Comparison = AnswerState & {
   feature: string;
   key: string;
   sample: string;
+  /** #517: the call inputs both sides ran with, if any. */
+  inputs?: Record<string, string>;
   questions: string[];
   a: SideResult;
   b: SideResult;
@@ -110,6 +115,7 @@ export function ComparisonLab({
     startPrompt ? defaultSides(startPrompt, models) : { a: "", b: "" },
   );
   const [blind, setBlind] = useState(true);
+  const [inputs, setInputs] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [comparison, setComparison] = useState<Comparison | null>(null);
   const [saved, setSaved] = useState(false);
@@ -121,6 +127,17 @@ export function ComparisonLab({
   const options = prompt ? sideOptions(prompt, models) : [];
   const labelOf = (choice: SideChoice) =>
     options.find((item) => item.value === choice)?.label ?? choice;
+  // #517: the call inputs of a runtime key, asked only when a sample is chosen.
+  const callFields =
+    prompt && sample !== SAMPLE_NONE
+      ? (LAB_CALL_INPUTS[prompt.key] ?? []).filter((field) =>
+          (prompt.callInputs ?? []).includes(field.name),
+        )
+      : [];
+  const callInputs =
+    callFields.length > 0
+      ? Object.fromEntries(callFields.map((field) => [field.name, inputs[field.name] ?? ""]))
+      : undefined;
 
   const choose = (nextFeature: LabFeature, nextKey?: string) => {
     const nextPrompt =
@@ -135,7 +152,18 @@ export function ComparisonLab({
   // The variables a side's version uses that the sample does not fill, or leaves empty: the
   // route refuses that side before the model is called (docs/decisions/0037), so say it first.
   const warnings: string[] = [];
-  if (prompt && sample !== SAMPLE_NONE) {
+  if (prompt && callFields.length > 0) {
+    // The gateway builds the prompt: the sample gives the Companion and the facts, the call
+    // inputs the rest (src/lib/ai-runs/call-inputs.ts).
+    const empty = samples?.find((item) => item.id === sample)?.empty ?? [];
+    const problems = [
+      ...emptyProblems(["name", "facts"].filter((name) => empty.includes(name))),
+      ...callFields
+        .filter((field) => (inputs[field.name] ?? "").trim() === "")
+        .map((field) => `Write the call input ${field.label}.`),
+    ];
+    if (problems.length > 0) warnings.push(`Both sides: ${problems.join(" ")}`);
+  } else if (prompt && sample !== SAMPLE_NONE) {
     const empty = samples?.find((item) => item.id === sample)?.empty ?? [];
     for (const side of ["a", "b"] as const) {
       const names = sideVariables(prompt, sides[side]);
@@ -161,6 +189,7 @@ export function ComparisonLab({
           choice: sides.a,
           sample: sample || null,
           models,
+          inputs: callInputs,
         })
       : null,
     b: prompt
@@ -170,6 +199,7 @@ export function ComparisonLab({
           choice: sides.b,
           sample: sample || null,
           models,
+          inputs: callInputs,
         })
       : null,
   };
@@ -189,6 +219,7 @@ export function ComparisonLab({
       feature: feature.slug,
       key: prompt.key,
       sample,
+      inputs: callInputs,
       questions: feature.questions,
       blind,
       peeked: false,
@@ -214,6 +245,8 @@ export function ComparisonLab({
           choice: comparison[side].choice,
           sample: comparison.sample || null,
           models,
+          // The call inputs the comparison ran with, so a retried side runs the same input.
+          inputs: comparison.inputs,
         })
       : null;
     if (!request) return;
@@ -328,6 +361,23 @@ export function ComparisonLab({
                 <option value={SAMPLE_NONE}>No sample (the prompt as written)</option>
               </select>
             </label>
+            {callFields.map((field) => (
+              <label key={field.name}>
+                {field.label} (call input, the same for both sides)
+                <input
+                  className="admin-text-field"
+                  disabled={busy}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setInputs((current) => ({ ...current, [field.name]: value }));
+                    setComparison(null);
+                    setMessage("");
+                  }}
+                  type="text"
+                  value={inputs[field.name] ?? ""}
+                />
+              </label>
+            ))}
           </div>
           <div className="admin-form">
             {(["a", "b"] as const).map((side) => (

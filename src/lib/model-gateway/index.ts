@@ -24,6 +24,7 @@ export type {
   PlanSplitResult,
   PlanStep,
   RestReplyInput,
+  RestReviewInput,
   ReturnPopupInput,
   ClosingLineInput,
   ClosingLineResult,

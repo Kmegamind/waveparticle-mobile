@@ -113,7 +113,11 @@
 //                                     answers the seed prompts, the 12 fixture Pipeline and Quality
 //                                     gate prompts and one fixed draft of stuck_story (its prompt
 //                                     writes are refused); null gives both up. __fail_reads with
-//                                     an AI feature table name makes that table's read answer 500
+//                                     an AI feature table name makes that table's read answer 500.
+//                                     #517: with storedVersions: true that account also reads the
+//                                     R-08 row (rest_reply_review, storedVersionFeature) and the
+//                                     stored versions of storedVersionPrompts (an earlier rest_reply
+//                                     v2, a rest_reply draft v3, an inactive rest_reply_review v1)
 //   POST /__publish_history { token, own: true | null }   (#447) that account's
 //                                     list_publish_history answers a fixed, seeded history (three
 //                                     rows, as the prototype) instead of the shared one, so the
@@ -548,6 +552,72 @@ const registryPrompts = () => {
 };
 
 /**
+ * #517: the R-08 registry row of rest_reply_review, as scripts/ai-features/rest-review-seed.mjs
+ * inserts it, with two invented pass questions so a comparison can be saved.
+ */
+const storedVersionFeature = () => ({
+  ...seededAiFeatures().find((row) => row.slug === "rest_reply"),
+  slug: "rest_reply_review",
+  position: 99,
+  title: "Rest reply review (rest_reply_review)",
+  prompt_keys: ["rest_reply_review"],
+  purpose: [],
+  pass_questions: [
+    { text: "Invented question one for #517?", source: null, draft: false },
+    { text: "Invented question two for #517?", source: null, draft: false },
+  ],
+  approach: [],
+  feature_id: "R-08",
+  category: "runtime",
+});
+
+/**
+ * #517: stored versions beyond the published one and the draft: rest_reply v2 (active once, then
+ * rolled back past, so not a draft), a rest_reply draft v3, and an inactive rest_reply_review v1
+ * with invented text (the owner's texts are never in the repository).
+ */
+const storedVersionPrompts = () => {
+  const rest = seededPrompts().find((row) => row.key === "rest_reply");
+  const base = { note: "#517 stored version", category: "runtime" };
+  return [
+    {
+      ...rest,
+      ...base,
+      version: 2,
+      active: false,
+      body: `${rest.body.replace(/\n+$/, "")}\nAn invented earlier line of v2.`,
+      created_at: "2026-11-20T00:00:00Z",
+      activated_at: "2026-11-20T00:00:00Z",
+    },
+    {
+      ...rest,
+      ...base,
+      version: 3,
+      active: false,
+      body: `${rest.body.replace(/\n+$/, "")}\nAn invented draft line of v3.`,
+      created_at: "2026-11-27T00:00:00Z",
+      activated_at: null,
+    },
+    {
+      ...base,
+      key: "rest_reply_review",
+      version: 1,
+      active: false,
+      body: [
+        'Return JSON only: {"reply":"..."}',
+        "An invented review prompt for the e2e tests.",
+        "Facts already known: {{facts}}",
+        "The person wrote: {{userMessage}}",
+        "Draft: {{draft}}",
+      ].join("\n"),
+      params: rest.params,
+      created_at: "2026-11-27T00:00:00Z",
+      activated_at: null,
+    },
+  ];
+};
+
+/**
  * #453: the feature rows and status history an account reads and writes: its own copy when it has
  * one (POST /__ai_features { token, own: true }), otherwise the shared ones.
  */
@@ -940,7 +1010,7 @@ createServer(async (request, response) => {
     }
     if (promptRpc[1] === "list_prompt_versions") {
       const source = dataset.promptsRegistryView
-        ? registryPrompts()
+        ? [...registryPrompts(), ...(dataset.promptsStoredVersions ? storedVersionPrompts() : [])]
         : dataset.promptsSeededView
           ? seededPrompts()
           : promptVersions;
@@ -1343,8 +1413,12 @@ createServer(async (request, response) => {
       const account = datasets.get(body.token);
       if (!account) return json(response, 404, { message: "no such account" });
       const on = body.registry === true;
-      account.aiFeaturesOwn = on ? registryFeatures() : undefined;
+      const stored = on && body.storedVersions === true;
+      const registry = on ? registryFeatures() : undefined;
+      if (registry && stored) registry.features.push(storedVersionFeature());
+      account.aiFeaturesOwn = registry;
       account.promptsRegistryView = on ? true : undefined;
+      account.promptsStoredVersions = stored ? true : undefined;
       return json(response, 200, { ok: true });
     }
     if (typeof body.token === "string" && "purpose" in body) {
