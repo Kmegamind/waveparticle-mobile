@@ -11,8 +11,6 @@ export type RunWriter = {
   insertClosingLine(sessionId: string, line: SessionLine): Promise<void>;
 };
 
-export const RUN_COMPANION_ID = "oppenheimer";
-
 type Result = { data: unknown[] | null; error: { message: string } | null };
 type Filter = {
   eq(column: string, value: string): Filter;

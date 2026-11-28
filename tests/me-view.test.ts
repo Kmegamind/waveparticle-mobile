@@ -175,6 +175,8 @@ describe("#94 the record of a finished Story", () => {
     });
     done.closingLine = "The day ended at the mesa.";
     expect(storyRecord(seed, account([a], [done]), done.id)).toEqual({
+      // #521: the session's Companion, whose Life Path the record goes back to.
+      companionId: "oppenheimer",
       storyTitle: expect.any(String),
       steps: [
         { title: "Gather", cards: ["Background.", "Later card."] },

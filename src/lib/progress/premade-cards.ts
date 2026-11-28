@@ -21,6 +21,12 @@ export type PremadeDeps = {
   pinVersions: (sessionId: string, versions: CardVersions) => Promise<void>;
   /** Published cards when `versions` is null, otherwise exactly those versions. */
   readDeck: (storyId: string, versions: CardVersions | null) => Promise<StoryDeck | null>;
+  /**
+   * #521: true when this account may play the story (its Companion is public, or the account is
+   * an admin or writer). A story it may not play gets no card and its deck is never read, even
+   * for a session row the account wrote itself.
+   */
+  mayPlay: (storyId: string) => Promise<boolean>;
   /** A server log line naming the event only: never card text, ids or the error. */
   log?: (event: { event: "story_cards_read_failed" }) => void;
 };
@@ -60,6 +66,7 @@ export async function premadeStepCards(
     if (!request) return { status: "failed" };
     const session = await deps.readSession(request.sessionId);
     if (!session || request.index >= session.stepCount) return { status: "failed" };
+    if (!(await deps.mayPlay(session.storyId))) return { status: "failed" };
 
     let deck: StoryDeck | null;
     if (session.cardVersions) {

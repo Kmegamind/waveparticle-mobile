@@ -46,6 +46,7 @@ function world(options: { versions?: CardVersions | null; stepCount?: number } =
       versions ??= next;
     }),
     readDeck,
+    mayPlay: async () => true,
   };
   return {
     deps,

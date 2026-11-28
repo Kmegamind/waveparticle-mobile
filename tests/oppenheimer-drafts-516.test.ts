@@ -279,6 +279,7 @@ describe.each(PART_DECKS)("#516 AC5 a story with %s in a session", (_, cards) =>
           pinned ??= versions;
         },
         readDeck: async () => deck,
+        mayPlay: async () => true,
       };
       for (let index = 0; index < stepCount; index += 1) {
         const answer = await premadeStepCards(

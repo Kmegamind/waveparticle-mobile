@@ -1,4 +1,5 @@
 import { createClock } from "@/lib/clock";
+import { DEFAULT_COMPANION_ID } from "@/lib/content/companions";
 import { syncSession, type FocusSession, type SessionPlan } from "@/lib/prototype/session";
 import type {
   AccountProgress,
@@ -17,8 +18,6 @@ import type {
  * line he showed (background card, story cards, pause messages, return pop-ups). What stays on
  * the device (docs/decisions/0014): the running clock, the pause count and the rest conversation.
  */
-
-export const COMPANION_ID = "oppenheimer";
 
 /**
  * True when the Story was turned off for this session (#114, STUDY-SESSION): `sessions.story_off_at`
@@ -60,6 +59,8 @@ export function planStorageKey(plan: Pick<AccountFocusPlan, "sessionId" | "story
 export type AccountFocusPlan = {
   sessionId: string;
   goalId: string;
+  /** #521: the session's Companion (any Companion with stories, not only Oppenheimer). */
+  companionId: string;
   storyId: string;
   goal: { text: string; minutes: number };
   steps: { title: string; description: string; minutes: number }[];
@@ -75,7 +76,14 @@ export type AccountFocusPlan = {
  * `storyOff` is the account's research flag (#114): a new session is opened with the Story off,
  * and an open session that plays the Story is turned Story-off in place (STUDY-SESSION).
  */
-type Deps = { storyId: string; newId: () => string; storyOff?: boolean; now?: string };
+type Deps = {
+  storyId: string;
+  /** #521: the Companion of the story a new session plays; the default Companion when left out. */
+  companionId?: string;
+  newId: () => string;
+  storyOff?: boolean;
+  now?: string;
+};
 
 const byPosition = <T extends { position: number }>(items: T[]) =>
   [...items].sort((left, right) => left.position - right.position);
@@ -97,6 +105,7 @@ function planOf(goal: ProgressGoal, session: ProgressSession): AccountFocusPlan 
   return {
     sessionId: session.id,
     goalId: goal.id,
+    companionId: session.companionId,
     storyId: session.storyId,
     goal: { text: goal.text, minutes: steps.reduce((sum, step) => sum + step.minutes, 0) },
     steps: steps.map((step) => ({
@@ -156,7 +165,7 @@ export function openFocusSession(
   const session: ProgressSession = {
     id: deps.newId(),
     goalId: goal.id,
-    companionId: COMPANION_ID,
+    companionId: deps.companionId ?? DEFAULT_COMPANION_ID,
     storyId: deps.storyId,
     // #114: the new session follows the account's research flag as read now.
     storyOffAt: deps.storyOff ? now : null,

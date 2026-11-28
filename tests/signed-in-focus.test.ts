@@ -472,6 +472,7 @@ describe("#257 AC5 the signed-in pages never show test data", () => {
           readSession: async () => ({ storyId: "site-search", stepCount: 1, cardVersions: null }),
           pinVersions: async () => undefined,
           readDeck: async () => null,
+          mayPlay: async () => true,
         },
       ),
     ).resolves.toEqual({ status: "failed" });
@@ -493,6 +494,7 @@ describe("#257 AC5 the signed-in pages never show test data", () => {
       readSession: async () => ({ storyId: "site-search", stepCount: 1, cardVersions: null }),
       pinVersions: async () => undefined,
       readDeck: async () => null,
+      mayPlay: async () => true,
     };
     await expect(premadeStepCards({ index: 3, planMinutes: [10] }, deps)).resolves.toEqual({
       status: "failed",

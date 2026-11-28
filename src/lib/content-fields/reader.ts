@@ -17,6 +17,8 @@ export type CompanionRow = {
   who: string;
   key_code: string;
   mode: string;
+  /** #521: where Enter goes on phones; null while he is not public (a preview for editors). */
+  enter_href?: string | null;
 };
 
 export type StoryFieldsRow = {
@@ -31,7 +33,8 @@ export type StoryFieldsRow = {
   path: string;
 };
 
-const COMPANION_COLUMNS = "id, position, name, short_name, tags, line, who, key_code, mode";
+const COMPANION_COLUMNS =
+  "id, position, name, short_name, tags, line, who, key_code, mode, enter_href";
 const STORY_COLUMNS = "id, companion_id, sequence, title, period, goal_short, who, opening, path";
 const FIELD_COLUMNS = "key, version, body, published, published_at";
 

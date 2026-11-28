@@ -42,9 +42,13 @@ function companionOf(value: unknown): Companion {
   const where = `Companion ${String(value.id)}`;
   const enterHref = value.enter_href;
   if (enterHref !== null && typeof enterHref !== "string") throw new Error(`${where}: enter_href`);
+  // #485: every model call names the Companion (the gateway's `name` check), so a blank name is
+  // not content: the read fails rather than a call failing later.
+  const name = text(value, "name", where);
+  if (name.trim().length === 0) throw new Error(`${where}: name is empty`);
   return {
     id: text(value, "id", where),
-    name: text(value, "name", where),
+    name,
     shortName: text(value, "short_name", where),
     tags: text(value, "tags", where),
     line: text(value, "line", where),

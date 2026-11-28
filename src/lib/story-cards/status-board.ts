@@ -134,6 +134,8 @@ export type BoardCompanion = {
   short_name: string;
   key_code: string;
   mode: string;
+  /** #521: null while he is not public (only admins and writers can enter him). */
+  enter_href?: string | null;
 };
 
 export type BoardInput = {
@@ -195,7 +197,11 @@ export function statusBoard(input: BoardInput): StatusBoard {
     const parts = [
       companion.mode === "fictional" ? "Fictional" : "Historical",
       own === 0 ? "no stories yet" : plural(own, "story", "stories"),
-      shown[index].shown === "Published" ? "shown to users" : "not ready",
+      shown[index].shown === "Published"
+        ? "shown to users"
+        : shown[index].shown === "Preview"
+          ? "preview for admins and writers, not shown to users"
+          : "not ready",
     ];
     if (companion.id === input.cardCompanionId && input.storyRows !== null) {
       const cards = new Set(input.cards.map((card) => card.key)).size;

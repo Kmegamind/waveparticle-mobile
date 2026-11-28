@@ -1,0 +1,26 @@
+# 0040: Any Companion can be played, and a Companion who is not public is a preview for admins and writers
+- Status: proposed
+- Date: 2026-11-27
+- Issue: #521 (folds in #485)
+
+## Context
+The owner wants to walk Snape's whole flow on the live site (goal, Plan, cards, Pause, rest chat, return pop-up, closing) before testers can see him. Snape's drafts are in the database (#514), his `enter_href` is null, and the session code played Oppenheimer only (`RUN_STORIES_COMPANION`, the session's `COMPANION_ID`, `RUN_COMPANION_ID`, the admin's `CARD_COMPANION_ID`; #485). Whatever lets the owner in must never let a user reach that Companion's sessions, cards or model calls, by address, server action or the API.
+
+## Options
+| Option | For | Against |
+|---|---|---|
+| A preview flag per account in the database | Fine-grained | A new table and a new screen to grant it; the spec says nothing about it |
+| A secret URL or cookie | No role needed | A link can be shared; anyone with it plays |
+| **Content roles (admin, writer) may play a Companion who has stories but no `enter_href`** | Reuses `content_role()` and `is_content_editor()` (docs/decisions/0016); no screen; making him public stays one change (`enter_href`) | Writers can preview too, not only the owner |
+
+## Decision
+- **Public** means `enter_href` is set. A Companion with stories and no `enter_href` is a **preview**: an admin or a writer may play him; everyone else sees him on the Companions list with Enter off, as before.
+- **Default deny in the server.** `getStoryContent()` returns the stories of public Companions only. `getStoryContentForViewer(client)` adds the others for an account with a content role (a failed role read counts as no role). `getFullStoryContent()` is for admin code only. Every page and server action that plays a story (Life Path, goal dialogue, `/focus`, `/rest`, `/end`, cards, Pause, rest reply, return pop-up, closing line, Me history) uses the viewer's content, so a story that is not in it opens nothing and makes no model call (`src/lib/content/companion-access.ts`, `src/lib/progress/viewer-session.ts`). An open session is checked again on every load and every card read: a session row a user wrote with their own key for a preview Companion opens nothing, and a story under another Companion's name is refused for every account.
+- **The database** (`supabase/migrations/20261208000000_companion_preview.sql`, a Human step): a signed-in account may only write a session whose story belongs to its Companion and whose Companion is public, unless it has a content role (checked on insert and when `companion_id` or `story_id` changes); the `stories` display rows of a preview Companion are readable by editors only. Cards and drafts were already closed (`story_cards`, `story_parts`, `content_fields`: editors only; `get_story_cards` answers the server's reader key only and only published or pinned versions). The preview reads **published** cards only, like the phones: no draft card ever reaches a session.
+- **Any Companion** (#485). Each Oppenheimer-only place is moved to Companion data or kept as the one documented default, `DEFAULT_COMPANION_ID` (`src/lib/content/companions.ts`): a session takes its Companion from its story; the Life Path is `/companions/<id>` (`/companions/oppenheimer` unchanged); the goal dialogue takes `?companion=<id>` and `/focus` takes it for a new session; END's Next and the Story record go back to the session's own Companion. The defaults are: the test path `/try` (Oppenheimer only), Home's "With Oppenheimer" card, a Life Path or new session without `?companion=`, `/admin/stories` and the admin overview's story table without `?companion=`. The card introduction check names no character ("I am <Full Name>" for any name). A blank Companion name is refused by the content import, the drafts import and the content load.
+- **Not written yet.** A story line that is not published (goal sentence, "Who I am", opening) reads "Not written yet". The default Companion's own goal-dialogue lines (the canyon opening, two reactions, the splitting lines) are never shown for another Companion: his opening is his story's own, the reaction comes from the two lines of the "specific" pool that name no world, and the splitting line reads "Not written yet".
+
+## Consequences
+- The owner tests Snape with her admin account on the live site after his cards are published (#515 scene tables, then publish in the admin). Users and testers see nothing new.
+- Making Snape public: set `companions.enter_href = '/companions/snape'`.
+- A not-found Life Path answers the normal not-found page; as on every signed-in page that streams, its HTTP status is 200.

@@ -13,10 +13,9 @@ import {
   SPLIT_FAILED_TITLE,
   SPLIT_QUESTION,
   classifyGoalShape,
+  goalLinesFor,
   pickReturningOpening,
-  reactionFor,
   splitFailedLine,
-  splittingLine,
   timeQuestionSlip,
 } from "@/lib/prototype/goal-lines";
 import {
@@ -108,6 +107,14 @@ type GoalDialogueProps = {
   initialDraft?: string;
   /** Where the first ‹ goes and its name (#5 AC3): the test home on /try, Home on /goal. */
   home?: { href: string; label: string };
+  /**
+   * #521: a Companion other than the default one (/goal?companion=<id>). His name and portrait
+   * head the dialogue, his current story's opening opens it, and Start opens /focus for him. The
+   * default Companion's lines that name his own world (the opening, the canyon reactions and the
+   * splitting lines) are never shown for another Companion: a line he has no version of yet reads
+   * "Not written yet" (`goalLinesFor`).
+   */
+  voice?: { id: string; name: string; portrait: string; opening: string };
 };
 
 const TEST_HOME = { href: "/try", label: "Back to the test home" };
@@ -126,7 +133,9 @@ export function GoalDialogue({
   focusPath,
   initialDraft = "",
   home = TEST_HOME,
+  voice,
 }: GoalDialogueProps = {}) {
+  const lines = goalLinesFor(voice ?? null);
   const router = useRouter();
   const { ready, state, update } = usePrototypeState();
   const returning = state.goal !== null;
@@ -141,7 +150,11 @@ export function GoalDialogue({
   }, [openingIndex]);
   // #254: on the test path the first opening is the chosen story's own (chapter 8 when none).
   const storyOpening = stories ? pickStory(stories, state.storyId).opening : FIRST_OPENING;
-  const opening = openingIndex === null ? storyOpening : RETURNING_OPENINGS[openingIndex];
+  const opening = voice
+    ? lines.opening
+    : openingIndex === null
+      ? storyOpening
+      : RETURNING_OPENINGS[openingIndex];
 
   const [phase, setPhase] = useState<Phase>("goal");
   const [draft, setDraft] = useState(initialDraft);
@@ -203,7 +216,7 @@ export function GoalDialogue({
 
   /** Runs a split turn: the split answer, Just split it, Split again or Try again. */
   async function requestSplit(request: TurnRequest) {
-    setWaitLine(splittingLine());
+    setWaitLine(lines.splittingLine());
     setPhase("splitting");
     const outcome = await sendTurn(request);
     if (outcome.status === "crisis") {
@@ -294,7 +307,7 @@ export function GoalDialogue({
     const accepted = await sendGoalTurn(text, false);
     setSending(false);
     if (accepted === null) return;
-    setReaction(reactionFor(classifyGoalShape(text)));
+    setReaction(lines.reaction(classifyGoalShape(text)));
     setSplitFiner(null);
     setJustSplit(false);
     setSliderMinutes(sliderStart(null));
@@ -560,7 +573,8 @@ export function GoalDialogue({
     }
     setSaving(false);
     if (outcome.status === "saved" && focusPath) {
-      router.push(`${focusPath}?goal=${encodeURIComponent(outcome.goalId)}`);
+      const companion = voice ? `&companion=${encodeURIComponent(voice.id)}` : "";
+      router.push(`${focusPath}?goal=${encodeURIComponent(outcome.goalId)}${companion}`);
     } else if (outcome.status === "saved") openFocus(outcome.steps);
     else if (outcome.status === "crisis") openCrisis("plan");
     else if (outcome.status === "signed-out") router.push("/auth/sign-in");
@@ -608,9 +622,9 @@ export function GoalDialogue({
         )}
         <span aria-hidden="true" className="try-avatar">
           {/* eslint-disable-next-line @next/next/no-img-element -- a 40 px decorative portrait */}
-          <img alt="" src={COMPANION.portrait} />
+          <img alt="" src={voice?.portrait ?? COMPANION.portrait} />
         </span>
-        <span className="try-companion-name">{COMPANION.name}</span>
+        <span className="try-companion-name">{voice?.name ?? COMPANION.name}</span>
       </div>
 
       <div className="try-thread" ref={thread}>

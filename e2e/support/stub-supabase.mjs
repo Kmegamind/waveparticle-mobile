@@ -9,6 +9,7 @@
 //   GET  /health
 //   GET  /auth/v1/user                (Authorization: Bearer <token>)
 //   GET|PATCH /rest/v1/<table>?…      eq., in.(…), order, limit, select (all columns returned)
+//   DELETE /rest/v1/<table>?…         the matching rows of this account (#521: Start on /goal)
 //   POST /rest/v1/<table>             insert, or upsert with Prefer: resolution=merge-duplicates
 //                                     or ignore-duplicates on `on_conflict` (default id) (#27)
 //   POST /rest/v1/rpc/get_active_prompts  { reader_token } → the active prompts (the seed in
@@ -1977,6 +1978,14 @@ createServer(async (request, response) => {
       return minimal ? json(response, 204) : json(response, 200, changed);
     }
 
+    // #521: delete with the same filters (Start on /goal replaces a Goal's Steps: delete, then
+    // insert), so a whole account run can start from the goal dialogue.
+    if (request.method === "DELETE") {
+      const kept = rows.filter((row) => !hit(row));
+      rows.splice(0, rows.length, ...kept);
+      return json(response, 204);
+    }
+
     // Insert and upsert, as PostgREST takes them from supabase-js (#27: the signed-in focus page
     // and the summary write the account's progress). An upsert merges into the row with the same
     // `on_conflict` columns (default `id`); a plain insert of an existing row is a 409.
@@ -2000,6 +2009,8 @@ createServer(async (request, response) => {
           return json(response, 409, { code: "23505", message: "duplicate key value" });
         } else {
           const added = { ...row };
+          // #521: as the database's default (gen_random_uuid()), for Steps the app inserts unnamed.
+          if (table === "steps" && added.id === undefined) added.id = randomUUID();
           rows.push(added);
           written.push(added);
         }

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { getAppTexts } from "@/lib/app-text/repository";
 import { AppTextProvider } from "@/lib/app-text/provider";
-import { getStoryContent } from "@/lib/content/repository";
+import { getStoryContentForViewer } from "@/lib/content/repository";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
 import { summaryOf } from "@/lib/summary/finish-run";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -25,7 +25,8 @@ async function EndContent({ searchParams }: Pick<PageProps<"/end">, "searchParam
   const progress = await createSupabaseProgressStore(client)
     .read(user.id, user.id)
     .catch(() => null);
-  const content = await getStoryContent().catch(() => null);
+  // #521: the account's own content (a Companion who is not public only for an admin or writer).
+  const content = await getStoryContentForViewer(client).catch(() => null);
   const view =
     progress && content && typeof session === "string"
       ? summaryOf(content, progress, session)

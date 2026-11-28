@@ -14,6 +14,8 @@ export const instant = false;
 
 // /focus (#257): the shared focus page for a signed-in user, on the account's Goal and session.
 // `?goal=<id>` comes from Start on /goal; without it the open session's Goal continues.
+// `?companion=<id>` (#521) is the Companion of a new session, from his Life Path and goal dialogue;
+// the default Companion without it. A Companion the account may not play opens nothing.
 export default function FocusPage({ searchParams }: PageProps<"/focus">) {
   return <FocusContent searchParams={searchParams} />;
 }
@@ -23,12 +25,16 @@ async function FocusContent({ searchParams }: Pick<PageProps<"/focus">, "searchP
   const client = await createSupabaseServerClient();
   const user = await getCurrentUser(client);
   if (!user) redirect("/auth/sign-in");
-  const { goal } = await searchParams;
+  const { goal, companion } = await searchParams;
   const [loaded, profile] = await Promise.all([
     // A failed read (the research flag included, #114) opens nothing: the page says so.
-    loadFocusPlan(client, user.id, typeof goal === "string" ? goal : null, true).catch(
-      () => "failed" as const,
-    ),
+    loadFocusPlan(
+      client,
+      user.id,
+      typeof goal === "string" ? goal : null,
+      true,
+      typeof companion === "string" && companion !== "" ? companion : undefined,
+    ).catch(() => "failed" as const),
     // #71: the saved "Keep the clock running when I leave"; off if it cannot be read.
     readProfile(client, user.id).catch(() => ({ keepClockRunning: false })),
   ]);
@@ -41,6 +47,7 @@ async function FocusContent({ searchParams }: Pick<PageProps<"/focus">, "searchP
           goalLine={loaded?.goalLine ?? ""}
           keepClockRunning={profile.keepClockRunning}
           plan={loaded?.plan ?? null}
+          portrait={loaded?.companion.portrait}
           who={loaded?.who ?? ""}
         />
       )}

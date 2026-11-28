@@ -71,6 +71,8 @@ export type FocusHost = {
   goalLine: string;
   /** "Who I am" of the story being played, shown in the sheet from his portrait (#72). */
   who: string;
+  /** #521: the session's Companion's portrait; the default Companion's when left out (/try). */
+  portrait?: string;
   plan: FocusPlan;
   loadStepCards: (request: StepCardsRequest) => Promise<StepCardsResponse>;
   loadReturnLine: (request: {
@@ -460,7 +462,7 @@ export function FocusBody({ host }: { host: FocusHost }) {
                 >
                   <span aria-hidden="true" className="try-avatar">
                     {/* eslint-disable-next-line @next/next/no-img-element -- a decorative portrait */}
-                    <img alt="" src={COMPANION.portrait} />
+                    <img alt="" src={host.portrait ?? COMPANION.portrait} />
                   </span>
                 </button>
                 <div>

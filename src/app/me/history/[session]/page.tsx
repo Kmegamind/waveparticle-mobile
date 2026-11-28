@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
-import { getStoryContent } from "@/lib/content/repository";
+import { getStoryContentForViewer } from "@/lib/content/repository";
 import { sessionRecord } from "@/lib/me/records";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -24,7 +24,7 @@ async function SessionRecordContent({
   const { session } = await params;
   const [progress, content] = await Promise.all([
     createSupabaseProgressStore(client).read(user.id, user.id),
-    getStoryContent(),
+    getStoryContentForViewer(client),
   ]);
   const record = sessionRecord(progress, decodeURIComponent(session), content.companions);
   if (!record) notFound();

@@ -4,6 +4,9 @@ import { parseStoryContent } from "./parse";
 import { parseStoryDeck, type CardVersions, type StoryDeck } from "./story-deck";
 import type { StoryContent } from "./types";
 import { logEvent } from "@/lib/logging/server-log";
+import { readContentRole } from "@/lib/admin/roles";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { contentForViewer, type ViewerRole } from "./companion-access";
 
 /**
  * The one way the app reads story content (#284): `getStoryContent()` returns the Companions and
@@ -139,8 +142,38 @@ const serverRepository = createContentRepository({
   log: logToServer,
 });
 
-/** The Companions and their stories. Server only; throws `StoryContentUnavailable`. */
-export const getStoryContent = serverRepository.getStoryContent;
+/**
+ * Every Companion and every story, public or not (#521). Server only; for the content admin's
+ * pages, which only an admin or writer can open. Phone pages never use it.
+ */
+export const getFullStoryContent = serverRepository.getStoryContent;
+
+/**
+ * The Companions and the stories of PUBLIC Companions only (#521): a Companion without
+ * `enterHref` is left out of the stories, so no page or action that reads this can play him.
+ * Server only; throws `StoryContentUnavailable`.
+ */
+export async function getStoryContent(): Promise<StoryContent> {
+  return contentForViewer(await getFullStoryContent(), null);
+}
+
+/** The story content as one account may play it; `readRole` is the role check. */
+export async function storyContentForRole(
+  readContent: () => Promise<StoryContent>,
+  readRole: () => Promise<ViewerRole>,
+): Promise<StoryContent> {
+  const [content, role] = await Promise.all([readContent(), readRole().catch(() => null)]);
+  return contentForViewer(content, role);
+}
+
+/**
+ * The story content for the signed-in account of `client` (#521): an admin or writer also gets
+ * the stories of Companions who are not public yet (the owner's preview); anyone else gets the
+ * public stories only. A failed role read counts as no role.
+ */
+export function getStoryContentForViewer(client: SupabaseClient): Promise<StoryContent> {
+  return storyContentForRole(getFullStoryContent, () => readContentRole(client));
+}
 
 /** Forgets this server's copy, so the next read sees a field just published (#309). */
 export const clearStoryContentCache = serverRepository.clear;
