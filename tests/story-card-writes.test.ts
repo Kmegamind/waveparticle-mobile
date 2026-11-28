@@ -150,6 +150,7 @@ describe("ADM-06 editor view (#304)", () => {
       version: 2,
       body: "I see the mesa.",
       problems: ['Mentions "mesa", which comes in a later part.'],
+      warnings: [],
     });
     expect(shown.versions.map((entry) => [entry.version, entry.state])).toEqual([
       [2, "draft"],

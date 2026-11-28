@@ -83,6 +83,15 @@
   padding: 0;
 }
 
+.admin-cards-warns {
+  color: var(--adm-warn);
+  font-size: var(--adm-chip-size);
+  list-style: none;
+  margin: 0;
+  overflow-wrap: anywhere;
+  padding: 0;
+}
+
 .admin-cards-facts,
 .admin-cards-note {
   color: var(--adm-muted);

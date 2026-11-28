@@ -530,7 +530,7 @@ These apply to every line the companion shows, made ahead or live, unless a row 
 
 | Line | Limit |
 |---|---|
-| Step story card; SIT, EVM, WRY, DOI, NTC | 1 to 3 sentences, at most 45 words; over the limit cannot be published (LEN-CARD, 2026-11-15) |
+| Step story card; SIT, EVM, WRY, DOI, NTC | Made-ahead (published) step story cards: 1 to 4 sentences, at most 60 words. Over the limit is a warning, not a block: the admin and `npm run check:export-cards` show it, but it does not stop Publish, the switch-over check or the export check (LEN-CARD-WIDE, 2026-11-28, replaces LEN-CARD for these cards). Live step-card replies stay at 1 to 3 sentences, at most 45 words (`docs/ai/prompts/step_cards.md`, `src/lib/model-gateway/checks.ts`) |
 | Return pop-up text | 1 or 2 sentences, at most 30 words (LEN-RETURN) |
 | Background card | At most 70 words, no sentence limit; over the limit cannot be published (LEN-CARD) |
 | His message on the rest page (obstacle) | 1 or 2 sentences, at most 30 words (LEN-PAUSE, 2026-11-15) |
