@@ -10,6 +10,7 @@ import {
 import { supabaseRestRounds } from "@/lib/progress/rest-rounds";
 import { modelIsConfigured } from "@/lib/prototype/focus-cards";
 import type { PauseResponse, RestReplyResponse } from "@/lib/prototype/rest-lines";
+import { logEvent } from "@/lib/logging/server-log";
 import { serverSafetyCheck } from "@/lib/safety/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
@@ -56,6 +57,8 @@ export async function loadAccountRestReply(request: unknown): Promise<RestReplyR
     gateway(),
     serverSafetyCheck(),
     supabaseRestRounds(client),
+    // Until the migration is applied (or on a database error) the reply is uncounted: logged.
+    (problem) => logEvent("model-gateway", { event: `rest_round_${problem}_failed` }),
   );
 }
 

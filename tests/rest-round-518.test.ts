@@ -146,17 +146,27 @@ describe("#518 the tenth reply gets the added instruction in call one (both mode
     expect(sent[1]).toContain("The person wrote: hello");
   });
 
-  it("test_518_ac1_with_the_review_active_call_one_gets_it_and_call_two_reads_the_draft", async () => {
+  it("test_518_ac1_with_the_review_active_round_ten_makes_call_one_only", async () => {
+    // Owner decision 2026-11-28: round 10 skips rest_reply_review, so the ending is kept.
     const { gateway, sent } = fakeModel(REVIEW_ROW);
     expect(await gateway.writeRestReply({ ...INPUT, lastRound: true })).toEqual({
       source: "generated",
       text: ENDING,
     });
-    expect(sent).toHaveLength(2);
+    expect(sent).toHaveLength(1);
     expect(sent[0]).toContain(REST_LAST_ROUND_INSTRUCTION);
-    // Call two is unchanged: it reads the ending as its draft, without the instruction.
-    expect(sent[1]).not.toContain(REST_LAST_ROUND_INSTRUCTION);
-    expect(sent[1]).toContain(`Draft: ${ENDING}`);
+    expect(sent[0]).not.toContain("Draft:");
+  });
+
+  it("test_518_with_the_review_active_rounds_before_ten_still_make_two_calls", async () => {
+    const { gateway, sent } = fakeModel(REVIEW_ROW);
+    expect(await gateway.writeRestReply(INPUT)).toEqual({
+      source: "generated",
+      text: "I keep my notes dry here.",
+    });
+    expect(sent).toHaveLength(2);
+    expect(sent[1]).toContain("Draft: I keep my notes dry here.");
+    expect(sent.some((prompt) => prompt.includes(REST_LAST_ROUND_INSTRUCTION))).toBe(false);
   });
 
   it("test_518_the_instruction_says_his_work_fails_and_never_sends_the_person_back", () => {
@@ -290,8 +300,37 @@ describe("#518 AC3 the count is kept where a reload cannot reset it", () => {
     expect(sent).toEqual([]);
   });
 
-  it("test_518_ac3_a_count_that_cannot_be_read_or_written_fails_with_retry", async () => {
-    const { gateway } = fakeModel(null);
+  it("test_518_without_the_count_the_chat_answers_uncounted_and_warns", async () => {
+    // Owner decision 2026-11-28: before the migration (or on a database error) the chat keeps
+    // working as before REST-ROUND-10: no count, no round-10 ending, a server warning.
+    const { gateway, sent } = fakeModel(null);
+    const broken = (): RestRounds => ({
+      answered: async () => {
+        throw new Error("function public.rest_round does not exist");
+      },
+      record: vi.fn(async () => {}),
+    });
+    const warned: string[] = [];
+    const history: RestMessage[] = [{ from: "him", text: "First." }];
+    for (let index = 1; index <= 9; index += 1) {
+      history.push({ from: "you", text: `m${index}` }, { from: "him", text: `r${index}` });
+    }
+    const answer = await accountRestReply(
+      seed,
+      { message: "m10", history, sessionId: SESSION, pauseKey: PAUSE },
+      gateway,
+      noCrisis,
+      broken,
+      (problem) => warned.push(problem),
+    );
+    expect(answer).toEqual({ status: "ok", isTestData: false, text: "I keep my notes dry here." });
+    expect(sent.some((prompt) => prompt.includes(REST_LAST_ROUND_INSTRUCTION))).toBe(false);
+    expect(warned).toEqual(["read"]);
+  });
+
+  it("test_518_i1_a_crisis_message_reaches_the_safety_page_when_the_count_cannot_be_read", async () => {
+    const { gateway, sent } = fakeModel(null);
+    const safety = vi.fn(crisis);
     const broken = (): RestRounds => ({
       answered: async () => {
         throw new Error("down");
@@ -301,25 +340,59 @@ describe("#518 AC3 the count is kept where a reload cannot reset it", () => {
     expect(
       await accountRestReply(
         seed,
-        { message: "hello", history: [], sessionId: SESSION, pauseKey: PAUSE },
+        { message: "x", history: [], sessionId: SESSION, pauseKey: PAUSE },
         gateway,
-        noCrisis,
+        safety,
         broken,
       ),
-    ).toEqual({ status: "failed" });
-    const unwritten = (): RestRounds => ({
-      answered: async () => 0,
+    ).toEqual({ status: "crisis" });
+    expect(safety).toHaveBeenCalled();
+    expect(sent).toEqual([]);
+  });
+
+  it("test_518_a_count_that_cannot_be_written_keeps_the_reply_and_warns", async () => {
+    const unwritten = (answered: number): RestRounds => ({
+      answered: async () => answered,
       record: async () => {
         throw new Error("down");
       },
     });
+    const warned: string[] = [];
+    const reply = async () => ({ status: "ok" as const, isTestData: false, text: "x" });
+    const ended = async () => ({ status: "ended" as const });
     expect(
-      await restReplyInRound(
-        unwritten(),
-        async () => ({ status: "ok", isTestData: false, text: "x" }),
-        async () => ({ status: "ended" }),
+      await restReplyInRound(unwritten(0), reply, ended, (problem) => warned.push(problem)),
+    ).toEqual({ status: "ok", isTestData: false, text: "x" });
+    // Round 10 still ends the chat on the phone.
+    expect(
+      await restReplyInRound(unwritten(9), reply, ended, (problem) => warned.push(problem)),
+    ).toEqual({ status: "ok", isTestData: false, text: "x", ended: true });
+    expect(warned).toEqual(["write", "write"]);
+  });
+
+  it("test_518_after_round_ten_the_safety_check_sees_the_earlier_messages", async () => {
+    const { factory } = memoryRounds();
+    const { gateway } = fakeModel(null);
+    await chat(gateway, factory, 10);
+    const safety = vi.fn(noCrisis);
+    const history: RestMessage[] = [
+      { from: "him", text: "First." },
+      { from: "you", text: "earlier one" },
+      { from: "him", text: "r" },
+    ];
+    expect(
+      await accountRestReply(
+        seed,
+        { message: "later", history, sessionId: SESSION, pauseKey: PAUSE },
+        gateway,
+        safety,
+        factory,
       ),
-    ).toEqual({ status: "failed" });
+    ).toEqual({ status: "ended" });
+    expect(safety).toHaveBeenCalledWith("later", {
+      position: "rest_chat",
+      previous: ["earlier one"],
+    });
   });
 
   it("test_518_ac3_the_supabase_count_calls_the_two_functions", async () => {

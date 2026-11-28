@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { baseUrlOf, signIn } from "./support/account";
+import { STUB_SUPABASE, baseUrlOf, signIn } from "./support/account";
 import { promptMark, promptsSince } from "./support/stub-prompts";
 
 // #518 (REST-ROUND-10, R1-C10) with a model configured (the "mobile-live" project, the stub
@@ -19,7 +19,7 @@ async function signInWithASession(page: Page) {
   const session = randomUUID();
   const steps = [randomUUID(), randomUUID()];
   const now = new Date().toISOString();
-  await signIn(page.context(), baseUrlOf(page), (userId) => ({
+  const { token } = await signIn(page.context(), baseUrlOf(page), (userId) => ({
     goals: [
       {
         id: goal,
@@ -64,7 +64,7 @@ async function signInWithASession(page: Page) {
       done_at: null,
     })),
   }));
-  return { goal, session };
+  return { goal, session, token };
 }
 
 const restPage = (page: Page) => page.locator('main.rest-page[data-ready="true"]');
@@ -209,4 +209,25 @@ test("test_518_ac4_a_failed_tenth_reply_retried_still_ends_the_chat", async ({ p
   await expect(rest.getByTestId("his-message")).toHaveCount(11, { timeout: 15_000 });
   await expect(rest.getByTestId("his-message").last()).toHaveText(ENDING);
   await expectEnded(rest);
+});
+
+// Owner decision 2026-11-28: until the migration is applied (here the count's functions fail),
+// the chat keeps working as before REST-ROUND-10: replies come, uncounted, and the field stays.
+test("test_518_without_the_count_the_rest_chat_keeps_working", async ({ page }) => {
+  test.setTimeout(150_000);
+  const { goal, token } = await signInWithASession(page);
+  const failed = await fetch(`${STUB_SUPABASE}/__fail_reads`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ token, tables: ["rest_rounds"] }),
+  });
+  expect(failed.ok).toBe(true);
+  await page.goto(`/focus?goal=${goal}`);
+  const rest = await pause(page);
+  for (let round = 1; round <= 10; round += 1) {
+    await send(rest, `uncounted ${round}`, round);
+    await expect(rest.getByTestId("his-message").last()).toHaveText(ORDINARY);
+  }
+  await expect(rest.getByLabel("Message")).toBeVisible();
+  await expect(rest.getByRole("button", { name: "Send" })).toBeVisible();
 });

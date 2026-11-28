@@ -12,6 +12,7 @@ import {
   restReplyInRound,
   returnLineFor,
   type ContentSource,
+  type RestRoundProblem,
   type RestRounds,
   type LineResponse,
   type PauseResponse,
@@ -57,6 +58,8 @@ export async function accountRestReply(
   gateway: ModelGateway | null,
   safety: SafetyCheck = keywordOnlySafetyCheck,
   rounds?: AccountRestRounds,
+  /** REST-ROUND-10: told when the count could not be read or written (no text, only which). */
+  warn?: (problem: RestRoundProblem) => void,
 ): Promise<RestReplyResponse> {
   const request = normaliseRestRequest(raw);
   // The safety check runs first, model or not (US-SAF-1, #117). Without a model there is no
@@ -69,13 +72,14 @@ export async function accountRestReply(
   // REST-ROUND-10: without the session and the Pause there is no count to keep, so no reply.
   const { sessionId, pauseKey } = request;
   if (!sessionId || !pauseKey) {
-    const ended = await afterTheLastRound(request.message, safety);
+    const ended = await afterTheLastRound(request.message, safety, request.history);
     return ended.status === "crisis" ? ended : { status: "failed" };
   }
   return restReplyInRound(
     rounds(sessionId, pauseKey),
     (round) => restReplyFor(content, { ...request, round }, gateway, safety),
-    () => afterTheLastRound(request.message, safety),
+    () => afterTheLastRound(request.message, safety, request.history),
+    warn,
   );
 }
 

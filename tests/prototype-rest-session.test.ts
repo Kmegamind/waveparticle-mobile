@@ -93,7 +93,7 @@ describe("#66 AC1 and #67 AC1 the rest conversation is kept", () => {
     expect(session.rest?.messages.map((message) => message.from)).toEqual(["him", "you", "him"]);
   });
 
-  it("has no limit on the number of messages", () => {
+  it("keeps any number of messages in the store (the round-10 end is decided on the server, #518)", () => {
     let session = startRest(started(), 1_000);
     for (let i = 0; i < 100; i += 1) {
       session = addRestMessage(session, { from: i % 2 ? "him" : "you", text: `line ${i}` });

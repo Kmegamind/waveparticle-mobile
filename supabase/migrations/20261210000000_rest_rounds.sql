@@ -4,8 +4,10 @@
 -- functions are replaced with the same ones.
 --
 -- In one Pause, his reply to the person's tenth message says that his own work is going to fail,
--- and after it he stops replying. The count of a signed-in account is kept here, so a reload (or
--- another device) cannot start it again within the same Pause:
+-- and after it he stops replying. The count of a signed-in account is kept here, so a reload on the
+-- same device cannot start it again within the same Pause (the Pause id lives in the device's store).
+-- It can be applied before or after the app's deploy: until it is, the app answers uncounted.
+--
 --
 -- 1. private.rest_rounds: one row per Pause of an account session, keyed by the session and the
 --    Pause's own id (a random UUID the phone makes when the Pause starts; a new Pause gets a new
@@ -32,8 +34,7 @@
 --   select to_regprocedure('public.record_rest_round(uuid, uuid, integer)') is not null;
 --   select count(*) from private.rest_rounds;
 --
--- Undo (in the SQL editor; the phones then fail every rest reply with Retry until the app's
--- deploy of #518 is rolled back too):
+-- Undo (in the SQL editor; the rest chat then answers uncounted, with no round-10 stop):
 --   drop function if exists public.record_rest_round(uuid, uuid, integer);
 --   drop function if exists public.rest_round(uuid, uuid);
 --   drop table if exists private.rest_rounds;

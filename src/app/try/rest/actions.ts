@@ -60,6 +60,6 @@ export async function loadRestReply(request: {
   return restReplyInRound(
     roundsFromHistory(normal.history),
     (round) => restReplyFor(storyContent, { ...normal, round }, gateway(), safety),
-    () => afterTheLastRound(normal.message, safety),
+    () => afterTheLastRound(normal.message, safety, normal.history),
   );
 }

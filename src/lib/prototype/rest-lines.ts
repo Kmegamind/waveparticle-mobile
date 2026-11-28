@@ -328,25 +328,36 @@ export type RestRounds = {
   record: (round: number) => Promise<void>;
 };
 
+/** Where the count could not be used (REST-ROUND-10): the read before the reply, the write after. */
+export type RestRoundProblem = "read" | "write";
+
 /**
  * One rest reply with the Pause's round count (REST-ROUND-10, #518). The round is the replies
  * already shown plus one, so a failed reply is not counted and its retry keeps the round: a failed
  * tenth reply, retried, still ends the chat. After the tenth reply no model call is made: the
- * answer is `ended` (or the safety page for a crisis message, which still runs first, US-SAF-1).
- * A count that cannot be read or written is a failure with Retry, never a reply past round 10.
+ * answer is `ended`, or the safety page for a crisis message (US-SAF-1).
+ *
+ * The safety check runs on every path: inside `reply` (restReplyFor runs it first) and inside
+ * `afterTheEnd`. A count that cannot be read (the migration not applied yet, or a database error)
+ * does not stop the chat (owner decision 2026-11-28): the reply is made as before REST-ROUND-10,
+ * uncounted and without the round-10 ending, and `warn("read")` is called. A count that cannot be
+ * written after a reply keeps that reply (round 10 still ends the chat on the phone) and calls
+ * `warn("write")`.
  */
 export async function restReplyInRound(
   rounds: RestRounds,
-  reply: (round: number) => Promise<RestReplyResponse>,
+  reply: (round: number | undefined) => Promise<RestReplyResponse>,
   afterTheEnd: () => Promise<RestReplyResponse>,
+  warn: (problem: RestRoundProblem) => void = () => {},
 ): Promise<RestReplyResponse> {
   let answered: number;
   try {
     answered = await rounds.answered();
+    if (!Number.isInteger(answered) || answered < 0) throw new Error("not a count");
   } catch {
-    return { status: "failed" };
+    warn("read");
+    return reply(undefined);
   }
-  if (!Number.isInteger(answered) || answered < 0) return { status: "failed" };
   if (answered >= REST_ROUNDS) return afterTheEnd();
   const round = answered + 1;
   const result = await reply(round);
@@ -354,17 +365,22 @@ export async function restReplyInRound(
   try {
     await rounds.record(round);
   } catch {
-    return { status: "failed" };
+    warn("write");
   }
   return round >= REST_ROUNDS ? { ...result, ended: true } : result;
 }
 
-/** A message sent after round 10: the safety gate still runs on it; otherwise no reply comes. */
+/**
+ * A message sent after round 10: the safety gate still runs on it, with the person's earlier
+ * messages of this chat as context (as on every turn); otherwise no reply comes.
+ */
 export async function afterTheLastRound(
   message: string,
   safety: SafetyCheck = keywordOnlySafetyCheck,
+  history: RestMessage[] = [],
 ): Promise<RestReplyResponse> {
-  const gate = await safety(message, { position: "rest_chat" });
+  const previous = history.filter((item) => item.from === "you").map((item) => item.text);
+  const gate = await safety(message, { position: "rest_chat", previous });
   return gate.action === "crisis-page" ? { status: "crisis" } : { status: "ended" };
 }
 

@@ -3,8 +3,8 @@ import type { AccountRestRounds } from "./account-lines";
 /**
  * The round count of a Pause on the account (REST-ROUND-10, #518), through the user's own client:
  * `public.rest_round` reads it and `public.record_rest_round` writes it
- * (supabase/migrations/20261209000000_rest_rounds.sql). Both refuse a session of another account.
- * A failed read or write throws, so the reply fails with Retry and is never shown uncounted.
+ * (supabase/migrations/20261210000000_rest_rounds.sql). Both refuse a session of another account.
+ * A failed read or write throws; the caller then answers uncounted and logs it (REST-ROUND-10).
  */
 type RpcClient = {
   rpc(

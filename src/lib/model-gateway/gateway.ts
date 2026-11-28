@@ -323,6 +323,9 @@ export function createModelGateway(options: {
       return built;
     });
     if (draft.source !== "generated" || !first.accept) return draft;
+    // REST-ROUND-10 (owner decision 2026-11-28): the tenth reply is call one only, so the ending
+    // that his work is going to fail is kept as written.
+    if (input.lastRound) return draft;
     return reviewRestReply(input, reviewRow, draft, startedAt + timeLimitMs, first.accept);
   }
 
@@ -1029,7 +1032,7 @@ function restPrompt(input: RestReplyInput, row: PromptRow): string {
   return input.lastRound ? `${prompt}\n\n${REST_LAST_ROUND_INSTRUCTION}` : prompt;
 }
 
-/** Call two of the rest chat (#517): call one's reply is `{{draft}}`. Round 10 adds nothing here. */
+/** Call two of the rest chat (#517): call one's reply is `{{draft}}`. Not made on round 10. */
 function restReviewPrompt(input: RestReviewInput, row: PromptRow): string {
   return render(row, { facts: input.facts, userMessage: input.userMessage, draft: input.draft });
 }
