@@ -20,6 +20,7 @@ import {
   unlistedPlaces,
   withoutProp,
 } from "./pause-checks";
+import { REST_LAST_ROUND_INSTRUCTION } from "./rest-round";
 import { checkRunList, reusesCardNouns } from "./run-list";
 import type {
   GatewayCall,
@@ -1019,11 +1020,16 @@ function predicamentPrompt(input: PausePredicamentInput, row: PromptRow): string
   });
 }
 
+/**
+ * Call one of the rest chat. The reply to the tenth message of a Pause gets one added instruction
+ * after the prompt (REST-ROUND-10, #518), whichever prompt version is active.
+ */
 function restPrompt(input: RestReplyInput, row: PromptRow): string {
-  return render(row, { facts: input.facts, userMessage: input.userMessage });
+  const prompt = render(row, { facts: input.facts, userMessage: input.userMessage });
+  return input.lastRound ? `${prompt}\n\n${REST_LAST_ROUND_INSTRUCTION}` : prompt;
 }
 
-/** Call two of the rest chat (#517): call one's reply is `{{draft}}`. */
+/** Call two of the rest chat (#517): call one's reply is `{{draft}}`. Round 10 adds nothing here. */
 function restReviewPrompt(input: RestReviewInput, row: PromptRow): string {
   return render(row, { facts: input.facts, userMessage: input.userMessage, draft: input.draft });
 }

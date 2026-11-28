@@ -6,8 +6,11 @@ import { isPrototypeEnabled } from "@/lib/prototype/config";
 import { modelIsConfigured } from "@/lib/prototype/focus-cards";
 import { normalisePauseRequest, normaliseRestRequest } from "@/lib/prototype/line-requests";
 import {
+  afterTheLastRound,
   pauseMessageFor,
   restReplyFor,
+  restReplyInRound,
+  roundsFromHistory,
   type PauseResponse,
   type RestReplyResponse,
 } from "@/lib/prototype/rest-lines";
@@ -47,7 +50,16 @@ export async function loadRestReply(request: {
   replyIndex: number;
   stepIndex?: number;
   stepCount?: number;
+  pauseKey?: string;
 }): Promise<RestReplyResponse> {
   if (!isPrototypeEnabled()) return { status: "failed" };
-  return restReplyFor(storyContent, normaliseRestRequest(request), gateway(), serverSafetyCheck());
+  const normal = normaliseRestRequest(request);
+  const safety = serverSafetyCheck();
+  // REST-ROUND-10 (#518): the test path has no account, so the round comes from the history in
+  // the browser's store.
+  return restReplyInRound(
+    roundsFromHistory(normal.history),
+    (round) => restReplyFor(storyContent, { ...normal, round }, gateway(), safety),
+    () => afterTheLastRound(normal.message, safety),
+  );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import {
   planStorageKey,
   seedFocusSession,
@@ -12,7 +12,7 @@ import { NoPlan } from "../_session/focus-body";
 import { ACCOUNT_PATHS } from "../_session/paths";
 import { RestBody } from "../_session/rest-body";
 import { useAccountRecorder } from "../focus/use-account-recorder";
-import { loadAccountPauseMessage, loadAccountRestReply } from "./actions";
+import { loadAccountPauseMessage, loadAccountRestEnded, loadAccountRestReply } from "./actions";
 
 const noSubscription = () => () => {};
 
@@ -42,6 +42,16 @@ function deviceSession(plan: AccountFocusPlan): FocusSession {
 function AccountRestSession({ plan }: { plan: AccountFocusPlan }) {
   const [stored] = useState(() => deviceSession(plan));
   const record = useAccountRecorder(plan.sessionId);
+  // REST-ROUND-10 (#518): the round count is kept on the account, per session and Pause.
+  const { sessionId } = plan;
+  const loadRestReply = useCallback(
+    (request: object) => loadAccountRestReply({ ...request, sessionId }),
+    [sessionId],
+  );
+  const loadRestEnded = useCallback(
+    (request: { pauseKey: string }) => loadAccountRestEnded({ ...request, sessionId }),
+    [sessionId],
+  );
   if (isFinished(stored)) {
     return <NoPlan paths={ACCOUNT_PATHS} text="There is no Step to rest from." />;
   }
@@ -53,7 +63,8 @@ function AccountRestSession({ plan }: { plan: AccountFocusPlan }) {
         plan: sessionPlanOf(plan),
         stored,
         loadPauseMessage: loadAccountPauseMessage,
-        loadRestReply: loadAccountRestReply,
+        loadRestReply,
+        loadRestEnded,
         onProgress: record,
         // #114: R1-STUDY, the header only.
         storyOff: plan.storyOff,

@@ -502,7 +502,7 @@ How (proposed for #114, DECISIONS RESEARCH-FLAG and STUDY-SESSION): the team set
 **As a** product owner, **I want** every authored line to pass the automatic checks before it ships and to be read by a person after it is published (PUBLISH-FIRST: there is no human review gate), **so that** real people are portrayed carefully and no card leaks the future.
 
 **Acceptance criteria**
-- Given a Story's content, then an automatic check reports repeated lines, lines that mention later facts, banned words, a year, a date or an age (DATES-ADMIN-ONLY), and cards over the length limits of LEN-CARD; a card that fails cannot be published.
+- Given a Story's content, then an automatic check reports repeated lines, lines that mention later facts, banned words, a year, a date or an age (DATES-ADMIN-ONLY), and cards over the length limits (LEN-CARD, LEN-CARD-WIDE); a card that fails cannot be published, except that a step story card over 4 sentences or 60 words only shows a warning (LEN-CARD-WIDE).
 - ~~Given a card, then it is published only after a person has read it (READ-STATUS); a script check passing never counts as read.~~ Withdrawn (PUBLISH-FIRST): a card that passes the automatic checks is published; Yue reads it on the phone afterwards and may edit a published card. A script check passing still never counts as read (READ-STATUS).
 - Given a published Story, then a person reads it forwards and backwards and one reader who does not know the Story reads it once; this is not a condition for publishing (PUBLISH-FIRST).
 - Given a first-person line about a real person, then invented content is limited to small actions and objects, never a named new person, never a real public tragedy and never an invented testimony.
@@ -889,7 +889,8 @@ How (proposed for #114, DECISIONS RESEARCH-FLAG and STUDY-SESSION): the team set
 **As a** user who wants to say something while resting, **I want** to talk with him freely, **so that** the break feels like talking with a person who is busy with his own day.
 
 **Acceptance criteria**
-- Given I type on the rest page, then the conversation (R1-C) opens on the same page, with no limit on how many messages I send.
+- Given I type on the rest page, then the conversation (R1-C) opens on the same page, with no counter and no warning about a limit.
+- Given my tenth message in one Pause, then his reply says that his own work is going to fail, and then he stops replying: the text field and Send are gone, and Back and Home stay (R1-C10, REST-ROUND-10). The next Pause starts again at round 1; a reload does not reset the count.
 - Given I send a message, then he answers briefly from his side (US-AI-6), and a Back control is always available.
 - Given the rest conversation, then it is the only place in the product where free replies to him are possible.
 - Given any message I send, then it passes the safety hook first (US-SAF-1).
@@ -1146,7 +1147,7 @@ How (proposed for #114, DECISIONS RESEARCH-FLAG and STUDY-SESSION): the team set
 **Acceptance criteria**
 - Given a Story, then its background card, story cards and closing line are made ahead once per Story and shared by all users; story cards are made for each part of the Story, not for each number of user Steps, and the key slices are must-use facts (SHARED-STORY, CARDS-PER-PART, CLOSING-AHEAD, US-CON-2).
 - Given I press Start, then the app spreads the parts across my Steps with plain code and no model call (CARDS-PER-PART, US-CON-2).
-- Given a card, then it passes the checks (first person, no future facts, no clock times, no year, date or age; US-AI-8, DATES-ADMIN-ONLY) before it is published; a story card is 1 to 3 sentences and at most 45 words and the background card at most 70 words, and a card over the limit cannot be published (LEN-CARD); every card says something new (CARD-NEW).
+- Given a card, then it passes the checks (first person, no future facts, no clock times, no year, date or age; US-AI-8, DATES-ADMIN-ONLY) before it is published; a made-ahead story card is 1 to 4 sentences and at most 60 words, and over that is a warning, not a block (LEN-CARD-WIDE); the background card is at most 70 words, and a background card over the limit cannot be published (LEN-CARD); every card says something new (CARD-NEW).
 - Given a card, then it is shown once it is published, and a person reads it afterwards (PUBLISH-FIRST); content that is not published is never shown, and no fallback cards or generic lines exist (NO-BACKUP, NO-FALLBACK-TABLES).
 - Given the card prompt, then it never receives exact dates (DATES-ADMIN-ONLY).
 - Given a card is shown, then it is stored and never regenerated (US-FMT-1).
@@ -1215,7 +1216,7 @@ How (proposed for #114, DECISIONS RESEARCH-FLAG and STUDY-SESSION): the team set
 - Given a reply, then it is checked for words from after his date (a list per Story), for advice, for length, and for questions, and it passes the same spoiler check as the story cards, against the parts I have not reached (CHAT-SPOILER-CHECK); a later word that I typed myself does not fail it (CHAT-USER-WORD).
 - Given a reply fails, then it is generated again within the time limit; if it still fails, the failure message with Retry is shown and no stored or authored reply stands in (FAIL-SCREEN, NO-BACKUP).
 - Given the cost caps, then only the last six turns are sent to the AI and a message of more than 1000 characters is shortened.
-- Given the rest conversation, then there is no message limit and no hidden cap; cost is controlled by the length of each message only (decision R2).
+- Given the rest conversation, then there is no hidden cap; cost is controlled by the length of each message and by the end at round 10 of a Pause (decisions R2 and REST-ROUND-10).
 
 **Priority:** Must · **Area:** AI pipeline · **Screens:** R1-C · **Depends on:** US-AI-6 · **Size:** M · **Source:** DEC R2, CHAT-SPOILER-CHECK, CHAT-USER-WORD, NO-BACKUP, FAIL-SCREEN; AI04v2 section A4; AI09v2 T5; AI06
 

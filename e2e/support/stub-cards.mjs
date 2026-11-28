@@ -142,6 +142,12 @@ export function stubAnswer(prompt) {
     });
   }
   if (prompt.startsWith('Return JSON only: {"reply"')) {
+    // #518 (REST-ROUND-10): the tenth reply of a Pause carries the added instruction.
+    if (prompt.includes("tenth message")) {
+      return JSON.stringify({
+        reply: "This piece of my work is going to fail, and I know it now.",
+      });
+    }
     return JSON.stringify({ reply: "I keep my pencil moving across my notes." });
   }
   return JSON.stringify({ returnLine: "I kept my notes in order while the room stayed quiet." });

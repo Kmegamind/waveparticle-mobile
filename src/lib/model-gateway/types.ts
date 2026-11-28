@@ -191,6 +191,11 @@ export type RestReplyInput = {
   laterFacts?: string[];
   /** The Story's scene table later words (#60). Whole words with their exact capitals. */
   laterWords?: string[];
+  /**
+   * The reply to the person's tenth message in this Pause (REST-ROUND-10, #518): call one's prompt
+   * gets the added instruction `REST_LAST_ROUND_INSTRUCTION`. Call two is unchanged.
+   */
+  lastRound?: boolean;
 };
 
 /**

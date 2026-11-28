@@ -1,7 +1,7 @@
 import { pickPauseSnag, type PauseCategory } from "@/lib/content/pause-snag";
 import { companionPeople, sceneTableOf } from "@/lib/content/scene";
 import type { StoryContent } from "@/lib/content/types";
-import type { ModelGateway } from "@/lib/model-gateway";
+import { REST_ROUNDS, type ModelGateway } from "@/lib/model-gateway";
 import { keywordOnlySafetyCheck, type SafetyCheck } from "@/lib/safety/check";
 import { gateFreeText } from "@/lib/safety/crisis";
 import type { RestMessage, ReturnTrigger } from "./session";
@@ -21,7 +21,16 @@ import { loadTestStory } from "./test-story";
  */
 export type LineResponse =
   { status: "ok"; isTestData: boolean; text: string } | { status: "failed" };
-export type RestReplyResponse = LineResponse | { status: "crisis" };
+/**
+ * His rest reply. `ended` is set on the reply to the tenth message of a Pause: he stops replying
+ * after it (REST-ROUND-10, R1-C10). `ended` as a status: the Pause already had its tenth reply, so
+ * no model call was made and no reply comes.
+ */
+export type RestReplyResponse =
+  | { status: "ok"; isTestData: boolean; text: string; ended?: boolean }
+  | { status: "failed" }
+  | { status: "crisis" }
+  | { status: "ended" };
 /**
  * His pause message (#56): `text` is call two's message he shows; `story` is call one's stuck story,
  * shown on its own slip first; `category` and `prop` are what the code picked, kept by the browser
@@ -257,6 +266,8 @@ export async function restReplyFor(
     /** Where the person is in the Plan, for the facts from later in the Story (#60). */
     stepIndex?: number;
     stepCount?: number;
+    /** This reply's round in the Pause, counted by the caller (REST-ROUND-10, #518). */
+    round?: number;
   },
   gateway: ModelGateway | null,
   /** The server's check (#117): the keyword layer and the classifier. Keyword only if omitted. */
@@ -302,8 +313,74 @@ export async function restReplyFor(
       userTexts,
       // Facts from later in the Story: the parts not reached yet and the scene's later words (#60).
       ...laterStoryWords(content, storyId, positionOf(request)),
+      // REST-ROUND-10 (#518): the tenth reply gets the added instruction in call one.
+      ...(request.round !== undefined && request.round >= REST_ROUNDS ? { lastRound: true } : {}),
     }),
   );
+}
+
+/**
+ * Where a Pause's round count is kept (REST-ROUND-10, #518): `answered` is the number of his
+ * replies already shown in this Pause, `record` notes that the reply of `round` was shown.
+ */
+export type RestRounds = {
+  answered: () => Promise<number>;
+  record: (round: number) => Promise<void>;
+};
+
+/**
+ * One rest reply with the Pause's round count (REST-ROUND-10, #518). The round is the replies
+ * already shown plus one, so a failed reply is not counted and its retry keeps the round: a failed
+ * tenth reply, retried, still ends the chat. After the tenth reply no model call is made: the
+ * answer is `ended` (or the safety page for a crisis message, which still runs first, US-SAF-1).
+ * A count that cannot be read or written is a failure with Retry, never a reply past round 10.
+ */
+export async function restReplyInRound(
+  rounds: RestRounds,
+  reply: (round: number) => Promise<RestReplyResponse>,
+  afterTheEnd: () => Promise<RestReplyResponse>,
+): Promise<RestReplyResponse> {
+  let answered: number;
+  try {
+    answered = await rounds.answered();
+  } catch {
+    return { status: "failed" };
+  }
+  if (!Number.isInteger(answered) || answered < 0) return { status: "failed" };
+  if (answered >= REST_ROUNDS) return afterTheEnd();
+  const round = answered + 1;
+  const result = await reply(round);
+  if (result.status !== "ok") return result;
+  try {
+    await rounds.record(round);
+  } catch {
+    return { status: "failed" };
+  }
+  return round >= REST_ROUNDS ? { ...result, ended: true } : result;
+}
+
+/** A message sent after round 10: the safety gate still runs on it; otherwise no reply comes. */
+export async function afterTheLastRound(
+  message: string,
+  safety: SafetyCheck = keywordOnlySafetyCheck,
+): Promise<RestReplyResponse> {
+  const gate = await safety(message, { position: "rest_chat" });
+  return gate.action === "crisis-page" ? { status: "crisis" } : { status: "ended" };
+}
+
+/**
+ * The round count of the test path (/try, no account): his replies in the history the page sent,
+ * which is kept in the browser's store. Nothing is written on the server.
+ */
+export function roundsFromHistory(history: RestMessage[]): RestRounds {
+  // A message of the person answered by his next message; his first message is not a reply.
+  const answered = history.filter(
+    (message, index) => message.from === "you" && history[index + 1]?.from === "him",
+  ).length;
+  return {
+    answered: async () => answered,
+    record: async () => {},
+  };
 }
 
 function positionOf(request: { stepIndex?: number; stepCount?: number }) {

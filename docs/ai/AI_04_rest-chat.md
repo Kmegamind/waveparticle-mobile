@@ -6,7 +6,7 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 > - **Checks:** every reply passes the same spoiler check as the story cards, against the parts the user has not reached, and a failing reply is generated again within the time limit (CHAT-SPOILER-CHECK). Replies are not checked against the per-run list of earlier one-way lines (CHAT-NO-RUN-LIST).
 > - **Fallback (section A4):** there is no `rest_chat_fallback`. After retrying within the time limit the app shows its failure message with Retry (NO-BACKUP, FAIL-SCREEN).
 > - **`meta` ("Are you an AI?"):** the conversation never mentions it; disclosure is in the terms and settings only (A4).
-> - Low mood is deferred (A5b); no Chinese message in the test set (L1); no message cap (R2).
+> - Low mood is deferred (A5b); no Chinese message in the test set (L1); ~~no message cap (R2)~~ the chat of a Pause ends at round 10 (REST-ROUND-10, 2026-11-26, below).
 > - **Decisions of 2026-11-21 (#369).** A reply carries **no label** for the user's message (CHAT-NO-LABEL): the model does not return `scope`, the output stays the reply only, and the checks tied to the label (section A4, "Scope-reply consistency", and the "Scope accuracy" measure in section C) are withdrawn. The scope table in A2 stays only as guidance for the prompt. The feelings rule of section B (one line of his own of similar weight, no advice, no method) and "end on his own situation" are written into the `rest_reply` prompt. The advice and one-question checks run on every reply. **Later words (CHAT-USER-WORD):** he may repeat a later word that the user typed himself, so "I have never heard of a computer" passes when the user wrote "computer"; the later-knowledge and spoiler checks fail a later word only when the user did not type it. Code gaps: AI_09, "Next batch".
 
 > **Decision of 2026-11-27 (REST-TWO-CALLS, #517): the reply is two calls.**
@@ -17,6 +17,12 @@ Imported from the planning folder on 2026-11-05. The decisions file docs/DECISIO
 > - **Time limit:** both calls share the rest chat's one limit, 12 s (TIME-LIMIT, `DEFAULT_TIME_LIMIT_MS`), counted from when the message started. Call one, with its retries, may use all of it, as before; call two gets the time call one left. If none is left, or call two runs out, call one's reply is shown at the 12 s mark at the latest.
 > - **Before the owner activates it:** while `rest_reply_review` has no active version, the rest chat makes call one only, exactly as before, and nothing is logged for the missing prompt.
 > - **Registry and lab:** `rest_reply_review` is registry row R-08 (category runtime). The comparison lab runs any stored version of each prompt, active or not, on a sample.
+
+> **Decision of 2026-11-26 (REST-ROUND-10, #337, built in #518): the chat of one Pause ends at round 10.**
+> - **What happens:** his reply to the user's tenth message in one Pause says that his own work is going to fail. After it he stops replying, and the text field and Send disappear (FLOW R1-C10). Nothing warns before it and no counter is shown; every Pause starts at round 1. He talks only about his own side and never urges the user to go back. Mood is not shown, only carried by his tone. This reverses R2.
+> - **The added instruction:** the `rest_reply` call (call one) for the tenth reply gets one instruction added after its prompt, whichever version is active, so no prompt row changes. The wording is `REST_LAST_ROUND_INSTRUCTION` in `src/lib/model-gateway/rest-round.ts`, proposed in the pull request of #518 for the owner to approve. The reply passes the same checks as every rest reply (AI-6 line rules, ERA-ANSWER, CHAT-SPOILER-CHECK, CHAT-USER-WORD). Call two (`rest_reply_review`), when active, is unchanged: it reads that reply as `{{draft}}`, and its reply, or call one's as the fallback, is the one shown.
+> - **Retry:** a failed tenth reply is not counted, so Retry asks again at round 10, with the instruction, and its reply still ends the chat.
+> - **Where the count is kept:** for a signed-in account on the server, per session and Pause (`private.rest_rounds`), so a reload cannot reset it; after round 10 no model call is made. On the test path `/try` the count comes from the history in the browser's store.
 
 # AI-4 · Rest chat — v2 (after the user test)
 

@@ -9,6 +9,7 @@ import {
   addRestMessage,
   dropFlaggedRestMessage,
   backFromRest,
+  endRest,
   hasFirstRestMessage,
   leaveRest,
   pauseHistory,
@@ -16,6 +17,7 @@ import {
   setRestDraft,
   startRest,
   visibleCards,
+  withPauseKey,
   type FocusSession,
   type RestMessage,
 } from "@/lib/prototype/session";
@@ -57,7 +59,16 @@ export type RestHost = {
     replyIndex: number;
     stepIndex?: number;
     stepCount?: number;
+    /** This Pause's id (REST-ROUND-10, #518). */
+    pauseKey?: string;
   }) => Promise<RestReplyResponse>;
+  /**
+   * Whether this Pause already had his tenth reply, from where the count is kept (REST-ROUND-10:
+   * the account). Left out on the test path, whose count is in the browser's store.
+   */
+  loadRestEnded?: (request: {
+    pauseKey: string;
+  }) => Promise<{ status: "ok"; ended: boolean } | { status: "failed" }>;
   onProgress?: (session: FocusSession) => void;
   /**
    * The study condition (#114, R1-STUDY): the header only. No message of his, no text box and no
@@ -72,25 +83,31 @@ function focusHref(paths: SessionPaths, session: FocusSession): string {
 
 export function RestBody({ host }: { host: RestHost }) {
   const { paths, plan, stored, storageKey, loadPauseMessage, loadRestReply, onProgress } = host;
+  const { loadRestEnded } = host;
   const storyOff = host.storyOff === true;
   const failureText = useAppText("ui.R1.fail.body");
   const retryLabel = useAppText("ui.R1.fail.retry");
   // Arriving here without an open rest is a Pause; an open rest is shown again as it was.
   const [session, setSession] = useState<FocusSession>(() =>
-    stored.rest ? stored : startRest(stored, currentTime()),
+    withPauseKey(stored.rest ? stored : startRest(stored, currentTime())),
   );
   const [isTestData, setIsTestData] = useState(false);
   const [firstFailed, setFirstFailed] = useState(false);
   const [replyFailed, setReplyFailed] = useState(
-    () => stored.rest?.messages.at(-1)?.from === "you",
+    () => stored.rest?.messages.at(-1)?.from === "you" && stored.rest?.ended !== true,
   );
   const [waiting, setWaiting] = useState(false);
   const [showDots, setShowDots] = useState(false);
   const [crisis, setCrisis] = useState(false);
   const firstRequested = useRef(false);
+  const endChecked = useRef(false);
+  const log = useRef<HTMLElement>(null);
 
   const rest = session.rest;
   const messages = rest?.messages ?? [];
+  // R1-C10 (REST-ROUND-10): after his tenth reply he stops replying and the field is gone.
+  const ended = rest?.ended === true;
+  const pauseKey = rest?.key;
   const stepTitle = plan.steps[session.current]?.title ?? "";
 
   useEffect(() => {
@@ -128,6 +145,28 @@ export function RestBody({ host }: { host: RestHost }) {
     });
   }, [firstFailed, loadPauseMessage, plan.storyId, rest, session, stepTitle, storyOff]);
 
+  // REST-ROUND-10: the count is kept on the account, so a Pause that had its tenth reply shows the
+  // ended chat after a reload even when this device did not keep that state.
+  useEffect(() => {
+    if (storyOff || !loadRestEnded || !pauseKey || ended || endChecked.current) return;
+    endChecked.current = true;
+    loadRestEnded({ pauseKey })
+      .catch(() => ({ status: "failed" as const }))
+      .then((result) => {
+        if (result.status !== "ok" || !result.ended) return;
+        setReplyFailed(false);
+        setSession((current) => (current.rest?.key === pauseKey ? endRest(current) : current));
+      });
+  }, [ended, loadRestEnded, pauseKey, storyOff]);
+
+  // The conversation grows downward; each new message, the dots and the end scroll it to its end,
+  // as in the prototype, so his reply (and the R1-C10 ending) is in view. No smooth scrolling.
+  const shown = messages.length;
+  useEffect(() => {
+    const element = log.current;
+    if (element) element.scrollTop = element.scrollHeight;
+  }, [shown, showDots, ended, replyFailed]);
+
   useEffect(() => {
     if (!waiting) return;
     const id = window.setTimeout(() => setShowDots(true), DOTS_AFTER_MS);
@@ -147,13 +186,21 @@ export function RestBody({ host }: { host: RestHost }) {
       replyIndex,
       stepIndex: session.current,
       stepCount: plan.steps.length,
+      pauseKey: session.rest?.key,
     })
       .catch(() => ({ status: "failed" as const }))
       .then((result) => {
         setWaiting(false);
         if (result.status === "ok") {
           setIsTestData(result.isTestData);
-          setSession((current) => addRestMessage(current, { from: "him", text: result.text }));
+          setSession((current) => {
+            const answered = addRestMessage(current, { from: "him", text: result.text });
+            // His reply to the tenth message: he stops replying after it (R1-C10).
+            return result.ended ? endRest(answered) : answered;
+          });
+        } else if (result.status === "ended") {
+          // The Pause already had its tenth reply (another page or device): no reply comes.
+          setSession((current) => endRest(current));
         } else if (result.status === "crisis") {
           // #117 (C1): the server's check flagged it; the message is discarded, never kept.
           setSession((current) => dropFlaggedRestMessage(current, message));
@@ -166,7 +213,7 @@ export function RestBody({ host }: { host: RestHost }) {
 
   function onSend(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!rest || waiting) return;
+    if (!rest || waiting || ended) return;
     const text = rest.draft.trim();
     if (text.length === 0) return;
     // Every message passes the safety gate first; crisis text is discarded and never sent.
@@ -220,7 +267,7 @@ export function RestBody({ host }: { host: RestHost }) {
 
       {storyOff ? null : (
         <>
-          <section aria-label="Conversation" aria-live="polite" className="rest-log">
+          <section aria-label="Conversation" aria-live="polite" className="rest-log" ref={log}>
             {isTestData ? <p className="try-caption">Test data: chapter 8 rest lines</p> : null}
             {firstFailed ? (
               <div className="rest-failure">
@@ -259,7 +306,7 @@ export function RestBody({ host }: { host: RestHost }) {
                 <span />
               </p>
             ) : null}
-            {replyFailed && !waiting ? (
+            {replyFailed && !waiting && !ended ? (
               <div className="rest-failure">
                 <p>{failureText}</p>
                 <button className="button-filled button-small" onClick={onRetryReply} type="button">
@@ -269,25 +316,27 @@ export function RestBody({ host }: { host: RestHost }) {
             ) : null}
           </section>
 
-          <form className="rest-composer" onSubmit={onSend}>
-            <label className="sr-only" htmlFor="rest-message">
-              Message
-            </label>
-            <input
-              autoComplete="off"
-              className="rest-field"
-              id="rest-message"
-              onChange={(event) => {
-                const draft = event.target.value;
-                setSession((current) => setRestDraft(current, draft));
-              }}
-              type="text"
-              value={rest?.draft ?? ""}
-            />
-            <button aria-label="Send" className="rest-send" disabled={waiting} type="submit">
-              <span aria-hidden="true">↑</span>
-            </button>
-          </form>
+          {ended ? null : (
+            <form className="rest-composer" onSubmit={onSend}>
+              <label className="sr-only" htmlFor="rest-message">
+                Message
+              </label>
+              <input
+                autoComplete="off"
+                className="rest-field"
+                id="rest-message"
+                onChange={(event) => {
+                  const draft = event.target.value;
+                  setSession((current) => setRestDraft(current, draft));
+                }}
+                type="text"
+                value={rest?.draft ?? ""}
+              />
+              <button aria-label="Send" className="rest-send" disabled={waiting} type="submit">
+                <span aria-hidden="true">↑</span>
+              </button>
+            </form>
+          )}
         </>
       )}
     </main>

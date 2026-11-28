@@ -51,7 +51,7 @@ The specification documents were brought in line with the decisions up to 2026-1
 
 | Id | Date | Decision | Consequences |
 |---|---|---|---|
-| R2 | 2026-11-05 | The rest conversation has no message limit and no hidden cap. | Removes the 30-message cap proposed for cost control; cost control is handled elsewhere (for example per-message length). |
+| R2 | 2026-11-05 | ~~The rest conversation has no message limit and no hidden cap.~~ **Reversed 2026-11-26 (REST-ROUND-10, #518):** in one Pause the rest chat stops after his reply to the tenth message. | Removes the 30-message cap proposed for cost control; cost control is handled elsewhere (for example per-message length). There is still no counter and no warning (REST-ROUND-10). |
 | D1a | 2026-11-05 | The user types their own goal in a free text box. There is no restriction on what a goal can be and no list of unsupported kinds. | Remove "supported kinds" and "explicitly unsupported kinds" from the documents and the user stories. |
 | D1b | 2026-11-05 | How a plan is split for different kinds of goals is the job of the AI planning prompt (a planning expert that already exists in the AI workflow). The product documents do not specify splitting rules per kind. | The repository must receive the real planning prompt from the AI workflow; the text in docs/ai/AI_01 is only a placeholder. |
 | D1c | 2026-11-05 | Each step has a short title and a description of one or two sentences that expands the title (what to do and what to watch for). Example: title "English reading", description "Do the reading questions; pay attention to ..." | The description is generated with the plan and shown on the focus page. |
@@ -398,6 +398,22 @@ Owner decision, issue #517 (`story-pipeline/admin-handoff_2026-11-26/8_dialogue_
 |---|---|---|---|
 | REST-TWO-CALLS | 2026-11-27 | The rest chat reply is two model calls. Call one, `rest_reply`, writes the reply. Call two, `rest_reply_review`, reads that draft as the user would (its new variable `{{draft}}` is call one's reply) and returns it unchanged or rewritten, as JSON `{"reply": "..."}`. The final reply passes every rest chat check (the AI-6 rules, CHAT-USER-WORD, CHAT-SPOILER-CHECK; the safety classifier still runs on the user's message before either call). If call two fails, times out, returns invalid JSON or fails a check, call one's reply is shown (it passed the same checks). If call one fails, it is generated again within the time limit, then the failure message with Retry (NO-BACKUP, FAIL-SCREEN). While `rest_reply_review` has no active version, the rest chat makes call one only, as before. | Both calls share the rest chat's one time limit (12 s, TIME-LIMIT), counted from when the message started: call one, with its retries, may use all of it; call two gets one attempt, no retry, in the time call one left. Call two's reply must also pass call one's checks, so a review prompt cannot loosen the rest_reply limits. `rest_reply_review` is registry row R-08 (category runtime); its row and its prompt versions are owner SQL, inactive until the owner activates a version. The comparison lab runs any stored version of a prompt (#517). Built in #517. |
 
+### Rest chat stops at round 10 (2026-11-26)
+
+Owner decision on #337 (2026-11-26), drawn in the prototype as R1-C10 (#501, #503), built in #518.
+
+| Id | Date | Decision | Consequences |
+|---|---|---|---|
+| REST-ROUND-10 | 2026-11-26 | In one Pause, his reply to the user's **tenth** message in the rest chat says that his own work is going to fail. After it he stops replying: the text field and Send disappear, and only ‹ Back to step and Home stay, with their FLOW 3.10 meanings. Nothing warns before round 10 and no counter is shown. The count starts again at every Pause. He talks only about his own side and never urges the user to go back. Mood is not shown; it is only in his tone. The `rest_reply` call (call one of REST-TWO-CALLS) for the tenth reply gets one added instruction, after its prompt, whichever prompt version is active; the owner approves its wording in the pull request of #518. Call two (`rest_reply_review`), when active, runs as for every reply and reads that reply as its draft. If the tenth reply fails and the user presses Retry, the retry keeps the round, so it still ends the chat. | Reverses R2. A round is one message of the user answered by his reply: a failed reply and a message that opened the safety page (C1) are not counted. The count of a signed-in account is kept on the server, per session and Pause (`private.rest_rounds`, migration `20261210000000_rest_rounds.sql`), so a reload or another device cannot reset it within the same Pause; after round 10 the server makes no model call, the safety check still runs on a message first. Each Pause has its own id, made on the phone when the Pause starts. On the test path `/try` (no account) the count is the history in the browser's store. Built in #518 (`docs/decisions/0042-rest-round-10.md`). |
+
+### Story switch-over (2026-11-27)
+
+Owner decision, issue #516; the details of the review rounds of #522 added by #518.
+
+| Id | Date | Decision | Consequences |
+|---|---|---|---|
+| SWITCH-STORY | 2026-11-27 | Regenerated cards of a Companion who already has published cards are imported as drafts next to them (`import-drafts.mjs --keep-published`): a key in both sets gets a new draft version, a new key a version 1 draft, an old key stays published. The owner switches over one story at a time with printed SQL (`switch-story.mjs`: dry run, run, check, undo): every card of the new set is published, the story's other published cards are retired, the part titles take the new count (3 to 5), and each change writes a Publish history row with the admin named by `--by`. A switch undo keeps every version a session pinned: a version the switch-over published that a session has pinned keeps its publish time, so that session keeps reading its cards. A re-import never buries an editor's draft: a key whose newest version is an editor's unpublished draft (saved in the admin) is left alone and reported as "kept: editor draft", so the switch-over publishes the editor's text. | The card checks of the admin's Publish do not run in that SQL; `npm run check:export-cards` runs them first. `merged_titles` is not stored. A session in progress keeps its cards until it ends (its pinned versions). Built in #516 and #522 (`docs/decisions/0039-story-switch-over.md`). |
+
 ## 2. Superseded rules (do not implement)
 
 | Rule | Replaced by |
@@ -407,7 +423,8 @@ Owner decision, issue #517 (`story-pipeline/admin-handoff_2026-11-26/8_dialogue_
 | Third-pause warning (R-WARN) and timer reset | F1 |
 | Timed return of the character on the rest page (screen R2) | The character stays stuck until the user taps Back |
 | "Start with…" field | X4 |
-| Reply limit of three in the rest conversation | No limit |
+| Reply limit of three in the rest conversation | No limit (R2), then the end at round 10 (REST-ROUND-10) |
+| No message limit in the rest conversation (R2) | REST-ROUND-10 |
 | Designated entry story (chapter 8) for new users | M1 |
 | Several cards shown at step start | X2, X6 |
 | Words Mission and Task for the user's work | X1 |
@@ -467,7 +484,7 @@ Owner decision, issue #517 (`story-pipeline/admin-handoff_2026-11-26/8_dialogue_
 
 ## 4. Later
 
-- Chat rules for rest chat, a limit after round 10, and free chat: see #337 (waits until version 1 is done).
+- Chat rules for rest chat and free chat: see #337 (waits until version 1 is done). The end at round 10 is decided (REST-ROUND-10).
 - Adding a Companion from a novel through staged, reusable prompts, then in batch: see #339 (waits until version 1 is done).
 - Pending: his one line after the final Story. It must exist; its prompt is designed later (END-LINE-PENDING, #52).
 - Pending: a long-term chat with a Companion, unlocked when the user has finished all of that Companion's Stories (END-LINE-PENDING).

@@ -28,6 +28,8 @@ function emptyQuery(): unknown {
 
 const client = {
   rpc: async (fn: string) => {
+    // #518: the rest reply reads the Pause's round count first (none yet: round 1).
+    if (fn === "rest_round") return { data: 0, error: null };
     if (fn !== "research_condition") return { data: null, error: null };
     if (state.flag === "failing") return { data: null, error: { code: "500" } };
     return { data: state.flag === "on" ? "no_story" : null, error: null };
@@ -89,6 +91,9 @@ const actions = {
       replyIndex: 0,
       stepIndex: 0,
       stepCount: 2,
+      // #518: the session and the Pause whose round count is kept on the account.
+      sessionId: SESSION,
+      pauseKey: "00000000-0000-4000-9000-000000000001",
     }),
 };
 
