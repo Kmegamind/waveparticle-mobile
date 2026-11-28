@@ -408,7 +408,7 @@ The 19 initial rows are listed by id, name, category and prompt in `docs/ai/AI_1
 - A **sample** is the set of inputs that fills a prompt's `{{variables}}`: the Companion's persona, the story's source excerpt with its source named, the facts, the world record and the standing task, and the finished plan when a later step needs it.
 - A fixed **sample library** is seeded with 3 samples: Oppenheimer story 1 ("The Trade of a Theorist"), Snape chapter 7, and one dialogue scene. A button adds a finished story as a new sample later.
 - Source text is stored only as the excerpt each story actually uses, in a table readable by admin and writer only, never by the app or users.
-- Source excerpts and sample texts from books are never committed to the repository. An import script reads them from the local story-pipeline folder and prints SQL for the owner to run. Test fixtures use short invented text.
+- Source excerpts and sample texts reach the database through an import script that reads them from the local story-pipeline folder and prints SQL for the owner to run. Test fixtures use short invented text. The earlier rule that book text is never committed was dropped by the owner on 2026-11-28, because the repository will be made private later (TEXT-IN-GIT-DROPPED).
 
 **Running (AI-RUN-PERMISSION, AI-LAB-STUB, AI-RUN-LIVE).** The Run route uses the fake model in every test and end-to-end run, and the stub marker shows. Agents and tests never press Run on the live admin; there, admin and writer both may press Run (FR-AILAB-1).
 
