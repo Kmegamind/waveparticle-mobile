@@ -19,7 +19,22 @@ export const SEEDED_WRITER = {
   email: "invented-writer@example.invalid",
 };
 
-const minutesAgo = (minutes) => new Date(Date.now() - minutes * 60_000).toISOString();
+/**
+ * When a seeded run happened, `minutes` before `now`, but never before the start of the UTC day of
+ * `now`: the Runs page counts "today" as the UTC day (todayWindow in src/lib/ai-runs/spend.ts), so a
+ * plain "30 minutes ago" falls on yesterday in the first 30 minutes after UTC midnight (#528). Early
+ * in the day the gaps shrink in the same proportion, so the order stays and the oldest run lands on
+ * the day's first instant. A run that never ended still needs to be older than RUN_END_WAIT_MS (3
+ * minutes) to read "End not recorded", so only the first 3 minutes of the UTC day cannot show it.
+ */
+export function seededRunTime(minutes, now = Date.now()) {
+  const date = new Date(now);
+  const dayStart = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+  const span = Math.min(30 * 60_000, now - dayStart);
+  return new Date(now - Math.round((minutes / 30) * span)).toISOString();
+}
+
+const minutesAgo = (minutes) => seededRunTime(minutes);
 
 function seededRuns(userId) {
   const base = {
