@@ -61,6 +61,8 @@ vi.mock("@/lib/model-gateway/server", () => ({
 }));
 vi.mock("@/lib/content/repository", () => ({
   getStoryContent: async () => seedContent(),
+  // #521: the signed-in actions read the content as the account may play it.
+  getStoryContentForViewer: async () => seedContent(),
   readStoryCardsFromSupabase: async () => null,
 }));
 vi.mock("@/lib/safety/server", () => ({ serverSafetyCheck: () => keywordOnlySafetyCheck }));

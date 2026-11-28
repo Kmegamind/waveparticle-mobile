@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { readContentRole } from "@/lib/admin/roles";
-import { getStoryContent } from "@/lib/content/repository";
+import { getFullStoryContent } from "@/lib/content/repository";
 import type { StoryInputs } from "@/lib/content/types";
 import { storyFields } from "@/lib/content-fields/pages";
 import { readCompanionsData } from "@/lib/content-fields/reader";
@@ -16,7 +16,7 @@ const ID = /^[a-z0-9][a-z0-9-]*$/;
 
 async function readInputs(storyId: string): Promise<StoryInputs | null> {
   try {
-    const content = await getStoryContent();
+    const content = await getFullStoryContent();
     return content.stories.find((story) => story.id === storyId)?.inputs ?? null;
   } catch {
     return null;

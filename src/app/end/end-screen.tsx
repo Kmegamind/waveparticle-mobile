@@ -215,7 +215,7 @@ function EndBody({ summary }: { summary: SummaryView }) {
 
       <div className="end-actions">
         {view.kind === "shown" && view.shown.next ? (
-          <Link className="button-filled" href="/companions/oppenheimer">
+          <Link className="button-filled" href={summary.lifePathHref}>
             Next
           </Link>
         ) : null}

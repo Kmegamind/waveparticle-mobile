@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
-import { getStoryContent } from "@/lib/content/repository";
+import { companionHref } from "@/lib/content/companion-access";
+import { getStoryContentForViewer } from "@/lib/content/repository";
 import { storyRecord } from "@/lib/me/records";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -29,12 +30,13 @@ async function StoryRecordContent({
   const { session } = await params;
   const id = decodeURIComponent(session);
   const progress = await createSupabaseProgressStore(client).read(user.id, user.id);
-  const record = storyRecord(await getStoryContent(), progress, id);
+  const record = storyRecord(await getStoryContentForViewer(client), progress, id);
   if (!record) notFound();
   const { from } = await searchParams;
   const fromLifePath = from === "life-path";
+  // #521: back to the Life Path of the session's own Companion.
   const backHref = fromLifePath
-    ? "/companions/oppenheimer"
+    ? companionHref(record.companionId)
     : `/me/history/${encodeURIComponent(id)}`;
   return (
     <main className="app-screen me-page">

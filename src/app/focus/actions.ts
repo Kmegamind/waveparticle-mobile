@@ -1,6 +1,7 @@
 "use server";
 
-import { getStoryContent, readStoryCardsFromSupabase } from "@/lib/content/repository";
+import { getStoryContentForViewer, readStoryCardsFromSupabase } from "@/lib/content/repository";
+import { isStoryId } from "@/lib/prototype/story-inputs";
 import type { CardVersions } from "@/lib/content/story-deck";
 import { createServerModelGateway } from "@/lib/model-gateway/server";
 import { accountReturnLine } from "@/lib/progress/account-lines";
@@ -30,8 +31,12 @@ function gateway() {
   return modelIsConfigured() ? createServerModelGateway() : null;
 }
 
-/** The story content, or null when it cannot be read (the line then fails, #284). */
-const storyContent = () => getStoryContent().catch(() => null);
+/**
+ * The story content as this account may play it (#521: a Companion who is not public only for an
+ * admin or writer), or null when it cannot be read (the line then fails, #284).
+ */
+const storyContent = (client: Awaited<ReturnType<typeof createSupabaseServerClient>>) =>
+  getStoryContentForViewer(client).catch(() => null);
 
 /**
  * A Step's pre-made cards (#300): the story's published cards, spread across the session's Steps
@@ -69,6 +74,11 @@ export async function loadAccountStepCards(request: unknown): Promise<StepCardsR
         .is("card_versions", null);
     },
     readDeck: (storyId, versions) => readStoryCardsFromSupabase({ storyId, versions }),
+    // #521: only a story this account may play (a failed content read refuses).
+    mayPlay: async (storyId) => {
+      const content = await storyContent(client);
+      return content !== null && isStoryId(content, storyId);
+    },
     log: (event) => logEvent("story-cards", event),
   });
 }
@@ -78,7 +88,7 @@ export async function loadAccountReturnLine(request: unknown): Promise<LineRespo
   if (!signedIn) return { status: "failed" };
   // #114: no return pop-up and no model call in the study condition.
   if (await storyIsOff(signedIn.client).catch(() => true)) return { status: "failed" };
-  return accountReturnLine(await storyContent(), request, gateway());
+  return accountReturnLine(await storyContent(signedIn.client), request, gateway());
 }
 
 /**

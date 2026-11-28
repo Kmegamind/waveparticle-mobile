@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { getStoryContent } from "@/lib/content/repository";
+import { getStoryContentForViewer } from "@/lib/content/repository";
 import { readPublishedEntry } from "@/lib/hotlines/repository";
 import { meView } from "@/lib/me/me-view";
 import { readProfile } from "@/lib/me/supabase-profile";
@@ -26,7 +26,7 @@ async function MeContent() {
   const [progress, profile, content] = await Promise.all([
     createSupabaseProgressStore(client).read(user.id, user.id),
     readProfile(client, user.id),
-    getStoryContent(),
+    getStoryContentForViewer(client),
   ]);
   const view = meView(progress, content.companions);
   // #118: the chosen country and its published entry, for the Country row and the phone copy.

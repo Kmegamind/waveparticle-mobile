@@ -32,7 +32,11 @@ describe("#258 AC1 the summary is a signed-in session page", () => {
 describe("#258 AC10 a signed-in run plays the Life Path's current story", () => {
   it("a new account session takes the current story, not chapter 8", () => {
     const source = read("src/app/focus/account-progress.ts");
-    expect(source).toContain("storyForNewSession(content, progress)");
+    // #521: through openViewerFocusSession, on the Life Path of the session's Companion.
+    expect(source).toContain("openViewerFocusSession(content, progress, goalId");
+    expect(read("src/lib/progress/viewer-session.ts")).toContain(
+      "storyForNewSession(content, progress, deps.companionId)",
+    );
     expect(source).not.toContain("storyId: DEFAULT_STORY_ID");
   });
 });
@@ -47,9 +51,10 @@ describe("#258 AC7 AC8 the Life Path", () => {
 
   it("Begin opens the goal dialogue", () => {
     // #272: the rows moved into the list component.
-    expect(read("src/app/companions/oppenheimer/life-path-list.tsx")).toMatch(
-      /href="\/goal"[^>]*>\s*Begin/,
-    );
+    // #521: the list takes the Companion's goal dialogue; plain /goal by default (Oppenheimer).
+    const list = read("src/app/companions/oppenheimer/life-path-list.tsx");
+    expect(list).toContain('beginHref = "/goal"');
+    expect(list).toMatch(/href={beginHref}[^>]*>\s*Begin/);
   });
 });
 
@@ -59,6 +64,7 @@ describe("#258 AC4 no stored line on the new pages", () => {
     "src/app/end/actions.ts",
     "src/app/end/page.tsx",
     "src/app/companions/oppenheimer/page.tsx",
+    "src/app/companions/life-path-screen.tsx",
     "src/app/companions/oppenheimer/life-path-list.tsx",
   ])("%s reads no stored card and no fixed story", (file) => {
     const source = read(file);

@@ -108,6 +108,8 @@ describe("#258 AC2 what END shows of the account's session", () => {
       steps: [STEP_TITLE, "Draft"],
       planMinutes: 30,
       finished: true,
+      // #521: Next opens the Life Path of the session's own Companion.
+      lifePathHref: "/companions/oppenheimer",
     });
   });
 

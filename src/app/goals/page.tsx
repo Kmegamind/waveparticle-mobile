@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { getStoryContent } from "@/lib/content/repository";
+import { getStoryContentForViewer } from "@/lib/content/repository";
 import { readGoalsData } from "@/lib/goals/goals-reader";
 import { parseTab } from "@/lib/goals/goals-view";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -21,7 +21,7 @@ async function GoalsContent({ searchParams }: PageProps<"/goals">) {
   if (!user) redirect("/auth/sign-in");
   const [rows, content, params] = await Promise.all([
     readGoalsData(client, user.id),
-    getStoryContent(),
+    getStoryContentForViewer(client),
     searchParams,
   ]);
   const data = { ...rows, companions: content.companions };

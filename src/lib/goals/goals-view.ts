@@ -1,5 +1,5 @@
 import { continueHref } from "@/app/continue-link";
-import { companionById } from "@/lib/content/companions";
+import { DEFAULT_COMPANION_ID, companionById } from "@/lib/content/companions";
 import type { Companion } from "@/lib/content/types";
 
 /**
@@ -248,7 +248,7 @@ function companionOf(goal: Goal, index: Index) {
   const newest = [...(index.sessionsOf.get(goal.id) ?? [])].sort(
     (left, right) => sessionTime(right) - sessionTime(left),
   )[0];
-  return companionById(index.companions, newest?.companionId ?? "oppenheimer");
+  return companionById(index.companions, newest?.companionId ?? DEFAULT_COMPANION_ID);
 }
 
 function activityOf(goal: Goal, index: Index, options: ViewOptions): string | null {

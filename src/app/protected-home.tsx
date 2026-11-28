@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useState } from "react";
-import { companionById } from "@/lib/content/companions";
+import { DEFAULT_COMPANION_ID, companionById } from "@/lib/content/companions";
 import type { Companion } from "@/lib/content/types";
 import { useAppText } from "@/lib/app-text/provider";
 import { startHref } from "@/lib/goals/goals-view";
@@ -92,7 +92,7 @@ export function ProtectedHome({
                 alt="Oppenheimer"
                 className="home-trace-portrait"
                 height={96}
-                src={companionById(companions, "oppenheimer").portrait}
+                src={companionById(companions, DEFAULT_COMPANION_ID).portrait}
                 width={96}
               />
               <p className="focus-label">With Oppenheimer</p>
@@ -145,7 +145,7 @@ function FirstVisit() {
 }
 
 function DeskHeader({ companions }: { companions: Companion[] }) {
-  const opp = companionById(companions, "oppenheimer");
+  const opp = companionById(companions, DEFAULT_COMPANION_ID);
   return (
     <header className="home-desk">
       <Image alt="" className="home-desk-portrait" height={40} src={opp.portrait} width={40} />

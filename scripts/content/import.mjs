@@ -72,6 +72,12 @@ export function importSql(rows) {
   for (const row of [...rows.companions, ...rows.stories]) {
     if (!SAFE_ID.test(row.id)) throw new Error(`unsafe id: ${row.id}`);
   }
+  // #485: every model call names the Companion, so a blank name is refused here, before any SQL.
+  for (const row of rows.companions) {
+    if (typeof row.name !== "string" || row.name.trim() === "") {
+      throw new Error(`Companion ${row.id}: name is empty`);
+    }
+  }
   for (const story of rows.stories) {
     if (!companionIds.has(story.companion_id)) {
       throw new Error(`story ${story.id} names an unknown Companion: ${story.companion_id}`);

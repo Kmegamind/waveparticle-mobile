@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { getStoryContent } from "@/lib/content/repository";
+import { DEFAULT_COMPANION_ID } from "@/lib/content/companions";
+import { getFullStoryContent } from "@/lib/content/repository";
 import { companionPeople, sceneCheckOf, type SceneCheck } from "@/lib/content/scene";
 import type { StoryCardRow, StoryPartRow, StoryRow } from "./admin";
 import { publishProblems } from "./pool-checks";
@@ -13,7 +14,7 @@ const CARD_COLUMNS =
  */
 export async function readStageZeros(): Promise<Map<string, Record<string, unknown>> | null> {
   try {
-    const content = await getStoryContent();
+    const content = await getFullStoryContent();
     return new Map(content.stories.map((story) => [story.id, story.inputs.stageZero]));
   } catch {
     return null;
@@ -79,7 +80,7 @@ export type StoryCardsData = {
 };
 
 /** The Companion whose stories the Stories list shows when the address names none. */
-export const COMPANION_ID = "oppenheimer";
+export const COMPANION_ID = DEFAULT_COMPANION_ID;
 
 const COMPANION_PATTERN = /^[a-z][a-z0-9-]*$/;
 

@@ -7,6 +7,7 @@ import {
   statusBoard,
   type DotState,
 } from "@/lib/story-cards/status-board";
+import { DEFAULT_COMPANION_ID } from "@/lib/content/companions";
 import { readCompanionsData } from "@/lib/content-fields/reader";
 import { promptList, readPromptVersions } from "@/lib/prompts/admin";
 import { storyList } from "@/lib/story-cards/admin";
@@ -21,8 +22,8 @@ import { Breadcrumb, KeyChip, PageHead } from "@/app/admin/admin-ui";
 // stages with no data source today are not drawn. The layout already checked the role; the rows
 // come through the signed-in user's own client.
 
-/** The Companion whose stories have cards (the Stories page reads his). */
-const CARD_COMPANION_ID = "oppenheimer";
+/** The Companion whose story table the overview shows: the product default (#485), as /admin/stories. */
+const CARD_COMPANION_ID = DEFAULT_COMPANION_ID;
 
 export default function AdminOverview() {
   return (

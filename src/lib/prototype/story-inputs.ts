@@ -1,3 +1,4 @@
+import { DEFAULT_COMPANION_ID } from "@/lib/content/companions";
 import type { OppenheimerStory, Story, StoryContent } from "@/lib/content/types";
 
 /**
@@ -6,15 +7,21 @@ import type { OppenheimerStory, Story, StoryContent } from "@/lib/content/types"
  * sentence, "Who I am", opening); the model inputs come from `story.inputs`, server side only.
  * Stored text inside the stage 0 inputs (authored cards, example lines, people's lines) is never
  * read, so it cannot reach the page (NO-BACKUP for the live parts).
+ *
+ * #521 (#485): any Companion's stories. A story is playable when it is in `content`; the caller
+ * passes the content as the viewer may play it (`contentForViewer`, `getStoryContent()` holds the
+ * public Companions only), so a story of a Companion who is not public is never found here for a
+ * user. The default Companion (`DEFAULT_COMPANION_ID`) is only the product default where no
+ * Companion is named: the test path /try and a Life Path or new session without `?companion=`.
  */
 
-/** The Companion whose stories a run plays (Release 1: Oppenheimer). */
-export const RUN_STORIES_COMPANION = "oppenheimer";
-
-/** The run's story ids in story order. */
-export function storyIds(content: StoryContent): string[] {
+/** One Companion's story ids in story order (the default Companion when none is named). */
+export function storyIds(
+  content: StoryContent,
+  companionId: string = DEFAULT_COMPANION_ID,
+): string[] {
   return content.stories
-    .filter((story) => story.companionId === RUN_STORIES_COMPANION)
+    .filter((story) => story.companionId === companionId)
     .map((story) => story.id);
 }
 
@@ -55,15 +62,14 @@ type StageZero = {
 
 export const OPENING_QUESTION = "What are you working on?";
 
+/** True for a story of any Companion in this (viewer-scoped) content. */
 export function isStoryId(content: StoryContent, value: unknown): value is string {
-  return typeof value === "string" && storyIds(content).includes(value);
+  return typeof value === "string" && content.stories.some((story) => story.id === value);
 }
 
-/** One story of the run; throws for an id that is not one. */
+/** One story of the content; throws for an id that is not one. */
 export function storyById(content: StoryContent, id: string): Story {
-  const story = content.stories.find(
-    (item) => item.id === id && item.companionId === RUN_STORIES_COMPANION,
-  );
+  const story = content.stories.find((item) => item.id === id);
   if (!story) throw new Error(`no story ${id}`);
   return story;
 }
@@ -100,9 +106,12 @@ export function storyProfile(content: StoryContent, id: string): StoryProfile {
   };
 }
 
-/** Every story's profile, in story order, for the pages. */
-export function storyProfiles(content: StoryContent): StoryProfile[] {
-  return storyIds(content).map((id) => storyProfile(content, id));
+/** One Companion's story profiles, in story order, for the pages. */
+export function storyProfiles(
+  content: StoryContent,
+  companionId: string = DEFAULT_COMPANION_ID,
+): StoryProfile[] {
+  return storyIds(content, companionId).map((id) => storyProfile(content, id));
 }
 
 /**

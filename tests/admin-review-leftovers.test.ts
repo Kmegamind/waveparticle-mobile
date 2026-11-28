@@ -83,6 +83,7 @@ describe("#311 leftovers: prompt versions made active outside the admin", () => 
       "20261206000000_ai_comparisons.sql",
       // #516: the story switch-over's history rows and undo record.
       "20261207000000_story_switch.sql",
+      "20261208000000_companion_preview.sql",
     ]);
   });
 

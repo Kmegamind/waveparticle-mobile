@@ -42,6 +42,8 @@ export function sessionRecord(
 }
 
 export type StoryRecordView = {
+  /** #521: the session's Companion (its Life Path is the back link from there). */
+  companionId: string;
   storyTitle: string;
   steps: { title: string; cards: string[] }[];
   closingLine: string | null;
@@ -71,6 +73,7 @@ export function storyRecord(
         .map((line) => line.text),
     }));
   return {
+    companionId: story.companionId,
     storyTitle: story.title,
     steps,
     closingLine: session.closingLine,

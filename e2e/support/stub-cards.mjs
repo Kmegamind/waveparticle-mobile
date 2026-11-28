@@ -134,6 +134,13 @@ export function stubAnswer(prompt) {
   if (prompt.startsWith('Return JSON only: {"story"')) {
     return JSON.stringify({ story: "I am held up by a jammed latch on my case." });
   }
+  // #521: END's closing line and the line he carries (closing_line), so a whole run can be played.
+  if (prompt.startsWith('Return JSON only: {"closing_line"')) {
+    return JSON.stringify({
+      closing_line: "I set the lamp down by the window and felt quieter than I had all day.",
+      carry_line: "I still do not know whether I chose well.",
+    });
+  }
   if (prompt.startsWith('Return JSON only: {"reply"')) {
     return JSON.stringify({ reply: "I keep my pencil moving across my notes." });
   }

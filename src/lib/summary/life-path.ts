@@ -2,10 +2,11 @@ import type { StoryContent } from "@/lib/content/types";
 import type { AccountProgress } from "@/lib/progress/account-progress";
 import { storyById, storyIds, storyProfile } from "@/lib/prototype/story-inputs";
 import { isStoryOff } from "@/lib/progress/focus-session";
-import { COMPANION_ID } from "./finish-run";
+import { DEFAULT_COMPANION_ID } from "@/lib/content/companions";
 
 /**
- * Oppenheimer's Life Path for one account (#258, #50, #51, CPAGE). A story is finished when the
+ * One Companion's Life Path for one account (#521: any Companion, the default one when none is
+ * named; it was Oppenheimer's only) (#258, #50, #51, CPAGE). A story is finished when the
  * account has a completed session for it; the current story is the first one in order that is not
  * finished (play is in order; new users start at chapter 1, M1). No dates, ages or counts. The
  * periods are the stories' `period` names, in story order (#284).
@@ -50,14 +51,15 @@ export function lifePath(
   content: StoryContent,
   progress: AccountProgress,
   startId?: string,
+  companionId: string = DEFAULT_COMPANION_ID,
 ): LifePathView {
-  const STORY_IDS = storyIds(content);
+  const STORY_IDS = storyIds(content, companionId);
   const start = Math.max(0, STORY_IDS.indexOf(startId ?? STORY_IDS[0]));
   const firstLine = new Map<string, string>();
   const firstRun = new Map<string, string>();
   for (const session of progress.sessions) {
     // #114: a session with the Story turned off never finishes a story.
-    if (session.state !== "completed" || session.companionId !== COMPANION_ID) continue;
+    if (session.state !== "completed" || session.companionId !== companionId) continue;
     if (isStoryOff(session)) continue;
     if (firstLine.has(session.storyId)) continue;
     firstLine.set(session.storyId, session.closingLine ?? "");
@@ -112,6 +114,11 @@ export function lifePath(
 export function storyForNewSession(
   content: StoryContent,
   progress: AccountProgress,
+  companionId: string = DEFAULT_COMPANION_ID,
 ): string | null {
-  return lifePath(content, progress).currentId ?? storyIds(content).at(-1) ?? null;
+  return (
+    lifePath(content, progress, undefined, companionId).currentId ??
+    storyIds(content, companionId).at(-1) ??
+    null
+  );
 }

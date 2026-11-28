@@ -85,7 +85,8 @@ describe("#94 AC1 a finished row opens the record of that Story", () => {
   it("test_94_ac1_the_record_opened_from_the_life_path_goes_back_to_it", () => {
     const page = read("src/app/me/history/[session]/chapter/page.tsx");
     expect(page).toContain('"life-path"');
-    expect(page).toContain("/companions/oppenheimer");
+    // #521: the Life Path of the session's own Companion (/companions/oppenheimer for his).
+    expect(page).toContain("companionHref(record.companionId)");
   });
 
   it("test_94_ac4_memory_and_current_rows_do_not_open_a_record", () => {
@@ -152,7 +153,9 @@ describe("#272 AC3 (#96 AC5) the page opens on the current Story card", () => {
   });
 
   it("is used by the page, which only loads the data", () => {
-    const page = read("src/app/companions/oppenheimer/page.tsx");
+    // #521: /companions/oppenheimer and /companions/<id> both render the one Life Path screen.
+    expect(read("src/app/companions/oppenheimer/page.tsx")).toContain("<LifePathScreen");
+    const page = read("src/app/companions/life-path-screen.tsx");
     expect(page).toContain("<LifePathList");
     expect(page).toContain("<OpenOnCurrent");
   });

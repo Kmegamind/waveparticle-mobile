@@ -184,6 +184,8 @@ export function readDraftExport(folder, { repo = REPO } = {}) {
   }
   if (exported.name !== own.name)
     problems.push(`app/companion.json: name differs from ${COMPANIONS_FILE}`);
+  // #485: every model call names the Companion; a blank name stops the import.
+  if (!filled(own.name)) problems.push(`${COMPANIONS_FILE}: ${own.id} has no name`);
   if (exported.mode !== own.mode)
     problems.push(`mode ${exported.mode} does not match ${COMPANIONS_FILE}`);
   if (own.enterHref !== null) {

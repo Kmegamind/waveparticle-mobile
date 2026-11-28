@@ -103,3 +103,30 @@ export function reactionFor(shape: GoalShape, random: Random = Math.random): str
 export function splittingLine(random: Random = Math.random): string {
   return pick(SPLITTING_LINES, random);
 }
+
+/** #521: a line a Companion has no version of yet. Nothing is invented in its place. */
+export const NOT_WRITTEN_YET = "Not written yet";
+
+export type GoalLines = {
+  /** The first opening; for the default Companion the dialogue still rotates its returning pool. */
+  opening: string;
+  reaction: (shape: GoalShape, random?: Random) => string;
+  splittingLine: (random?: Random) => string;
+};
+
+/**
+ * The dialogue's lines for one Companion (#521, #485). The pools above are the default Companion's
+ * (Oppenheimer at a canyon at Jemez Springs: the opening, two reactions and the splitting lines
+ * name his world), so they are the product default only. For any other Companion: the opening is
+ * his current story's own opening, the reaction comes from the pool of the "specific" shape (the
+ * two lines that name nothing of one world), and the splitting line, which he has no version of,
+ * reads "Not written yet". Per-Companion pools are an open item for the owner.
+ */
+export function goalLinesFor(voice: { opening: string } | null): GoalLines {
+  if (!voice) return { opening: FIRST_OPENING, reaction: reactionFor, splittingLine };
+  return {
+    opening: voice.opening.trim() || NOT_WRITTEN_YET,
+    reaction: (_shape, random = Math.random) => pick(REACTIONS.specific, random),
+    splittingLine: () => NOT_WRITTEN_YET,
+  };
+}

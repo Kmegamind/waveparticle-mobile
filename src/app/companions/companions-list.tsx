@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type KeyboardEvent } from "react";
+import { PREVIEW_NOTE } from "@/lib/content/companion-access";
 import { companionById, type CompanionId } from "@/lib/content/companions";
 import type { Companion } from "@/lib/content/types";
 
@@ -12,15 +13,25 @@ export function enterFor(companions: Companion[], id: CompanionId | null): strin
 }
 
 /** The visible reason when a selected Companion cannot be entered (DESIGN 6.1). */
-export function reasonFor(companions: Companion[], id: CompanionId | null): string | null {
-  return id && enterFor(companions, id) === null ? "His stories are not ready yet." : null;
+export function reasonFor(
+  companions: (Companion & { preview?: boolean })[],
+  id: CompanionId | null,
+): string | null {
+  if (!id) return null;
+  if (enterFor(companions, id) === null) return "His stories are not ready yet.";
+  // #521: Enter is on only because this account is an admin or writer.
+  return companions.find((companion) => companion.id === id)?.preview ? PREVIEW_NOTE : null;
 }
 
 /**
  * COMP: select a Companion, then one Enter. A radio group, so arrow keys move the selection and
  * the state is announced. No "last observed" line, no long profile, no moving effects.
  */
-export function CompanionsList({ companions }: { companions: Companion[] }) {
+export function CompanionsList({
+  companions,
+}: {
+  companions: (Companion & { preview?: boolean })[];
+}) {
   const COMPANIONS = companions;
   const router = useRouter();
   const [selected, setSelected] = useState<CompanionId | null>(null);

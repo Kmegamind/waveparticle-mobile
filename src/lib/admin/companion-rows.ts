@@ -20,17 +20,29 @@ function belongsTo(row: HistoryFact, code: string, storyIds: ReadonlySet<string>
 const dayOf = (actedAt: string) =>
   Number.isNaN(Date.parse(actedAt)) ? actedAt : formatHistoryTime(actedAt).slice(0, 5);
 
+/**
+ * "Published": phones can open him (he has stories and an Enter address). #521: "Preview": he has
+ * stories but no Enter address, so only admins and writers can open him; users see him with Enter
+ * off. "Not ready": no stories. A row read without `enter_href` (left out) counts as before.
+ */
+export type ShownState = "Published" | "Preview" | "Not ready";
+
 export function companionRow(
-  companion: { id: string; key_code: string },
+  companion: { id: string; key_code: string; enter_href?: string | null },
   stories: { id: string; companion_id: string }[],
   history: HistoryFact[],
-): { shown: "Published" | "Not ready"; lastChange: string } {
+): { shown: ShownState; lastChange: string } {
   const storyIds = new Set(stories.filter((s) => s.companion_id === companion.id).map((s) => s.id));
   const newest = history
     .filter((row) => belongsTo(row, companion.key_code, storyIds))
     .sort((a, b) => Date.parse(b.acted_at) - Date.parse(a.acted_at))[0];
   return {
-    shown: storyIds.size > 0 ? "Published" : "Not ready",
+    shown:
+      storyIds.size === 0
+        ? "Not ready"
+        : companion.enter_href === null || companion.enter_href?.trim() === ""
+          ? "Preview"
+          : "Published",
     lastChange: newest ? `${newest.person} · ${dayOf(newest.acted_at)}` : "—",
   };
 }

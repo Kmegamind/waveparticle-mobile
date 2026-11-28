@@ -1,3 +1,5 @@
 # src/lib/prototype/story-inputs.ts
 
 `src/lib/prototype/story-inputs.ts`: server-only inputs of the 26 Oppenheimer stories on the test path (#254), from `docs/demo/<story-id>.stage0.json` (AI-drafted, unreviewed, see each file's `_note`). `STORY_IDS` lists them in `stories.json` order. `generationInputs(id)` gives `{ who, place, goalShort, forbidTerms }`; the forbidden terms are the union of the file's list and `stories.json`. `storyProfile(id)` and `storyProfiles()` give `{ id, title, goalShort, who, opening }`, where `opening` is `whereNow.s1` followed by "What are you working on?". `validateStoryInputs(id, raw, story)` lists the problems in a file, each naming the story. Authored cards, example lines and people's lines in the files are never read.
+
+#521 (#485): `storyIds(content, companionId = DEFAULT_COMPANION_ID)` and `storyProfiles(content, companionId?)` list one Companion's stories; `isStoryId` and `storyById` accept a story of any Companion in the content passed, which the caller scopes to the viewer (`contentForViewer`, see `companion-access.md`). `RUN_STORIES_COMPANION` is gone.

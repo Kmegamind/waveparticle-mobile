@@ -74,7 +74,9 @@ describe("story content is read through one interface (#284)", () => {
 
   it("test_284_story_content_is_read_from_the_repository_by_the_screens", () => {
     const readers = [
-      path.join("app", "companions", "oppenheimer", "page.tsx"),
+      // #521: both Life Path pages (/companions/oppenheimer and /companions/<id>) render this.
+      path.join("app", "companions", "life-path-screen.tsx"),
+      path.join("app", "goal", "page.tsx"),
       path.join("app", "focus", "account-progress.ts"),
       path.join("app", "end", "page.tsx"),
       path.join("app", "end", "actions.ts"),

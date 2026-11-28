@@ -38,6 +38,7 @@ describe("#75 the Session Record", () => {
 
 describe("#94 the record of a finished Story", () => {
   const story = {
+    companionId: "oppenheimer",
     storyTitle: "The Canyon and the Mesa",
     steps: [
       { title: "Gather", cards: ["Background.", "Later card."] },

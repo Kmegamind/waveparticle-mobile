@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { getAppTexts } from "@/lib/app-text/repository";
 import { AppTextProvider } from "@/lib/app-text/provider";
-import { getStoryContent } from "@/lib/content/repository";
+import { getStoryContentForViewer } from "@/lib/content/repository";
 import { homeView } from "@/lib/home/home-view";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -24,7 +24,7 @@ async function HomeContent() {
   if (!user) redirect("/auth/sign-in");
   const [progress, content] = await Promise.all([
     createSupabaseProgressStore(client).read(user.id, user.id),
-    getStoryContent(),
+    getStoryContentForViewer(client),
   ]);
   const view = homeView(progress, content.companions);
 

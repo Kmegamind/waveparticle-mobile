@@ -68,6 +68,7 @@ describe("who changed a feature: the migration (#453)", () => {
       "20261205000000_ai_samples.sql",
       "20261206000000_ai_comparisons.sql",
       "20261207000000_story_switch.sql",
+      "20261208000000_companion_preview.sql",
     ]);
     expect(names.indexOf(MIGRATION)).toBeGreaterThan(
       names.indexOf("20261130000000_ai_features.sql"),

@@ -1,6 +1,6 @@
 "use server";
 
-import { getStoryContent } from "@/lib/content/repository";
+import { getStoryContentForViewer } from "@/lib/content/repository";
 import { createServerModelGateway } from "@/lib/model-gateway/server";
 import { modelIsConfigured } from "@/lib/prototype/focus-cards";
 import { createSupabaseProgressStore } from "@/lib/progress/supabase-progress";
@@ -27,7 +27,8 @@ export async function finishRunAction(input: unknown): Promise<FinishOutcome> {
       store: createSupabaseProgressStore(client),
       writer: createSupabaseRunWriter(client),
       gateway: modelIsConfigured() ? createServerModelGateway() : null,
-      loadContent: getStoryContent,
+      // #521: the account's own content: a Companion who is not public only for an admin or writer.
+      loadContent: () => getStoryContentForViewer(client),
       nowIso: new Date().toISOString(),
     });
   } catch {

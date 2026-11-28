@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { companionHref } from "@/lib/content/companion-access";
 import { storyFacts, type StoryContent } from "@/lib/content/types";
 import type { ClosingLineInput, ModelGateway } from "@/lib/model-gateway";
 import type {
@@ -6,20 +7,28 @@ import type {
   ProgressSession,
   ProgressStore,
 } from "@/lib/progress/account-progress";
-import { generationInputs, storyById, storyIds, storyProfile } from "@/lib/prototype/story-inputs";
+import {
+  generationInputs,
+  isStoryId,
+  storyById,
+  storyIds,
+  storyProfile,
+} from "@/lib/prototype/story-inputs";
 import { startStory } from "@/lib/story/start";
 import { isStoryOff } from "@/lib/progress/focus-session";
 import type { FinishShown } from "./run";
-import { RUN_COMPANION_ID, type RunWriter } from "./run-writer";
+import type { RunWriter } from "./run-writer";
 
 /**
  * Finishing a signed-in run (issue #258). The run itself is the account's session from the
  * signed-in focus page (#257), completed by its last Done. END adds his live closing line and the
  * line he still carries to that same session, once. No stored or pre-written line is ever
  * returned (NO-BACKUP), and no text the user wrote reaches the model.
+ *
+ * #521: any Companion. A session counts only when its story is in the content the server passes
+ * (scoped to the viewer, `contentForViewer`) and the story belongs to the session's Companion, so
+ * a session on a Companion the account may not play has no summary and no closing call.
  */
-
-export const COMPANION_ID = RUN_COMPANION_ID;
 
 export type FinishOutcome =
   | { status: "ok"; shown: FinishShown }
@@ -34,11 +43,18 @@ export function sessionIdOf(raw: unknown): string | null {
   return typeof id === "string" && UUID.test(id) ? id : null;
 }
 
+/** True when the session's story is in this content and is a story of the session's Companion. */
+function playsOwnStory(content: StoryContent, session: ProgressSession): boolean {
+  return (
+    isStoryId(content, session.storyId) &&
+    storyById(content, session.storyId).companionId === session.companionId
+  );
+}
+
 const ownSession = (progress: AccountProgress, sessionId: string) =>
   progress.sessions.find(
     // #114: a session with the Story turned off has no summary (END is his closing line).
-    (session) =>
-      session.id === sessionId && session.companionId === COMPANION_ID && !isStoryOff(session),
+    (session) => session.id === sessionId && !isStoryOff(session),
   ) ?? null;
 
 const byPosition = <T extends { position: number }>(items: T[]) =>
@@ -54,6 +70,8 @@ export type SummaryView = {
   steps: string[];
   planMinutes: number;
   finished: boolean;
+  /** #521: Next opens the Life Path of the session's own Companion. */
+  lifePathHref: string;
 };
 
 export function summaryOf(
@@ -63,7 +81,7 @@ export function summaryOf(
 ): SummaryView | null {
   const session = ownSession(progress, sessionId);
   const goal = session && progress.goals.find((item) => item.id === session.goalId);
-  if (!session || !goal || !storyIds(content).includes(session.storyId)) return null;
+  if (!session || !goal || !playsOwnStory(content, session)) return null;
   const steps = byPosition(goal.steps);
   return {
     sessionId,
@@ -73,6 +91,7 @@ export function summaryOf(
     steps: steps.map((step) => step.title),
     planMinutes: steps.reduce((total, step) => total + step.minutes, 0),
     finished: session.state === "completed",
+    lifePathHref: companionHref(session.companionId),
   };
 }
 
@@ -109,11 +128,11 @@ export function closingInputFor(
   };
 }
 
-const completedOf = (progress: AccountProgress, storyId: string) =>
+const completedOf = (progress: AccountProgress, storyId: string, companionId: string) =>
   progress.sessions.filter(
     (session) =>
       session.state === "completed" &&
-      session.companionId === COMPANION_ID &&
+      session.companionId === companionId &&
       !isStoryOff(session) &&
       session.storyId === storyId,
   );
@@ -124,8 +143,10 @@ export function nextStoryAfter(
   before: AccountProgress,
   storyId: string,
 ): string | null {
-  if (completedOf(before, storyId).length > 0) return null;
-  const STORY_IDS = storyIds(content);
+  if (!isStoryId(content, storyId)) return null;
+  const companionId = storyById(content, storyId).companionId;
+  if (completedOf(before, storyId, companionId).length > 0) return null;
+  const STORY_IDS = storyIds(content, companionId);
   const index = STORY_IDS.indexOf(storyId);
   return index >= 0 && index + 1 < STORY_IDS.length ? STORY_IDS[index + 1] : null;
 }
@@ -194,12 +215,7 @@ export async function finishAccountRun(raw: unknown, deps: Deps): Promise<Finish
   const progress = await deps.store.read(userId, userId);
   const session = ownSession(progress, sessionId);
   const goal = session && progress.goals.find((item) => item.id === session.goalId);
-  if (
-    !session ||
-    !goal ||
-    session.state !== "completed" ||
-    !storyIds(content).includes(session.storyId)
-  ) {
+  if (!session || !goal || session.state !== "completed" || !playsOwnStory(content, session)) {
     return { status: "not-finished" };
   }
   // Never generated again: a reload, a retry or another tab shows the stored lines.

@@ -20,6 +20,7 @@ export function AccountFocus({
   goalLine,
   keepClockRunning,
   who,
+  portrait,
 }: {
   plan: AccountFocusPlan | null;
   goalLine: string;
@@ -27,6 +28,8 @@ export function AccountFocus({
   keepClockRunning: boolean;
   /** "Who I am" of the session's story, for the sheet from his portrait (#72). */
   who: string;
+  /** #521: the session's Companion's portrait. */
+  portrait?: string;
 }) {
   const ready = useSyncExternalStore(
     noSubscription,
@@ -50,6 +53,7 @@ export function AccountFocus({
         storageKey: planStorageKey(plan),
         goalLine,
         who,
+        portrait,
         plan: sessionPlanOf(plan),
         // #300: the pre-made cards of this session, by Step; nothing else goes to the server.
         loadStepCards: (request) =>

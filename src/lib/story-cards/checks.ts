@@ -72,15 +72,22 @@ function selfContainedProblems(body: string): string[] {
 
 // US-FMT-11 (#13, M2): only the background card introduces the people who are present. A short,
 // explicit list of introduction phrases; a part card that carries one fails.
-const INTRODUCTION_PHRASES = [
-  "my name is",
-  "I am J. Robert Oppenheimer",
-  "I'm J. Robert Oppenheimer",
-  "I am Robert Oppenheimer",
-  "I'm Robert Oppenheimer",
-  "let me introduce",
-  "allow me to introduce",
-];
+// #485 (AI-CHARACTER-NEUTRAL): the check names no character. "I am <Full Name>" is caught for any
+// name of two or more capitalised words, initials allowed ("I am A. Ada Inventedname"), instead
+// of a list of one Companion's names.
+const INTRODUCTION_PHRASES = ["my name is", "let me introduce", "allow me to introduce"];
+
+/** "I am" or "I'm" followed by a full name: capitalised words, initials allowed, not a possessive. */
+const SELF_INTRODUCTION =
+  /(?<![\p{L}\p{N}])I(?:\s+am|['’]m)\s+((?:\p{Lu}\.\s*)*\p{Lu}\p{Ll}+(?:\s+\p{Lu}\p{Ll}+)+)(?![\p{L}\p{N}'’])/u;
+
+/** The introduction a text carries outside quoted dialogue, or null. */
+export function introductionIn(text: string): string | null {
+  const phrase = INTRODUCTION_PHRASES.find((candidate) => mentions(text, candidate));
+  if (phrase) return phrase;
+  const self = plainQuotes(text).match(SELF_INTRODUCTION);
+  return self ? self[0].replace(/\s+/g, " ") : null;
+}
 
 const isLetter = (character: string | undefined) =>
   character !== undefined && /[\p{L}\p{N}]/u.test(character);
@@ -130,8 +137,7 @@ export function withoutQuotedSpeech(text: string): string {
 /** An introduction phrase in a part card; the background card is exempt (M2). */
 function introductionProblems(card: { kind: "background" | "part"; body: string }): string[] {
   if (card.kind === "background") return [];
-  const spoken = withoutQuotedSpeech(card.body);
-  const phrase = INTRODUCTION_PHRASES.find((candidate) => mentions(spoken, candidate));
+  const phrase = introductionIn(withoutQuotedSpeech(card.body));
   return phrase ? [`Introduces someone ("${phrase}"). Only the background card does that.`] : [];
 }
 

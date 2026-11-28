@@ -8,7 +8,14 @@ import type { LifePathRow, LifePathView } from "@/lib/summary/life-path";
  * focusable, read as "Later, not available"). A finished row's title and its › arrow open its Story record (#94).
  * No dates or ages (PERIODS).
  */
-export function LifePathList({ view }: { view: LifePathView }) {
+export function LifePathList({
+  view,
+  beginHref = "/goal",
+}: {
+  view: LifePathView;
+  /** #521: the goal dialogue for this Companion (`goalHrefFor`); plain /goal for the default one. */
+  beginHref?: string;
+}) {
   return (
     <ol className="life-periods">
       {view.periods.map((period) => (
@@ -16,7 +23,7 @@ export function LifePathList({ view }: { view: LifePathView }) {
           <h2 className="life-period">{period.name}</h2>
           <ol className="life-rows">
             {period.rows.map((row) => (
-              <Row key={row.id} row={row} />
+              <Row beginHref={beginHref} key={row.id} row={row} />
             ))}
           </ol>
         </li>
@@ -31,7 +38,10 @@ const NAMES: Record<Exclude<LifePathRow["state"], "later">, string> = {
   current: "Current story: ",
 };
 
-function Row({ row }: { row: LifePathRow }) {
+/** #521: a story line that is not published yet; nothing is invented in its place. */
+export const NOT_WRITTEN_YET = "Not written yet";
+
+function Row({ row, beginHref }: { row: LifePathRow; beginHref: string }) {
   const node = <span aria-hidden="true" className={`life-node life-node-${row.state}`} />;
 
   if (row.state === "later") {
@@ -58,9 +68,9 @@ function Row({ row }: { row: LifePathRow }) {
             <span className="sr-only">{NAMES.current}</span>
             {row.title}
           </h3>
-          <p className="life-line">{row.line}</p>
+          <p className="life-line">{row.line || NOT_WRITTEN_YET}</p>
           {/* The signed-in run plays this story: a new session takes the current story (#258). */}
-          <Link className="button-filled" href="/goal">
+          <Link className="button-filled" href={beginHref}>
             Begin
           </Link>
         </div>

@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { connection } from "next/server";
-import { getStoryContent } from "@/lib/content/repository";
+import { getStoryContentForViewer } from "@/lib/content/repository";
 import { isGoalId, readGoalsData } from "@/lib/goals/goals-reader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
@@ -18,7 +18,10 @@ export default async function GoalDetailPage({ params }: PageProps<"/goals/[id]"
   const user = await getCurrentUser(client);
   if (!user) redirect("/auth/sign-in");
   // Row-level security keeps the read to this account: another account's Goal is simply absent.
-  const [rows, content] = await Promise.all([readGoalsData(client, user.id), getStoryContent()]);
+  const [rows, content] = await Promise.all([
+    readGoalsData(client, user.id),
+    getStoryContentForViewer(client),
+  ]);
   const data = { ...rows, companions: content.companions };
   if (!data.goals.some((goal) => goal.id === id)) notFound();
   return <GoalDetailScreen data={data} goalId={id} />;

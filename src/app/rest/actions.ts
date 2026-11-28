@@ -1,6 +1,6 @@
 "use server";
 
-import { getStoryContent } from "@/lib/content/repository";
+import { getStoryContentForViewer } from "@/lib/content/repository";
 import { createServerModelGateway } from "@/lib/model-gateway/server";
 import { accountPauseMessage, accountRestReply } from "@/lib/progress/account-lines";
 import { modelIsConfigured } from "@/lib/prototype/focus-cards";
@@ -16,27 +16,33 @@ import { storyIsOff } from "@/lib/research/condition";
  * Signed in and not in the study condition (#114, R1-STUDY: the Companion is off, so no model
  * call is made for a flagged account; a failed read of the flag refuses too).
  */
-async function isSignedIn() {
+async function signedInClient() {
   const client = await createSupabaseServerClient();
-  if ((await getCurrentUser(client)) === null) return false;
-  return !(await storyIsOff(client).catch(() => true));
+  if ((await getCurrentUser(client)) === null) return null;
+  return (await storyIsOff(client).catch(() => true)) ? null : client;
 }
 
 function gateway() {
   return modelIsConfigured() ? createServerModelGateway() : null;
 }
 
-/** The story content, or null when it cannot be read (the line then fails, #284). */
-const storyContent = () => getStoryContent().catch(() => null);
+/**
+ * The story content as this account may play it (#521: a Companion who is not public only for an
+ * admin or writer), or null when it cannot be read (the line then fails, #284).
+ */
+const storyContent = (client: Awaited<ReturnType<typeof createSupabaseServerClient>>) =>
+  getStoryContentForViewer(client).catch(() => null);
 
 /** His first message for this Pause. Nothing about the request is logged. */
 export async function loadAccountPauseMessage(request: unknown): Promise<PauseResponse> {
-  if (!(await isSignedIn())) return { status: "failed" };
-  return accountPauseMessage(await storyContent(), request, gateway());
+  const client = await signedInClient();
+  if (!client) return { status: "failed" };
+  return accountPauseMessage(await storyContent(client), request, gateway());
 }
 
 /** His reply on the rest page. The safety gate runs first, before any model call. */
 export async function loadAccountRestReply(request: unknown): Promise<RestReplyResponse> {
-  if (!(await isSignedIn())) return { status: "failed" };
-  return accountRestReply(storyContent, request, gateway(), serverSafetyCheck());
+  const client = await signedInClient();
+  if (!client) return { status: "failed" };
+  return accountRestReply(() => storyContent(client), request, gateway(), serverSafetyCheck());
 }

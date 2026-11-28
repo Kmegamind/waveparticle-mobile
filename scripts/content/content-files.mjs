@@ -87,6 +87,9 @@ function missingScreenLines(stage, storyId) {
 
 function companionRow(companion, index) {
   const where = companion?.id ?? `Companion ${index + 1}`;
+  // #485: every model call names the Companion, so a blank name stops the read.
+  if (!filled(companion.name))
+    throw new Error(`${where}: name is empty in ${CONTENT_FILES.companions}`);
   if (!MODES.includes(companion.mode)) {
     throw new Error(`${where}: mode must be ${MODES.join(" or ")} in ${CONTENT_FILES.companions}`);
   }
