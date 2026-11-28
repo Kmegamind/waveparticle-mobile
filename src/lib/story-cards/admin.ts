@@ -88,9 +88,9 @@ export type StoryDetail = {
   parts: { part: number; title: string | null; cards: StoryCardView[] }[];
 };
 
-/** CARD-LENGTH (LEN-CARD): a part card is 1 to 3 sentences and at most 45 words. */
-export const PART_CARD_MAX_WORDS = 45;
-export const PART_CARD_MAX_SENTENCES = 3;
+/** LEN-CARD-WIDE (2026-11-27): a step story card is 1 to 4 sentences and at most 60 words. */
+export const PART_CARD_MAX_WORDS = 60;
+export const PART_CARD_MAX_SENTENCES = 4;
 /** The background card is at most 70 words. */
 export const BACKGROUND_CARD_MAX_WORDS = 70;
 

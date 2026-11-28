@@ -88,8 +88,8 @@ describe("story card checks (#304)", () => {
   });
 
   it("test_304_ac3_length_problems_are_listed", () => {
-    const long = Array.from({ length: 46 }, () => "word").join(" ") + ".";
-    expect(cardProblems(part(long), [])).toEqual(["46 words; the limit is 45."]);
+    const long = Array.from({ length: 61 }, () => "word").join(" ") + ".";
+    expect(cardProblems(part(long), [])).toEqual(["61 words; the limit is 60."]);
   });
 
   it("test_304_unreadable_story_inputs_block_the_card", () => {

@@ -39,7 +39,7 @@ const cards: StoryCardRow[] = [
   card({ key: "crd.opp.a.bg", kind: "background", part: null, slice: null, body: "I am here." }),
   card({ key: "crd.opp.a.p2.c1", part: 2, slice: "s3", body: "Later." }),
   card({ key: "crd.opp.a.p1.c2", position: 2, slice: "s2", body: "Second card." }),
-  card({ key: "crd.opp.a.p1.c1", body: words(46) }),
+  card({ key: "crd.opp.a.p1.c1", body: words(61) }),
   // A newer draft of a published card: the published version is the one shown.
   card({ key: "crd.opp.a.p1.c2", version: 2, position: 2, slice: "s2", published: false }),
   card({ key: "crd.opp.b.p1.c1", story_id: "b", published: false, version: 3 }),
@@ -47,9 +47,9 @@ const cards: StoryCardRow[] = [
 ];
 
 describe("CARD-LENGTH (#293 AC6)", () => {
-  it("test_293_ac6_a_part_card_over_45_words_fails", () => {
-    expect(cardLengthProblems("part", words(45))).toEqual([]);
-    expect(cardLengthProblems("part", words(46))).toEqual(["46 words; the limit is 45."]);
+  it("test_523_ac1_a_part_card_over_60_words_fails", () => {
+    expect(cardLengthProblems("part", words(60))).toEqual([]);
+    expect(cardLengthProblems("part", words(61))).toEqual(["61 words; the limit is 60."]);
   });
 
   it("test_293_ac6_a_background_card_over_70_words_fails", () => {
@@ -57,11 +57,13 @@ describe("CARD-LENGTH (#293 AC6)", () => {
     expect(cardLengthProblems("background", words(71))).toEqual(["71 words; the limit is 70."]);
   });
 
-  it("test_293_ac6_a_part_card_of_more_than_3_sentences_fails", () => {
-    expect(cardLengthProblems("part", "One. Two! Three?")).toEqual([]);
-    expect(cardLengthProblems("part", "One. Two. Three. Four.")).toEqual([
-      "4 sentences; the limit is 3.",
+  it("test_523_ac1_a_part_card_of_more_than_4_sentences_fails", () => {
+    expect(cardLengthProblems("part", "One. Two! Three? Four.")).toEqual([]);
+    expect(cardLengthProblems("part", "One. Two. Three. Four. Five.")).toEqual([
+      "5 sentences; the limit is 4.",
     ]);
+    // A card of 4 sentences and exactly 60 words passes (LEN-CARD-WIDE).
+    expect(cardLengthProblems("part", `${words(57)} Two. Three. Four.`)).toEqual([]);
     // Honorifics and quoted endings do not end or add a sentence.
     expect(
       cardLengthProblems("part", "Go and see Mrs. Kennedy. I said, “This is too strong.” I wait."),
@@ -71,9 +73,9 @@ describe("CARD-LENGTH (#293 AC6)", () => {
   });
 
   it("test_293_ac6_both_limits_are_reported_together", () => {
-    expect(cardLengthProblems("part", `${words(44)} Two. Three. Four.`)).toEqual([
-      "47 words; the limit is 45.",
-      "4 sentences; the limit is 3.",
+    expect(cardLengthProblems("part", `${words(58)} Two. Three. Four. Five.`)).toEqual([
+      "62 words; the limit is 60.",
+      "5 sentences; the limit is 4.",
     ]);
   });
 });
@@ -133,10 +135,10 @@ describe("ADM-06 one story (#293 AC3)", () => {
     expect(
       detail.parts[0].cards.map((entry) => [entry.key, entry.slice, entry.version, entry.words]),
     ).toEqual([
-      ["crd.opp.a.p1.c1", "s1", 1, 46],
+      ["crd.opp.a.p1.c1", "s1", 1, 61],
       ["crd.opp.a.p1.c2", "s2", 1, 2],
     ]);
-    expect(detail.parts[0].cards[0].problems).toEqual(["46 words; the limit is 45."]);
+    expect(detail.parts[0].cards[0].problems).toEqual(["61 words; the limit is 60."]);
   });
 
   it("test_293_ac3_a_card_with_no_published_version_shows_its_newest_version", () => {
