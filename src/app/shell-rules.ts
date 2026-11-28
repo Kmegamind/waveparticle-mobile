@@ -7,7 +7,7 @@ const within = (pathname: string, base: string) =>
 
 // Pages below a tab that hide the tab bar: account deletion (ACCOUNT-DELETE in the prototype).
 // Goal detail (G4) sits below /goals, which shows the tab bar on /goals itself only.
-const HIDDEN_BELOW_TABS = ["/me/delete-account"];
+const HIDDEN_BELOW_TABS = ["/me/delete-account", "/me/intro"];
 
 export function showsTabBar(pathname: string): boolean {
   if (HIDDEN_BELOW_TABS.some((path) => within(pathname, path))) return false;

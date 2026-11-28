@@ -56,6 +56,7 @@ const signedInPages = [
   "/me/country",
   `/me/history/${SESSION.methods}`,
   "/me/about",
+  "/me/intro",
   "/me/data",
   "/me/export",
   "/me/delete-account",

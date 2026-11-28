@@ -327,6 +327,13 @@ export function MeScreen({
         {settingAnnounce}
       </p>
 
+      <Link className="me-row me-row-button" href="/me/intro">
+        Replay intro
+        <span aria-hidden="true" className="me-caret">
+          ›
+        </span>
+      </Link>
+
       <Disclosure id="me-history" label="History">
         <HistoryPanel history={view.history} />
       </Disclosure>

@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { signIn } from "./support/account";
 
 // #83 (US-GM-9): Appearance (Day, Night, System), Plain text and reduced motion on Me, against the
-// Supabase stub. Replay intro is not built: no intro exists (see the pull request).
+// Supabase stub. Replay intro is in e2e/me-replay-intro.spec.ts.
 
 const LIGHT_BG = "#eae9e7";
 const DARK_BG = "#110f0d";

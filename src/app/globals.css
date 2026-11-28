@@ -3510,3 +3510,22 @@ button.focus-avatar:focus-visible {
 
 /* The content admin's styles are in src/app/admin/admin.css (frame and shared components) and in
    one file per admin page, next to the page that imports it (issue 483). */
+
+/* Replay intro (issue 480) */
+.intro {
+  display: grid;
+  gap: var(--space-control-gap);
+  padding-bottom: var(--space-screen-bottom);
+}
+
+.intro-body {
+  font-size: var(--text-body-size);
+  margin: 0;
+}
+
+.intro-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-small-gap);
+}
