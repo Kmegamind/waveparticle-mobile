@@ -164,7 +164,9 @@ describe("#521 who may play a Companion", () => {
     const opp = full.companions.find((item) => item.id === DEFAULT_COMPANION_ID)!;
     expect(isPublicCompanion(snape)).toBe(false);
     expect(isPublicCompanion(opp)).toBe(true);
-    expect(isPublicCompanion({ enterHref: "  " })).toBe(false);
+    for (const blank of ["  ", "\t", "\n", " \t\r\n "]) {
+      expect(isPublicCompanion({ enterHref: blank }), JSON.stringify(blank)).toBe(false);
+    }
   });
 
   it("test_521_ac1_refusal_a_user_gets_no_story_of_a_companion_who_is_not_public", () => {
