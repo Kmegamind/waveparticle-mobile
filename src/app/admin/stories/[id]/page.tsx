@@ -65,12 +65,12 @@ export default async function AdminStory({ params }: PageProps<"/admin/stories/[
         lede={
           <>
             Saving a card makes a new draft; phones keep the published version. Every save checks
-            the length (a part card: 1 to 3 sentences, at most 45 words; the background card: at
-            most 70 words), years, dates and ages, words from later parts, people who are not in the
-            scene table and banned words, and reads the card in its story with the other published
-            cards: it may not repeat an earlier card, open with the same three words as one of the
-            four cards before it, or come close to an earlier card, and no later card may repeat it.
-            An admin publishes a draft that passes every check.
+            the length (the background card: at most 70 words; a part card over 4 sentences or 60
+            words only gets a warning), years, dates and ages, words from later parts, people who
+            are not in the scene table and banned words, and reads the card in its story with the
+            other published cards: it may not repeat an earlier card, open with the same three words
+            as one of the four cards before it, or come close to an earlier card, and no later card
+            may repeat it. An admin publishes a draft that passes every check.
           </>
         }
         title="Story cards"

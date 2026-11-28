@@ -1,6 +1,6 @@
 import { checkRunList } from "@/lib/model-gateway/run-list";
 import { companionPeople, sceneCheckOf } from "@/lib/content/scene";
-import { cardProblems, leaksForStory } from "./checks";
+import { cardProblems, cardWarnings, leaksForStory } from "./checks";
 import type { StoryCardRow } from "./admin";
 
 // #46 (US-CON-12): the card checks on a whole pool of cards, one story at a time, as the pull
@@ -55,6 +55,11 @@ export function storyPoolProblems(
     }
   }
   return problems;
+}
+
+/** The warnings of a pool, as "<card key>: <warning>"; they never make the pool fail. */
+export function storyPoolWarnings(cards: PoolCard[]): string[] {
+  return cards.flatMap((card) => cardWarnings(card).map((warning) => `${card.key}: ${warning}`));
 }
 
 // #377: the same repeated-lines rules on admin Publish and on every saved draft. A version is read

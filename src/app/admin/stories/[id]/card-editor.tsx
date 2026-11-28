@@ -111,6 +111,7 @@ export function CardEditor({
 
   const shownFailing = card.problems.length > 0;
   const lengthFails = card.problems.some((problem) => / words; | sentences; /.test(problem));
+  const lengthWarns = card.warnings.length > 0;
   return (
     <article aria-label={card.key} className="admin-cards-row">
       <div className="admin-cards-kind" data-testid="card-kind">
@@ -143,9 +144,21 @@ export function CardEditor({
             ))}
           </ul>
         ) : null}
+        {lengthWarns ? (
+          <ul aria-label="Warnings" className="admin-cards-warns">
+            {card.warnings.map((warning) => (
+              <li key={warning}>Warning: {warning} This does not block Publish.</li>
+            ))}
+          </ul>
+        ) : null}
         <p className="admin-cards-facts">
-          {card.words} words · {lengthFails ? "Fails CARD-LENGTH" : "Passes CARD-LENGTH"} ·{" "}
-          {shownFailing ? `Fails ${checks(card.problems.length)}` : "Passes every check"}
+          {card.words} words ·{" "}
+          {lengthFails
+            ? "Fails CARD-LENGTH"
+            : lengthWarns
+              ? "Warning: over the usual CARD-LENGTH (does not block Publish)"
+              : "Passes CARD-LENGTH"}{" "}
+          · {shownFailing ? `Fails ${checks(card.problems.length)}` : "Passes every check"}
         </p>
 
         {draft && draft.version !== card.version ? (
@@ -164,6 +177,13 @@ export function CardEditor({
             ) : (
               <p className="admin-text-state">Passes every check.</p>
             )}
+            {draft.warnings.length > 0 ? (
+              <ul aria-label="Warnings of the draft" className="admin-cards-warns">
+                {draft.warnings.map((warning) => (
+                  <li key={warning}>Warning: {warning} This does not block Publish.</li>
+                ))}
+              </ul>
+            ) : null}
           </section>
         ) : null}
         {blocked ? (
