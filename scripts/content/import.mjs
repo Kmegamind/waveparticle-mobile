@@ -15,6 +15,8 @@
 // The fields the admin edits (#309: a Companion's name and tags; a story's title, period, goal
 // sentence, "Who I am" and opening) are written only for a new row: on an existing row the
 // published text of the admin stays. Run the export first if the tables were edited otherwise.
+// A story whose inputs are marked outsideRepository (a switch-over of #526, a draft import of
+// #502) keeps its stored inputs: the import never writes the files' version over them.
 
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -55,9 +57,16 @@ function upsert(table, key, row) {
   const updates = columns
     .filter((column) => column !== key && !kept.includes(column))
     .map((column) => `${column} = excluded.${column}`);
+  // #526 (#533 review I2): the inputs of a story kept outside the repository (a story switched over
+  // to the owner's regenerated stage 0, or a draft import of #502) are never overwritten by the
+  // files: the files hold its placeholder, or nothing.
+  const guard =
+    table === "story_inputs"
+      ? `\n  where coalesce(public.story_inputs.provenance::jsonb ->> 'outsideRepository', '') <> 'true'`
+      : "";
   return (
     `insert into public.${table} (${columns.join(", ")}) values (${values.join(", ")})\n` +
-    `  on conflict (${key}) do update set ${updates.join(", ")}, updated_at = now();`
+    `  on conflict (${key}) do update set ${updates.join(", ")}, updated_at = now()${guard};`
   );
 }
 

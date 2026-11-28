@@ -8,22 +8,25 @@
 --    never read it (get_story_content lists its columns and does not name it), so they keep the
 --    stage 0 that matches the cards they play. The switch-over copies the export's values into
 --    stage_zero and sets this column to null; its undo puts it back.
--- 2. private.story_switches keeps the three stage 0 values before and after a switch-over, and the
---    waiting value it cleared, so the undo restores them exactly. Null on a switch-over recorded
---    before this migration (its undo leaves stage_zero alone, as it did then).
+-- 2. private.story_switches keeps, as exact text, the stage_zero and provenance a switch-over
+--    replaced and the stage_zero it wrote, and the waiting value it cleared, so the undo puts the
+--    same text back (an md5 check of the story inputs matches again). Null on a switch-over
+--    recorded before this migration (its undo leaves stage_zero alone, as it did then).
+--    The switch-over also marks the story's provenance outsideRepository and switchedOver: the
+--    repository's content export (scripts/content/export.mjs) then never writes its new stage 0
+--    to docs/demo, and the content import (scripts/content/import.mjs) never overwrites it.
 -- 3. get_story_stage_zero_next(reader_key): the waiting values by story, for the server's reader
---    key only (as get_story_content). The admin's card checks read the new stage 0 of a story that
---    is not switched over yet, so the owner sees, before she switches, the problems as they will be.
+--    key only (as get_story_content). The admin's story page shows what the new stage 0 of a
+--    story not switched over yet finds, as warnings; Publish checks the live stage 0.
 
 alter table public.story_inputs
   add column stage_zero_next jsonb
     check (stage_zero_next is null or jsonb_typeof(stage_zero_next) = 'object');
 
 alter table private.story_switches
-  add column stage_zero_before jsonb
-    check (stage_zero_before is null or jsonb_typeof(stage_zero_before) = 'object'),
-  add column stage_zero_after jsonb
-    check (stage_zero_after is null or jsonb_typeof(stage_zero_after) = 'object'),
+  add column stage_zero_before text,
+  add column stage_zero_after text,
+  add column provenance_before text,
   add column stage_zero_next_before jsonb
     check (stage_zero_next_before is null or jsonb_typeof(stage_zero_next_before) = 'object');
 

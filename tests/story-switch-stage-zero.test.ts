@@ -68,6 +68,14 @@ const waiting = async (db: PGlite) =>
   )[0].doc;
 const without = (stage: Stage, keys: string[]) =>
   Object.fromEntries(Object.entries(stage).filter(([key]) => !keys.includes(key)));
+/** The exact text of a story's stage_zero and provenance (what an md5 check reads). */
+const textsOf = async (db: PGlite, story: string) =>
+  (
+    await rows<{ stage: string; provenance: string }>(
+      db,
+      `select stage_zero::text as stage, provenance::text as provenance from story_inputs where story_id = '${story}'`,
+    )
+  )[0];
 const publishedKeys = async (db: PGlite, story: string) =>
   (
     await rows<{ key: string }>(
@@ -81,6 +89,7 @@ let folder: string;
 let stageBefore: Record<string, Stage>;
 let contentBefore: Awaited<ReturnType<typeof content>>;
 let keysBefore: string[];
+let textsBefore: Record<string, { stage: string; provenance: string }>;
 
 beforeAll(async () => {
   db = await storyDatabase();
@@ -90,6 +99,9 @@ beforeAll(async () => {
   );
   contentBefore = await content(db);
   keysBefore = await publishedKeys(db, SWITCHED);
+  textsBefore = Object.fromEntries(
+    await Promise.all(STORIES.map(async (s) => [s.id, await textsOf(db, s.id)])),
+  );
 }, 120_000);
 
 describe("#526 the new stage 0 waits until each story's switch-over", () => {
@@ -143,6 +155,12 @@ describe("#526 the new stage 0 waits until each story's switch-over", () => {
       without(stageBefore[SWITCHED], SWITCHED_KEYS),
     );
     expect(inputs.next).toBeNull();
+    // #533 review I2: marked as kept outside the repository, so the content scripts leave it.
+    expect(JSON.parse((await textsOf(db, SWITCHED)).provenance)).toMatchObject({
+      outsideRepository: true,
+      switchedOver: true,
+    });
+    expect(JSON.parse((await textsOf(db, WAITING)).provenance).outsideRepository).toBeUndefined();
     // The cards switched too: the new set published, the old keys retired.
     const published = await publishedKeys(db, SWITCHED);
     expect(published).toContain(`crd.opp.${SWITCHED}.p1.c3`);
@@ -174,16 +192,29 @@ describe("#526 the new stage 0 waits until each story's switch-over", () => {
     );
   });
 
+  it("test_533_i2_the_content_import_never_overwrites_a_switched_story", async () => {
+    const switched = await textsOf(db, SWITCHED);
+    const other = await textsOf(db, WAITING);
+    const sql = printed(path.join(root, "scripts", "content", "import.mjs"));
+    expect(await attempt(db, sql)).toBe("ok");
+    // The switched story keeps its new stage 0; the other story is written as before (unchanged).
+    expect(await textsOf(db, SWITCHED)).toEqual(switched);
+    expect((await textsOf(db, WAITING)).stage).toEqual(other.stage);
+    expect((await inputsOf(db, SWITCHED)).stage.slices).toEqual(exported(STORIES[0]).slices);
+  });
+
   it("test_526_ac1_the_undo_waits_when_the_stage_0_changed_after_the_switch", async () => {
+    const { stage } = await textsOf(db, SWITCHED);
     await db.exec(
       `update story_inputs set stage_zero = jsonb_set(stage_zero::jsonb, '{scene,pauseProp}', '"invented cup"')::json where story_id = '${SWITCHED}'`,
     );
     expect(await attempt(db, switchOver(folder, SWITCHED, ...by, "--undo"))).toMatch(
-      /stage 0 slices, steps or scene of story .* changed after the switch-over/,
+      /the stage 0 of story .* changed after the switch-over/,
     );
-    await db.exec(
-      `update story_inputs set stage_zero = jsonb_set(stage_zero::jsonb, '{scene,pauseProp}', '"invented lamp"')::json where story_id = '${SWITCHED}'`,
-    );
+    await db.query(`update story_inputs set stage_zero = $1::json where story_id = $2`, [
+      stage,
+      SWITCHED,
+    ]);
   });
 
   it("test_526_ac1_the_undo_restores_cards_parts_and_the_stage_0_exactly", async () => {
@@ -198,6 +229,8 @@ describe("#526 the new stage 0 waits until each story's switch-over", () => {
     const inputs = await inputsOf(db, SWITCHED);
     expect(inputs.stage).toEqual(stageBefore[SWITCHED]);
     expect(inputs.next).toEqual(exported(STORIES[0]));
+    // #533 review M1: the same text, so an md5 check of the inputs matches again.
+    expect(await textsOf(db, SWITCHED)).toEqual(textsBefore[SWITCHED]);
     expect(await publishedKeys(db, SWITCHED)).toEqual(keysBefore);
     expect(await content(db)).toEqual(contentBefore);
     expect(Object.keys((await waiting(db)) ?? {}).sort()).toEqual(
@@ -217,6 +250,27 @@ describe("#526 the new stage 0 waits until each story's switch-over", () => {
       expect(inputs.stage).toEqual(stageBefore[story.id]);
     }
     expect(await waiting(db)).toEqual({});
+  });
+
+  it("test_533_m6_a_stage_0_whose_steps_do_not_match_the_parts_is_refused", () => {
+    const fewer = writeInventedCardExport({
+      stories: STORIES,
+      stageZero: true,
+      change: (files) => {
+        files[`app/stage0/${SWITCHED}.stage0.json`].steps.pop();
+      },
+    });
+    expect(() => switchOver(fewer, SWITCHED, ...by, "--dry-run")).toThrow(
+      /the steps of .* \(1, 2\) do not match the parts of parts_and_cards\.json \(1, 2, 3\)/,
+    );
+    const elsewhere = writeInventedCardExport({
+      stories: STORIES,
+      stageZero: true,
+      change: (files) => {
+        files[`app/stage0/${SWITCHED}.stage0.json`].steps[1].covers = ["s1"];
+      },
+    });
+    expect(() => keep(elsewhere, "--dry-run")).toThrow(/step 2 of .* does not cover s2/);
   });
 
   it("test_526_a_switch_over_without_the_story_stage_0_file_is_not_printed", () => {

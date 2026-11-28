@@ -48,10 +48,22 @@ export type StoryCardView = {
   problems: string[];
   /** Warnings that do not block Publish: a step card over 4 sentences or 60 words. */
   warnings: string[];
+  /**
+   * #526: the problems the story's NEW stage 0 (waiting for its switch-over) finds and the live
+   * one does not. They do not block Publish (phones still read the live stage 0); they show the
+   * owner, before she switches, what will fail after. Absent when no new stage 0 waits.
+   */
+  afterSwitch?: string[];
   kind: StoryCardRow["kind"];
   part: number | null;
   /** The newest version above the published one that was never published, with its problems. */
-  draft: { version: number; body: string; problems: string[]; warnings: string[] } | null;
+  draft: {
+    version: number;
+    body: string;
+    problems: string[];
+    warnings: string[];
+    afterSwitch?: string[];
+  } | null;
   /**
    * #516: a card a story switch-over retired: no version is published now, one was before, and no
    * draft waits. Phones no longer show it; the story's counts leave it out.
@@ -166,6 +178,9 @@ function shownVersions(cards: StoryCardRow[]): StoryCardRow[] {
 
 const noLeaks: LeaksFor = () => [];
 
+/** #526: the spoiler and scene checks of a story's new stage 0, waiting for its switch-over. */
+export type AfterSwitchChecks = { leaksFor: LeaksFor; scene: SceneCheck | null };
+
 /**
  * One card: its shown version, a newer draft and every version (#304). Each text's problems are
  * the card checks and the whole-Story checks against the Story's published cards (#377), the
@@ -176,12 +191,25 @@ function view(
   all: StoryCardRow[],
   leaksFor: LeaksFor,
   scene: SceneCheck | null | undefined,
+  afterSwitch?: AfterSwitchChecks,
 ): StoryCardView {
   const published = all.filter((entry) => entry.published);
   const problemsOf = (body: string) => [
     ...cardProblems({ kind: row.kind, part: row.part, body }, leaksFor(row.part), scene),
     ...storyRepeatProblems({ ...row, body }, published),
   ];
+  // #526: what only the waiting stage 0 finds (the repeat checks do not read the stage 0).
+  const afterOf = (body: string) => {
+    if (!afterSwitch) return undefined;
+    const live = new Set(
+      cardProblems({ kind: row.kind, part: row.part, body }, leaksFor(row.part), scene),
+    );
+    return cardProblems(
+      { kind: row.kind, part: row.part, body },
+      afterSwitch.leaksFor(row.part),
+      afterSwitch.scene,
+    ).filter((problem) => !live.has(problem));
+  };
   const versions = all
     .filter((entry) => entry.key === row.key)
     .sort((left, right) => right.version - left.version);
@@ -205,6 +233,7 @@ function view(
     words: wordCount(row.body),
     problems: problemsOf(row.body),
     warnings: cardLengthWarnings(row.kind, row.body),
+    ...(afterSwitch ? { afterSwitch: afterOf(row.body) } : {}),
     kind: row.kind,
     part: row.part,
     draft: draft
@@ -213,6 +242,7 @@ function view(
           body: draft.body,
           problems: problemsOf(draft.body),
           warnings: cardLengthWarnings(row.kind, draft.body),
+          ...(afterSwitch ? { afterSwitch: afterOf(draft.body) } : {}),
         }
       : null,
     retired: !current && !draft && versions.some((entry) => entry.published_at !== null),
@@ -242,6 +272,8 @@ export function storyDetail(
   scene?: SceneCheck | null,
   /** The Companion's key code (NAMING), for the story's key. */
   code: string = COMPANION_SHORT,
+  /** #526: the checks of the story's waiting stage 0, shown as warnings; left out, none. */
+  afterSwitch?: AfterSwitchChecks,
 ): StoryDetail | null {
   if (!story) return null;
   const own = cards.filter((row) => row.story_id === story.id);
@@ -259,14 +291,14 @@ export function storyDetail(
     key: `${code}.${story.id}`,
     title: story.title,
     sequence: story.sequence,
-    background: background ? view(background, own, leaksFor, scene) : null,
+    background: background ? view(background, own, leaksFor, scene, afterSwitch) : null,
     parts: numbers.map((part) => ({
       part,
       title: titles.get(part) ?? null,
       cards: partCards
         .filter((row) => row.part === part)
         .sort((left, right) => left.position - right.position)
-        .map((row) => view(row, own, leaksFor, scene)),
+        .map((row) => view(row, own, leaksFor, scene, afterSwitch)),
     })),
   };
 }

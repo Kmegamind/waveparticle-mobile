@@ -19,15 +19,17 @@
 //     one 'story_switch' row for the story, all with the account named by --by;
 //   - #526: replaces slices, steps and scene in the story's stage_zero with the export's stage 0
 //     (app/stage0/<story>.stage0.json; every other value stays, so the display places that
-//     content_fields holds are untouched), and clears the copy waiting in stage_zero_next;
-//   - records what was published, the part titles and the stage 0 values before and after in
-//     private.story_switches (migrations 20261207000000 and 20261209000000).
+//     content_fields holds are untouched), clears the copy waiting in stage_zero_next, and marks
+//     the provenance outsideRepository and switchedOver, so the repository's content export never
+//     writes the new stage 0 to docs/demo and the content import never overwrites it;
+//   - records what was published, the part titles, and the exact stage_zero and provenance text
+//     before and after in private.story_switches (migrations 20261207000000 and 20261209000000).
 // Nothing is printed when the story has no stage 0 file in the export. It stops, changing
 // nothing, when the account is unknown, the story is not his, the story is already switched over,
 // or a card of the new set has no version with the file's text (the draft import has not run).
-// The undo puts back exactly the cards, part titles and stage 0 values of before, with history
+// The undo puts back exactly the cards, part titles and stage 0 text of before, with history
 // rows ('roll_back' for each card published again, 'retire' for each new card that had no earlier
-// version), and stops when any card of the story, or its slices, steps or scene, changed after
+// version), and stops when any card of the story, or its stage_zero, changed after
 // the switch-over. The cards are named by key and md5 only; the part titles and the stage 0 are
 // the only text in the SQL.
 // The card checks of the admin's Publish do not run here: they are TypeScript, and the SQL editor
@@ -149,8 +151,10 @@ export function switchSql(rows, storyId, { by, dryRun = false }) {
     "  before_parts jsonb;",
     "  earlier jsonb := '{}'::jsonb;",
     "  new_stage jsonb;",
-    "  before_stage jsonb;",
+    "  before_stage text;",
+    "  before_provenance text;",
     "  before_next jsonb;",
+    "  after_stage text;",
     "begin",
     ...actorSql(by),
     `  if not exists (select 1 from public.stories where id = target_story and companion_id = '${c.id}') then`,
@@ -171,7 +175,7 @@ export function switchSql(rows, storyId, { by, dryRun = false }) {
     "    raise exception 'card % has no version with the text of the file: run the draft import first (import-drafts.mjs --keep-published); nothing was changed', r.key;",
     "  end if;",
     "  select x.stage into new_stage from import_stage x where x.story_id = target_story;",
-    `  select ${currentStage("i.stage_zero")}, i.stage_zero_next into before_stage, before_next`,
+    "  select i.stage_zero::text, i.provenance::text, i.stage_zero_next into before_stage, before_provenance, before_next",
     "    from public.story_inputs i where i.story_id = target_story for update;",
     "  if not found then",
     "    raise exception 'story % has no story inputs row; nothing was changed', target_story;",
@@ -207,15 +211,19 @@ export function switchSql(rows, storyId, { by, dryRun = false }) {
     "    select target_story, x.part, x.title from import_parts x",
     "    on conflict (story_id, part) do update set title = excluded.title;",
     "  -- #526: the export's slices, steps and scene; every other value of stage_zero (the display",
-    "  -- places, people, voice, ...) stays. The new stage 0 stops waiting in stage_zero_next.",
+    "  -- places, people, voice, ...) stays. The new stage 0 stops waiting in stage_zero_next. The",
+    "  -- provenance marks the story outsideRepository and switchedOver (#533 review I2): the content",
+    "  -- export never writes this stage 0 to docs/demo, and the content import never overwrites it.",
     "  update public.story_inputs",
     "    set stage_zero = ((stage_zero::jsonb - 'slices' - 'steps' - 'scene') || new_stage)::json,",
+    "        provenance = (coalesce(provenance::jsonb, '{}'::jsonb) || '{\"outsideRepository\": true, \"switchedOver\": true}'::jsonb)::json,",
     "        stage_zero_next = null, updated_at = now()",
-    "    where story_id = target_story;",
+    "    where story_id = target_story",
+    "    returning stage_zero::text into after_stage;",
     "  insert into private.story_switches (story_id, switched_by, cards_before, cards_after, parts_before, parts_after, earlier_published_at,",
-    "      stage_zero_before, stage_zero_after, stage_zero_next_before)",
+    "      stage_zero_before, stage_zero_after, provenance_before, stage_zero_next_before)",
     `    values (target_story, actor, before_cards, ${publishedNow("target_story")}, before_parts, ${partsNow("target_story")}, earlier,`,
-    "      before_stage, new_stage, before_next);",
+    "      before_stage, after_stage, before_provenance, before_next);",
     "  select count(*) into switch_number from private.story_switches where story_id = target_story;",
     `  ${history("story_switch", "target_story", "switch_number", "publish")}`,
     "end",
@@ -259,13 +267,15 @@ export function switchUndoSql(rows, storyId, { by, dryRun = false }) {
     "    raise exception 'a card of story % was published, rolled back or retired after the switch-over: the undo changes nothing (roll those cards back in the admin first)', target_story;",
     "  end if;",
     "  -- #526: a switch-over recorded before stage 0 was switched (no stage_zero_after) leaves it alone.",
+    "  -- Otherwise the exact text of stage_zero and provenance of before comes back, so an md5 check",
+    "  -- of the story inputs (import-drafts.mjs --check, #514) matches again.",
     "  if w.stage_zero_after is not null then",
     "    perform 1 from public.story_inputs where story_id = target_story for update;",
-    `    if (select ${currentStage("i.stage_zero")} from public.story_inputs i where i.story_id = target_story) is distinct from w.stage_zero_after then`,
-    "      raise exception 'the stage 0 slices, steps or scene of story % changed after the switch-over: the undo changes nothing', target_story;",
+    "    if (select i.stage_zero::text from public.story_inputs i where i.story_id = target_story) is distinct from w.stage_zero_after then",
+    "      raise exception 'the stage 0 of story % changed after the switch-over: the undo changes nothing', target_story;",
     "    end if;",
     "    update public.story_inputs",
-    "      set stage_zero = ((stage_zero::jsonb - 'slices' - 'steps' - 'scene') || coalesce(w.stage_zero_before, '{}'::jsonb))::json,",
+    "      set stage_zero = w.stage_zero_before::json, provenance = w.provenance_before::json,",
     "          stage_zero_next = w.stage_zero_next_before, updated_at = now()",
     "      where story_id = target_story;",
     "  end if;",

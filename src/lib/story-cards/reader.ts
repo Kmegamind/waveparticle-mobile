@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { DEFAULT_COMPANION_ID } from "@/lib/content/companions";
 import { getFullStoryContent, readStageZeroNextFromSupabase } from "@/lib/content/repository";
 import { companionPeople, sceneCheckOf, type SceneCheck } from "@/lib/content/scene";
+import { logEvent } from "@/lib/logging/server-log";
 import type { StoryCardRow, StoryPartRow, StoryRow } from "./admin";
 import { markWaitingStageZero } from "./checks";
 import { publishProblems } from "./pool-checks";
@@ -39,25 +40,55 @@ export function withWaitingStageZeros(
 
 /**
  * Each story's stage 0 inputs (the spoiler words per slice), from the server's story content read
- * (#284), with the new stage 0 of a story not switched over yet (#526). Null when the story
- * content cannot be read: the spoiler check then cannot run (#304). When only the waiting stage 0
- * cannot be read (before its migration is applied), the stories' own stage 0 is used, as before.
+ * (#284): the LIVE stage 0, the one phones read. Every check that blocks Publish uses it, also for
+ * a story whose new stage 0 waits for its switch-over (#526 review I1): a card published before
+ * the switch-over goes to phones that still read this stage 0. Null when the story content cannot
+ * be read: the spoiler check then cannot run (#304).
  */
-export async function readStageZeros(
-  readWaiting: () => Promise<Record<string, unknown>> = readStageZeroNextFromSupabase,
-): Promise<Map<string, Record<string, unknown>> | null> {
+export async function readStageZeros(): Promise<Map<string, Record<string, unknown>> | null> {
   try {
-    const [content, waiting] = await Promise.all([
-      getFullStoryContent(),
-      readWaiting().catch(() => null),
-    ]);
-    return withWaitingStageZeros(
-      new Map(content.stories.map((story) => [story.id, story.inputs.stageZero])),
-      waiting,
-    );
+    const content = await getFullStoryContent();
+    return new Map(content.stories.map((story) => [story.id, story.inputs.stageZero]));
   } catch {
     return null;
   }
+}
+
+/** The stage 0 as it will be after the switch-overs (#526), for the admin's preview only. */
+export type WaitingStageZeros = {
+  /** Every story's stage 0, with the waiting values in place; null when none can be read. */
+  zeros: Map<string, Record<string, unknown>> | null;
+  /** The stories whose new stage 0 waits for their switch-over. */
+  waiting: Set<string>;
+  /** True when the waiting values could not be read (the preview then shows nothing). */
+  failed: boolean;
+};
+
+/**
+ * #526: the stage 0 of each story as it will be after its switch-over: the waiting slices, steps
+ * and scene (story_inputs.stage_zero_next) in place of the live ones. The story page shows the
+ * problems they find as warnings ("after the switch-over"), never as blocking problems. A failed
+ * read (for example before the migration is applied) is logged and reported in `failed`.
+ */
+export async function readWaitingStageZeros(
+  live: Map<string, Record<string, unknown>> | null,
+  readWaiting: () => Promise<Record<string, unknown>> = readStageZeroNextFromSupabase,
+  log: () => void = () => logEvent("story-content", { event: "stage_zero_next_read_failed" }),
+): Promise<WaitingStageZeros> {
+  let waiting: Record<string, unknown>;
+  try {
+    waiting = await readWaiting();
+  } catch {
+    log();
+    return { zeros: null, waiting: new Set(), failed: true };
+  }
+  if (!live) return { zeros: null, waiting: new Set(), failed: false };
+  const ids = new Set(
+    Object.entries(waiting)
+      .filter(([storyId, next]) => live.has(storyId) && isRecord(next))
+      .map(([storyId]) => storyId),
+  );
+  return { zeros: withWaitingStageZeros(live, waiting), waiting: ids, failed: false };
 }
 
 /**

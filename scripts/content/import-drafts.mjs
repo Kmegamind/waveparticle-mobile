@@ -460,7 +460,7 @@ export function readCardExport(folder, { repo = REPO } = {}) {
   );
   if (withStage.length > 0) {
     for (const story of stories) {
-      const stage = readStageZeroUpdate(base, story.id, cards, problems);
+      const stage = readStageZeroUpdate(base, story.id, cards, parts, problems);
       if (stage) stageZeros.push({ story_id: story.id, stage });
     }
   }
@@ -486,7 +486,7 @@ export const STAGE_ZERO_KEYS = ["slices", "steps", "scene"];
  * the file's slices, and every step's covers must name its slices (SLICE-SUBTASK; the mapping is
  * the file's, not the script's).
  */
-function readStageZeroUpdate(base, id, cards, problems) {
+function readStageZeroUpdate(base, id, cards, parts, problems) {
   const file = path.join("app", "stage0", `${id}.stage0.json`);
   if (!existsSync(path.join(base, file))) {
     problems.push(`${id}: no stage 0 file (${file}); the other stories have one`);
@@ -525,6 +525,33 @@ function readStageZeroUpdate(base, id, cards, problems) {
       problems.push(
         `${id}: card ${card.key} is in slice ${card.slice}, which ${file} does not have`,
       );
+    }
+  }
+  // #533 review M6: the steps match the deck's parts: one step per part, numbered as the parts,
+  // and step n covers every slice the cards of part n sit in. Nothing is moved to make them match.
+  const partNumbers = [...new Set(parts.filter((p) => p.story_id === id).map((p) => p.part))].sort(
+    (a, b) => a - b,
+  );
+  const stepNumbers = steps.map((step) => (isRow(step) ? step.n : undefined));
+  if (stepNumbers.join(",") !== partNumbers.join(",")) {
+    problems.push(
+      `${id}: the steps of ${file} (${stepNumbers.join(", ")}) do not match the parts of parts_and_cards.json (${partNumbers.join(", ")})`,
+    );
+  } else {
+    for (const step of steps) {
+      const covers = new Set(Array.isArray(step.covers) ? step.covers : []);
+      const missing = [
+        ...new Set(
+          cards
+            .filter((card) => card.story_id === id && card.kind === "part" && card.part === step.n)
+            .map((card) => card.slice),
+        ),
+      ].filter((slice) => !covers.has(slice));
+      if (missing.length > 0) {
+        problems.push(
+          `${id}: step ${step.n} of ${file} does not cover ${missing.join(", ")}, the slice of part ${step.n}'s cards`,
+        );
+      }
     }
   }
   if (problems.length > before) return undefined;
