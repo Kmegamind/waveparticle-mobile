@@ -15,10 +15,15 @@ test("#480 Replay intro plays the slides and Next reaches the last one", async (
   await page.goto("/me");
   await page.getByRole("link", { name: "Replay intro" }).click();
   await expect(page).toHaveURL(/\/me\/intro$/);
-  await expect(page.getByText(/^Step 1 of \d$/)).toBeVisible();
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByText(/^1 of \d$/)).toBeVisible();
+  const title = page.getByRole("heading", { level: 1 });
+  await expect(title).toBeVisible();
   const next = page.getByRole("button", { name: "Next" });
-  while (await next.isVisible()) await next.click();
+  while (await next.isVisible()) {
+    await next.click();
+    // Focus follows to the new heading, also on the last slide where Next becomes Done.
+    await expect(title).toBeFocused();
+  }
   await expect(page.getByRole("link", { name: "Done" })).toBeVisible();
   await page.getByRole("link", { name: "Done" }).click();
   await expect(page).toHaveURL(/\/me$/);

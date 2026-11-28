@@ -44,7 +44,11 @@ describe("#480 Replay intro", () => {
   it("the first slide shows Next and Skip, and Skip goes back to Me", () => {
     const html = renderToStaticMarkup(createElement(IntroPlayer));
     expect(html).toContain(INTRO_SLIDES[0].title);
-    expect(html).toMatch(/Step 1 of \d/);
+    expect(html).toMatch(/>1 of \d</);
+    expect(html).not.toMatch(/Step \d/);
+    // The heading takes focus on a slide change and is described by the body.
+    expect(html).toMatch(/<h1[^>]*aria-describedby="intro-body"[^>]*tabindex="-1"/);
+    expect(html).toContain('id="intro-body"');
     expect(html).toMatch(/<button[^>]*>Next</);
     expect(html).toMatch(/href="\/me"[^>]*>Skip</);
   });
