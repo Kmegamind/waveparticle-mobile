@@ -158,7 +158,7 @@ describe("#526 the new stage 0 waits until each story's switch-over", () => {
     // #533 review I2: marked as kept outside the repository, so the content scripts leave it.
     expect(JSON.parse((await textsOf(db, SWITCHED)).provenance)).toMatchObject({
       outsideRepository: true,
-      switchedOver: true,
+      switchedOver: "repository",
     });
     expect(JSON.parse((await textsOf(db, WAITING)).provenance).outsideRepository).toBeUndefined();
     // The cards switched too: the new set published, the old keys retired.
@@ -236,6 +236,32 @@ describe("#526 the new stage 0 waits until each story's switch-over", () => {
     expect(Object.keys((await waiting(db)) ?? {}).sort()).toEqual(
       [...STORIES.map((s) => s.id)].sort(),
     );
+  });
+
+  it("test_533_r2_i1_a_story_already_outside_the_repository_is_marked_outside", async () => {
+    // As a #502 draft import: the story's inputs were never in the repository.
+    const before = await textsOf(db, WAITING);
+    await db.query(
+      `update story_inputs set provenance = (provenance::jsonb || '{"outsideRepository": true}'::jsonb)::json where story_id = $1`,
+      [WAITING],
+    );
+    const marked = await textsOf(db, WAITING);
+    expect(await attempt(db, switchOver(folder, WAITING, ...by))).toBe("ok");
+    expect(JSON.parse((await textsOf(db, WAITING)).provenance)).toMatchObject({
+      outsideRepository: true,
+      switchedOver: "outside",
+    });
+    const check = await rows<{ item: string; result: string }>(
+      db,
+      switchOver(folder, WAITING, "--check"),
+    );
+    expect(check.find((row) => row.item === "provenance")?.result).toBe("ok");
+    expect(await attempt(db, switchOver(folder, WAITING, ...by, "--undo"))).toBe("ok");
+    expect(await textsOf(db, WAITING)).toEqual(marked);
+    await db.query(`update story_inputs set provenance = $1::json where story_id = $2`, [
+      before.provenance,
+      WAITING,
+    ]);
   });
 
   it("test_526_the_import_undo_clears_the_waiting_stage_0", async () => {

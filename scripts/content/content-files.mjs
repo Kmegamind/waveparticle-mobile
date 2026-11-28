@@ -283,7 +283,10 @@ export function contentFilesOf(document) {
     // #526 (#533 review I2): a repository story switched over to the owner's regenerated stage 0
     // keeps its record (written as before, without the two marks) and its periods, but its stage 0
     // file is not written: docs/demo keeps the placeholder, and the new text never enters git.
-    const switchedOver = inputs.provenance?.switchedOver === true;
+    // Only a story that was in the repository before its switch-over (switchedOver "repository");
+    // one that was already outside it ("outside", a #502 draft import) is still skipped entirely
+    // (#533 review R2-I1).
+    const switchedOver = inputs.provenance?.switchedOver === "repository";
     if (inputs.provenance?.outsideRepository === true && !switchedOver) continue;
     if (!companionIds.has(story.companion_id)) {
       throw new Error(`story ${story.id} names an unknown Companion: ${story.companion_id}`);

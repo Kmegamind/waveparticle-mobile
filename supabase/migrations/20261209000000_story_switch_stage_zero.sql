@@ -12,7 +12,7 @@
 --    replaced and the stage_zero it wrote, and the waiting value it cleared, so the undo puts the
 --    same text back (an md5 check of the story inputs matches again). Null on a switch-over
 --    recorded before this migration (its undo leaves stage_zero alone, as it did then).
---    The switch-over also marks the story's provenance outsideRepository and switchedOver: the
+--    The switch-over also marks the story's provenance outsideRepository and switchedOver ("repository", or "outside" when it was already outside the repository): the
 --    repository's content export (scripts/content/export.mjs) then never writes its new stage 0
 --    to docs/demo, and the content import (scripts/content/import.mjs) never overwrites it.
 -- 3. get_story_stage_zero_next(reader_key): the waiting values by story, for the server's reader

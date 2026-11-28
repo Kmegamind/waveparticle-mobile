@@ -1,4 +1,4 @@
-import { cpSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -41,7 +41,11 @@ describe("#533 review I2 a switched story stays out of the repository's files", 
     const document = exportDocument(readContentRows(root));
     const inputs = (document.story_inputs as Inputs[]).find((row) => row.story_id === story)!;
     inputs.stage_zero.slices = [{ id: "s1", leaks: ["Inventaleakexport"] }];
-    inputs.provenance = { ...inputs.provenance, outsideRepository: true, switchedOver: true };
+    inputs.provenance = {
+      ...inputs.provenance,
+      outsideRepository: true,
+      switchedOver: "repository",
+    };
     const written = writeContentFiles(document, directory);
     // Nothing changes: the stage 0 file keeps the placeholder, the record keeps its provenance.
     expect(written).toEqual([]);
@@ -63,5 +67,35 @@ describe("#533 review I2 a switched story stays out of the repository's files", 
         /where coalesce\(public\.story_inputs\.provenance::jsonb ->> 'outsideRepository', ''\) <> 'true'/,
       );
     }
+  });
+
+  it("test_533_r2_i1_a_story_outside_the_repository_before_its_switch_is_not_exported", () => {
+    const directory = copyOfContent();
+    const document = exportDocument(readContentRows(root));
+    // An invented #502 story of another Companion (no src/content folder), switched over.
+    const template = document.stories.find((row: { id: string }) => row.id === "trinity")!;
+    const inputsOf = (document.story_inputs as Inputs[]).find((row) => row.story_id === "trinity")!;
+    document.stories.push({
+      ...template,
+      id: "inv-outside-story",
+      companion_id: "moriarty",
+      sequence: 1,
+    });
+    document.story_inputs.push({
+      ...structuredClone(inputsOf),
+      story_id: "inv-outside-story",
+      provenance: {
+        note: "Invented draft import.",
+        outsideRepository: true,
+        switchedOver: "outside",
+      },
+    });
+    const written = writeContentFiles(document, directory);
+    expect(written).toEqual([]);
+    expect(existsSync(path.join(directory, CONTENT_FILES.stories("moriarty")))).toBe(false);
+    // The content import still prints, for every Companion.
+    const sql = importSql(readContentRows(directory));
+    expect(sql).toContain("insert into public.story_inputs");
+    expect(sql).not.toContain("inv-outside-story");
   });
 });
