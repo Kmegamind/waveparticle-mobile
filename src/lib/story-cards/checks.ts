@@ -1,8 +1,9 @@
 import { BANNED } from "@/lib/model-gateway/checks";
-import { cardLengthProblems, type LeaksFor, type StoryCardRow } from "./admin";
+import { cardLengthProblems, cardLengthWarnings, type LeaksFor, type StoryCardRow } from "./admin";
 
 // The checks the admin runs on every save of a story card (#304), each failure in plain words:
-// CARD-LENGTH (LEN-CARD), no year, date or age (DATES-ADMIN-ONLY), the spoiler check against the
+// CARD-LENGTH (the background card's 70 words; a step card's 4 sentences and 60 words is only a
+// warning, LEN-CARD-WIDE), no year, date or age (DATES-ADMIN-ONLY), the spoiler check against the
 // parts after the card's own part (LEAK-BY-PART) and the banned words already in code. A card with
 // any problem cannot be published. Server code only.
 
@@ -174,6 +175,11 @@ export function cardProblems(
   const banned = card.body.match(BANNED);
   if (banned) problems.push(`Uses a banned word ("${banned[0]}").`);
   return problems;
+}
+
+/** The warnings of one card's text: they never block Publish (LEN-CARD-WIDE). */
+export function cardWarnings(card: { kind: "background" | "part"; body: string }): string[] {
+  return cardLengthWarnings(card.kind, card.body);
 }
 
 /** Which part each slice's cards sit in, from a story's card rows (every version). */

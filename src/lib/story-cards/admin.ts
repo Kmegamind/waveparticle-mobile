@@ -46,10 +46,12 @@ export type StoryCardView = {
   words: number;
   /** The shown version's problems (the #304 checks); empty when it passes. */
   problems: string[];
+  /** Warnings that do not block Publish: a step card over 4 sentences or 60 words. */
+  warnings: string[];
   kind: StoryCardRow["kind"];
   part: number | null;
   /** The newest version above the published one that was never published, with its problems. */
-  draft: { version: number; body: string; problems: string[] } | null;
+  draft: { version: number; body: string; problems: string[]; warnings: string[] } | null;
   /**
    * #516: a card a story switch-over retired: no version is published now, one was before, and no
    * draft waits. Phones no longer show it; the story's counts leave it out.
@@ -88,7 +90,7 @@ export type StoryDetail = {
   parts: { part: number; title: string | null; cards: StoryCardView[] }[];
 };
 
-/** LEN-CARD-WIDE (2026-11-27): a step story card is 1 to 4 sentences and at most 60 words. */
+/** LEN-CARD-WIDE: a made-ahead step story card is 1 to 4 sentences, at most 60 words (a warning). */
 export const PART_CARD_MAX_WORDS = 60;
 export const PART_CARD_MAX_SENTENCES = 4;
 /** The background card is at most 70 words. */
@@ -116,19 +118,34 @@ export function sentenceCount(text: string): number {
   return count;
 }
 
-/** The ways one card breaks CARD-LENGTH, in words the admin shows. */
+/**
+ * The ways one card breaks CARD-LENGTH that block it, in words the admin shows. Only the
+ * background card's 70 words blocks; a step card's limit is a warning (LEN-CARD-WIDE, below).
+ */
 export function cardLengthProblems(kind: StoryCardRow["kind"], text: string): string[] {
-  const problems: string[] = [];
   const words = wordCount(text);
-  const maxWords = kind === "background" ? BACKGROUND_CARD_MAX_WORDS : PART_CARD_MAX_WORDS;
-  if (words > maxWords) problems.push(`${words} words; the limit is ${maxWords}.`);
-  if (kind === "part") {
-    const sentences = sentenceCount(text);
-    if (sentences > PART_CARD_MAX_SENTENCES) {
-      problems.push(`${sentences} sentences; the limit is ${PART_CARD_MAX_SENTENCES}.`);
-    }
+  return kind === "background" && words > BACKGROUND_CARD_MAX_WORDS
+    ? [`${words} words; the limit is ${BACKGROUND_CARD_MAX_WORDS}.`]
+    : [];
+}
+
+/**
+ * LEN-CARD-WIDE (owner decision, 2026-11-28): a made-ahead step card over 4 sentences or 60
+ * words is a warning: shown in the admin and by `npm run check:export-cards`, never blocking
+ * Publish, the switch-over check or the export check.
+ */
+export function cardLengthWarnings(kind: StoryCardRow["kind"], text: string): string[] {
+  if (kind !== "part") return [];
+  const warnings: string[] = [];
+  const words = wordCount(text);
+  if (words > PART_CARD_MAX_WORDS) {
+    warnings.push(`${words} words; the usual limit is ${PART_CARD_MAX_WORDS}.`);
   }
-  return problems;
+  const sentences = sentenceCount(text);
+  if (sentences > PART_CARD_MAX_SENTENCES) {
+    warnings.push(`${sentences} sentences; the usual limit is ${PART_CARD_MAX_SENTENCES}.`);
+  }
+  return warnings;
 }
 
 /** Each card's shown version: the published one, otherwise the newest. */
@@ -187,10 +204,16 @@ function view(
     body: row.body,
     words: wordCount(row.body),
     problems: problemsOf(row.body),
+    warnings: cardLengthWarnings(row.kind, row.body),
     kind: row.kind,
     part: row.part,
     draft: draft
-      ? { version: draft.version, body: draft.body, problems: problemsOf(draft.body) }
+      ? {
+          version: draft.version,
+          body: draft.body,
+          problems: problemsOf(draft.body),
+          warnings: cardLengthWarnings(row.kind, draft.body),
+        }
       : null,
     retired: !current && !draft && versions.some((entry) => entry.published_at !== null),
     versions: versions.map((entry) => {

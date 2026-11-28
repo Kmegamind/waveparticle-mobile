@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import decks from "@/content/oppenheimer/story-decks.json";
-import { cardProblems, datesProblems, laterPartLeaks } from "@/lib/story-cards/checks";
+import {
+  cardProblems,
+  cardWarnings,
+  datesProblems,
+  laterPartLeaks,
+} from "@/lib/story-cards/checks";
 
 // #304 AC3: the checks every save of a story card runs in the admin.
 
@@ -89,7 +94,12 @@ describe("story card checks (#304)", () => {
 
   it("test_304_ac3_length_problems_are_listed", () => {
     const long = Array.from({ length: 61 }, () => "word").join(" ") + ".";
-    expect(cardProblems(part(long), [])).toEqual(["61 words; the limit is 60."]);
+    expect(cardProblems(part(long), [])).toEqual([]);
+    expect(cardWarnings(part(long))).toEqual(["61 words; the usual limit is 60."]);
+    const background = Array.from({ length: 71 }, () => "word").join(" ") + ".";
+    expect(cardProblems({ kind: "background", part: null, body: background }, [])).toEqual([
+      "71 words; the limit is 70.",
+    ]);
   });
 
   it("test_304_unreadable_story_inputs_block_the_card", () => {
