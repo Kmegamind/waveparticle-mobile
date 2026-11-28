@@ -48,7 +48,7 @@ The public code interfaces today are listed below, one file per interface in thi
 - [src/lib/safety/keyword.ts](safety-keyword.md): `checkSafetyText(text)` returns `{ tier, flagged }` and does not return the text.
 - [src/app/_session/paths.ts](session-paths.md): `accountPathsFor(sessionId)` is `ACCOUNT_PATHS` with `end` set to `/end?session=<id>`.
 - [src/lib/prototype/split-goal.ts](split-goal.md): `splitGoal(input, deps)`, the logic behind that action: safety gate first, then the model gateway (when `MODEL_API_KEY`, `MODEL_API_URL` and `MODEL_NAME` are set) or the test-data splitter.
-- [Story draft import (#502)](story-draft-import.md): A Companion's stories, part titles and cards, imported as **drafts** from the owner's story-pipeline export folder, which stays outside the repository (`docs/decisions/0038`).
+- [Story draft import (#502, #516)](story-draft-import.md): A Companion's stories, part titles and cards, imported as **drafts** from the owner's story-pipeline export folder, which stays outside the repository (`docs/decisions/0038`).
 - [src/lib/prototype/story-inputs.ts](story-inputs.md): server-only inputs of the 26 Oppenheimer stories on the test path (#254), from `docs/demo/<story-id>.stage0.json` (AI-drafted, unreviewed, see each file's `_note`).
 - [src/lib/story/start.ts](story-start.md): `startStory(story, plan)` builds the brief for pressing Start.
 - [src/lib/summary/finish-run.ts](summary-finish-run.md)

@@ -240,7 +240,9 @@ export function snapshotOf(sessionId: string, session: FocusSession): FocusSnaps
 }
 
 const MAX_LINE_LENGTH = 2_000;
-const MAX_CARD_SEQ = 20;
+// A card's place in its Step. A one-Step Plan holds the story's whole deck, and a regenerated deck
+// can hold dozens of cards (#516), so the bound only stops a malformed snapshot.
+const MAX_CARD_SEQ = 200;
 const RECORDED_KINDS: LineKind[] = ["background", "story_card", "pause_message", "return_popup"];
 
 function isWholeNumber(value: unknown, min: number, max: number): value is number {

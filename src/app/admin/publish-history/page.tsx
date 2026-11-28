@@ -89,8 +89,8 @@ async function PublishHistoryTable() {
               </td>
               <td>
                 <KeyChip>v{entry.version}</KeyChip>
-                {entry.actionLabel === "Rolled back" ? (
-                  <span className="admin-cell-note"> Rolled back</span>
+                {entry.actionLabel !== "Published" ? (
+                  <span className="admin-cell-note"> {entry.actionLabel}</span>
                 ) : null}
               </td>
               <td>

@@ -50,6 +50,11 @@ export type StoryCardView = {
   part: number | null;
   /** The newest version above the published one that was never published, with its problems. */
   draft: { version: number; body: string; problems: string[] } | null;
+  /**
+   * #516: a card a story switch-over retired: no version is published now, one was before, and no
+   * draft waits. Phones no longer show it; the story's counts leave it out.
+   */
+  retired: boolean;
   /** Newest first. Roll back is offered on every version that was published before. */
   versions: {
     version: number;
@@ -187,6 +192,7 @@ function view(
     draft: draft
       ? { version: draft.version, body: draft.body, problems: problemsOf(draft.body) }
       : null,
+    retired: !current && !draft && versions.some((entry) => entry.published_at !== null),
     versions: versions.map((entry) => {
       const state: StoryCardVersionState = entry.published
         ? "published"
@@ -266,13 +272,16 @@ export function storyList(
         ...(detail.background ? [detail.background] : []),
         ...detail.parts.flatMap((part) => part.cards),
       ];
+      // #516: a part that only holds cards a switch-over retired, with no title, is not counted.
+      const live = (part: StoryDetail["parts"][number]) =>
+        part.cards.filter((card) => !card.retired);
       return {
         id: detail.id,
         key: detail.key,
         title: detail.title,
         sequence: detail.sequence,
-        parts: detail.parts.length,
-        cards: detail.parts.reduce((sum, part) => sum + part.cards.length, 0),
+        parts: detail.parts.filter((part) => part.title !== null || live(part).length > 0).length,
+        cards: detail.parts.reduce((sum, part) => sum + live(part).length, 0),
         background: detail.background !== null,
         failing: all.filter((entry) => entry.problems.length > 0).length,
       };

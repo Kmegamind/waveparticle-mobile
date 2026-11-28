@@ -9,6 +9,8 @@
 //        with the seed rows, so other tests never see them; save_story_card_draft works on its
 //        cards. extraVersions adds n later draft versions of one card (#514: more rows than one
 //        API page; the story tables answer at most 1000 rows per request, as the hosted API).
+//   POST /__drafts { token, load: "oppenheimer" }   #516: that account reads invented new cards of
+//        one Oppenheimer story as drafts next to his published placeholders (keptDraftTables)
 //   get_story_content returns the invented stories for every reader (phones show only
 //        Oppenheimer's stories, and his Companion row has no Enter), as after the real import.
 
@@ -17,7 +19,8 @@ import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readDraftExport } from "../../scripts/content/import-drafts.mjs";
+import { readCardExport, readDraftExport } from "../../scripts/content/import-drafts.mjs";
+import { writeInventedCardExport } from "./invented-card-export.mjs";
 
 const repo = fileURLToPath(new URL("../..", import.meta.url));
 
@@ -145,6 +148,46 @@ export function draftTables(extraVersions = 0) {
       published_at: null,
     })),
   };
+}
+
+// ---- #516: Oppenheimer's regenerated cards as drafts next to his published placeholders --------
+
+/** The story whose invented new cards `/__drafts { load: "oppenheimer" }` adds as drafts. */
+export const KEPT_STORY = "tolman-lecture";
+/** Its new deck: five parts (the placeholders have four), cards per part. */
+export const KEPT_CARDS = [2, 6, 3, 1, 2];
+
+const kept = readCardExport(
+  writeInventedCardExport({ stories: [{ id: KEPT_STORY, cards: KEPT_CARDS }] }),
+);
+
+/**
+ * The rows the --keep-published import adds for that story: each card of the new set as a draft,
+ * version 2 of a key that has a published placeholder (`seedKeys`), version 1 of a new key. The
+ * placeholders themselves are not touched (the database test runs the real SQL).
+ * @param {Set<string>} seedKeys
+ */
+export function keptDraftTables(seedKeys) {
+  return {
+    story_cards: kept.cards.map((card) => ({
+      ...card,
+      version: seedKeys.has(card.key) ? 2 : 1,
+      published: false,
+      published_at: null,
+    })),
+  };
+}
+
+/**
+ * An invented deck of one story with `cards` cards per part, as published version 1 rows: the
+ * stand-in's get_story_cards then answers it for that story (#516 AC5: 3, 4 or 5 parts).
+ * @param {string} storyId
+ * @param {number[]} cards
+ */
+export function inventedDeckRows(storyId, cards) {
+  return readCardExport(writeInventedCardExport({ stories: [{ id: storyId, cards }] })).cards.map(
+    (card) => ({ ...card, version: 1, published: true, published_at: "2026-11-27T00:00:00Z" }),
+  );
 }
 
 /** The invented stories as get_story_content returns them (screen lines empty until published). */

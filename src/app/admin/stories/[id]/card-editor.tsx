@@ -276,12 +276,13 @@ export function CardEditor({
       </div>
 
       <div className="admin-cards-meta" data-testid="card-meta">
-        <StatePill state={card.published ? "published" : "draft"}>
-          {card.published ? "Published" : "Draft"}
+        <StatePill state={card.published ? "published" : card.retired ? "earlier" : "draft"}>
+          {card.published ? "Published" : card.retired ? "Retired" : "Draft"}
         </StatePill>
         {shownFailing ? <StatePill state="failed">Check failed</StatePill> : null}
         <span className="admin-cards-note">
-          <KeyChip>v{card.version}</KeyChip>, {card.published ? "published" : "draft"}
+          <KeyChip>v{card.version}</KeyChip>,{" "}
+          {card.published ? "published" : card.retired ? "retired" : "draft"}
         </span>
         <div className="admin-cards-buttons">
           <button

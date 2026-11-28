@@ -29,6 +29,9 @@ export const PUBLISH_HISTORY_KINDS = {
   story_field: "Story field",
   prompt: "Prompt",
   hotline: "Hotline",
+  // #516: a story switched over to its regenerated cards (or the switch-over undone), by the SQL
+  // of scripts/content/switch-story.mjs; it has no Roll back button (the undo is that SQL too).
+  story_switch: "Story switch-over",
 } as const;
 export type PublishHistoryKind = keyof typeof PUBLISH_HISTORY_KINDS;
 
@@ -45,7 +48,7 @@ export type PublishHistoryEntry = {
   kindLabel: string;
   key: string;
   version: number;
-  actionLabel: "Published" | "Rolled back";
+  actionLabel: "Published" | "Rolled back" | "Retired";
   person: string;
   time: string;
   dateTime: string;
@@ -61,6 +64,13 @@ const ADMIN_ONLY_KINDS: ReadonlySet<string> = new Set([
   "prompt",
   "hotline",
 ]);
+
+/** The words of each history action; 'retire' is a card a story switch-over took off (#516). */
+const ACTION_LABELS: Record<string, PublishHistoryEntry["actionLabel"]> = {
+  publish: "Published",
+  roll_back: "Rolled back",
+  retire: "Retired",
+};
 
 const isKnownKind = (kind: string): kind is PublishHistoryKind =>
   Object.hasOwn(PUBLISH_HISTORY_KINDS, kind);
@@ -116,13 +126,19 @@ export function publishHistoryEntries(
       kindLabel: isKnownKind(row.kind) ? PUBLISH_HISTORY_KINDS[row.kind] : row.kind,
       key: row.item_key,
       version: row.version,
-      actionLabel: row.action === "roll_back" ? "Rolled back" : "Published",
+      actionLabel: Object.hasOwn(ACTION_LABELS, row.action)
+        ? ACTION_LABELS[row.action]
+        : "Published",
       person: personOf(row),
       time: formatHistoryTime(row.acted_at),
       dateTime: row.acted_at,
       isCurrent: row.is_current,
+      // #516: a retired card has no published version to roll back from, and a switch-over is
+      // undone with its own SQL, so neither offers Roll back.
       canRollBack:
         !row.is_current &&
+        row.action !== "retire" &&
+        row.kind !== "story_switch" &&
         isKnownKind(row.kind) &&
         (!ADMIN_ONLY_KINDS.has(row.kind) || role === "admin"),
     }));
