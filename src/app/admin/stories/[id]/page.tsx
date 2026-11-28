@@ -7,6 +7,7 @@ import {
   COMPANION_ID,
   readStageZeros,
   readStoryCardsData,
+  readWaitingStageZeros,
   sceneCheckFor,
 } from "@/lib/story-cards/reader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -36,6 +37,16 @@ export default async function AdminStory({ params }: PageProps<"/admin/stories/[
   const story = data.stories.find((row) => row.id === id);
   if (data.ok && !story) notFound();
   const leaks = leaksForStory(data.cards, zeros?.get(id) ?? null);
+  // #526: a story whose new stage 0 waits for its switch-over also shows, as warnings, what that
+  // stage 0 finds. Publish is checked against the live stage 0 only (phones read that one).
+  const after = await readWaitingStageZeros(zeros);
+  const afterSwitch =
+    after.zeros && after.waiting.has(id)
+      ? {
+          leaksFor: leaksForStory(data.cards, after.zeros.get(id) ?? null),
+          scene: sceneCheckFor(after.zeros, id),
+        }
+      : undefined;
   const detail = story
     ? storyDetail(
         story,
@@ -44,6 +55,7 @@ export default async function AdminStory({ params }: PageProps<"/admin/stories/[
         leaks,
         sceneCheckFor(zeros, id),
         data.companion?.key_code,
+        afterSwitch,
       )
     : null;
   // #502: the Stories list of this story's Companion; Oppenheimer's keeps its plain address.
@@ -80,6 +92,12 @@ export default async function AdminStory({ params }: PageProps<"/admin/stories/[
         <p className="admin-notice" role="alert">
           The story inputs could not be read, so the spoiler check cannot run. Nothing can be
           published until it can.
+        </p>
+      ) : null}
+      {after.failed ? (
+        <p className="admin-notice" role="status">
+          The new stage 0 waiting for the switch-over could not be read, so the warnings for after
+          the switch-over are not shown. Run npm run check:export-cards before switching a story.
         </p>
       ) : null}
       {!data.ok || !detail || !role ? (

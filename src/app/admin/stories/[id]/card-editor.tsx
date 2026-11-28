@@ -32,6 +32,21 @@ const noSubscription = () => () => {};
 const checks = (count: number) => (count === 1 ? "1 check" : `${count} checks`);
 
 /**
+ * #526: what the story's new stage 0, waiting for its switch-over, finds that the live one does
+ * not. Warnings only: Publish is checked against the live stage 0, which phones read.
+ */
+function AfterSwitchList({ label, problems }: { label: string; problems?: string[] }) {
+  if (!problems || problems.length === 0) return null;
+  return (
+    <ul aria-label={label} className="admin-cards-warns">
+      {problems.map((problem) => (
+        <li key={problem}>After the switch-over: {problem} This does not block Publish now.</li>
+      ))}
+    </ul>
+  );
+}
+
+/**
  * One card on ADM-06 (#304), as a row of the prototype's cards editor (#444): kind, then its text
  * with the checks, a newer draft, the text box (after Edit), versions and roll back, then its
  * state, version and buttons.
@@ -151,6 +166,7 @@ export function CardEditor({
             ))}
           </ul>
         ) : null}
+        <AfterSwitchList label="After the switch-over" problems={card.afterSwitch} />
         <p className="admin-cards-facts">
           {card.words} words ·{" "}
           {lengthFails
@@ -184,6 +200,10 @@ export function CardEditor({
                 ))}
               </ul>
             ) : null}
+            <AfterSwitchList
+              label="After the switch-over, the draft"
+              problems={draft.afterSwitch}
+            />
           </section>
         ) : null}
         {blocked ? (

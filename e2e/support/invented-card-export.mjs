@@ -19,13 +19,54 @@ export const newCardText = (storyId, part, position) =>
 /** The invented title of a new part. */
 export const newPartTitle = (part) => `Invented new aim ${part}`;
 
+/** #526: the invented spoiler word of a slice of the new stage 0 (one slice per part). */
+export const newLeakWord = (storyId, part) => `Inventaleak${part}${storyId.replace(/-/g, "")}`;
+
+/**
+ * #526: an invented new stage 0 file (app/stage0/<story>.stage0.json) for a story of `parts`
+ * parts: one slice per part (sK = part K, as the story pipeline writes it), one step per part
+ * covering its slice, and a scene. Its display texts are invented too; the import never reads them.
+ */
+export function newStageZero(storyId, parts) {
+  return {
+    who: `Invented export who line of ${storyId}.`,
+    story: { title: `Invented title of ${storyId}`, goalShort: "Invented export goal sentence." },
+    whereNow: { s1: "Invented export place." },
+    slices: Array.from({ length: parts }, (_, at) => ({
+      id: `s${at + 1}`,
+      priority: 1,
+      facts: [`Invented new fact of part ${at + 1}.`],
+      leaks: [newLeakWord(storyId, at + 1)],
+    })),
+    steps: Array.from({ length: parts }, (_, at) => ({
+      n: at + 1,
+      title: newPartTitle(at + 1),
+      covers: [`s${at + 1}`],
+    })),
+    scene: {
+      present: ["Oppenheimer"],
+      allowedWords: ["Invented"],
+      pauseProp: "invented lamp",
+      laterWords: [],
+      props: ["invented lamp"],
+    },
+  };
+}
+
 /**
  * Writes an invented export folder and returns its path.
  * @param {{ companionId?: string, stories: { id: string, cards: number[] }[],
- *   change?: (files: Record<string, any>) => void }} options
+ *   stageZero?: boolean, change?: (files: Record<string, any>) => void }} options
  *   `cards` holds the number of cards of each part: [3, 4, 2] is a story with three parts.
+ *   `stageZero` also writes each story's new stage 0 file (#526); without it the export is
+ *   cards only, as #516's.
  */
-export function writeInventedCardExport({ companionId = "oppenheimer", stories, change }) {
+export function writeInventedCardExport({
+  companionId = "oppenheimer",
+  stories,
+  stageZero = false,
+  change,
+}) {
   const own = JSON.parse(readFileSync(path.join(repo, "src/content/companions.json"), "utf8")).find(
     (row) => row.id === companionId,
   );
@@ -65,6 +106,11 @@ export function writeInventedCardExport({ companionId = "oppenheimer", stories, 
       })),
     },
   };
+  if (stageZero) {
+    for (const { id, cards } of stories) {
+      files[`app/stage0/${id}.stage0.json`] = newStageZero(id, cards.length);
+    }
+  }
   change?.(files);
   const base = mkdtempSync(path.join(tmpdir(), "wp-invented-cards-"));
   for (const [file, value] of Object.entries(files)) {

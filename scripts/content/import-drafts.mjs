@@ -42,7 +42,12 @@
 //   - a new key (a seventh card, a fifth part) is added as a draft, version 1;
 //   - an old key the file does not have stays published until that story's switch-over
 //     (scripts/content/switch-story.mjs), which also sets the part titles to the new count;
-//   - no Companion, story, part title, input or field row is written.
+//   - no Companion, story, part title or field row is written;
+//   - #526: when the export has app/stage0/<story>.stage0.json files (then for every story), each
+//     story's new slices, steps and scene wait in story_inputs.stage_zero_next for its switch-over
+//     (migration 20261209000000). stage_zero, which phones read, is not touched; a story already
+//     switched over is left alone; the undo clears them. Without stage 0 files, no input row is
+//     written, as before.
 // The import's own drafts are the versions no editor wrote (created_by null) and nobody ever
 // published, above the key's last published version. A run writes them again with the file's
 // text and removes those of keys the file no longer has; a key whose newest version already holds
@@ -447,6 +452,18 @@ export function readCardExport(folder, { repo = REPO } = {}) {
     readDeck(deck, id, own.keyCode, parts, cards, problems);
     stories.push({ id });
   }
+  // #526: each story's new stage 0 (slices, steps, scene), when the export has a stage 0 folder.
+  // Either every story of the export has its file or none has (a cards-only export of #516).
+  const stageZeros = [];
+  const withStage = stories.filter((story) =>
+    existsSync(path.join(base, "app", "stage0", `${story.id}.stage0.json`)),
+  );
+  if (withStage.length > 0) {
+    for (const story of stories) {
+      const stage = readStageZeroUpdate(base, story.id, cards, parts, problems);
+      if (stage) stageZeros.push({ story_id: story.id, stage });
+    }
+  }
   for (const part of parts) {
     if (part.title.length > PART_TITLE_LIMIT) {
       problems.push(
@@ -455,7 +472,90 @@ export function readCardExport(folder, { repo = REPO } = {}) {
     }
   }
   if (problems.length > 0) throw new Error(refusal(problems));
-  return { companion: { id: own.id, key_code: own.keyCode }, stories, parts, cards };
+  return { companion: { id: own.id, key_code: own.keyCode }, stories, parts, cards, stageZeros };
+}
+
+/** The stage 0 values a switch-over replaces (#526); every other key of stage_zero stays. */
+export const STAGE_ZERO_KEYS = ["slices", "steps", "scene"];
+
+/**
+ * #526: the slices, steps and scene of one story's export stage 0 file
+ * (app/stage0/<story>.stage0.json), or undefined with a problem. Nothing is filled in: a missing
+ * or malformed value stops the script. The display texts in the file (who, story.goalShort,
+ * whereNow.s1) are not read: content_fields holds them. Every part card's slice must be one of
+ * the file's slices, and every step's covers must name its slices (SLICE-SUBTASK; the mapping is
+ * the file's, not the script's).
+ */
+function readStageZeroUpdate(base, id, cards, parts, problems) {
+  const file = path.join("app", "stage0", `${id}.stage0.json`);
+  if (!existsSync(path.join(base, file))) {
+    problems.push(`${id}: no stage 0 file (${file}); the other stories have one`);
+    return undefined;
+  }
+  const stage = readJson(base, file, problems);
+  if (stage === undefined) return undefined;
+  const before = problems.length;
+  if (!isRow(stage)) {
+    problems.push(`${file}: not an object`);
+    return undefined;
+  }
+  const slices = Array.isArray(stage.slices) ? stage.slices : [];
+  const ids = new Set();
+  if (slices.length === 0) problems.push(`${file}: no slices`);
+  for (const slice of slices) {
+    if (!isRow(slice) || !filled(slice.id)) problems.push(`${file}: a slice has no id`);
+    else if (ids.has(slice.id)) problems.push(`${file}: slice ${slice.id} appears twice`);
+    else ids.add(slice.id);
+  }
+  const steps = Array.isArray(stage.steps) ? stage.steps : [];
+  if (steps.length === 0) problems.push(`${file}: no steps`);
+  for (const step of steps) {
+    const covers = isRow(step) && Array.isArray(step.covers) ? step.covers : null;
+    if (!covers || covers.length === 0) {
+      problems.push(`${file}: step ${isRow(step) ? step.n : "?"} covers no slice`);
+      continue;
+    }
+    for (const slice of covers) {
+      if (!ids.has(slice)) problems.push(`${file}: step ${step.n} covers ${slice}, not a slice`);
+    }
+  }
+  if (!isRow(stage.scene)) problems.push(`${file}: no scene object`);
+  for (const card of cards) {
+    if (card.story_id === id && card.kind === "part" && !ids.has(card.slice)) {
+      problems.push(
+        `${id}: card ${card.key} is in slice ${card.slice}, which ${file} does not have`,
+      );
+    }
+  }
+  // #533 review M6: the steps match the deck's parts: one step per part, numbered as the parts,
+  // and step n covers every slice the cards of part n sit in. Nothing is moved to make them match.
+  const partNumbers = [...new Set(parts.filter((p) => p.story_id === id).map((p) => p.part))].sort(
+    (a, b) => a - b,
+  );
+  const stepNumbers = steps.map((step) => (isRow(step) ? step.n : undefined));
+  if (stepNumbers.join(",") !== partNumbers.join(",")) {
+    problems.push(
+      `${id}: the steps of ${file} (${stepNumbers.join(", ")}) do not match the parts of parts_and_cards.json (${partNumbers.join(", ")})`,
+    );
+  } else {
+    for (const step of steps) {
+      const covers = new Set(Array.isArray(step.covers) ? step.covers : []);
+      const missing = [
+        ...new Set(
+          cards
+            .filter((card) => card.story_id === id && card.kind === "part" && card.part === step.n)
+            .map((card) => card.slice),
+        ),
+      ].filter((slice) => !covers.has(slice));
+      if (missing.length > 0) {
+        problems.push(
+          `${id}: step ${step.n} of ${file} does not cover ${missing.join(", ")}, the slice of part ${step.n}'s cards`,
+        );
+      }
+    }
+  }
+  if (problems.length > before) return undefined;
+  return { slices: stage.slices, steps: stage.steps, scene: stage.scene };
 }
 
 /** Ids, keys, kinds and slices, already checked against their patterns (no quote inside). */
@@ -737,6 +837,31 @@ export function exportTables(rows, { bodies = true } = {}) {
   ];
 }
 
+/**
+ * #526: the export's new stage 0 values (slices, steps, scene) by story, as a temporary table
+ * (dropped at the end). Empty when the export has no stage 0 folder.
+ * @param {{ stageZeros?: { story_id: string, stage: object }[] }} rows
+ */
+export function stageZeroTable(rows) {
+  const stages = rows.stageZeros ?? [];
+  if (stages.length === 0) return [];
+  return [
+    "create temporary table import_stage (story_id text primary key, stage jsonb not null) on commit drop;",
+    "insert into import_stage (story_id, stage) values",
+    `${stageValues(stages).join(",\n")};`,
+  ];
+}
+
+/** One (story id, stage 0 values) row per story; the values hold story text. */
+const stageValues = (stages) =>
+  stages.map(
+    (entry) => `  (${literal(entry.story_id)}, ${quote(JSON.stringify(entry.stage))}::jsonb)`,
+  );
+
+/** A story with a switch-over that is not undone. */
+const switchedOver = (story) =>
+  `exists (select 1 from private.story_switches w where w.story_id = ${story} and w.undone_at is null)`;
+
 /** This import's own drafts of a key: written by no editor, never published, above the last published version. */
 const importDraft = (alias) =>
   `${alias}.created_by is null and not ${alias}.published and ${alias}.published_at is null
@@ -752,6 +877,7 @@ const importDraft = (alias) =>
 export function keepPublishedSql(rows, { dryRun = false } = {}) {
   const c = rows.companion;
   const stories = ids(rows.stories);
+  const stageZeros = (rows.stageZeros ?? []).length > 0;
   const lines = [
     `-- Draft import of the regenerated cards of ${c.id} next to his published cards (scripts/content/import-drafts.mjs --keep-published, #516): ${rows.stories.length} stories, ${rows.parts.length} part titles (set at each story's switch-over), ${rows.cards.length} cards. Nothing published changes.`,
     "-- Holds story text: run it in the SQL editor only; never save it in the repository.",
@@ -759,6 +885,7 @@ export function keepPublishedSql(rows, { dryRun = false } = {}) {
     "begin;",
     "set local standard_conforming_strings = on;",
     ...exportTables(rows),
+    ...stageZeroTable(rows),
     "do $guard$",
     "begin",
     `  if not exists (select 1 from public.companions where id = '${c.id}') then`,
@@ -768,6 +895,13 @@ export function keepPublishedSql(rows, { dryRun = false } = {}) {
     `      where not exists (select 1 from public.stories s where s.id = e.story_id and s.companion_id = '${c.id}')) then`,
     "    raise exception 'a story of the export is not one of this Companion''s stories in the database; nothing was written';",
     "  end if;",
+    ...(stageZeros
+      ? [
+          "  if exists (select 1 from import_stage x where not exists (select 1 from public.story_inputs i where i.story_id = x.story_id)) then",
+          "    raise exception 'a story of the export has no story inputs row; nothing was written';",
+          "  end if;",
+        ]
+      : []),
     "end",
     "$guard$;",
     "-- #522 review: a key whose newest version is an editor's unpublished draft (saved in the admin,",
@@ -783,6 +917,8 @@ export function keepPublishedSql(rows, { dryRun = false } = {}) {
           `  select key, version, body, published, published_at from public.story_cards where story_id in (${stories});`,
           "create temporary table import_parts_before on commit drop as",
           `  select story_id, part, title from public.story_parts where story_id in (${stories});`,
+          "create temporary table import_inputs_before on commit drop as",
+          `  select story_id, stage_zero::text as stage_zero from public.story_inputs where story_id in (${stories});`,
         ]
       : []),
     "-- 1. Drafts of an earlier run of this import whose keys the export no longer has.",
@@ -804,6 +940,15 @@ export function keepPublishedSql(rows, { dryRun = false } = {}) {
     "  from import_cards i",
     "  left join lateral (select e.version, e.body from public.story_cards e where e.key = i.key order by e.version desc limit 1) n on true",
     "  where n.body is distinct from i.body and not exists (select 1 from import_kept k where k.key = i.key);",
+    ...(stageZeros
+      ? [
+          "-- 4. #526: each story's new stage 0 waits in stage_zero_next for its switch-over. stage_zero, which",
+          "--    phones read, is not touched; a story already switched over is left alone.",
+          "update public.story_inputs i set stage_zero_next = x.stage",
+          "  from import_stage x",
+          `  where i.story_id = x.story_id and i.stage_zero_next is distinct from x.stage and not ${switchedOver("x.story_id")};`,
+        ]
+      : []),
   ];
   if (!dryRun) {
     lines.push("commit;", "");
@@ -847,6 +992,16 @@ export function keepPublishedSql(rows, { dryRun = false } = {}) {
     "  union all select 10, 'published rows changed', (select count(*) from pairs where live and differs)::int, null",
     "  union all select 10, 'kept: editor draft', (select count(*) from import_kept)::int, null",
     "  union all select 14, 'editor draft kept', null, key from import_kept",
+    ...(stageZeros
+      ? [
+          "  union all select 15, 'stage 0 files in the export', (select count(*) from import_stage)::int, null",
+          "  union all select 16, 'stage 0 waiting for the switch-over', (select count(*) from import_stage x",
+          "    join public.story_inputs i on i.story_id = x.story_id where i.stage_zero_next = x.stage)::int, null",
+          `  union all select 17, 'stage 0 left alone (story switched over)', (select count(*) from import_stage x where ${switchedOver("x.story_id")})::int, null`,
+          "  union all select 18, 'stage 0 that phones read, changed', (select count(*) from import_inputs_before b",
+          "    join public.story_inputs i on i.story_id = b.story_id where i.stage_zero::text <> b.stage_zero)::int, null",
+        ]
+      : []),
     "  union all select 11, 'part titles changed', (select count(*) from import_parts_before b",
     "    full join public.story_parts p on p.story_id = b.story_id and p.part = b.part",
     `    where (p.story_id is null or p.story_id in (${stories})) and (p.story_id is null or b.story_id is null or p.title <> b.title))::int, null`,
@@ -863,6 +1018,31 @@ export function keepPublishedSql(rows, { dryRun = false } = {}) {
     "",
   );
   return lines.join("\n");
+}
+
+/** The stage 0 values a story's stage_zero holds now (slices, steps, scene). */
+export const currentStage = (column) =>
+  `(select coalesce(jsonb_object_agg(e.key, e.value), '{}'::jsonb) from jsonb_each(${column}::jsonb) e where e.key in ('slices', 'steps', 'scene'))`;
+
+/** #526: one check row per story of the export's stage 0 (only with a stage 0 folder). */
+function stageZeroCheckRows(rows) {
+  const stages = rows.stageZeros ?? [];
+  if (stages.length === 0) return [];
+  const current = currentStage("i.stage_zero");
+  return [
+    "union all",
+    "select 'stage 0 ' || x.story_id,",
+    "  case",
+    "    when i.story_id is null then 'missing: no story inputs row'",
+    `    when ${switchedOver("x.story_id")} and ${current} = x.stage then 'ok, switched over'`,
+    `    when ${switchedOver("x.story_id")} then 'switched over with a different stage 0 (a changed export)'`,
+    "    when i.stage_zero_next = x.stage then 'ok, waiting for the switch-over'",
+    "    when i.stage_zero_next is null then 'not imported'",
+    "    else 'differs from the file (a changed export)'",
+    "  end",
+    `from (values\n${stageValues(stages).join(",\n")}\n) x (story_id, stage)`,
+    "left join public.story_inputs i on i.story_id = x.story_id",
+  ];
 }
 
 /**
@@ -896,6 +1076,7 @@ export function keepPublishedCheckSql(rows) {
     "    else 'ok, draft'",
     "  end as result",
     "from expected x full join newest n on n.key = x.key",
+    ...stageZeroCheckRows(rows),
     "order by 1;",
     "",
   ].join("\n");
@@ -939,6 +1120,7 @@ export function keepPublishedUndoSql(rows, { dryRun = false } = {}) {
     "declare",
     "  removed integer;",
     "  published_removed integer;",
+    "  stage_cleared integer := 0;",
     "begin",
     "  with gone as (",
     "    delete from public.story_cards k",
@@ -948,10 +1130,18 @@ export function keepPublishedUndoSql(rows, { dryRun = false } = {}) {
     "  )",
     "  select count(*), count(*) filter (where published or published_at is not null)",
     "    into removed, published_removed from gone;",
+    ...((rows.stageZeros ?? []).length > 0
+      ? [
+          "  -- #526: the stage 0 waiting for a switch-over goes too (no story is switched over: see above).",
+          `  update public.story_inputs set stage_zero_next = null where story_id in (${stories}) and stage_zero_next is not null;`,
+          "  get diagnostics stage_cleared = row_count;",
+        ]
+      : []),
     ...(dryRun
       ? [
           "  raise exception 'Dry run: nothing was changed.%', E'\\n' || 'drafts removed: ' || removed",
-          "    || E'\\n' || 'published rows changed: ' || published_removed;",
+          "    || E'\\n' || 'published rows changed: ' || published_removed",
+          "    || E'\\n' || 'stage 0 waiting cleared: ' || stage_cleared;",
         ]
       : []),
     "end",

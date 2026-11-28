@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { readCardExport } from "../scripts/content/import-drafts.mjs";
-import { writeInventedCardExport } from "../e2e/support/invented-card-export.mjs";
+import {
+  newCardText,
+  newLeakWord,
+  writeInventedCardExport,
+} from "../e2e/support/invented-card-export.mjs";
 import { storyPoolProblems, storyPoolWarnings, type PoolCard } from "@/lib/story-cards/pool-checks";
+import { withWaitingStageZeros } from "@/lib/story-cards/reader";
 import { seedContent } from "./support/seed-content";
 
 // #516: the admin's card checks (#304, #377, #381: length, dates, spoilers by part, banned words,
@@ -15,9 +20,17 @@ import { seedContent } from "./support/seed-content";
 // hidden: card keys and counts only, never a card text. A step card over 4 sentences or 60 words
 // is printed as a WARNING (LEN-CARD-WIDE, owner decision 2026-11-28): it never fails the run. Without CARD_EXPORT it checks an INVENTED
 // export, so the pull request checks prove that a failing card is reported.
+// #526: when the export has a stage 0 folder, each story is checked with the export's new slices,
+// steps and scene (as after its switch-over), not with the stage 0 the phones read now.
 
-const zeros = () =>
-  new Map(seedContent().stories.map((story) => [story.id, story.inputs.stageZero]));
+type ExportRows = { cards: PoolCard[]; stageZeros?: { story_id: string; stage: object }[] };
+
+/** The seed stage 0 of every story, with the export's new slices, steps and scene in place. */
+const zeros = (rows?: ExportRows) =>
+  withWaitingStageZeros(
+    new Map(seedContent().stories.map((story) => [story.id, story.inputs.stageZero])),
+    Object.fromEntries((rows?.stageZeros ?? []).map((entry) => [entry.story_id, entry.stage])),
+  );
 
 /** Per story: failing card keys and problem kinds (quoted words and numbers hidden). */
 export function exportCheckReport(cards: PoolCard[], problems: string[], warnings: string[] = []) {
@@ -84,10 +97,11 @@ describe("#516 the card checks on a cards-only export", () => {
           card.body = "It was 1927 in the invented room.";
         },
       });
-    const cards = (readCardExport(folder) as { cards: PoolCard[] }).cards;
+    const rows = readCardExport(folder) as ExportRows;
+    const cards = rows.cards;
     const report = exportCheckReport(
       cards,
-      storyPoolProblems(cards, zeros()),
+      storyPoolProblems(cards, zeros(rows)),
       storyPoolWarnings(cards),
     );
     if (process.env.CARD_EXPORT) {
@@ -131,5 +145,44 @@ describe("#516 the card checks on a cards-only export", () => {
       "N words; the usual limit is N.": 1,
       "N sentences; the usual limit is N.": 1,
     });
+  });
+});
+
+describe("#526 the pre-switch check reads the export's new stage 0", () => {
+  const story = { id: "bohr-difficulties", cards: [2, 2, 2] };
+  // A part 1 card names the spoiler word of the new stage 0's part 2 slice.
+  const leaking: Parameters<typeof writeInventedCardExport>[0]["change"] = (files) => {
+    const card = files["app/parts_and_cards.json"].stories[0].cards[1];
+    card.body = `${newCardText(story.id, 1, 1)} ${newLeakWord(story.id, 2)} waits.`;
+  };
+  const laterPartProblems = (stageZero: boolean) => {
+    const rows = readCardExport(
+      writeInventedCardExport({ stories: [story], stageZero, change: leaking }),
+    ) as ExportRows;
+    return storyPoolProblems(rows.cards, zeros(rows)).filter((line) => line.includes("later part"));
+  };
+
+  it("test_526_ac3_a_card_naming_a_later_slice_of_the_new_stage_0_is_reported", () => {
+    expect(laterPartProblems(true)).toEqual([
+      expect.stringMatching(/^crd\.opp\.bohr-difficulties\.p1\.c1: /),
+    ]);
+  });
+
+  it("test_526_ac3_without_the_export_stage_0_the_old_one_is_used_and_misses_it", () => {
+    expect(laterPartProblems(false)).toEqual([]);
+  });
+
+  it("test_526_ac3_the_new_stage_0_replaces_only_slices_steps_and_scene", () => {
+    const rows = readCardExport(
+      writeInventedCardExport({ stories: [story], stageZero: true }),
+    ) as ExportRows;
+    const seed = seedContent().stories.find((entry) => entry.id === story.id)!.inputs.stageZero;
+    const merged = zeros(rows).get(story.id)!;
+    const stage = rows.stageZeros![0].stage as Record<string, unknown>;
+    for (const key of ["slices", "steps", "scene"]) expect(merged[key]).toEqual(stage[key]);
+    for (const key of Object.keys(seed).filter((k) => !["slices", "steps", "scene"].includes(k)))
+      expect(merged[key]).toEqual(seed[key]);
+    // The display texts of the file are never read.
+    expect(JSON.stringify(rows.stageZeros)).not.toContain("Invented export who line");
   });
 });

@@ -1,16 +1,49 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { DEFAULT_COMPANION_ID } from "@/lib/content/companions";
-import { getFullStoryContent } from "@/lib/content/repository";
+import { getFullStoryContent, readStageZeroNextFromSupabase } from "@/lib/content/repository";
 import { companionPeople, sceneCheckOf, type SceneCheck } from "@/lib/content/scene";
+import { logEvent } from "@/lib/logging/server-log";
 import type { StoryCardRow, StoryPartRow, StoryRow } from "./admin";
+import { markWaitingStageZero } from "./checks";
 import { publishProblems } from "./pool-checks";
 
 const CARD_COLUMNS =
   "key, version, story_id, kind, part, slice, position, body, published, published_at";
 
+/** The stage 0 values a switch-over replaces (#526). */
+const SWITCHED_STAGE_KEYS = ["slices", "steps", "scene"] as const;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/**
+ * #526: each story's stage 0, with the new slices, steps and scene of a story that waits for its
+ * switch-over put in place of its own (and marked, so the spoiler check reads its slices with the
+ * new cards). Every other value of the stage 0 stays. A story without a waiting stage 0 keeps
+ * the record it has.
+ */
+export function withWaitingStageZeros(
+  zeros: Map<string, Record<string, unknown>>,
+  waiting: Record<string, unknown> | null,
+): Map<string, Record<string, unknown>> {
+  if (!waiting) return zeros;
+  const merged = new Map(zeros);
+  for (const [storyId, next] of Object.entries(waiting)) {
+    const own = zeros.get(storyId);
+    if (!own || !isRecord(next)) continue;
+    const stage: Record<string, unknown> = { ...own };
+    for (const key of SWITCHED_STAGE_KEYS) if (key in next) stage[key] = next[key];
+    merged.set(storyId, markWaitingStageZero(stage));
+  }
+  return merged;
+}
+
 /**
  * Each story's stage 0 inputs (the spoiler words per slice), from the server's story content read
- * (#284). Null when the story content cannot be read: the spoiler check then cannot run (#304).
+ * (#284): the LIVE stage 0, the one phones read. Every check that blocks Publish uses it, also for
+ * a story whose new stage 0 waits for its switch-over (#526 review I1): a card published before
+ * the switch-over goes to phones that still read this stage 0. Null when the story content cannot
+ * be read: the spoiler check then cannot run (#304).
  */
 export async function readStageZeros(): Promise<Map<string, Record<string, unknown>> | null> {
   try {
@@ -19,6 +52,43 @@ export async function readStageZeros(): Promise<Map<string, Record<string, unkno
   } catch {
     return null;
   }
+}
+
+/** The stage 0 as it will be after the switch-overs (#526), for the admin's preview only. */
+export type WaitingStageZeros = {
+  /** Every story's stage 0, with the waiting values in place; null when none can be read. */
+  zeros: Map<string, Record<string, unknown>> | null;
+  /** The stories whose new stage 0 waits for their switch-over. */
+  waiting: Set<string>;
+  /** True when the waiting values could not be read (the preview then shows nothing). */
+  failed: boolean;
+};
+
+/**
+ * #526: the stage 0 of each story as it will be after its switch-over: the waiting slices, steps
+ * and scene (story_inputs.stage_zero_next) in place of the live ones. The story page shows the
+ * problems they find as warnings ("after the switch-over"), never as blocking problems. A failed
+ * read (for example before the migration is applied) is logged and reported in `failed`.
+ */
+export async function readWaitingStageZeros(
+  live: Map<string, Record<string, unknown>> | null,
+  readWaiting: () => Promise<Record<string, unknown>> = readStageZeroNextFromSupabase,
+  log: () => void = () => logEvent("story-content", { event: "stage_zero_next_read_failed" }),
+): Promise<WaitingStageZeros> {
+  let waiting: Record<string, unknown>;
+  try {
+    waiting = await readWaiting();
+  } catch {
+    log();
+    return { zeros: null, waiting: new Set(), failed: true };
+  }
+  if (!live) return { zeros: null, waiting: new Set(), failed: false };
+  const ids = new Set(
+    Object.entries(waiting)
+      .filter(([storyId, next]) => live.has(storyId) && isRecord(next))
+      .map(([storyId]) => storyId),
+  );
+  return { zeros: withWaitingStageZeros(live, waiting), waiting: ids, failed: false };
 }
 
 /**

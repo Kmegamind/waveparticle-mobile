@@ -72,6 +72,14 @@ function stageZeroParts(storyId, stageZero) {
 
 const filled = (value) => typeof value === "string" && value.trim() !== "";
 
+/** A switched-over story's provenance as the repository keeps it: without the two #526 marks. */
+function repositoryProvenance(provenance) {
+  const kept = { ...provenance };
+  delete kept.outsideRepository;
+  delete kept.switchedOver;
+  return kept;
+}
+
 /**
  * What a story still lacks before the screens can show it: its stage 0 file, or the three screen
  * lines inside it. An empty list when nothing is missing.
@@ -272,7 +280,14 @@ export function contentFilesOf(document) {
     if (!inputs) throw new Error(`story ${story.id} has no inputs`);
     // #502: a story imported as a draft from a folder outside the repository (its text may not be
     // committed) is never written back to the files.
-    if (inputs.provenance?.outsideRepository === true) continue;
+    // #526 (#533 review I2): a repository story switched over to the owner's regenerated stage 0
+    // keeps its record (written as before, without the two marks) and its periods, but its stage 0
+    // file is not written: docs/demo keeps the placeholder, and the new text never enters git.
+    // Only a story that was in the repository before its switch-over (switchedOver "repository");
+    // one that was already outside it ("outside", a #502 draft import) is still skipped entirely
+    // (#533 review R2-I1).
+    const switchedOver = inputs.provenance?.switchedOver === "repository";
+    if (inputs.provenance?.outsideRepository === true && !switchedOver) continue;
     if (!companionIds.has(story.companion_id)) {
       throw new Error(`story ${story.id} names an unknown Companion: ${story.companion_id}`);
     }
@@ -293,8 +308,9 @@ export function contentFilesOf(document) {
       facts: inputs.facts,
       forbiddenTerms: inputs.forbidden_terms,
       keySlices: inputs.key_moments,
-      provenance: inputs.provenance,
+      provenance: switchedOver ? repositoryProvenance(inputs.provenance) : inputs.provenance,
     });
+    if (switchedOver) continue;
     const stage = structuredClone(inputs.stage_zero);
     stage.who = story.who;
     stage.story.title = story.title;
