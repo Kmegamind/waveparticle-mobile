@@ -133,6 +133,38 @@ export async function readStoryCardsFromSupabase(options: {
   return parseStoryDeck(data);
 }
 
+/**
+ * #526: the new stage 0 values (slices, steps, scene) of each story that waits for its
+ * switch-over, by story id, through `get_story_stage_zero_next` with the same reader key
+ * (supabase/migrations/20261209000000_story_switch_stage_zero.sql). For the admin's card checks
+ * only; phones never read it. Not cached. Throws when the read fails (for example before that
+ * migration is applied).
+ */
+export async function readStageZeroNextFromSupabase(
+  options: {
+    env?: Record<string, string | undefined>;
+    fetchImpl?: typeof fetch;
+    timeoutMs?: number;
+  } = {},
+): Promise<Record<string, unknown>> {
+  const env = options.env ?? process.env;
+  const key = env.CONTENT_READ_KEY?.trim();
+  if (!key) throw new Error("CONTENT_READ_KEY is not set");
+  const { url, anonKey } = readSupabaseEnv(env);
+  const client = createClient(url, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: options.fetchImpl ? { fetch: options.fetchImpl } : undefined,
+  });
+  const { data, error } = await client
+    .rpc("get_story_stage_zero_next", { reader_key: key })
+    .abortSignal(AbortSignal.timeout(options.timeoutMs ?? CONTENT_READ_TIMEOUT_MS));
+  if (error) throw new Error("get_story_stage_zero_next failed");
+  if (typeof data !== "object" || data === null || Array.isArray(data)) {
+    throw new Error("no waiting stage 0: check CONTENT_READ_KEY");
+  }
+  return data as Record<string, unknown>;
+}
+
 function logToServer(event: ContentLog) {
   logEvent("story-content", event);
 }

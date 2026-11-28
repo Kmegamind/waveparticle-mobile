@@ -109,7 +109,7 @@ let phoneBefore: Record<string, unknown>;
 
 beforeAll(async () => {
   db = await storyDatabase();
-  folder = writeInventedCardExport({ stories: STORIES });
+  folder = writeInventedCardExport({ stageZero: true, stories: STORIES });
   for (const story of STORIES) before[story.id] = await cardsOf(db, story.id);
   publishedBefore = await publishedRows(db);
   liveBefore = await liveRows(db);
@@ -216,6 +216,7 @@ describe("#516 the regenerated cards as drafts next to the published placeholder
     expect(await everything(db)).toEqual(start);
     // The export changes before the switch-over: one card fewer and one card reworded.
     const changed = writeInventedCardExport({
+      stageZero: true,
       stories: STORIES,
       change: (files) => {
         const cards = files["app/parts_and_cards.json"].stories[0].cards;
@@ -244,7 +245,10 @@ describe("#516 the regenerated cards as drafts next to the published placeholder
   });
 
   it("test_516_the_import_and_its_undo_refuse_a_story_that_is_not_one_of_his", async () => {
-    const stranger = writeInventedCardExport({ stories: [{ id: "inv-not-his", cards: [1] }] });
+    const stranger = writeInventedCardExport({
+      stageZero: true,
+      stories: [{ id: "inv-not-his", cards: [1] }],
+    });
     expect(await attempt(db, keep(stranger))).toMatch(/not one of this Companion's stories/);
     // #522 M3: the undo has the same guard, so it never removes another Companion's drafts.
     expect(await attempt(db, keep(stranger, "--undo"))).toMatch(
@@ -258,6 +262,7 @@ describe("#516 AC4 a switch-over of one story, end to end, and its undo", () => 
 
   it("test_516_ac4_the_switch_refuses_before_the_import_and_for_an_unknown_account", async () => {
     const other = writeInventedCardExport({
+      stageZero: true,
       stories: [{ id: "midnight-pamphlet", cards: [2, 2, 2] }],
     });
     expect(await attempt(db, switchOver(other, "midnight-pamphlet", ...by))).toMatch(
@@ -560,7 +565,7 @@ describe("#522 I1 a re-import never buries an editor's draft", () => {
 
   it("test_522_i1_an_edit_saved_after_the_import_survives_a_re_import_and_is_published", async () => {
     const fresh = await storyDatabase();
-    const exportFolder = writeInventedCardExport({ stories: [story] });
+    const exportFolder = writeInventedCardExport({ stageZero: true, stories: [story] });
     expect(await attempt(fresh, keep(exportFolder))).toBe("ok");
     expect(await attempt(fresh, save("Invented edit after the import."))).toBe("ok");
     await expectEditorKept(fresh, exportFolder, "Invented edit after the import.");
@@ -568,7 +573,7 @@ describe("#522 I1 a re-import never buries an editor's draft", () => {
 
   it("test_522_i1_a_draft_saved_before_the_import_is_kept_and_is_published", async () => {
     const fresh = await storyDatabase();
-    const exportFolder = writeInventedCardExport({ stories: [story] });
+    const exportFolder = writeInventedCardExport({ stageZero: true, stories: [story] });
     expect(await attempt(fresh, save("Invented draft before the import."))).toBe("ok");
     await expectEditorKept(fresh, exportFolder, "Invented draft before the import.");
   }, 60_000);

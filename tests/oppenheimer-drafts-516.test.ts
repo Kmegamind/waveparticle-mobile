@@ -136,7 +136,8 @@ describe("#516 the --keep-published mode reads a cards-only export", () => {
 
 describe("#516 the switch-over script", () => {
   it("test_516_ac4_prints_the_switch_dry_run_check_and_undo_for_one_story", () => {
-    const folder = exportFolder();
+    // #526: the switch-over also needs the story's new stage 0 file.
+    const folder = writeInventedCardExport({ stories: STORIES, stageZero: true });
     const story = STORIES[0].id;
     const sql = run(switchScript, folder, story, "--by", "admin@invented.test");
     expect(sql.status).toBe(0);

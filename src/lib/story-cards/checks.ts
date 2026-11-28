@@ -182,10 +182,50 @@ export function cardProblems(
   return problems;
 }
 
-/** Which part each slice's cards sit in, from a story's card rows (every version). */
-export function slicePartsOf(cards: StoryCardRow[]): Map<string, number> {
-  const parts = new Map<string, number>();
+// #526: a story that is not switched over yet may have a NEW stage 0 waiting (the export's
+// slices, steps and scene, story_inputs.stage_zero_next). The admin's checks then read that one,
+// so the owner sees the problems as they will be after the switch-over. Such a record is marked
+// here, without changing its shape.
+const waitingStageZeros = new WeakSet<object>();
+
+/** Marks a stage 0 record as the story's new stage 0, waiting for its switch-over. */
+export function markWaitingStageZero<T extends object>(stageZero: T): T {
+  waitingStageZeros.add(stageZero);
+  return stageZero;
+}
+
+/** True when the record is a new stage 0 waiting for its story's switch-over. */
+export const isWaitingStageZero = (stageZero: object | null | undefined): boolean =>
+  !!stageZero && waitingStageZeros.has(stageZero);
+
+/**
+ * Which part each slice's cards sit in, from a story's card rows (every version). The set the
+ * stage 0 belongs to comes first: the published cards for the live stage 0 (after a switch-over,
+ * the new cards, not the retired ones); with `newSet`, each key's newest version when it is a
+ * draft (the new cards waiting for the switch-over), for a waiting stage 0 (#526). The rows of
+ * the other set only add slices the first set has none of. The mapping is the cards', never
+ * computed from the slice names.
+ */
+export function slicePartsOf(
+  cards: StoryCardRow[],
+  { newSet = false }: { newSet?: boolean } = {},
+): Map<string, number> {
+  const newest = new Map<string, StoryCardRow>();
   for (const row of cards) {
+    const top = newest.get(row.key);
+    if (!top || row.version > top.version) newest.set(row.key, row);
+  }
+  const rank = (row: StoryCardRow) => {
+    if (!newSet) return row.published ? 0 : 1;
+    if (newest.get(row.key) === row && !row.published) return 0;
+    return row.published ? 1 : 2;
+  };
+  const ordered = cards
+    .map((row, at) => ({ row, at }))
+    .sort((left, right) => rank(left.row) - rank(right.row) || left.at - right.at)
+    .map((entry) => entry.row);
+  const parts = new Map<string, number>();
+  for (const row of ordered) {
     if (row.kind === "part" && row.slice && row.part !== null && !parts.has(row.slice)) {
       parts.set(row.slice, row.part);
     }
@@ -199,6 +239,6 @@ export function leaksForStory(
   stageZero: Record<string, unknown> | null,
 ): LeaksFor {
   if (!stageZero) return () => null;
-  const slicePart = slicePartsOf(cards);
+  const slicePart = slicePartsOf(cards, { newSet: isWaitingStageZero(stageZero) });
   return (part) => laterPartLeaks(stageZero, slicePart, part);
 }

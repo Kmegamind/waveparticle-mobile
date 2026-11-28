@@ -22,6 +22,7 @@
 //        POST /__prompts { token, seededView: true | null }   (#446) that account's
 //        list_prompt_versions answers the seed prompts only (no drafts), and its prompt writes are
 //        refused, so the visual gate reads no row another test writes
+//   POST /rest/v1/rpc/get_story_stage_zero_next  { reader_key } → {} (#526: nothing waiting)
 //   POST /rest/v1/rpc/get_story_content  { reader_key } → the seed story content (src/content,
 //        docs/demo) when the key is STUB_CONTENT_READ_KEY, otherwise null, as the real function (#284)
 //   GET  /rest/v1/stories | story_parts | story_cards   the seed rows (#293): stories for any
@@ -1051,6 +1052,13 @@ createServer(async (request, response) => {
     const body = (await readBody(request)) ?? {};
     const allowed = contentReadKey.length > 0 && body.reader_key === contentReadKey;
     return json(response, 200, allowed ? storyContentDocument() : null);
+  }
+
+  // #526: no story of the stand-in has a new stage 0 waiting for its switch-over.
+  if (path === "/rest/v1/rpc/get_story_stage_zero_next" && request.method === "POST") {
+    const body = (await readBody(request)) ?? {};
+    const allowed = contentReadKey.length > 0 && body.reader_key === contentReadKey;
+    return json(response, 200, allowed ? {} : null);
   }
 
   // #300: one story's pre-made cards for the server's reader key: the seed deck as version 1,
