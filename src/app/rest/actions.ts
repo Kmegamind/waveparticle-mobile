@@ -2,9 +2,15 @@
 
 import { getStoryContentForViewer } from "@/lib/content/repository";
 import { createServerModelGateway } from "@/lib/model-gateway/server";
-import { accountPauseMessage, accountRestReply } from "@/lib/progress/account-lines";
+import {
+  accountPauseMessage,
+  accountRestEnded,
+  accountRestReply,
+} from "@/lib/progress/account-lines";
+import { supabaseRestRounds } from "@/lib/progress/rest-rounds";
 import { modelIsConfigured } from "@/lib/prototype/focus-cards";
 import type { PauseResponse, RestReplyResponse } from "@/lib/prototype/rest-lines";
+import { logEvent } from "@/lib/logging/server-log";
 import { serverSafetyCheck } from "@/lib/safety/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/supabase/session";
@@ -44,5 +50,26 @@ export async function loadAccountPauseMessage(request: unknown): Promise<PauseRe
 export async function loadAccountRestReply(request: unknown): Promise<RestReplyResponse> {
   const client = await signedInClient();
   if (!client) return { status: "failed" };
-  return accountRestReply(() => storyContent(client), request, gateway(), serverSafetyCheck());
+  // REST-ROUND-10 (#518): the Pause's round count is kept on the account.
+  return accountRestReply(
+    () => storyContent(client),
+    request,
+    gateway(),
+    serverSafetyCheck(),
+    supabaseRestRounds(client),
+    // Until the migration is applied (or on a database error) the reply is uncounted: logged.
+    (problem) => logEvent("model-gateway", { event: `rest_round_${problem}_failed` }),
+  );
+}
+
+/**
+ * Whether this Pause already had his tenth reply (REST-ROUND-10, R1-C10), so a reload shows the
+ * ended chat even when this device did not keep it. No model call; nothing is logged.
+ */
+export async function loadAccountRestEnded(
+  request: unknown,
+): Promise<{ status: "ok"; ended: boolean } | { status: "failed" }> {
+  const client = await signedInClient();
+  if (!client) return { status: "failed" };
+  return accountRestEnded(request, supabaseRestRounds(client));
 }

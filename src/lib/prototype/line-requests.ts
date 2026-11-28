@@ -83,6 +83,10 @@ export function normaliseRestRequest(raw: unknown): {
   replyIndex: number;
   stepIndex?: number;
   stepCount?: number;
+  /** The open session (#518), for the round count of a signed-in account. */
+  sessionId?: string;
+  /** This Pause's id (REST-ROUND-10, #518). */
+  pauseKey?: string;
 } {
   const request = record(raw);
   const history = Array.isArray(request?.history)
@@ -113,5 +117,14 @@ export function normaliseRestRequest(raw: unknown): {
         ? replyIndex
         : 0,
     ...position,
+    ...(uuidOf(request?.sessionId) ? { sessionId: uuidOf(request?.sessionId) } : {}),
+    ...(uuidOf(request?.pauseKey) ? { pauseKey: uuidOf(request?.pauseKey) } : {}),
   };
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A UUID, or undefined for anything else. */
+function uuidOf(value: unknown): string | undefined {
+  return typeof value === "string" && UUID.test(value) ? value.toLowerCase() : undefined;
 }

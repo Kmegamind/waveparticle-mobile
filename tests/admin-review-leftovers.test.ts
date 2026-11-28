@@ -84,6 +84,8 @@ describe("#311 leftovers: prompt versions made active outside the admin", () => 
       // #516: the story switch-over's history rows and undo record.
       "20261207000000_story_switch.sql",
       "20261208000000_companion_preview.sql",
+      // #518: the rest chat's round count.
+      "20261210000000_rest_rounds.sql",
     ]);
   });
 

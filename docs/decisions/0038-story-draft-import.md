@@ -1,10 +1,10 @@
 # 0038: Import a Companion's stories and cards as drafts from a folder outside the repository
-- Status: proposed
+- Status: proposed; its "no card or story text in git" reason dropped by the owner on 2026-11-28 (TEXT-IN-GIT-DROPPED: the repository will be made private later). The script and its checks stay as built.
 - Date: 2026-11-27
 - Issue: #502
 
 ## Context
-The owner asked for the twelve Severus Snape stories in the app as drafts, so that she can edit the cards in the admin and publish them story by story herself. The repository is public and the cards are written from a novel under copyright, so no card or story text may be committed. The existing imports (`scripts/content/import.mjs`, `scripts/story-cards/import.mjs`) read repository files and load cards as published. #479 (`docs/decisions/0036`) set the pattern for text that must stay out of git: a script reads the owner's folder from a path argument and prints SQL. Users must not see Snape yet: like Moriarty, his `enterHref` stays null.
+The owner asked for the twelve Severus Snape stories in the app as drafts, so that she can edit the cards in the admin and publish them story by story herself. The repository is public and the cards are written from a novel under copyright, so no card or story text may be committed (dropped by the owner on 2026-11-28, TEXT-IN-GIT-DROPPED: the repository will be made private later). The existing imports (`scripts/content/import.mjs`, `scripts/story-cards/import.mjs`) read repository files and load cards as published. #479 (`docs/decisions/0036`) set the pattern for text that must stay out of git: a script reads the owner's folder from a path argument and prints SQL. Users must not see Snape yet: like Moriarty, his `enterHref` stays null.
 
 ## Options
 | Option | For | Against |

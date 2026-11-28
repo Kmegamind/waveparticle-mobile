@@ -126,6 +126,13 @@ export type RestState = {
   messages: RestMessage[];
   /** Unsent text in the composer; kept when the page is reopened. */
   draft: string;
+  /**
+   * This Pause's own id (REST-ROUND-10, #518): a signed-in account's round count is kept on the
+   * server under it, so a reload keeps the count and every new Pause starts at round 1.
+   */
+  key?: string;
+  /** His reply to the tenth message was shown: he stops replying and the field is gone (R1-C10). */
+  ended?: boolean;
 };
 
 export type SessionPlan = {
@@ -405,6 +412,31 @@ export function resumeSession(session: FocusSession, nowMs: number): FocusSessio
   });
 }
 
+/** A new id for one Pause (REST-ROUND-10); random, so a Pause is never mistaken for another. */
+function newPauseKey(): string {
+  return globalThis.crypto.randomUUID();
+}
+
+/**
+ * The id of the open rest (REST-ROUND-10). A rest stored before #518 has none and gets one here;
+ * the page saves it with the session.
+ */
+export function withPauseKey(session: FocusSession): FocusSession {
+  if (!session.rest || session.rest.key) return session;
+  return { ...session, rest: { ...session.rest, key: newPauseKey() } };
+}
+
+/**
+ * Round 10 ended the rest chat (R1-C10): he stops replying. An unanswered message of the person
+ * (sent from a page that did not know yet) is dropped: no reply will come to it.
+ */
+export function endRest(session: FocusSession): FocusSession {
+  if (!session.rest) return session;
+  const messages = session.rest.messages;
+  const kept = messages.at(-1)?.from === "you" ? messages.slice(0, -1) : messages;
+  return { ...session, rest: { ...session.rest, messages: kept, ended: true } };
+}
+
 /** Pause: freezes the clock, counts this Pause for the current Step and opens a new rest. */
 export function startRest(session: FocusSession, nowMs: number): FocusSession {
   if (isFinished(session)) return session;
@@ -414,7 +446,7 @@ export function startRest(session: FocusSession, nowMs: number): FocusSession {
   return {
     ...frozen,
     pauses,
-    rest: { pauseNumber: pauses[session.current], messages: [], draft: "" },
+    rest: { pauseNumber: pauses[session.current], messages: [], draft: "", key: newPauseKey() },
     returnPending: null,
     returnLine: null,
   };

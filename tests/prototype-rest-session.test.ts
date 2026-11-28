@@ -52,7 +52,8 @@ describe("#28 AC1 Pause freezes the clock and opens a rest", () => {
     const rest = startRest(started(), 60_000);
     expect(rest.paused).toBe(true);
     expect(remainingFor(rest, 0, 30 * 60_000)).toBe(14 * 60);
-    expect(rest.rest).toEqual({ pauseNumber: 1, messages: [], draft: "" });
+    // #518: each Pause has its own id for the round count (REST-ROUND-10).
+    expect(rest.rest).toEqual({ pauseNumber: 1, messages: [], draft: "", key: expect.any(String) });
   });
 
   it("delivers no card while resting", () => {
@@ -92,7 +93,7 @@ describe("#66 AC1 and #67 AC1 the rest conversation is kept", () => {
     expect(session.rest?.messages.map((message) => message.from)).toEqual(["him", "you", "him"]);
   });
 
-  it("has no limit on the number of messages", () => {
+  it("keeps any number of messages in the store (the round-10 end is decided on the server, #518)", () => {
     let session = startRest(started(), 1_000);
     for (let i = 0; i < 100; i += 1) {
       session = addRestMessage(session, { from: i % 2 ? "him" : "you", text: `line ${i}` });
@@ -110,6 +111,7 @@ describe("#66 AC1 and #67 AC1 the rest conversation is kept", () => {
       pauseNumber: 1,
       messages: [{ from: "him", text: "first" }],
       draft: "half a thought",
+      key: session.rest?.key,
     });
   });
 

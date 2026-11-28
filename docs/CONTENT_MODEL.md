@@ -211,10 +211,12 @@ Shape C, made-ahead card (stored since #293 in `public.story_cards`; the migrati
 | id | text | `crd.<short>.<story>.p<n>.c<n>`, or `crd.<short>.<story>.bg` (NAMING-CODE). |
 | part | integer | The story part the card belongs to (CARDS-PER-PART). |
 | position | integer | Order inside its part. |
-| text | text | First person. Passes the checks of section 7; a card over the length limit cannot be published (LEN-CARD). A published card can be edited and published again (PUBLISH-FIRST); a line already shown in a session is not changed (`session_lines` is insert-only; `docs/decisions/0021`). |
+| text | text | First person. Passes the checks of section 7; a step story card over its length limit shows a warning and can still be published (LEN-CARD-WIDE); a background card over its limit cannot be published (LEN-CARD). A published card can be edited and published again (PUBLISH-FIRST); a line already shown in a session is not changed (`session_lines` is insert-only; `docs/decisions/0021`). |
 | state | `written`, `checked by script`, `read by a person` | Only published cards are shown (ADMIN). The state is not a condition for publishing: a published card may still be `written` or `checked by script` (READ-STATUS, PUBLISH-FIRST). |
 | prompt version | text | The prompt version that wrote it (PROMPT-PARTS). |
 | facts used | list of fact ids | Which story facts the card draws on; used by the leak check. |
+
+**Retired card (#516).** A story switch-over retires the published cards whose keys the new set does not have: `published` becomes false and `published_at` stays, so a session that pinned that version keeps reading it (`get_story_cards` with versions), and phones that start a new session no longer see it. A retired card has no published version and no draft; the admin shows it as "Retired" and leaves it out of the story's part and card counts. Publish history records it with action `retire`. A story switch-over is recorded as one history row of kind `story_switch` (item key: the story id; version: the number of the switch-over of that story; action `publish`, or `roll_back` for its undo); `private.story_switches` keeps the published versions and part titles before and after, for the undo. A switch undo keeps every version a session pinned (it keeps its publish time), and a re-import of the cards never buries an editor's draft (SWITCH-STORY). A session in progress keeps its cards until it ends. A session already in progress gets the new stage 0 as soon as its story is switched over; stage 0 is not pinned per session (its cards are) (owner decision 2026-11-28; part of #526's behaviour).
 
 When a card is revealed in a session (its due time in foreground seconds) is worked out for that session from the user's step minutes (2.14).
 
@@ -301,6 +303,8 @@ What the pause number changes (prompt only, Decided, F1):
 | 4 and later | The same strong tone continues, in new words each time. Nothing else happens. |
 
 No new screen, no warning page. The return after a pause is a return pop-up (2.9), not a line of this entity.
+
+The rest chat of one Pause stops at round 10 (REST-ROUND-10, #518): his reply to the tenth message says that his own work is going to fail, and then he stops replying (FLOW R1-C10). A round is a message of the user answered by his reply. For a signed-in account the count is kept on the server per session and Pause (`private.rest_rounds`: the session, the Pause's own id made on the phone, the number of replies shown, 0 to 10; no message text), so a reload on the same device cannot reset it; every new Pause starts at round 1. The Pause id lives in that device's store, so a lost store or another device starts a new Pause. Until the count can be read (the migration applied), the chat answers uncounted, as before.
 
 ### 2.9 Return pop-up
 
@@ -498,7 +502,7 @@ Card count of a step: n, the cards it receives, at least 1 and no upper limit; n
 | Closing line | Made ahead with the story's cards (CLOSING-AHEAD); END-TONE applies | If it fails to load: failure screen with Retry on the summary (CLOSING-FAIL) |
 | His message on the rest page (snag) | Live, in two calls (C1, F1, PAUSE-3, PAUSE-TWO-CALLS), from the story's scene table (SCENE-PER-STORY) and the category and prop chosen by code; receives the pause number | Failure message with Retry |
 | Return pop-up text | Live (T6, R1) | Failure message with Retry |
-| Rest chat reply | Live, no message limit (R2, A3), in two calls (REST-TWO-CALLS): `rest_reply` writes it, then `rest_reply_review` reads it as `{{draft}}` and returns it unchanged or rewritten; one call only while `rest_reply_review` has no active version. The reply shown passes the spoiler check (CHAT-SPOILER-CHECK), where a later word the user typed himself does not fail it (CHAT-USER-WORD), and every line check of a rest reply; no label for the user's message (CHAT-NO-LABEL) | Call two failed, timed out or failed a check: call one's reply. Call one failed: failure message with Retry |
+| Rest chat reply | Live, in two calls (REST-TWO-CALLS), ending at round 10 of a Pause (REST-ROUND-10: the `rest_reply` call for the tenth reply gets one added instruction, his work is going to fail; then he stops replying; reverses R2): `rest_reply` writes it, then `rest_reply_review` reads it as `{{draft}}` and returns it unchanged or rewritten; one call only while `rest_reply_review` has no active version. The reply shown passes the spoiler check (CHAT-SPOILER-CHECK), where a later word the user typed himself does not fail it (CHAT-USER-WORD), and every line check of a rest reply; no label for the user's message (CHAT-NO-LABEL) | Call two failed, timed out or failed a check: call one's reply. Call one failed: failure message with Retry |
 | Story goal, where-now | Authored from the story database | None needed |
 | Safety response | Code plus a small classifier (A5b); system voice | Keyword layer alone if the classifier fails |
 
@@ -711,7 +715,7 @@ Notes for the schema:
 - `session_lines.text` is the line that was shown. A shown line is insert-only, so rereading does not regenerate it. The background card is also copied onto `sessions.background_card`. `session_steps.done_at` is cleared when Done is undone; there is no Done-event table.
 - Pause messages and return pop-ups are `session_lines` rows (`pause_message` and `return_popup`). There is no pause table and no return-event table.
 - The session record page (2.15) reads from `sessions`, `goals` and `session_steps`; it needs no table.
-- Rest chat messages are not given a table, and with no message limit (Decided, R2) whether to store them is not decided.
+- Rest chat messages are not given a table; whether to store them is not decided. Only the round count of each Pause is stored (`private.rest_rounds`, REST-ROUND-10), with no message text.
 - Story progress for a Companion is the completed sessions grouped by `companion_id` and `story_id`. A `restarted` session does not count. There is no progress table. All 26 stories are shown on the Life Path (Decided, D4).
 - Content ids are text so that the JSON ids can be used unchanged.
 

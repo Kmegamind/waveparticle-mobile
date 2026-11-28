@@ -160,7 +160,7 @@ Source of this register: the "Decisions needed" parts of the three audit reports
 - **Return pop-up.** He may describe how the time felt in any words. Exact clock numbers are still open (5.2).
 - **Questions he cannot know.** He answers as a person of his own era would, and he may guess.
 - **First card and fallback.** The first card of the next step is generated during the previous step. No authored backup text is ever shown to users. (Recorded as NO-BACKUP. Since 2026-11-14 the cards are made ahead per story part and shared (SHARED-STORY, CARDS-PER-PART), so the rule about the next step's first card no longer applies; NO-BACKUP still holds for the live parts.)
-- **Card length.** One to three sentences and at most 45 words; the background card at most 70 words. Revisit after real cards are read. (Recorded as CARD-LENGTH and extended to the closing line by LEN-CARD.)
+- **Card length.** One to three sentences and at most 45 words; the background card at most 70 words. Revisit after real cards are read. (Recorded as CARD-LENGTH and extended to the closing line by LEN-CARD. Since 2026-11-28 a made-ahead step story card is 1 to 4 sentences and at most 60 words, as a warning and not a block (LEN-CARD-WIDE); live step-card replies stay 1 to 3 sentences and 45 words.)
 - **Key moments.** The machine-derived ones are accepted for now and marked unconfirmed; to be discussed later.
 - **Dates.** No dates or ages are shown to users and no approximate-date flags are stored for display. The Life Path is grouped into named periods.
 - **Background knowledge in the planning database.** Cross-check it; import it if it can be used directly; otherwise Yue and the team decide the content together.

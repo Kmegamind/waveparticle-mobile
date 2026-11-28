@@ -2,7 +2,7 @@
 
 The sample library that fills a prompt's `{{variables}}` in the prompt lab (docs/PRD.md section 4.15; AI-LAB-SAMPLES, AI-SOURCE-EXCERPTS, AI-SAMPLES-LOCAL; `docs/decisions/0036`). The Samples page is `/admin/ai-samples` (drawing AIR-6, `docs/design/prototype/admin-ai-features.html#reg-samples`). The Run panel that picks a sample is #477.
 
-**No book text is ever committed.** Source excerpts and sample texts reach the database only through the owner's import below, which reads the owner's local files and prints SQL. Tests, the Supabase stand-in and the screenshots use short invented text.
+Source excerpts and sample texts reach the database only through the owner's import below (the rule that no book text is ever committed was dropped by the owner on 2026-11-28, TEXT-IN-GIT-DROPPED; the import works as before), which reads the owner's local files and prints SQL. Tests, the Supabase stand-in and the screenshots use short invented text.
 
 ## The tables (`supabase/migrations/20261205000000_ai_samples.sql`)
 

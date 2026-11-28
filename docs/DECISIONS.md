@@ -51,7 +51,7 @@ The specification documents were brought in line with the decisions up to 2026-1
 
 | Id | Date | Decision | Consequences |
 |---|---|---|---|
-| R2 | 2026-11-05 | The rest conversation has no message limit and no hidden cap. | Removes the 30-message cap proposed for cost control; cost control is handled elsewhere (for example per-message length). |
+| R2 | 2026-11-05 | ~~The rest conversation has no message limit and no hidden cap.~~ **Reversed 2026-11-26 (REST-ROUND-10, #518):** in one Pause the rest chat stops after his reply to the tenth message. | Removes the 30-message cap proposed for cost control; cost control is handled elsewhere (for example per-message length). There is still no counter and no warning (REST-ROUND-10). |
 | D1a | 2026-11-05 | The user types their own goal in a free text box. There is no restriction on what a goal can be and no list of unsupported kinds. | Remove "supported kinds" and "explicitly unsupported kinds" from the documents and the user stories. |
 | D1b | 2026-11-05 | How a plan is split for different kinds of goals is the job of the AI planning prompt (a planning expert that already exists in the AI workflow). The product documents do not specify splitting rules per kind. | The repository must receive the real planning prompt from the AI workflow; the text in docs/ai/AI_01 is only a placeholder. |
 | D1c | 2026-11-05 | Each step has a short title and a description of one or two sentences that expands the title (what to do and what to watch for). Example: title "English reading", description "Do the reading questions; pay attention to ..." | The description is generated with the plan and shown on the focus page. |
@@ -371,7 +371,7 @@ The owner's decisions of 2026-11-26, from the story-pipeline handoff (`story-pip
 | AI-ROLEPLAY-FORMAT | 2026-11-26 | Story cards and the Companion's own lines (rest reply, return pop-up, pause message) use the roleplay format: short actions in (brackets), what he says or thinks outside them. One sentence in the prompt is enough. | Proposed prompt versions are in `prompt-table-source/proposed4/`; open: stage directions carry no subject ("(stubs out the cigarette)"), and how brackets count toward word and sentence limits. Not imported in this work (AI-PROPOSED4-HOLD). |
 | AI-REGISTRY-STORE | 2026-11-26 | (owner addition) The registry extends the existing AI feature tables of #437 and #454: `public.ai_features`, its status history (`public.ai_feature_status_history`) and its test runs (`public.ai_feature_test_runs`). There is no second registry table. The 7 runtime rows already in production keep their slugs and their edited sections; 12 rows are added. | The migration and the seed are a production step for the owner, each with a dry run, a check query and an undo. The Pipeline and Quality gate prompt texts reach `public.prompts` by a migration plus an import, also a production step; the app keeps reading only the runtime keys (PRD section 4.14). What FR-AIREG-5 needs from the schema: AI-PROMPT-CATEGORY. |
 | AI-LAB-STUB | 2026-11-26 | (owner addition) The Run route uses the fake model in every test and end-to-end run, and the stub marker shows. Agents and tests never press Run on the live admin (AI-RUN-LIVE). | Same rule as AI-PAGE-RUNS: a stub run is marked as such. On the live admin, admin and writer both may press Run (AI-RUN-PERMISSION, AI-RUN-LIVE). The second sentence was "Only the owner presses Run on the live admin"; reworded after the owner's answer of 2026-11-26 (AI-RUN-LIVE). |
-| AI-SAMPLES-LOCAL | 2026-11-26 | (owner addition) Source excerpts and sample texts from books are never committed. An import script reads them from the local story-pipeline folder and prints SQL for the owner to run. Test fixtures use short invented text. | Applies to the sample library (AI-LAB-SAMPLES) and the source excerpts (AI-SOURCE-EXCERPTS). The seed file `registry-seed.json` stays in the planning folder too. |
+| AI-SAMPLES-LOCAL | 2026-11-26 | (owner addition) ~~Source excerpts and sample texts from books are never committed.~~ **Dropped by the owner on 2026-11-28 (TEXT-IN-GIT-DROPPED): the repository will be made private later.** An import script reads them from the local story-pipeline folder and prints SQL for the owner to run. Test fixtures use short invented text. | Applies to the sample library (AI-LAB-SAMPLES) and the source excerpts (AI-SOURCE-EXCERPTS). The seed file `registry-seed.json` stays in the planning folder too. |
 | AI-PROPOSED4-HOLD | 2026-11-26 | (owner addition) The prompts in `prompt-table-source/proposed4/` are not imported or published in this work, because AI-ROLEPLAY-FORMAT has open questions. The registry only shows texts. | The published prompt of each Runtime row stays the current one. The seed text of R-02 to R-05 that mentions proposed versions: settled by the owner on 2026-11-26 (AI-PROPOSED-SEED-TEXT). |
 | AI-RUN-LIVE | 2026-11-26 | (owner answer) Admin and writer both may press Run on the live admin, as AI-RUN-PERMISSION says. AI-LAB-STUB means only that agents and tests never press Run on the live admin: tests always use the fake model. | Closes the question raised in #466. |
 | AI-SEED-STATUS | 2026-11-26 | (owner answer) The 12 new registry rows take the status given in `registry-seed.json`. The 7 runtime rows keep their current status. | "Starts as exploring" in AI-PAGE-STATUS applied to the first 7. In the seed: P-03 passed, P-04 frozen, G-03 and G-04 not started, the other new rows exploring. |
@@ -398,6 +398,30 @@ Owner decision, issue #517 (`story-pipeline/admin-handoff_2026-11-26/8_dialogue_
 |---|---|---|---|
 | REST-TWO-CALLS | 2026-11-27 | The rest chat reply is two model calls. Call one, `rest_reply`, writes the reply. Call two, `rest_reply_review`, reads that draft as the user would (its new variable `{{draft}}` is call one's reply) and returns it unchanged or rewritten, as JSON `{"reply": "..."}`. The final reply passes every rest chat check (the AI-6 rules, CHAT-USER-WORD, CHAT-SPOILER-CHECK; the safety classifier still runs on the user's message before either call). If call two fails, times out, returns invalid JSON or fails a check, call one's reply is shown (it passed the same checks). If call one fails, it is generated again within the time limit, then the failure message with Retry (NO-BACKUP, FAIL-SCREEN). While `rest_reply_review` has no active version, the rest chat makes call one only, as before. | Both calls share the rest chat's one time limit (12 s, TIME-LIMIT), counted from when the message started: call one, with its retries, may use all of it; call two gets one attempt, no retry, in the time call one left. Call two's reply must also pass call one's checks, so a review prompt cannot loosen the rest_reply limits. `rest_reply_review` is registry row R-08 (category runtime); its row and its prompt versions are owner SQL, inactive until the owner activates a version. The comparison lab runs any stored version of a prompt (#517). Built in #517. |
 
+### Rest chat stops at round 10 (2026-11-26)
+
+Owner decision on #337 (2026-11-26), drawn in the prototype as R1-C10 (#501, #503), built in #518.
+
+| Id | Date | Decision | Consequences |
+|---|---|---|---|
+| REST-ROUND-10 | 2026-11-26 | In one Pause, his reply to the user's **tenth** message in the rest chat says that his own work is going to fail. After it he stops replying: the text field and Send disappear, and only ‹ Back to step and Home stay, with their FLOW 3.10 meanings. Nothing warns before round 10 and no counter is shown. The count starts again at every Pause. He talks only about his own side and never urges the user to go back. Mood is not shown; it is only in his tone. The `rest_reply` call (call one of REST-TWO-CALLS) for the tenth reply gets one added instruction, after its prompt, whichever prompt version is active; the owner approved its wording as built on 2026-11-28 (later polishing comes as a new prompt version, not in code). The tenth reply is call one only: call two (`rest_reply_review`) is not made, even when active, so the ending is kept as written (owner decision 2026-11-28). If the tenth reply fails and the user presses Retry, the retry keeps the round, so it still ends the chat. | Reverses R2. A round is one message of the user answered by his reply: a failed reply and a message that opened the safety page (C1) are not counted. The count of a signed-in account is kept on the server, per session and Pause (`private.rest_rounds`, migration `20261210000000_rest_rounds.sql`), so a reload on the same device cannot reset it within the same Pause; after round 10 the server makes no model call, and the safety check still runs on the message. Each Pause has its own id, made on the phone when the Pause starts and kept in that device's store (decision 0014): a Pause whose device store is lost, or a session opened on another device, starts a new Pause at round 1. When the count cannot be read (the migration not applied yet, or a database error), the chat keeps working as before REST-ROUND-10: the safety check runs, the reply is made uncounted and without the round-10 ending, and the server logs a warning (owner decision 2026-11-28); a count that cannot be written after a reply keeps the reply and logs a warning. On the test path `/try` (no account) the count is the history in the browser's store. Built in #518 (`docs/decisions/0042-rest-round-10.md`). |
+
+### Book and card text in git (2026-11-28)
+
+Owner decision of 2026-11-28, added by #518.
+
+| Id | Date | Decision | Consequences |
+|---|---|---|---|
+| TEXT-IN-GIT-DROPPED | 2026-11-28 | The rule "book and card text never goes into git" is dropped, because the repository will be made private later. Source excerpts, sample texts, story text and card text may be committed. | Marks AI-SAMPLES-LOCAL and the "no text in git" reason of `docs/decisions/0038-story-draft-import.md` as dropped. The code guards stay as they are: the import scripts still read the owner's folder from a path argument and refuse a folder inside the repository, and the content export still skips a story marked `outsideRepository`; no work is planned on them. Prompt texts still enter `docs/ai/prompts/` only when the owner activates that version (a separate rule). |
+
+### Story switch-over (2026-11-27)
+
+Owner decision, issue #516; the details of the review rounds of #522 added by #518.
+
+| Id | Date | Decision | Consequences |
+|---|---|---|---|
+| SWITCH-STORY | 2026-11-27 | Regenerated cards of a Companion who already has published cards are imported as drafts next to them (`import-drafts.mjs --keep-published`): a key in both sets gets a new draft version, a new key a version 1 draft, an old key stays published. The owner switches over one story at a time with printed SQL (`switch-story.mjs`: dry run, run, check, undo): every card of the new set is published, the story's other published cards are retired, the part titles take the new count (3 to 5), and each change writes a Publish history row with the admin named by `--by`. A switch undo keeps every version a session pinned: a version the switch-over published that a session has pinned keeps its publish time, so that session keeps reading its cards. A re-import never buries an editor's draft: a key whose newest version is an editor's unpublished draft (saved in the admin) is left alone and reported as "kept: editor draft", so the switch-over publishes the editor's text. | The card checks of the admin's Publish do not run in that SQL; `npm run check:export-cards` runs them first. `merged_titles` is not stored. A session in progress keeps its cards until it ends (its pinned versions). A session already in progress gets the new stage 0 as soon as its story is switched over; stage 0 is not pinned per session (its cards are) (owner decision 2026-11-28; part of #526's behaviour). Built in #516 and #522 (`docs/decisions/0039-story-switch-over.md`). |
+
 ## 2. Superseded rules (do not implement)
 
 | Rule | Replaced by |
@@ -407,7 +431,8 @@ Owner decision, issue #517 (`story-pipeline/admin-handoff_2026-11-26/8_dialogue_
 | Third-pause warning (R-WARN) and timer reset | F1 |
 | Timed return of the character on the rest page (screen R2) | The character stays stuck until the user taps Back |
 | "Start with…" field | X4 |
-| Reply limit of three in the rest conversation | No limit |
+| Reply limit of three in the rest conversation | No limit (R2), then the end at round 10 (REST-ROUND-10) |
+| No message limit in the rest conversation (R2) | REST-ROUND-10 |
 | Designated entry story (chapter 8) for new users | M1 |
 | Several cards shown at step start | X2, X6 |
 | Words Mission and Task for the user's work | X1 |
@@ -467,7 +492,7 @@ Owner decision, issue #517 (`story-pipeline/admin-handoff_2026-11-26/8_dialogue_
 
 ## 4. Later
 
-- Chat rules for rest chat, a limit after round 10, and free chat: see #337 (waits until version 1 is done).
+- Chat rules for rest chat and free chat: see #337 (waits until version 1 is done). The end at round 10 is decided (REST-ROUND-10).
 - Adding a Companion from a novel through staged, reusable prompts, then in batch: see #339 (waits until version 1 is done).
 - Pending: his one line after the final Story. It must exist; its prompt is designed later (END-LINE-PENDING, #52).
 - Pending: a long-term chat with a Companion, unlocked when the user has finished all of that Companion's Stories (END-LINE-PENDING).

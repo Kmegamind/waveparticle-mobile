@@ -40,6 +40,7 @@ Some screen names below name a state of a page rather than a separate page. For 
 | F1-STUDY | Focus, the Story turned off (research flag only) | Session (state of F1) |
 | R1 | Rest, he writes first | Session |
 | R1-C | Rest, you answered (chatting) | Session (state of R1) |
+| R1-C10 | Rest, round 10: he stops replying | Session (state of R1-C) |
 | R-OFF | Rest, no network | Session (state of R1) |
 | R1-STUDY | Rest, the Story turned off (research flag only) | Session (state of R1) |
 | S1 | Safety | System |
@@ -91,7 +92,7 @@ Every time the app opens, it decides the first screen as follows. "Last activity
 2. **No Goal was ever started on this account.** The app opens on HOME-0.
 3. **A Goal is in progress, the last screen was inside a flow, and the user did not leave through Home or Back to Home.** There is no time limit: resuming is always possible, however long the user was away.
    - If the last screen was the focus page (F1 or F1S): open it with the clock frozen where it stopped. If the user was away 5 minutes or more, F-RET opens over it and the clock restarts when the user taps Start. If the user was away less than 5 minutes, the clock resumes with no pop-up.
-   - If the last screen was the rest page (R1, R1-C or R-OFF): open it again exactly as it was, with the conversation and any unsent draft. No new first message arrives.
+   - If the last screen was the rest page (R1, R1-C, R1-C10 or R-OFF): open it again exactly as it was, with the conversation and any unsent draft. No new first message arrives. A Pause that had its tenth reply opens as R1-C10 (REST-ROUND-10).
    - If the last screen was in the goal dialogue (GD1 to GD4, GD-F, GD-N1): open it again with the conversation and chosen answers kept. The dialogue creates no Goal; the Goal is created only when the user presses Start on GD4 or GD-N1.
    - A sheet is never restored. The app opens the screen under the sheet.
 4. **Otherwise** (the user left through the Home link or system back on the rest page, or the last screen was not inside a flow): open a Home state chosen by the time since last activity.
@@ -127,9 +128,9 @@ It never appears for a glance at another app of under 5 minutes. It replaces the
 | Control | Where | What it does |
 |---|---|---|
 | **Pause** | F1, F1S, and in the hold of F1-N | Freezes the Step clock and opens the rest page R1. It is the only way into the rest page. There is no "Take a break" after a Step. Pause has no limit. |
-| **‹ Back to step** (header, left) | R1, R1-C, R-OFF | Returns to the focus page through F-RET. The clock stays frozen until the user taps Start in F-RET. |
-| **Home** (small text link, header, right) | R1, R1-C, R-OFF | Leaves to Home. The Step stays paused. |
-| **System back** | R1, R1-C, R-OFF | Same as Home. If the keyboard is open, the first press closes the keyboard and the next press leaves to Home. |
+| **‹ Back to step** (header, left) | R1, R1-C, R1-C10, R-OFF | Returns to the focus page through F-RET. The clock stays frozen until the user taps Start in F-RET. |
+| **Home** (small text link, header, right) | R1, R1-C, R1-C10, R-OFF | Leaves to Home. The Step stays paused. |
+| **System back** | R1, R1-C, R1-C10, R-OFF | Same as Home. If the keyboard is open, the first press closes the keyboard and the next press leaves to Home. |
 | **Continue** (on Home) | HOME-1, HOME-3 | Opens the focus page at the same Step. F-RET opens over it if the user was away 5 minutes or more, or after Back to step; the clock restarts at Start. Goals Continue follows the same rule. |
 | **Start** | F-RET | Closes the pop-up and starts the clock from the frozen value. |
 
@@ -480,7 +481,7 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 
 - **Frame:** full page, no tab bar.
 - **Purpose:** give the user a break in conversation with him, while the clock is frozen.
-- **Shows:** a slim header with **‹ Back to step** on the left, the label "Paused" in the middle and a small **Home** link on the right. There is no name and no portrait. His first message is written live by the AI about the snag his own story has hit (a new stuck story each time, made in two calls: the stuck story, then his description of the predicament and his feelings, with the category and the prop chosen by code; PAUSE-TWO-CALLS), one to two and a half seconds after Pause. As in the prototype, the stuck story appears first on a taped slip, then his description on a second slip without tape; his description is 1 or 2 sentences and at most 30 words (LEN-PAUSE). No authored snag stands in if the AI is not ready; the failure message with **Retry** is shown instead (NO-BACKUP, FAIL-SCREEN). A text box is pinned at the bottom. No timer, no limit on messages, no quick replies, no instruction to write. From the third Pause in one Step his stuck situation is much harder and he says he is worried he may fail; he never instructs the user or asks the user to stop pausing (PAUSE-3, section 3.6). The screen is the same.
+- **Shows:** a slim header with **‹ Back to step** on the left, the label "Paused" in the middle and a small **Home** link on the right. There is no name and no portrait. His first message is written live by the AI about the snag his own story has hit (a new stuck story each time, made in two calls: the stuck story, then his description of the predicament and his feelings, with the category and the prop chosen by code; PAUSE-TWO-CALLS), one to two and a half seconds after Pause. As in the prototype, the stuck story appears first on a taped slip, then his description on a second slip without tape; his description is 1 or 2 sentences and at most 30 words (LEN-PAUSE). No authored snag stands in if the AI is not ready; the failure message with **Retry** is shown instead (NO-BACKUP, FAIL-SCREEN). A text box is pinned at the bottom. No timer, no counter, no warning about a limit, no quick replies, no instruction to write; the chat ends at round 10 of the Pause without warning (R1-C10, REST-ROUND-10). From the third Pause in one Step his stuck situation is much harder and he says he is worried he may fail; he never instructs the user or asks the user to stop pausing (PAUSE-3, section 3.6). The screen is the same.
 - **Can do and leads to:**
   - **‹ Back to step** opens F1 through F-RET.
   - **Home** opens Home with the Step paused.
@@ -491,11 +492,20 @@ The dialogue has at most three turns, in this order: the goal, the time, and whe
 #### R1-C · Rest, you answered
 
 - **Frame:** state of R1.
-- **Purpose:** hold a free conversation with no limit.
-- **Shows:** his short replies from his own side and the user's messages in plain bubbles. No limit on messages, no ending line, no counter, no avatars, no "he has to go".
-- **Can do and leads to:** as R1.
+- **Purpose:** hold a free conversation, up to round 10 of the Pause (REST-ROUND-10).
+- **Shows:** his short replies from his own side and the user's messages in plain bubbles. No counter, no warning before round 10, no ending line before it, no avatars, no "he has to go". Mood is not shown; it is only in his tone.
+- **Can do and leads to:** as R1. His reply to the user's tenth message in this Pause opens R1-C10.
 - **System back:** same as Home. If the keyboard is open, the first press closes it.
-- **States:** a message that triggers the crisis tier opens S1. A reply may end on its one question (CHAT-QUESTION-END). Every reply passes the same spoiler check as the story cards, against the parts the user has not reached, and a failing reply is generated again within the time limit (CHAT-SPOILER-CHECK). If the AI still fails, no authored reply is used: the failure message with **Retry** is shown (NO-BACKUP, FAIL-SCREEN). Silent safeguards limit the history sent to the AI and the length of a message, without any visible change. There is no limit on the number of messages.
+- **States:** a message that triggers the crisis tier opens S1. A reply may end on its one question (CHAT-QUESTION-END). Every reply passes the same spoiler check as the story cards, against the parts the user has not reached, and a failing reply is generated again within the time limit (CHAT-SPOILER-CHECK). If the AI still fails, no authored reply is used: the failure message with **Retry** is shown (NO-BACKUP, FAIL-SCREEN). Silent safeguards limit the history sent to the AI and the length of a message, without any visible change. A round is one message of the user answered by his reply; a failed reply and a message that opened S1 are not counted. The count starts again at every Pause.
+
+#### R1-C10 · Rest, round 10: he stops replying
+
+- **Frame:** state of R1-C. Drawn in the prototype as R1-C10 (#501, #503); built in #518.
+- **Purpose:** end the rest chat of this Pause in his own voice (REST-ROUND-10, reverses R2).
+- **Shows:** the conversation of R1-C. His reply to the user's **tenth** message in this Pause says that his own work is going to fail; it talks only about his own side and never urges the user to go back. After it he stops replying: the text field and Send are gone. The header keeps **‹ Back to step**, "Paused" and **Home**, with their meanings in section 3.10. No counter, no round number, no notice that the chat has ended, no mood label.
+- **Can do and leads to:** **‹ Back to step** opens F1 through F-RET. **Home** opens Home with the Step paused. The next Pause opens a new R1 at round 1.
+- **System back:** same as Home.
+- **States:** the `rest_reply` call for the tenth reply gets one added instruction, and the review call is not made for it (REST-ROUND-10). If that reply fails, the failure message with **Retry** is shown and the field stays; Retry keeps the round, so its reply still ends the chat. The count of a signed-in account is kept on the server per Pause, so a reload or the launch router on the same device shows R1-C10 again for that Pause, never a new field. The Pause's id is kept on the device: a lost device store or another device starts a new Pause. While the server cannot read the count, the chat answers as R1-C with no count (REST-ROUND-10). With the keyboard open when the field goes away, the keyboard closes.
 
 #### R-OFF · Rest, no network
 
@@ -699,7 +709,7 @@ The content admin is a desktop tool (ADMIN, ADMIN-DESKTOP); these two screens ar
 | L2 | The landing card after the last Step is gone. Done on the last Step goes straight to END, and the last landing is shown in END. |
 | HOME-2 | The return line it carried is replaced by the return pop-up (F-RET), so it no longer differs from HOME-1. HOME-1 now covers the whole range up to 3 days. |
 | HOME-4 | The Home variant "Next: Step 3" is gone, because there is no landing page to return to. Home shows the ordinary Goal card. |
-| R2 | The timed screen "he went back on his own" is gone. His stuck state lasts until the user presses Back, and the chat has no ending to time. |
+| R2 | The timed screen "he went back on his own" is gone. His stuck state lasts until the user presses Back, and the chat has no timed ending. (The chat of a Pause does end at round 10, in his reply, with no screen of its own: R1-C10.) |
 | R-WARN | The third-pause warning and the timer reset are cancelled. Pause has no limit. From the third pause only his message on the same rest page changes. |
 | F4 | Focus, back after leaving, with Resume and Done. Replaced by F-RET: one pop-up with one Start button. |
 | F1-R | The first frame after rest with a resolved line as a card. Replaced by F-RET. |

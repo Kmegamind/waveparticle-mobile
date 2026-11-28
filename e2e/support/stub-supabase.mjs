@@ -43,6 +43,8 @@
 //                                          public.content_role() for the caller (#287)
 //   POST /rest/v1/rpc/research_condition  the seeded researchCondition ("no_story") or null, as
 //                                          public.research_condition() for the caller (#114)
+//   POST /rest/v1/rpc/rest_round | record_rest_round   a Pause's round count (#518), per account,
+//                                          as 20261210000000_rest_rounds.sql
 //   POST /rest/v1/rpc/delete_my_account   mirrors the migration (#103): the caller's rows, then
 //                                          the auth user
 //   POST /auth/v1/logout              204, also to the browser (cross-origin headers, #287)
@@ -1223,6 +1225,35 @@ createServer(async (request, response) => {
       return json(response, 500, { code: "XX000", message: "stub failure" });
     }
     return json(response, 200, dataset.researchCondition ?? null);
+  }
+
+  // #518 (REST-ROUND-10): a Pause's round count, as 20261210000000_rest_rounds.sql: read 0 for
+  // none or another account's session; record only the next round, refuse another account.
+  if (
+    (path === "/rest/v1/rpc/rest_round" || path === "/rest/v1/rpc/record_rest_round") &&
+    request.method === "POST"
+  ) {
+    if (!dataset || dataset.deleted) return json(response, 401, { message: "JWT required" });
+    if ((dataset.failReads ?? []).includes("rest_rounds")) {
+      return json(response, 500, { code: "XX000", message: "rest rounds failed (stub)" });
+    }
+    const body = (await readBody(request)) ?? {};
+    const own = dataset.tables.sessions.some(
+      (row) => row.id === body.target_session && row.user_id === dataset.user.id,
+    );
+    dataset.restRounds ??= new Map();
+    const key = `${body.target_session}/${body.target_pause}`;
+    const counted = own ? (dataset.restRounds.get(key) ?? 0) : 0;
+    if (path === "/rest/v1/rpc/rest_round") return json(response, 200, counted);
+    if (!own)
+      return json(response, 403, { code: "42501", message: "not a session of this account" });
+    const round = body.shown_round;
+    if (!Number.isInteger(round) || round < 1 || round > 10) {
+      return json(response, 400, { code: "22023", message: "a rest round is 1 to 10" });
+    }
+    if (round !== counted + 1) return json(response, 200, counted);
+    dataset.restRounds.set(key, round);
+    return json(response, 200, round);
   }
 
   if (path === "/rest/v1/rpc/content_role" && request.method === "POST") {

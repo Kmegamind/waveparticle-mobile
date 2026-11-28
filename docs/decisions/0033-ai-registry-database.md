@@ -10,7 +10,7 @@ no second registry table, the 7 rows keep their slugs, edited sections and statu
 column next to the slug, a `category` column on `public.prompts` with the app reading runtime keys
 only, and the 12 new rows starting with the seed's status. The seed (`registry-seed.json`) and the
 prompt texts stay in the owner's planning folder (AI-SAMPLES-LOCAL): nothing from them is
-committed. In production the 7 rows may already have edited sections and statuses.
+committed. (The book-text part of AI-SAMPLES-LOCAL was dropped on 2026-11-28, TEXT-IN-GIT-DROPPED.) In production the 7 rows may already have edited sections and statuses.
 
 ## Options
 | Option | For | Against |
